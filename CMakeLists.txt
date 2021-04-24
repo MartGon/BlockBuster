@@ -8,9 +8,9 @@ project(OpenGLChess VERSION 1.0 LANGUAGES C CXX)
 set (CMAKE_CXX_STANDARD 17)
 
 set(DEPS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/deps)
+set(SHADERS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 
-add_compile_definitions(RESOURCES_DIR="${CMAKE_SOURCE_DIR}/resources/")
-add_compile_definitions(SHADERS_DIR="${CMAKE_SOURCE_DIR}/resources/shaders/")
+add_compile_definitions(SHADERS_DIR="${SHADERS_FOLDER}")
 add_compile_definitions(TEXTURES_DIR="${CMAKE_SOURCE_DIR}/resources/textures/")
 
 add_subdirectory(deps)

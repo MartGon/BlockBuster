@@ -1,8 +1,10 @@
 #include <glad/glad.h>
-#include <SDL.h>
-#include <SDL_opengl.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_opengl.h>
 
 #include <iostream>
+
+#include <Shader.h>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
@@ -33,8 +35,12 @@ int main()
         std::cout << "gladLoadGLLoader failed \n";
         return -1;
     }
-
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    std::filesystem::path shadersDir{SHADERS_DIR};
+    std::filesystem::path vertex = shadersDir / "vertex.glsl";
+    std::filesystem::path fragment = shadersDir / "fragment.glsl";
+    GL::Shader shader{vertex, fragment};
 
     bool quit = false;
     while(!quit)
