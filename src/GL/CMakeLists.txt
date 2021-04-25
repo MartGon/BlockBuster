@@ -1,6 +1,7 @@
 SET(SOURCES
 
     Shader.cpp
+    VertexBuffer.cpp
 )
 
 
