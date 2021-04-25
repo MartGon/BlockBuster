@@ -33,6 +33,13 @@ GL::Shader& GL::Shader::operator=(Shader&& other)
     return *this;
 }
 
+void GL::Shader::Use()
+{
+    glUseProgram(handle_);
+}
+
+// Private
+
 unsigned int GL::Shader::LoadShader(std::filesystem::path shader, unsigned int shaderType)
 {
     unsigned int ref;

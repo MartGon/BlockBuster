@@ -17,6 +17,8 @@ namespace GL
         Shader(Shader&&);
         Shader& operator=(Shader&&);
 
+        void Use();
+
     private:
 
         unsigned int LoadShader(std::filesystem::path shader, unsigned int type);

@@ -4,7 +4,8 @@
 
 #include <iostream>
 
-#include <Shader.h>
+#include <GL/Shader.h>
+#include <GL/VertexArray.h>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
@@ -41,6 +42,18 @@ int main()
     std::filesystem::path vertex = shadersDir / "vertex.glsl";
     std::filesystem::path fragment = shadersDir / "fragment.glsl";
     GL::Shader shader{vertex, fragment};
+    shader.Use();
+
+    GL::VertexArray vao;
+    vao.GenVBO(std::vector<float>{
+        -0.5, -0.5, 1.0,
+        0.5, -0.5, 1.0,
+        0.5, 0.5, 1.0,
+        -0.5, 0.5, 1.0,
+    });
+    vao.SetIndices({0, 1, 2,
+                    3, 0, 2});
+    vao.AttribPointer(0, 3, GL_FLOAT, false, 0);
 
     bool quit = false;
     while(!quit)
@@ -48,13 +61,30 @@ int main()
         SDL_Event e;
         while(SDL_PollEvent(&e) != 0)
         {
-            if(e.type == SDL_QUIT)
+            switch(e.type)
+            {
+            case  SDL_QUIT:
                 quit = true;
+                break;
+            case SDL_KEYDOWN:
+                if(e.key.keysym.sym == SDLK_ESCAPE)
+                    quit = true;
+                break;
+            }
         }
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        glDrawElements(GL_TRIANGLES, vao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+
         SDL_GL_SwapWindow(window);
     }
+
+    SDL_GL_DeleteContext(context);
+    SDL_DestroyWindow(window);
+
+    SDL_Quit();
+
+    return 0;
 }

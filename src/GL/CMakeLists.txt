@@ -1,7 +1,7 @@
 SET(SOURCES
 
     Shader.cpp
-    VertexBuffer.cpp
+    VertexArray.cpp
 )
 
 
