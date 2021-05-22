@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.1...3.16)
 
 # Set project name
-project(OpenGLChess VERSION 1.0 LANGUAGES C CXX)
+project(BlockBuster VERSION 1.0 LANGUAGES C CXX)
 
 # Set C++ version
 set (CMAKE_CXX_STANDARD 17)
