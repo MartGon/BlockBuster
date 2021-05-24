@@ -13,5 +13,10 @@ set(SHADERS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 add_compile_definitions(SHADERS_DIR="${SHADERS_FOLDER}")
 add_compile_definitions(TEXTURES_DIR="${CMAKE_SOURCE_DIR}/resources/textures/")
 
+find_package(OpenGL REQUIRED)
+find_package(X11 REQUIRED)
+find_package(Threads REQUIRED)
+find_package(SDL2 REQUIRED)
+
 add_subdirectory(deps)
 add_subdirectory(src)
