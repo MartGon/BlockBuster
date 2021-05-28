@@ -20,3 +20,9 @@ find_package(SDL2 REQUIRED)
 
 add_subdirectory(deps)
 add_subdirectory(src)
+
+include(CTest)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
