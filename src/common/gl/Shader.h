@@ -1,5 +1,6 @@
 #pragma once
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include <filesystem>
 
@@ -18,6 +19,8 @@ namespace GL
         Shader& operator=(Shader&&);
 
         void Use();
+        
+        void SetUniformMat4(const std::string& name, const glm::mat4& mat);
 
     private:
 

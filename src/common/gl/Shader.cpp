@@ -1,5 +1,7 @@
 #include <Shader.h>
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <fstream>
 #include <iostream>
 
@@ -36,6 +38,13 @@ GL::Shader& GL::Shader::operator=(Shader&& other)
 void GL::Shader::Use()
 {
     glUseProgram(handle_);
+}
+
+void GL::Shader::SetUniformMat4(const std::string& name, const glm::mat4& mat)
+{
+    Use();
+    auto location = glGetUniformLocation(handle_, name.c_str());
+    glUniformMatrix4fv(location, 1, false, glm::value_ptr(mat));
 }
 
 // Private
