@@ -5,6 +5,10 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_opengl3.h>
+#include <imgui/backends/imgui_impl_sdl.h>
+
 #include <iostream>
 
 #include <gl/Shader.h>
@@ -88,6 +92,16 @@ int main()
     
     glEnable(GL_DEPTH_TEST);
 
+    // ImGUI
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGui::StyleColorsDark();
+    ImGui_ImplSDL2_InitForOpenGL(window, context);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    bool showDemoWindow = true;
     bool quit = false;
     while(!quit)
     {
@@ -106,6 +120,14 @@ int main()
             }
         }
 
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow(&showDemoWindow);
+
+
+        // CUBE
         glm::mat4 model{1.0f};
         model = glm::translate(model, glm::vec3{0.0f, 0.0f, -3.0f});
         auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians((float)SDL_GetTicks() / 8.f), glm::vec3{1.0f, 1.0f, 0.0f});
@@ -115,13 +137,19 @@ int main()
         model = perspective * model;
         shader.SetUniformMat4("transform", model);
 
+        ImGui::Render();
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glDrawElements(GL_TRIANGLES, vao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         SDL_GL_SwapWindow(window);
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
 
     SDL_GL_DeleteContext(context);
     SDL_DestroyWindow(window);
