@@ -138,7 +138,7 @@ int main()
 
         // CUBE
         glm::mat4 model{1.0f};
-        auto cubePos = glm::vec3{0.0f, 0.0f, -0.0f};
+        auto cubePos = glm::vec3{0.0f, 0.0f, 0.0f};
         model = glm::translate(model, cubePos);
         auto scale = glm::scale(glm::mat4{1.0f}, glm::vec3(1.0f));
         model = model * scale;
@@ -158,10 +158,27 @@ int main()
         if(clicked)
         {
             glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
-            glm::vec4 n{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
-            glm::vec4 clipPos = n / 1.0f;
-            glm::vec4 eyePos = glm::inverse(projection * view) * clipPos;
+            glm::vec4 nd{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
+            glm::vec4 clipPos = nd / 1.0f;
+            glm::vec4 eyePos = glm::normalize(glm::inverse(projection * view) * clipPos);
             std::cout << "World vec is " << eyePos.x << " " << eyePos.y << " " << eyePos.z << "\n";
+
+            // Check collision
+            auto rayOrigin = cameraPos;
+            glm::vec3 rayDir = glm::normalize(eyePos);
+            glm::vec3 boxSize{0.5f};
+            
+            glm::vec3 m = 1.0f / rayDir;
+            glm::vec3 n = m * rayOrigin;
+            glm::vec3 k = glm::abs(m) * boxSize;
+            auto t1 = -n - k;
+            auto t2 = -n + k;
+            float tN = glm::max(glm::max(t1.x, t1.y), t1.z);
+            float tF = glm::min(glm::min(t2.x, t2.y), t2.z);
+
+            bool intersection = !(tN > tF);
+            std::cout << "TN: " << tN << " TF: " << tF << '\n';
+            std::cout << "Ray intersection: " << intersection << '\n';
         }
 
         // GUI
