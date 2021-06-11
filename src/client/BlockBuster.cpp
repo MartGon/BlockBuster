@@ -103,11 +103,15 @@ int main()
 
     bool showDemoWindow = true;
     bool quit = false;
+
+    glm::vec2 mousePos;
     while(!quit)
     {
+        bool clicked = false;
         SDL_Event e;
         while(SDL_PollEvent(&e) != 0)
         {
+            ImGui_ImplSDL2_ProcessEvent(&e);
             switch(e.type)
             {
             case  SDL_QUIT:
@@ -117,6 +121,11 @@ int main()
                 if(e.key.keysym.sym == SDLK_ESCAPE)
                     quit = true;
                 break;
+            case SDL_MOUSEBUTTONDOWN:
+                mousePos.x = e.button.x;
+                mousePos.y = WINDOW_HEIGHT - e.button.y;
+                clicked = true;
+                std::cout << "Click coords " << mousePos.x << " " << mousePos.y << "\n";
             }
         }
 
@@ -129,14 +138,33 @@ int main()
 
         // CUBE
         glm::mat4 model{1.0f};
-        model = glm::translate(model, glm::vec3{0.0f, 0.0f, -3.0f});
-        auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians((float)SDL_GetTicks() / 8.f), glm::vec3{1.0f, 1.0f, 0.0f});
+        auto cubePos = glm::vec3{0.0f, 0.0f, -0.0f};
+        model = glm::translate(model, cubePos);
         auto scale = glm::scale(glm::mat4{1.0f}, glm::vec3(1.0f));
-        model = model * rotation * scale;
-        glm::mat4 perspective = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
-        model = perspective * model;
-        shader.SetUniformMat4("transform", model);
+        model = model * scale;
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
+        //projection = glm::ortho(-3.0f, 3.0f, -2.0f, 2.0f, 0.1f, 100.0f);
+        //glm::mat4 view = glm::lookAt(glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
+        
+        float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 3.0f;
+        float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 3.0f;
+        glm::vec3 cameraPos{x, 0.0f, z};
+        glm::mat4 view = glm::lookAt(cameraPos, cubePos, glm::vec3{0.0f, 1.0f, 0.0f});
+        
+        auto transform = projection * view * model;
+        shader.SetUniformMat4("transform", transform);
 
+        // Window to eye
+        if(clicked)
+        {
+            glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
+            glm::vec4 n{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
+            glm::vec4 clipPos = n / 1.0f;
+            glm::vec4 eyePos = glm::inverse(projection * view) * clipPos;
+            std::cout << "World vec is " << eyePos.x << " " << eyePos.y << " " << eyePos.z << "\n";
+        }
+
+        // GUI
         ImGui::Render();
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
