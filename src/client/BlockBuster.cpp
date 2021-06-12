@@ -138,7 +138,7 @@ int main()
 
         // CUBE
         glm::mat4 model{1.0f};
-        auto cubePos = glm::vec3{0.0f, 0.0f, 0.0f};
+        auto cubePos = glm::vec3{2.0f, 3.0f, 1.0f};
         model = glm::translate(model, cubePos);
         auto scale = glm::scale(glm::mat4{1.0f}, glm::vec3(1.0f));
         model = model * scale;
@@ -146,9 +146,10 @@ int main()
         //projection = glm::ortho(-3.0f, 3.0f, -2.0f, 2.0f, 0.1f, 100.0f);
         //glm::mat4 view = glm::lookAt(glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
         
-        float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 3.0f;
+        float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 6.0f;
         float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 3.0f;
-        glm::vec3 cameraPos{x, 0.0f, z};
+        float y = glm::cos((float)SDL_GetTicks() / 1000.0f) * 3.0f;
+        glm::vec3 cameraPos{x, y, z};
         glm::mat4 view = glm::lookAt(cameraPos, cubePos, glm::vec3{0.0f, 1.0f, 0.0f});
         
         auto transform = projection * view * model;
@@ -160,12 +161,15 @@ int main()
             glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
             glm::vec4 nd{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
             glm::vec4 clipPos = nd / 1.0f;
-            glm::vec4 eyePos = glm::normalize(glm::inverse(projection * view) * clipPos);
-            std::cout << "World vec is " << eyePos.x << " " << eyePos.y << " " << eyePos.z << "\n";
+            glm::mat4 screenToWorld = glm::inverse(projection * view);
+            glm::vec4 worldRayDir = screenToWorld * clipPos;
+            std::cout << "World ray dir is " << worldRayDir.x << " " << worldRayDir.y << " " << worldRayDir.z << "\n";
 
             // Check collision
-            auto rayOrigin = cameraPos;
-            glm::vec3 rayDir = glm::normalize(eyePos);
+            glm::vec3 rayOrigin = glm::vec3{glm::inverse(model) * glm::vec4(cameraPos, 1.0f)};
+            std::cout << "Ray World origin is " << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << "\n";
+            std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
+            glm::vec3 rayDir = glm::normalize(glm::vec3{worldRayDir});
             glm::vec3 boxSize{0.5f};
             
             glm::vec3 m = 1.0f / rayDir;
