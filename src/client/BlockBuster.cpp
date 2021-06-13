@@ -138,9 +138,9 @@ int main()
 
         // CUBE
         glm::mat4 model{1.0f};
-        auto cubePos = glm::vec3{2.0f, 3.0f, 1.0f};
+        auto cubePos = glm::vec3{2.0f, 0.0f, 1.0f};
         model = glm::translate(model, cubePos);
-        auto scale = glm::scale(glm::mat4{1.0f}, glm::vec3(1.0f));
+        auto scale = glm::scale(glm::mat4{1.0f}, glm::vec3(0.5f));
         model = model * scale;
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
         //projection = glm::ortho(-3.0f, 3.0f, -2.0f, 2.0f, 0.1f, 100.0f);
@@ -183,6 +183,27 @@ int main()
             bool intersection = !(tN > tF);
             std::cout << "TN: " << tN << " TF: " << tF << '\n';
             std::cout << "Ray intersection: " << intersection << '\n';
+
+            std::cout << "T1 is " << t1.x << " " << t1.y << " " << t1.z << '\n';
+            std::cout << "T1.yzx is " << t1.y << " " << t1.z << " " << t1.x << '\n';
+            std::cout << "T1.zyx is " << t1.z << " " << t1.x << " " << t1.y << '\n';
+            auto step1 = glm::step(glm::vec3{t1.y, t1.z, t1.x}, t1);
+            std::cout << "Step 1 is " << step1.x << " " << step1.y << " " << step1.z << '\n';
+            auto step2 = glm::step(glm::vec3{t1.z, t1.x, t1.y}, t1);
+            std::cout << "Step 2 is " << step2.x << " " << step2.y << " " << step2.z << '\n';
+            auto normal = -glm::sign(rayDir) * step1 * step2;
+            std::cout << "Normal is " << normal.x << " " << normal.y << " " << normal.z << '\n';
+
+            glm::vec3 myNormal;
+            if (tN == t1.x)
+                myNormal = {1.0f, 0.0f, 0.0f};
+            else if(tN == t1.y)
+                myNormal = {0.0f, 1.0f, 0.0f};
+            else
+                myNormal = {0.0f, 0.0f, 1.0f};
+
+            myNormal = -glm::sign(rayDir) * myNormal;
+            std::cout << "My normal is " << myNormal.x << " " << myNormal.y << " " << myNormal.z << '\n';
         }
 
         // GUI
