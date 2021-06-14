@@ -17,6 +17,97 @@
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
+struct Intersection
+{
+    bool intersects;
+    glm::vec2 ts;
+    glm::vec3 normal;
+};
+
+void PrintVec(glm::vec3 vec, std::string name)
+{
+    std::cout << name << " is " << vec.x << " " << vec.y << " " << vec.z << '\n';
+}
+
+Intersection RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize)
+{
+    glm::vec3 m = 1.0f / rayDir;
+    glm::vec3 n = m * rayOrigin;
+    glm::vec3 k = glm::abs(m) * boxSize;
+    auto t1 = -n - k;
+    auto t2 = -n + k;
+    float tN = glm::max(glm::max(t1.x, t1.y), t1.z);
+    float tF = glm::min(glm::min(t2.x, t2.y), t2.z);
+
+    bool intersection = !(tN > tF);
+    //std::cout << "TN: " << tN << " TF: " << tF << '\n';
+    std::cout << "Ray intersection: " << intersection << '\n';
+
+    //std::cout << "T1 is " << t1.x << " " << t1.y << " " << t1.z << '\n';
+    //std::cout << "T1.yzx is " << t1.y << " " << t1.z << " " << t1.x << '\n';
+    //std::cout << "T1.zyx is " << t1.z << " " << t1.x << " " << t1.y << '\n';
+    auto step1 = glm::step(glm::vec3{t1.y, t1.z, t1.x}, t1);
+    //std::cout << "Step 1 is " << step1.x << " " << step1.y << " " << step1.z << '\n';
+    auto step2 = glm::step(glm::vec3{t1.z, t1.x, t1.y}, t1);
+    //std::cout << "Step 2 is " << step2.x << " " << step2.y << " " << step2.z << '\n';
+    auto normal = -glm::sign(rayDir) * step1 * step2;
+    //std::cout << "Normal is " << normal.x << " " << normal.y << " " << normal.z << '\n';
+
+    glm::vec3 myNormal;
+    if (tN == t1.x)
+        myNormal = {1.0f, 0.0f, 0.0f};
+    else if(tN == t1.y)
+        myNormal = {0.0f, 1.0f, 0.0f};
+    else
+        myNormal = {0.0f, 0.0f, 1.0f};
+
+    myNormal = -glm::sign(rayDir) * myNormal;
+    std::cout << "My normal is " << myNormal.x << " " << myNormal.y << " " << myNormal.z << '\n';
+
+    return Intersection{intersection, glm::vec2{tN, tF}, normal};
+}
+
+bool RaySlopeIntersectionCheckPoint(glm::vec3 point)
+{   
+    bool intersects = false;
+    auto min = glm::sign(point) * glm::step(glm::abs(glm::vec3{point.y, point.z, point.x}), glm::abs(point)) 
+        * glm::step(glm::abs(glm::vec3{point.z, point.x, point.y}), glm::abs(point));
+
+    if(min.z == -1 || min.y == -1)
+    {
+        intersects = true;
+    }
+
+    if(min.x == 1 || min.x == -1)
+    {        
+        intersects = point.y <= (-1 * point.z);
+    }
+
+    return intersects;
+}
+
+Intersection RaySlopeIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize)
+{
+    auto aabbIntersect = RayAABBIntersection(rayOrigin, rayDir, boxSize);
+    Intersection intersection{false, aabbIntersect.ts, aabbIntersect.normal};
+    if(aabbIntersect.intersects)
+    {
+        auto normal = aabbIntersect.normal;
+        auto nearPoint = rayOrigin + rayDir * aabbIntersect.ts.x;
+        auto farPoint = rayOrigin + rayDir * aabbIntersect.ts.y;
+        PrintVec(nearPoint + glm::vec3{0.5f}, "Near Point");
+        PrintVec(farPoint + glm::vec3{0.5f}, "Far Point");
+
+        auto nearInt = RaySlopeIntersectionCheckPoint(nearPoint);
+        auto farInt = RaySlopeIntersectionCheckPoint(farPoint);
+        std::cout << "NearInt: " << nearInt << "\n";
+        std::cout << "FarInt: " << farInt << "\n";
+        intersection.intersects = nearInt || farInt;
+    }
+
+    return intersection;
+}
+
 int main()
 {
     if(SDL_Init(0))
@@ -171,7 +262,7 @@ int main()
 
         // CUBE
         glm::mat4 model{1.0f};
-        auto cubePos = glm::vec3{2.0f, 0.0f, 1.0f};
+        auto cubePos = glm::vec3{0.0f, 0.0f, 0.0f};
         model = glm::translate(model, cubePos);
         auto scale = glm::scale(glm::mat4{1.0f}, glm::vec3(0.5f));
         model = model * scale;
@@ -179,9 +270,9 @@ int main()
         //projection = glm::ortho(-3.0f, 3.0f, -2.0f, 2.0f, 0.1f, 100.0f);
         //glm::mat4 view = glm::lookAt(glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
         
-        float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 6.0f;
+        float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 3.0f;
         float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 3.0f;
-        float y = glm::cos((float)SDL_GetTicks() / 1000.0f) * 3.0f;
+        float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 3.0f; 
         glm::vec3 cameraPos{x, y, z};
         glm::mat4 view = glm::lookAt(cameraPos, cubePos, glm::vec3{0.0f, 1.0f, 0.0f});
         
@@ -204,39 +295,10 @@ int main()
             std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
             glm::vec3 rayDir = glm::normalize(glm::vec3{worldRayDir});
             glm::vec3 boxSize{0.5f};
-            
-            glm::vec3 m = 1.0f / rayDir;
-            glm::vec3 n = m * rayOrigin;
-            glm::vec3 k = glm::abs(m) * boxSize;
-            auto t1 = -n - k;
-            auto t2 = -n + k;
-            float tN = glm::max(glm::max(t1.x, t1.y), t1.z);
-            float tF = glm::min(glm::min(t2.x, t2.y), t2.z);
 
-            bool intersection = !(tN > tF);
-            std::cout << "TN: " << tN << " TF: " << tF << '\n';
-            std::cout << "Ray intersection: " << intersection << '\n';
-
-            std::cout << "T1 is " << t1.x << " " << t1.y << " " << t1.z << '\n';
-            std::cout << "T1.yzx is " << t1.y << " " << t1.z << " " << t1.x << '\n';
-            std::cout << "T1.zyx is " << t1.z << " " << t1.x << " " << t1.y << '\n';
-            auto step1 = glm::step(glm::vec3{t1.y, t1.z, t1.x}, t1);
-            std::cout << "Step 1 is " << step1.x << " " << step1.y << " " << step1.z << '\n';
-            auto step2 = glm::step(glm::vec3{t1.z, t1.x, t1.y}, t1);
-            std::cout << "Step 2 is " << step2.x << " " << step2.y << " " << step2.z << '\n';
-            auto normal = -glm::sign(rayDir) * step1 * step2;
-            std::cout << "Normal is " << normal.x << " " << normal.y << " " << normal.z << '\n';
-
-            glm::vec3 myNormal;
-            if (tN == t1.x)
-                myNormal = {1.0f, 0.0f, 0.0f};
-            else if(tN == t1.y)
-                myNormal = {0.0f, 1.0f, 0.0f};
-            else
-                myNormal = {0.0f, 0.0f, 1.0f};
-
-            myNormal = -glm::sign(rayDir) * myNormal;
-            std::cout << "My normal is " << myNormal.x << " " << myNormal.y << " " << myNormal.z << '\n';
+            //auto intersection = RayAABBIntersection(rayOrigin, rayDir, boxSize);
+            auto slopeIntersection = RaySlopeIntersection(rayOrigin, rayDir, boxSize);
+            std::cout << "Slope intersection: " << slopeIntersection.intersects << "\n";
         }
 
         // GUI
