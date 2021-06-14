@@ -52,7 +52,8 @@ int main()
     shader.Use();
 
     GL::VertexArray vao;
-    vao.GenVBO(std::vector<float>{
+    vao.GenVBO(std::vector<float>
+    {
         -0.5, -0.5, -0.5,
         0.5, -0.5, -0.5,
         0.5, 0.5, -0.5,
@@ -89,6 +90,38 @@ int main()
                     5, 1, 4
                     });
     vao.AttribPointer(0, 3, GL_FLOAT, false, 0);
+
+    GL::VertexArray slopeVao;
+    slopeVao.GenVBO(std::vector<float>{
+        // Base
+        -0.5, -0.5, 0.5,
+        0.5, -0.5, 0.5,
+        -0.5, -0.5, -0.5,
+        0.5, -0.5, -0.5,
+
+        -0.5, 0.5, -0.5,
+        0.5, 0.5, -0.5
+    });
+    slopeVao.SetIndices({
+        // Base
+        0, 1, 2,
+        1, 2, 3,
+
+        // Left
+        0, 2, 4,
+
+        // Right
+        1, 3, 5,
+
+        // Back
+        2, 3, 4,
+        3, 4, 5,
+
+        // Ramp
+        0, 1, 4,
+        1, 4, 5
+    });
+    slopeVao.AttribPointer(0, 3, GL_FLOAT, false, 0);
     
     glEnable(GL_DEPTH_TEST);
 
@@ -211,7 +244,8 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glDrawElements(GL_TRIANGLES, vao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+        slopeVao.Bind();
+        glDrawElements(GL_TRIANGLES, slopeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         SDL_GL_SwapWindow(window);
