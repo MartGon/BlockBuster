@@ -264,8 +264,10 @@ int main()
         glm::mat4 model{1.0f};
         auto cubePos = glm::vec3{0.0f, 0.0f, 0.0f};
         model = glm::translate(model, cubePos);
+        auto rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 4000) % 4)), glm::vec3{0.0f, 1.0f, 0.0f});
+        auto rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 8000) % 4)), glm::vec3{1.0f, 0.0f, 0.0f});
         auto scale = glm::scale(glm::mat4{1.0f}, glm::vec3(0.5f));
-        model = model * scale;
+        model = model * rotationY * rotationX * scale;
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
         //projection = glm::ortho(-3.0f, 3.0f, -2.0f, 2.0f, 0.1f, 100.0f);
         //glm::mat4 view = glm::lookAt(glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
@@ -293,7 +295,7 @@ int main()
             glm::vec3 rayOrigin = glm::vec3{glm::inverse(model) * glm::vec4(cameraPos, 1.0f)};
             std::cout << "Ray World origin is " << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << "\n";
             std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
-            glm::vec3 rayDir = glm::normalize(glm::vec3{worldRayDir});
+            glm::vec3 rayDir = glm::normalize(glm::vec3{glm::inverse(model) * worldRayDir});
             glm::vec3 boxSize{0.5f};
 
             //auto intersection = RayAABBIntersection(rayOrigin, rayDir, boxSize);
