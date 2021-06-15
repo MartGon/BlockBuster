@@ -27,6 +27,7 @@ struct RayIntersection
 struct AABBIntersection
 {
     bool intersects;
+    glm::vec3 intersection;
     glm::vec3 offsetA;
     glm::vec3 offsetB;
 };
@@ -117,21 +118,27 @@ RayIntersection RaySlopeIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm:
 
 AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
 {
+    glm::vec3 intersection{0.0f};
     auto boundA = posA + sizeA;
     auto boundB = posB + sizeB;
+    auto diffA = boundB - posA;
+    auto diffB = boundA - posB;
 
     bool left = posA.x <= boundB.x;
     bool right = boundA.x >= posB.x;
-    bool res = posA.x <= boundB.x && boundA.x >= posB.x;
-    std::cout << "Result left on x Axis: " << left << "\n";
-    std::cout << "Result right on x Axis: " << right << "\n";
+    bool xOverlap = posA.x <= boundB.x && boundA.x >= posB.x;
 
-    auto diffA = boundB - posA;
-    auto diffB = boundA - posB;
-    std::cout << "Diff is on right: " << diffA.x << '\n';
-    std::cout << "Diff is on left: " << diffB.x << '\n';
+    bool back = posA.z <= boundB.z;
+    bool front = boundA.z >= posB.z;
+    bool zOverlap = back && front;
 
-    return AABBIntersection{res, diffA, diffB};
+    bool up = posA.y <= boundB.y;
+    bool down = boundA.y >= posB.y;
+    bool yOverlap = up && down;
+
+    bool intersects = xOverlap && zOverlap && yOverlap; 
+
+    return AABBIntersection{intersects, intersection, diffA, diffB};
 }
 
 int main()
@@ -288,7 +295,7 @@ int main()
         float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 3.0f;
         float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 3.0f; 
         glm::vec3 cameraPos{x, y, z};
-        cameraPos = glm::vec3{.0f, .0f, 7.0f};
+        cameraPos = glm::vec3{.0f, 5.0f, 7.0f};
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
         glm::vec3 origin{0.0f};
         glm::mat4 view = glm::lookAt(cameraPos, origin, glm::vec3{0.0f, 1.0f, 0.0f});
@@ -298,15 +305,31 @@ int main()
 
         if(state[SDL_SCANCODE_A])
             playerPos.x -= 0.10f;
-        else if(state[SDL_SCANCODE_D])
+        if(state[SDL_SCANCODE_D])
             playerPos.x += 0.1f;
+        if(state[SDL_SCANCODE_W])
+            playerPos.z -= 0.1f;
+        if(state[SDL_SCANCODE_S])
+            playerPos.z += 0.1f;
+        if(state[SDL_SCANCODE_Q])
+            playerPos.y += 0.1f;
+        if(state[SDL_SCANCODE_E])
+            playerPos.y -= 0.1f;
 
         auto boxIntersect = AABBCollision(playerPos, boxSize, cubePos, boxSize);
         if(boxIntersect.intersects)
         {
             auto sign = glm::sign(playerPos - cubePos);
-            auto xOffset = glm::min(boxIntersect.offsetA.x, boxIntersect.offsetB.x);
-            playerPos.x += sign.x * xOffset;
+            auto oA = boxIntersect.offsetA;
+            auto oB = boxIntersect.offsetB;
+            auto min = glm::min(oA, oB);
+            auto trueMin = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+            PrintVec(oA, "oA");
+            PrintVec(oB, "oB");
+            PrintVec(min, "min");
+            PrintVec(trueMin, "trueMin");
+            auto Offset = glm::min(boxIntersect.offsetA, boxIntersect.offsetB);
+            playerPos = playerPos + (sign * min * trueMin);
         }
 
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
