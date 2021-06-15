@@ -21,6 +21,7 @@ namespace GL
         void Use();
         
         void SetUniformMat4(const std::string& name, const glm::mat4& mat);
+        void SetUniformInt(const std::string& name, int a);
 
     private:
 

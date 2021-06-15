@@ -229,6 +229,7 @@ int main()
     bool quit = false;
 
     glm::vec2 mousePos;
+    glm::vec3 playerPos{-1.5f, 0.0f, 0.0f};
     while(!quit)
     {
         bool clicked = false;
@@ -253,37 +254,40 @@ int main()
             }
         }
 
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(window);
-        ImGui::NewFrame();
-        ImGui::ShowDemoWindow(&showDemoWindow);
-
-
-        // CUBE
-        glm::mat4 model{1.0f};
-        auto cubePos = glm::vec3{0.0f, 0.0f, 0.0f};
-        model = glm::translate(model, cubePos);
-        auto rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 4000) % 4)), glm::vec3{0.0f, 1.0f, 0.0f});
-        auto rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 8000) % 4)), glm::vec3{1.0f, 0.0f, 0.0f});
-        auto scale = glm::scale(glm::mat4{1.0f}, glm::vec3(0.5f));
-        model = model * rotationY * rotationX * scale;
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
-        //projection = glm::ortho(-3.0f, 3.0f, -2.0f, 2.0f, 0.1f, 100.0f);
-        //glm::mat4 view = glm::lookAt(glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
-        
+        // Camera
         float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 3.0f;
         float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 3.0f;
         float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 3.0f; 
         glm::vec3 cameraPos{x, y, z};
-        glm::mat4 view = glm::lookAt(cameraPos, cubePos, glm::vec3{0.0f, 1.0f, 0.0f});
+        cameraPos = glm::vec3{.0f, .0f, 5.0f};
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
+        glm::vec3 origin{0.0f};
+        glm::mat4 view = glm::lookAt(cameraPos, origin, glm::vec3{0.0f, 1.0f, 0.0f});
+
+        // Move Player
+        auto state = SDL_GetKeyboardState(nullptr);
+
+        if(state[SDL_SCANCODE_A])
+            playerPos.x -= 0.10f;
+        else if(state[SDL_SCANCODE_D])
+            playerPos.x += 0.1f;
+
+        glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
+        auto playerTransform = projection * view * playerModel;
+
+         // CUBE
+        auto cubePos = glm::vec3{1.5f, 0.0f, 0.0f};
+        glm::mat4 model{1.0f};
+        model = glm::translate(model, cubePos);
+        //auto rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 4000) % 4)), glm::vec3{0.0f, 1.0f, 0.0f});
+        //auto rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 8000) % 4)), glm::vec3{1.0f, 0.0f, 0.0f});
         
         auto transform = projection * view * model;
-        shader.SetUniformMat4("transform", transform);
 
-        // Window to eye
+        // Collisions
         if(clicked)
         {
+            // Window to eye
             glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
             glm::vec4 nd{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
             glm::vec4 clipPos = nd / 1.0f;
@@ -292,24 +296,43 @@ int main()
             std::cout << "World ray dir is " << worldRayDir.x << " " << worldRayDir.y << " " << worldRayDir.z << "\n";
 
             // Check collision
-            glm::vec3 rayOrigin = glm::vec3{glm::inverse(model) * glm::vec4(cameraPos, 1.0f)};
+            glm::mat4 worldToModel = glm::inverse(model);
+            glm::vec3 rayOrigin = glm::vec3{worldToModel * glm::vec4(cameraPos, 1.0f)};
             std::cout << "Ray World origin is " << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << "\n";
             std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
-            glm::vec3 rayDir = glm::normalize(glm::vec3{glm::inverse(model) * worldRayDir});
+            glm::vec3 rayDir = glm::normalize(glm::vec3{worldToModel * worldRayDir});
             glm::vec3 boxSize{0.5f};
 
-            //auto intersection = RayAABBIntersection(rayOrigin, rayDir, boxSize);
-            auto slopeIntersection = RaySlopeIntersection(rayOrigin, rayDir, boxSize);
-            std::cout << "Slope intersection: " << slopeIntersection.intersects << "\n";
+            auto intersection = RayAABBIntersection(rayOrigin, rayDir, boxSize);
+            //auto slopeIntersection = RaySlopeIntersection(rayOrigin, rayDir, boxSize);
+            //std::cout << "Slope intersection: " << slopeIntersection.intersects << "\n";
         }
+
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow(&showDemoWindow);
 
         // GUI
         ImGui::Render();
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        slopeVao.Bind();
-        glDrawElements(GL_TRIANGLES, slopeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+        // Draw cube
+        vao.Bind();
+        shader.SetUniformInt("isPlayer", 0);
+        shader.SetUniformMat4("transform", transform);
+        glDrawElements(GL_TRIANGLES, vao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+
+        // Draw Player
+        vao.Bind();
+        shader.SetUniformInt("isPlayer", 1);
+        shader.SetUniformMat4("transform", playerTransform);
+        glDrawElements(GL_TRIANGLES, vao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+
+        // Draw GUI
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         SDL_GL_SwapWindow(window);

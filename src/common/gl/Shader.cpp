@@ -47,6 +47,13 @@ void GL::Shader::SetUniformMat4(const std::string& name, const glm::mat4& mat)
     glUniformMatrix4fv(location, 1, false, glm::value_ptr(mat));
 }
 
+void GL::Shader::SetUniformInt(const std::string& name, int a)
+{
+    Use();
+    auto location = glGetUniformLocation(handle_, name.c_str());
+    glUniform1i(location, a);
+}
+
 // Private
 
 unsigned int GL::Shader::LoadShader(std::filesystem::path shader, unsigned int shaderType)
