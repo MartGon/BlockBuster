@@ -119,10 +119,17 @@ RayIntersection RaySlopeIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm:
 AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
 {
     glm::vec3 intersection{0.0f};
+    // Move to down-left-back corner
+    posA = posA - sizeA * 0.5f;
+    posB = posB - sizeB * 0.5f;
+
     auto boundA = posA + sizeA;
     auto boundB = posB + sizeB;
     auto diffA = boundB - posA;
     auto diffB = boundA - posB;
+
+    PrintVec(diffA, "DiffA");
+    PrintVec(diffB, "diffB");
 
     bool left = posA.x <= boundB.x;
     bool right = boundA.x >= posB.x;
@@ -316,20 +323,17 @@ int main()
         if(state[SDL_SCANCODE_E])
             playerPos.y -= 0.1f;
 
-        auto boxIntersect = AABBCollision(playerPos, boxSize, cubePos, boxSize);
+        auto boxIntersect = AABBCollision(playerPos, boxSize, cubePos, boxSize * 2.0f);
         if(boxIntersect.intersects)
         {
             auto sign = glm::sign(playerPos - cubePos);
             auto oA = boxIntersect.offsetA;
             auto oB = boxIntersect.offsetB;
             auto min = glm::min(oA, oB);
-            auto trueMin = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-            PrintVec(oA, "oA");
-            PrintVec(oB, "oB");
+            auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
             PrintVec(min, "min");
-            PrintVec(trueMin, "trueMin");
-            auto Offset = glm::min(boxIntersect.offsetA, boxIntersect.offsetB);
-            playerPos = playerPos + (sign * min * trueMin);
+            PrintVec(minAxis, "minAxis");
+            playerPos = playerPos + (sign * min * minAxis);
         }
 
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
@@ -338,6 +342,7 @@ int main()
          // CUBE
         glm::mat4 model{1.0f};
         model = glm::translate(model, cubePos);
+        model = glm::scale(model, glm::vec3{2.0f});
         //auto rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 4000) % 4)), glm::vec3{0.0f, 1.0f, 0.0f});
         //auto rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 8000) % 4)), glm::vec3{1.0f, 0.0f, 0.0f});
         
