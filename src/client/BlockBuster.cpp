@@ -27,9 +27,7 @@ struct RayIntersection
 struct AABBIntersection
 {
     bool intersects;
-    glm::vec3 intersection;
-    glm::vec3 offsetA;
-    glm::vec3 offsetB;
+    glm::vec3 offset;
 };
 
 void PrintVec(glm::vec3 vec, std::string name)
@@ -118,7 +116,6 @@ RayIntersection RaySlopeIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm:
 
 AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
 {
-    glm::vec3 intersection{0.0f};
     // Move to down-left-back corner
     posA = posA - sizeA * 0.5f;
     posB = posB - sizeB * 0.5f;
@@ -131,21 +128,15 @@ AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, 
     PrintVec(diffA, "DiffA");
     PrintVec(diffB, "diffB");
 
-    bool left = posA.x <= boundB.x;
-    bool right = boundA.x >= posB.x;
-    bool xOverlap = posA.x <= boundB.x && boundA.x >= posB.x;
+    auto sign = glm::sign(posA - posB);
+    auto min = glm::min(diffA, diffB);
+    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+    auto offset = sign * min * minAxis;
 
-    bool back = posA.z <= boundB.z;
-    bool front = boundA.z >= posB.z;
-    bool zOverlap = back && front;
+    auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
+    bool intersects = collision.x && collision.y && collision.z;
 
-    bool up = posA.y <= boundB.y;
-    bool down = boundA.y >= posB.y;
-    bool yOverlap = up && down;
-
-    bool intersects = xOverlap && zOverlap && yOverlap; 
-
-    return AABBIntersection{intersects, intersection, diffA, diffB};
+    return AABBIntersection{intersects, offset};
 }
 
 int main()
@@ -326,14 +317,7 @@ int main()
         auto boxIntersect = AABBCollision(playerPos, boxSize, cubePos, boxSize * 2.0f);
         if(boxIntersect.intersects)
         {
-            auto sign = glm::sign(playerPos - cubePos);
-            auto oA = boxIntersect.offsetA;
-            auto oB = boxIntersect.offsetB;
-            auto min = glm::min(oA, oB);
-            auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-            PrintVec(min, "min");
-            PrintVec(minAxis, "minAxis");
-            playerPos = playerPos + (sign * min * minAxis);
+            playerPos = playerPos + boxIntersect.offset;
         }
 
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
