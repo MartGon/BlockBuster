@@ -30,7 +30,6 @@ struct AABBIntersection
     glm::vec3 offset;
     glm::vec3 min;
     glm::vec3 sign;
-    glm::vec3 diffA;
 };
 
 void PrintVec(glm::vec3 vec, std::string name)
@@ -139,7 +138,7 @@ AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, 
     auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
     bool intersects = collision.x && collision.y && collision.z;
 
-    return AABBIntersection{intersects, offset, min, sign, diffA};
+    return AABBIntersection{intersects, offset, min, sign};
 }
 
 int printLine = 0;
@@ -149,22 +148,17 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
     auto collision = AABBCollision(posA, sizeA, posSlope, sizeSlope);
     if(collision.intersects)
     {        
-        if(collision.sign.z > 0.0f)
+        if(collision.sign.z > 0.0f && collision.sign.y >= 0.0f)
         {
             PrintVec(collision.sign, "Sign");
-            if((1 - collision.diffA.z) < collision.diffA.y)
+            if((1 - collision.min.z) < collision.min.y)
             {
                 PrintVec(collision.offset,std::to_string(printLine++) + " Base Offset");
-                collision.min.z = 1 - collision.min.z;
                 PrintVec(collision.min, "Min");
-                if(collision.offset.z > 0.0f)
+                if(collision.offset.z > 0.0f || collision.offset.y > 0.0f)
                 {
-                    collision.offset.y = collision.min.y + collision.offset.z - 1;
+                    collision.offset.y = collision.min.y + collision.min.z - 1;
                     collision.offset.z = 0.0f;
-                }
-                else if(collision.offset.y > 0.0f)
-                {
-                    collision.offset.y = collision.min.y + collision.sign.z * collision.min.z - 1;
                 }
             }
             else
