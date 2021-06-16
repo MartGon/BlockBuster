@@ -147,25 +147,30 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
 {
     auto collision = AABBCollision(posA, sizeA, posSlope, sizeSlope);
     if(collision.intersects)
-    {        
-        if(collision.sign.z > 0.0f && collision.sign.y >= 0.0f)
-        {
+    {   
+        bool isAbove = collision.sign.y >= 0.0f;
+        bool isInFront = collision.sign.z > 0.0f;
+        PrintVec(collision.min, "AABB Min");
+
+        if(isInFront && isAbove)
+        {   
+            glm::vec3 min{collision.min.x, collision.min.y + collision.min.z - 1, collision.min.z};
+            glm::vec3 minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+            auto collides = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeSlope});
+            collision.intersects = collides.x && collides.y && collides.z;
+            collision.min = min;
+            collision.offset = collision.sign * min * minAxis;
+            auto sum = collision.offset.x + collision.offset.y + collision.offset.z;
+            collision.offset = sum == 0 ? glm::vec3{0.0f, min.y, 0.0f} : collision.offset;
+
+            PrintVec(min, "SlopeMin");
+            PrintVec(minAxis, "MinAxis");
             PrintVec(collision.sign, "Sign");
-            if((1 - collision.min.z) < collision.min.y)
-            {
-                PrintVec(collision.offset,std::to_string(printLine++) + " Base Offset");
-                PrintVec(collision.min, "Min");
-                if(collision.offset.z > 0.0f || collision.offset.y > 0.0f)
-                {
-                    collision.offset.y = collision.min.y + collision.min.z - 1;
-                    collision.offset.z = 0.0f;
-                }
-            }
-            else
-                collision.intersects = false;
+            PrintVec(collision.offset, "Offset");
         }   
     }
 
+    std::cout << "Is colliding: " << collision.intersects << "\n";
     return collision;
 }
 
@@ -322,31 +327,33 @@ int main()
         // Camera
         
         float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 5.0f;
-        float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 5.0f;
+        float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 5.0f + 1.5f;
         float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 5.0f; 
         glm::vec3 cameraPos{x, 0.0f, z};
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
         glm::vec3 origin{0.0f};
-        glm::mat4 view = glm::lookAt(cameraPos, glm::vec3{0.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
+        glm::mat4 view = glm::lookAt(cameraPos, glm::vec3{1.5f, 0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
 
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
 
+        glm::vec3 moveDir{0.0f};
         if(state[SDL_SCANCODE_A])
-            playerPos.x -= speed;
+            moveDir.x -= 1.0f;
         if(state[SDL_SCANCODE_D])
-            playerPos.x += speed;
+            moveDir.x += 1.0f;
         if(state[SDL_SCANCODE_W])
-            playerPos.z -= speed;
+            moveDir.z -= 1.0f;
         if(state[SDL_SCANCODE_S])
-            playerPos.z += speed;
+            moveDir.z += 1.0f;
         if(state[SDL_SCANCODE_Q])
-            playerPos.y += speed;
+            moveDir.y += 1.0f;
         if(state[SDL_SCANCODE_E])
-            playerPos.y -= speed;
+            moveDir.y -= 1.0f;
         if(state[SDL_SCANCODE_F])
             playerPos = glm::vec3{0.0f};
+        playerPos = playerPos + moveDir * speed;
 
         auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, cubePos, boxSize);
         if(boxIntersect.intersects)
