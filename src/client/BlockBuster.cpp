@@ -141,8 +141,15 @@ AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, 
     return AABBIntersection{intersects, offset, min, sign};
 }
 
-AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
+AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB, glm::mat4 rotation)
 {
+    PrintVec(posA, "PosA");
+    glm::mat4 translation = glm::translate(glm::mat4{1.0f}, posB);
+    auto transform = translation * rotation;
+    posA = glm::inverse(transform) * glm::vec4{posA, 1.0f};
+    posB = glm::vec3{0.0f};
+    PrintVec(posA, "NewPosA");
+
     posA = posA - sizeA * 0.5f;
     posB = posB - sizeB * 0.5f;
 
@@ -156,7 +163,6 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
     bool isInFront = sign.z > 0.0f;
 
     auto min = glm::min(diffA, diffB);
-    
     bool intersectsY = min.y > 0.0f && min.y < sizeA.y + sizeB.y;
     if(isInFront && isAbove && intersectsY)
     {   
@@ -165,6 +171,7 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
 
     auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
     auto offset = sign * min * minAxis;
+    offset = rotation * glm::vec4{offset, 1.0f};
     auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
     auto intersects = collision.x && collision.y && collision.z;
 
@@ -296,8 +303,8 @@ int main()
     glm::vec2 mousePos;
 
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
-    glm::vec3 boxSize{2.0f};
-    auto cubePos = glm::vec3{1.5f, 0.0f, 0.0f};
+    glm::vec3 boxSize{3.0f};
+    auto cubePos = glm::vec3{1.0f, 0.0f, 0.0f};
     while(!quit)
     {
         bool clicked = false;
@@ -327,10 +334,10 @@ int main()
         float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 5.0f;
         float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 5.0f + 1.5f;
         float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 5.0f; 
-        glm::vec3 cameraPos{x, 0.0f, z};
+        glm::vec3 cameraPos{0.0f, 3.0f, 5.0f};
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
         glm::vec3 origin{0.0f};
-        glm::mat4 view = glm::lookAt(cameraPos, glm::vec3{1.5f, 0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f});
+        glm::mat4 view = glm::lookAt(cameraPos + playerPos, playerPos, glm::vec3{0.0f, 1.0f, 0.0f});
 
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
@@ -353,7 +360,9 @@ int main()
             playerPos = glm::vec3{0.0f};
         playerPos = playerPos + moveDir * speed;
 
-        auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, cubePos, boxSize);
+        auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+        rotation = glm::rotate(rotation, glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+        auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, cubePos, boxSize, rotation);
         if(boxIntersect.intersects)
         {
             playerPos = playerPos + boxIntersect.offset;
@@ -366,7 +375,7 @@ int main()
         glm::mat4 model{1.0f};
         model = glm::translate(model, cubePos);
         model = glm::scale(model, boxSize);
-        //model = glm::rotate(model, glm::radians(-90.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+        model = model * rotation;
         //auto rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 8000) % 4)), glm::vec3{1.0f, 0.0f, 0.0f});
         
         auto transform = projection * view * model;
