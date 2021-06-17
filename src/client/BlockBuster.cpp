@@ -141,42 +141,7 @@ AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, 
     return AABBIntersection{intersects, offset, min, sign};
 }
 
-int printLine = 0;
-
-AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posSlope, glm::vec3 sizeSlope)
-{
-    auto collision = AABBCollision(posA, sizeA, posSlope, sizeSlope);
-    if(collision.intersects)
-    {   
-        bool isAbove = collision.sign.y >= 0.0f;
-        bool isInFront = collision.sign.z > 0.0f;
-        PrintVec(collision.min, "AABB Min");
-
-        if(isInFront && isAbove)
-        {   
-            auto maxDiff = (sizeSlope.y + sizeA.y) / 2.0f;
-            glm::vec3 min{collision.min.x, collision.min.y - (maxDiff - collision.min.z), collision.min.z};
-            glm::vec3 minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-            minAxis = minAxis == glm::vec3{0, 1, 1} ? glm::vec3{0, 1, 0} : minAxis;
-            auto collides = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{maxDiff});
-            collision.intersects = collides.x && collides.y && collides.z;
-            collision.min = min;
-            collision.offset = collision.sign * min * minAxis;
-            auto sum = collision.offset.x + collision.offset.y + collision.offset.z;
-            collision.offset = sum == 0 ? glm::vec3{0.0f, min.y, 0.0f} : collision.offset;
-
-            PrintVec(min, "SlopeMin");
-            PrintVec(minAxis, "MinAxis");
-            PrintVec(collision.sign, "Sign");
-            PrintVec(collision.offset, "Offset");
-        }   
-    }
-
-    std::cout << "Is colliding: " << collision.intersects << "\n";
-    return collision;
-}
-
-AABBIntersection AABBSlopeCollisionB(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
+AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
 {
     posA = posA - sizeA * 0.5f;
     posB = posB - sizeB * 0.5f;
@@ -191,23 +156,17 @@ AABBIntersection AABBSlopeCollisionB(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 
     bool isInFront = sign.z > 0.0f;
 
     auto min = glm::min(diffA, diffB);
-    PrintVec(diffA, "DiffA");
-    PrintVec(diffB, "DiffB");
+    
+    bool intersectsY = min.y > 0.0f && min.y < sizeA.y + sizeB.y;
+    if(isInFront && isAbove && intersectsY)
+    {   
+        min.y = diffA.z - (posA.y - posB.y);
+    }
 
     auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
     auto offset = sign * min * minAxis;
     auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
-    bool intersects = collision.x && collision.y && collision.z;
-
-    if(isInFront && isAbove && intersects)
-    {   
-        min.y = diffA.z - (sizeB.y - diffA.y);
-        minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-        offset = sign * min * minAxis;
-        PrintVec(min, "Min");
-        collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
-        intersects = collision.x && collision.y && collision.z;
-    }
+    auto intersects = collision.x && collision.y && collision.z;
 
     std::cout << "Is colliding: " << intersects << "\n";
     return AABBIntersection{intersects, offset, min, sign};
@@ -336,7 +295,7 @@ int main()
 
     glm::vec2 mousePos;
 
-    glm::vec3 playerPos{-1.5f, -1.0f, 0.0f};
+    glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
     glm::vec3 boxSize{2.0f};
     auto cubePos = glm::vec3{1.5f, 0.0f, 0.0f};
     while(!quit)
@@ -394,7 +353,7 @@ int main()
             playerPos = glm::vec3{0.0f};
         playerPos = playerPos + moveDir * speed;
 
-        auto boxIntersect = AABBSlopeCollisionB(playerPos, glm::vec3{1.0f}, cubePos, boxSize);
+        auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, cubePos, boxSize);
         if(boxIntersect.intersects)
         {
             playerPos = playerPos + boxIntersect.offset;
