@@ -154,9 +154,11 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
 
         if(isInFront && isAbove)
         {   
-            glm::vec3 min{collision.min.x, collision.min.y + collision.min.z - 1, collision.min.z};
+            auto maxDiff = (sizeSlope.y + sizeA.y) / 2.0f;
+            glm::vec3 min{collision.min.x, collision.min.y - (maxDiff - collision.min.z), collision.min.z};
             glm::vec3 minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-            auto collides = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeSlope});
+            minAxis = minAxis == glm::vec3{0, 1, 1} ? glm::vec3{0, 1, 0} : minAxis;
+            auto collides = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{maxDiff});
             collision.intersects = collides.x && collides.y && collides.z;
             collision.min = min;
             collision.offset = collision.sign * min * minAxis;
@@ -172,6 +174,43 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
 
     std::cout << "Is colliding: " << collision.intersects << "\n";
     return collision;
+}
+
+AABBIntersection AABBSlopeCollisionB(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
+{
+    posA = posA - sizeA * 0.5f;
+    posB = posB - sizeB * 0.5f;
+
+    auto boundA = posA + sizeA;
+    auto boundB = posB + sizeB;
+    auto diffA = boundB - posA;
+    auto diffB = boundA - posB;
+
+    auto sign = glm::sign(posA - posB);
+    bool isAbove = sign.y >= 0.0f;
+    bool isInFront = sign.z > 0.0f;
+
+    auto min = glm::min(diffA, diffB);
+    PrintVec(diffA, "DiffA");
+    PrintVec(diffB, "DiffB");
+
+    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+    auto offset = sign * min * minAxis;
+    auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
+    bool intersects = collision.x && collision.y && collision.z;
+
+    if(isInFront && isAbove && intersects)
+    {   
+        min.y = diffA.z - (sizeB.y - diffA.y);
+        minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+        offset = sign * min * minAxis;
+        PrintVec(min, "Min");
+        collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
+        intersects = collision.x && collision.y && collision.z;
+    }
+
+    std::cout << "Is colliding: " << intersects << "\n";
+    return AABBIntersection{intersects, offset, min, sign};
 }
 
 int main()
@@ -297,8 +336,8 @@ int main()
 
     glm::vec2 mousePos;
 
-    glm::vec3 playerPos{-1.5f, 0.0f, 0.0f};
-    glm::vec3 boxSize{1.0f};
+    glm::vec3 playerPos{-1.5f, -1.0f, 0.0f};
+    glm::vec3 boxSize{2.0f};
     auto cubePos = glm::vec3{1.5f, 0.0f, 0.0f};
     while(!quit)
     {
@@ -355,7 +394,7 @@ int main()
             playerPos = glm::vec3{0.0f};
         playerPos = playerPos + moveDir * speed;
 
-        auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, cubePos, boxSize);
+        auto boxIntersect = AABBSlopeCollisionB(playerPos, glm::vec3{1.0f}, cubePos, boxSize);
         if(boxIntersect.intersects)
         {
             playerPos = playerPos + boxIntersect.offset;
