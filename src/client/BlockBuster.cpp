@@ -164,9 +164,10 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
 
     auto min = glm::min(diffA, diffB);
     bool intersectsY = min.y > 0.0f && min.y < sizeA.y + sizeB.y;
-    if(isInFront && isAbove && intersectsY)
+    if(isInFront && isAbove)
     {   
         min.y = diffA.z - (posA.y - posB.y);
+        min.z = diffA.y - (posA.z - posB.z);
     }
 
     auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
