@@ -141,14 +141,12 @@ AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, 
     return AABBIntersection{intersects, offset, min, sign};
 }
 
-AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB, glm::mat4 rotation)
+AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB, glm::mat4 rotation, float precision = 0.05f)
 {
-    PrintVec(posA, "PosA");
     glm::mat4 translation = glm::translate(glm::mat4{1.0f}, posB);
     auto transform = translation * rotation;
     posA = glm::inverse(transform) * glm::vec4{posA, 1.0f};
     posB = glm::vec3{0.0f};
-    PrintVec(posA, "NewPosA");
 
     posA = posA - sizeA * 0.5f;
     posB = posB - sizeB * 0.5f;
@@ -158,24 +156,37 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
     auto diffA = boundB - posA;
     auto diffB = boundA - posB;
 
-    auto sign = glm::sign(posA - posB);
+    auto distance = posA - posB;
+    auto sign = glm::sign(distance);
+    auto min = glm::min(diffA, diffB);
+    PrintVec(min, "PrevMin");
+
     bool isAbove = sign.y >= 0.0f;
     bool isInFront = sign.z > 0.0f;
-
-    auto min = glm::min(diffA, diffB);
-    bool intersectsY = min.y > 0.0f && min.y < sizeA.y + sizeB.y;
     if(isInFront && isAbove)
     {   
         min.y = diffA.z - (posA.y - posB.y);
         min.z = diffA.y - (posA.z - posB.z);
-    }
 
+        // Dealing with floating point precision
+        min.y = (float)round(min.y / precision) * precision;
+        min.z = (float)round(min.z / precision) * precision;
+
+        // This makes it so it's pushed along the slope normal;
+        min.y *= 0.5f;
+        min.z *= 0.5f;
+    }
+    
     auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
     auto offset = sign * min * minAxis;
     offset = rotation * glm::vec4{offset, 1.0f};
     auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
     auto intersects = collision.x && collision.y && collision.z;
 
+    PrintVec(sign, "Sign");
+    PrintVec(min, "Min");
+    PrintVec(minAxis, "minAxis");
+    PrintVec(offset, "Offset");
     std::cout << "Is colliding: " << intersects << "\n";
     return AABBIntersection{intersects, offset, min, sign};
 }
@@ -344,25 +355,26 @@ int main()
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
 
-        glm::vec3 moveDir{0.0f};
+        glm::vec3 moveDir{0};
         if(state[SDL_SCANCODE_A])
-            moveDir.x -= 1.0f;
+            moveDir.x -= 1;
         if(state[SDL_SCANCODE_D])
-            moveDir.x += 1.0f;
+            moveDir.x += 1;
         if(state[SDL_SCANCODE_W])
-            moveDir.z -= 1.0f;
+            moveDir.z -= 1;
         if(state[SDL_SCANCODE_S])
-            moveDir.z += 1.0f;
+            moveDir.z += 1;
         if(state[SDL_SCANCODE_Q])
-            moveDir.y += 1.0f;
+            moveDir.y += 1;
         if(state[SDL_SCANCODE_E])
-            moveDir.y -= 1.0f;
+            moveDir.y -= 1;
         if(state[SDL_SCANCODE_F])
             playerPos = glm::vec3{0.0f};
         playerPos = playerPos + moveDir * speed;
 
-        auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(-90.0f), glm::vec3{0.0f, 1.0f, 0.0f});
-        rotation = glm::rotate(rotation, glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+        auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+        rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+        rotation = glm::rotate(rotation, glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f});
         auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, cubePos, boxSize, rotation);
         if(boxIntersect.intersects)
         {
