@@ -176,12 +176,15 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
         min.y *= 0.5f;
         min.z *= 0.5f;
     }
+
+    // Collision detection
+    auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
+    auto intersects = collision.x && collision.y && collision.z;
     
+    // Collision resolution
     auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
     auto offset = sign * min * minAxis;
     offset = rotation * glm::vec4{offset, 1.0f};
-    auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
-    auto intersects = collision.x && collision.y && collision.z;
 
     PrintVec(sign, "Sign");
     PrintVec(min, "Min");
