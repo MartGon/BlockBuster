@@ -159,7 +159,6 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
     auto distance = posA - posB;
     auto sign = glm::sign(distance);
     auto min = glm::min(diffA, diffB);
-    PrintVec(min, "PrevMin");
 
     bool isAbove = sign.y >= 0.0f;
     bool isInFront = sign.z > 0.0f;
@@ -186,11 +185,6 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
     auto offset = sign * min * minAxis;
     offset = rotation * glm::vec4{offset, 1.0f};
 
-    PrintVec(sign, "Sign");
-    PrintVec(min, "Min");
-    PrintVec(minAxis, "minAxis");
-    PrintVec(offset, "Offset");
-    std::cout << "Is colliding: " << intersects << "\n";
     return AABBIntersection{intersects, offset, min, sign};
 }
 
@@ -331,9 +325,11 @@ int main()
         0.0f,
         90.0f
     };
+    bool gravity = false;
     while(!quit)
     {
         bool clicked = false;
+        bool grounded = false;
         SDL_Event e;
         while(SDL_PollEvent(&e) != 0)
         {
@@ -346,6 +342,11 @@ int main()
             case SDL_KEYDOWN:
                 if(e.key.keysym.sym == SDLK_ESCAPE)
                     quit = true;
+                if(e.key.keysym.sym == SDLK_g)
+                {
+                    gravity = !gravity;
+                    std::cout << "Enabled gravity: " << gravity << "\n";
+                }
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 mousePos.x = e.button.x;
@@ -384,7 +385,10 @@ int main()
             moveDir.y -= 1;
         if(state[SDL_SCANCODE_F])
             playerPos = glm::vec3{0.0f};
+        
         playerPos = playerPos + moveDir * speed;
+        if(gravity)
+            playerPos = playerPos + glm::vec3{0.0f, -0.05f, 0.0f};
 
         std::vector<glm::mat4> models;
         for(int i = 0; i < slopesPos.size(); i++)
@@ -396,6 +400,7 @@ int main()
             auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f});
             rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
             rotation = glm::rotate(rotation, glm::radians(angle), glm::vec3{0.0f, 0.0f, 1.0f});
+
             auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize, rotation);
             if(boxIntersect.intersects)
             {
@@ -410,6 +415,8 @@ int main()
                     offset.z = 0.0f;
                     offset.y *= 2.0f;
                 }
+                grounded = offset.y > 0.0f;
+                std::cout << "IsGrounded: " << grounded << '\n';
                 offset = rotation * glm::vec4{offset, 1.0f};
                 playerPos = playerPos + offset;
             }
