@@ -37,6 +37,11 @@ void PrintVec(glm::vec3 vec, std::string name)
     std::cout << name << " is " << vec.x << " " << vec.y << " " << vec.z << '\n';
 }
 
+float FixFloat(float a, float precision)
+{
+    return (float)round(a / precision) * precision;
+}
+
 RayIntersection RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize)
 {
     glm::vec3 m = 1.0f / rayDir;
@@ -177,15 +182,11 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
     }
 
     // Collision detection
-    auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
+    PrintVec(min, "PrevMin");
+    auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
     auto intersects = collision.x && collision.y && collision.z;
-    
-    // Collision resolution
-    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-    auto offset = sign * min * minAxis;
-    offset = rotation * glm::vec4{offset, 1.0f};
 
-    return AABBIntersection{intersects, offset, min, sign};
+    return AABBIntersection{intersects, glm::vec3{0.0f}, min, sign};
 }
 
 int main()
@@ -415,10 +416,22 @@ int main()
                     offset.z = 0.0f;
                     offset.y *= 2.0f;
                 }
-                grounded = offset.y > 0.0f;
-                std::cout << "IsGrounded: " << grounded << '\n';
                 offset = rotation * glm::vec4{offset, 1.0f};
+                min = glm::abs(rotation * glm::vec4{min, 1.0f});
+                minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+                sign = rotation * glm::vec4{sign, 1.0f};
+
+                auto minY = FixFloat(min.y, 0.05f);
+                auto isGround = minY >= 0.00f && minAxis.y && sign.y > 0.0f;
+                grounded = grounded + isGround;
                 playerPos = playerPos + offset;
+
+                //boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize, rotation);
+                //std::cout << "Still colliding: " << boxIntersect.intersects << '\n';
+                PrintVec(min, "Min");
+                PrintVec(minAxis, "minAxis");
+                PrintVec(offset, "Offset");
+                std::cout << "Contributes to grounded: " << isGround << '\n';
             }
 
             // Calculate cube/slope model matrix
@@ -428,6 +441,10 @@ int main()
             model = model * rotation;
             models.push_back(model);
         }
+
+        // Gravity
+        std::cout << "IsGrounded: " << grounded << '\n';
+        gravity = !grounded;
 
         // Player transfrom
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
