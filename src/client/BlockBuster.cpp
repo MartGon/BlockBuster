@@ -320,6 +320,17 @@ int main()
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
     glm::vec3 boxSize{3.0f};
     auto cubePos = glm::vec3{1.0f, 0.0f, 0.0f};
+
+    std::vector<glm::vec3> slopesPos{
+        glm::vec3{-1.0f, 0.0f, 0.0f},
+        glm::vec3{0.0f, 0.0f, 0.0f},
+        glm::vec3{1.0f, 0.0f, 0.0f}
+    };
+    std::vector<float> slopesRotation{
+        -90.0f,
+        0.0f,
+        90.0f
+    };
     while(!quit)
     {
         bool clicked = false;
@@ -375,28 +386,47 @@ int main()
             playerPos = glm::vec3{0.0f};
         playerPos = playerPos + moveDir * speed;
 
-        auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f});
-        rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-        rotation = glm::rotate(rotation, glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f});
-        auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, cubePos, boxSize, rotation);
-        if(boxIntersect.intersects)
+        std::vector<glm::mat4> models;
+        for(int i = 0; i < slopesPos.size(); i++)
         {
-            playerPos = playerPos + boxIntersect.offset;
+            auto slopePos = slopesPos[i] * boxSize;
+            auto angle = slopesRotation[i];
+
+            // Collision player and slope i
+            auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+            rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+            rotation = glm::rotate(rotation, glm::radians(angle), glm::vec3{0.0f, 0.0f, 1.0f});
+            auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize, rotation);
+            if(boxIntersect.intersects)
+            {
+                // Collision resolution
+                auto min = boxIntersect.min;
+                auto sign = boxIntersect.sign;                    
+
+                auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+                auto offset = sign * min * minAxis;
+                if (i == 1 && minAxis.z == minAxis.y)
+                {
+                    offset.z = 0.0f;
+                    offset.y *= 2.0f;
+                }
+                offset = rotation * glm::vec4{offset, 1.0f};
+                playerPos = playerPos + offset;
+            }
+
+            // Calculate cube/slope model matrix
+            glm::mat4 model{1.0f};
+            model = glm::translate(model, slopePos);
+            model = glm::scale(model, boxSize);
+            model = model * rotation;
+            models.push_back(model);
         }
 
+        // Player transfrom
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
         auto playerTransform = projection * view * playerModel;
 
-         // CUBE
-        glm::mat4 model{1.0f};
-        model = glm::translate(model, cubePos);
-        model = glm::scale(model, boxSize);
-        model = model * rotation;
-        //auto rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f * ((SDL_GetTicks() / 8000) % 4)), glm::vec3{1.0f, 0.0f, 0.0f});
-        
-        auto transform = projection * view * model;
-
-        // Collisions
+        // Ray intersection
         if(clicked)
         {
             // Window to eye
@@ -407,16 +437,17 @@ int main()
             glm::vec4 worldRayDir = screenToWorld * clipPos;
             std::cout << "World ray dir is " << worldRayDir.x << " " << worldRayDir.y << " " << worldRayDir.z << "\n";
 
-            // Check collision
-            glm::mat4 worldToModel = glm::inverse(model);
-            glm::vec3 rayOrigin = glm::vec3{worldToModel * glm::vec4(cameraPos, 1.0f)};
-            std::cout << "Ray World origin is " << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << "\n";
-            std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
-            glm::vec3 rayDir = glm::normalize(glm::vec3{worldToModel * worldRayDir});
+            // Check intersection
+            for(auto model : models)
+            {
+                glm::mat4 worldToModel = glm::inverse(model);
+                glm::vec3 rayOrigin = glm::vec3{worldToModel * glm::vec4(cameraPos, 1.0f)};
+                std::cout << "Ray World origin is " << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << "\n";
+                std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
+                glm::vec3 rayDir = glm::normalize(glm::vec3{worldToModel * worldRayDir});
 
-            auto intersection = RayAABBIntersection(rayOrigin, rayDir, boxSize);
-            //auto slopeIntersection = RaySlopeIntersection(rayOrigin, rayDir, boxSize);
-            //std::cout << "Slope intersection: " << slopeIntersection.intersects << "\n";
+                auto intersection = RayAABBIntersection(rayOrigin, rayDir, boxSize);
+            }
         }
 
 
@@ -431,11 +462,17 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Draw cube
-        slopeVao.Bind();
-        shader.SetUniformInt("isPlayer", 0);
-        shader.SetUniformMat4("transform", transform);
-        glDrawElements(GL_TRIANGLES, slopeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+        // Draw cubes
+        for(int i = 0; i < models.size(); i++)
+        {
+            auto model = models[i];
+            auto transform = projection * view * model;
+
+            slopeVao.Bind();
+            shader.SetUniformInt("isPlayer", 0);
+            shader.SetUniformMat4("transform", transform);
+            glDrawElements(GL_TRIANGLES, slopeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+        }
 
         // Draw Player
         vao.Bind();
