@@ -319,12 +319,14 @@ int main()
     std::vector<glm::vec3> slopesPos{
         glm::vec3{-1.0f, 0.0f, 0.0f},
         glm::vec3{0.0f, 0.0f, 0.0f},
-        glm::vec3{1.0f, 0.0f, 0.0f}
+        glm::vec3{1.0f, 0.0f, 0.0f},
+        glm::vec3{0.0f, 0.0f, -1.0f},
     };
-    std::vector<float> slopesRotation{
-        -90.0f,
-        0.0f,
-        90.0f
+    std::vector<glm::vec3> slopesRotation{
+        glm::vec3{0.0f, 0.0f, -90.0f},
+        glm::vec3{0.0f, 0.0f, 0.0f},
+        glm::vec3{0.0f, 0.0f, 90.0f},
+        glm::vec3{0.0f, 180.0f, 0.0f}
     };
     bool gravity = false;
     while(!quit)
@@ -362,7 +364,7 @@ int main()
         float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 5.0f;
         float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 5.0f + 1.5f;
         float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 5.0f; 
-        glm::vec3 cameraPos{0.0f, 3.0f, 5.0f};
+        glm::vec3 cameraPos{x, 3.0f, z};
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
         glm::vec3 origin{0.0f};
         glm::mat4 view = glm::lookAt(cameraPos + playerPos, playerPos, glm::vec3{0.0f, 1.0f, 0.0f});
@@ -398,40 +400,37 @@ int main()
             auto angle = slopesRotation[i];
 
             // Collision player and slope i
-            auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(0.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+            auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(angle.y), glm::vec3{0.0f, 1.0f, 0.0f});
             rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-            rotation = glm::rotate(rotation, glm::radians(angle), glm::vec3{0.0f, 0.0f, 1.0f});
+            rotation = glm::rotate(rotation, glm::radians(angle.z), glm::vec3{0.0f, 0.0f, 1.0f});
 
             auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize, rotation);
             if(boxIntersect.intersects)
             {
-                // Collision resolution
+                // Collision resolution in model space
                 auto min = boxIntersect.min;
                 auto sign = boxIntersect.sign;                    
-
                 auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
                 auto offset = sign * min * minAxis;
-                if (i == 1 && minAxis.z == minAxis.y)
+
+                // Check for slope orientation and fix offset is model space
+                if (i & 1 && min.z == min.y)
                 {
                     offset.z = 0.0f;
                     offset.y *= 2.0f;
                 }
                 offset = rotation * glm::vec4{offset, 1.0f};
+
+                // Check whether the player is on the ground in world space
                 min = glm::abs(rotation * glm::vec4{min, 1.0f});
                 minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
                 sign = rotation * glm::vec4{sign, 1.0f};
 
-                auto minY = FixFloat(min.y, 0.05f);
-                auto isGround = minY >= 0.00f && minAxis.y && sign.y > 0.0f;
-                grounded = grounded + isGround;
-                playerPos = playerPos + offset;
+                auto isGround = minAxis.y && sign.y > 0.0f;
+                if(isGround)
+                    grounded = true;
 
-                //boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize, rotation);
-                //std::cout << "Still colliding: " << boxIntersect.intersects << '\n';
-                PrintVec(min, "Min");
-                PrintVec(minAxis, "minAxis");
-                PrintVec(offset, "Offset");
-                std::cout << "Contributes to grounded: " << isGround << '\n';
+                playerPos = playerPos + offset;
             }
 
             // Calculate cube/slope model matrix
@@ -486,7 +485,7 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Draw cubes
+        // Draw cubes/slopes
         for(int i = 0; i < models.size(); i++)
         {
             auto model = models[i];
