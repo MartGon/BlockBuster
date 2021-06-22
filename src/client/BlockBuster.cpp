@@ -29,7 +29,7 @@ struct AABBIntersection
     bool intersects;
     glm::vec3 offset;
     glm::vec3 min;
-    glm::vec3 sign;
+    glm::vec3 normal;
 };
 
 void PrintVec(glm::vec3 vec, std::string name)
@@ -138,20 +138,18 @@ AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, 
     auto sign = glm::sign(posA - posB);
     auto min = glm::min(diffA, diffB);
     auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+    auto normal = minAxis * sign;
     auto offset = sign * min * minAxis;
 
     auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
     bool intersects = collision.x && collision.y && collision.z;
 
-    return AABBIntersection{intersects, offset, min, sign};
+    return AABBIntersection{intersects, offset, min, normal};
 }
 
-AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB, glm::mat4 rotation, float precision = 0.05f)
+AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.05f)
 {
-    glm::mat4 translation = glm::translate(glm::mat4{1.0f}, posB);
-    auto transform = translation * rotation;
-    posA = glm::inverse(transform) * glm::vec4{posA, 1.0f};
-    posB = glm::vec3{0.0f};
+    auto posB = glm::vec3{0.0f};
 
     posA = posA - sizeA * 0.5f;
     posB = posB - sizeB * 0.5f;
@@ -165,6 +163,7 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
     auto sign = glm::sign(distance);
     auto min = glm::min(diffA, diffB);
 
+    // Checking for collision with slope side
     bool isAbove = sign.y >= 0.0f;
     bool isInFront = sign.z > 0.0f;
     if(isInFront && isAbove)
@@ -182,11 +181,15 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 p
     }
 
     // Collision detection
-    PrintVec(min, "PrevMin");
     auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
     auto intersects = collision.x && collision.y && collision.z;
 
-    return AABBIntersection{intersects, glm::vec3{0.0f}, min, sign};
+    // Offset and normal calculation
+    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+    auto normal = sign * minAxis;
+    auto offset = sign * min * minAxis;
+
+    return AABBIntersection{intersects, offset, min, normal};
 }
 
 int main()
@@ -391,7 +394,7 @@ int main()
         
         playerPos = playerPos + moveDir * speed;
         if(gravity)
-            playerPos = playerPos + glm::vec3{0.0f, -0.05f, 0.0f};
+            playerPos = playerPos + glm::vec3{0.0f, -0.1f, 0.0f};
 
         std::vector<glm::mat4> models;
         for(int i = 0; i < slopesPos.size(); i++)
@@ -403,33 +406,32 @@ int main()
             auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(angle.y), glm::vec3{0.0f, 1.0f, 0.0f});
             rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
             rotation = glm::rotate(rotation, glm::radians(angle.z), glm::vec3{0.0f, 0.0f, 1.0f});
+            
+            glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
+            auto transform = translation * rotation;
+            auto posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
 
-            auto boxIntersect = AABBSlopeCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize, rotation);
+            auto boxIntersect = AABBSlopeCollision(posA, glm::vec3{1.0f}, boxSize);
             if(boxIntersect.intersects)
             {
                 // Collision resolution in model space
-                auto min = boxIntersect.min;
-                auto sign = boxIntersect.sign;                    
-                auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-                auto offset = sign * min * minAxis;
+                glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
+                auto normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
 
                 // Check for slope orientation and fix offset is model space
-                if (i & 1 && min.z == min.y)
+                
+                if (i & 1 && boxIntersect.normal.z == boxIntersect.normal.y)
                 {
                     offset.z = 0.0f;
                     offset.y *= 2.0f;
                 }
-                offset = rotation * glm::vec4{offset, 1.0f};
 
-                // Check whether the player is on the ground in world space
-                min = glm::abs(rotation * glm::vec4{min, 1.0f});
-                minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-                sign = rotation * glm::vec4{sign, 1.0f};
-
-                auto isGround = minAxis.y && sign.y > 0.0f;
+                auto isGround = normal.y > 0.0f;
                 if(isGround)
                     grounded = true;
-
+                
+                PrintVec(offset, "World offset");
+                PrintVec(normal, "World normal");
                 playerPos = playerPos + offset;
             }
 
