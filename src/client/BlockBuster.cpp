@@ -147,7 +147,7 @@ AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, 
     return AABBIntersection{intersects, offset, min, normal};
 }
 
-AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.05f)
+AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f)
 {
     auto posB = glm::vec3{0.0f};
 
@@ -332,6 +332,7 @@ int main()
         glm::vec3{0.0f, 180.0f, 0.0f}
     };
     bool gravity = false;
+    bool noclip = false;
     while(!quit)
     {
         bool clicked = false;
@@ -352,6 +353,11 @@ int main()
                 {
                     gravity = !gravity;
                     std::cout << "Enabled gravity: " << gravity << "\n";
+                }
+                if(e.key.keysym.sym == SDLK_n)
+                {
+                    noclip = !noclip;
+                    std::cout << "Toggled noclip : " << noclip << "\n";
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
@@ -375,6 +381,7 @@ int main()
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
+        float gravitySpeed = -0.2f;
 
         glm::vec3 moveDir{0};
         if(state[SDL_SCANCODE_A])
@@ -394,7 +401,7 @@ int main()
         
         playerPos = playerPos + moveDir * speed;
         if(gravity)
-            playerPos = playerPos + glm::vec3{0.0f, -0.1f, 0.0f};
+            playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
 
         std::vector<glm::mat4> models;
         for(int i = 0; i < slopesPos.size(); i++)
@@ -419,20 +426,18 @@ int main()
                 auto normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
 
                 // Check for slope orientation and fix offset is model space
-                
                 if (i & 1 && boxIntersect.normal.z == boxIntersect.normal.y)
                 {
                     offset.z = 0.0f;
                     offset.y *= 2.0f;
                 }
-
-                auto isGround = normal.y > 0.0f;
-                if(isGround)
-                    grounded = true;
                 
-                PrintVec(offset, "World offset");
-                PrintVec(normal, "World normal");
-                playerPos = playerPos + offset;
+                auto isGround = normal.y > 0.0f && FixFloat(normal.x, 0.05f) == 0.0f && FixFloat(normal.z, 0.05f) == 0.0f;
+                if(isGround)
+                    grounded = true;                
+
+                if(!noclip)
+                    playerPos = playerPos + offset;
             }
 
             // Calculate cube/slope model matrix
@@ -446,6 +451,8 @@ int main()
         // Gravity
         std::cout << "IsGrounded: " << grounded << '\n';
         gravity = !grounded;
+        if(noclip)
+            gravity = false;
 
         // Player transfrom
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
