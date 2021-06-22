@@ -333,6 +333,7 @@ int main()
     };
     bool gravity = false;
     bool noclip = false;
+    bool isOnSlope = false;
     while(!quit)
     {
         bool clicked = false;
@@ -381,7 +382,7 @@ int main()
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
-        float gravitySpeed = -0.2f;
+        float gravitySpeed = -0.4f;
 
         glm::vec3 moveDir{0};
         if(state[SDL_SCANCODE_A])
@@ -400,10 +401,13 @@ int main()
             playerPos = glm::vec3{0.0f};
         
         playerPos = playerPos + moveDir * speed;
+        if(isOnSlope)
+            gravity = true;
         if(gravity)
             playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
 
         std::vector<glm::mat4> models;
+        isOnSlope = false;
         for(int i = 0; i < slopesPos.size(); i++)
         {
             auto slopePos = slopesPos[i] * boxSize;
@@ -423,16 +427,17 @@ int main()
             {
                 // Collision resolution in model space
                 glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
-                auto normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
 
                 // Check for slope orientation and fix offset is model space
                 if (i & 1 && boxIntersect.normal.z == boxIntersect.normal.y)
                 {
                     offset.z = 0.0f;
                     offset.y *= 2.0f;
+                    isOnSlope = true;
                 }
                 
-                auto isGround = normal.y > 0.0f && FixFloat(normal.x, 0.05f) == 0.0f && FixFloat(normal.z, 0.05f) == 0.0f;
+                auto normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
+                auto isGround = normal.y > 0.0f;
                 if(isGround)
                     grounded = true;                
 
@@ -450,9 +455,12 @@ int main()
 
         // Gravity
         std::cout << "IsGrounded: " << grounded << '\n';
-        gravity = !grounded;
-        if(noclip)
+        std::cout << "isOnSlope: " << isOnSlope << '\n';
+        std::cout << "Gravity: " << gravity <<'\n';
+        if(noclip || grounded)
             gravity = false;
+        else
+            gravity = true;
 
         // Player transfrom
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
