@@ -155,7 +155,7 @@ AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, 
     auto normal = minAxis * sign;
     auto offset = sign * min * minAxis;
 
-    auto collision = glm::greaterThan(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
+    auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
     bool intersects = collision.x && collision.y && collision.z;
 
     return AABBIntersection{intersects, offset, min, normal};
@@ -429,36 +429,52 @@ int main()
             auto slopePos = block.pos * boxSize;
             auto angle = block.rot;
 
-            // Collision player and slope i
             auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(angle.y), glm::vec3{0.0f, 1.0f, 0.0f});
             rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
             rotation = glm::rotate(rotation, glm::radians(angle.z), glm::vec3{0.0f, 0.0f, 1.0f});
-            
-            glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
-            auto transform = translation * rotation;
-            auto posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
 
-            auto boxIntersect = AABBSlopeCollision(posA, glm::vec3{1.0f}, boxSize);
-            if(boxIntersect.intersects)
+            if(block.type == SLOPE)
             {
-                // Collision resolution in model space
-                glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
-
-                // Check for slope orientation and fix offset is model space
-                if (boxIntersect.normal.z > 0.0f && boxIntersect.normal.y > 0.0f)
+                 // Collision player and slope i                
+                glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
+                auto transform = translation * rotation;
+                auto posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
+                auto boxIntersect = AABBSlopeCollision(posA, glm::vec3{1.0f}, boxSize);
+                if(boxIntersect.intersects)
                 {
-                    offset.z = 0.0f;
-                    offset.y *= 2.0f;
-                    isOnSlope = true;
-                }
-                
-                auto normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
-                auto isGround = normal.y > 0.0f;
-                if(isGround)
-                    grounded = true;                
+                    // Collision resolution in model space
+                    glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
+                    PrintVec(boxIntersect.normal, "Normal");
 
-                if(!noclip)
-                    playerPos = playerPos + offset;
+                    // Check for slope orientation and fix offset is model space
+                    if (boxIntersect.normal.z > 0.0f && boxIntersect.normal.y > 0.0f)
+                    {
+                        offset.z = 0.0f;
+                        offset.y *= 2.0f;
+                        isOnSlope = true;
+                    }
+                    
+                    auto normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
+                    auto isGround = normal.y > 0.0f;
+                    if(isGround)
+                        grounded = true;                
+
+                    if(!noclip)
+                        playerPos = playerPos + offset;
+                }
+            }
+            else
+            {
+                auto boxIntersect = AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize);
+                if(boxIntersect.intersects)
+                {
+                    playerPos = playerPos + boxIntersect.offset;
+                    PrintVec(boxIntersect.normal, "Normal");
+
+                    auto isGround = boxIntersect.normal.y > 0.0f;
+                    if(isGround)
+                        grounded = true; 
+                }
             }
 
             // Calculate cube/slope model matrix
