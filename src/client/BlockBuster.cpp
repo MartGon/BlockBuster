@@ -10,12 +10,26 @@
 #include <imgui/backends/imgui_impl_sdl.h>
 
 #include <iostream>
+#include <algorithm>
 
 #include <gl/Shader.h>
 #include <gl/VertexArray.h>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
+
+enum BlockType
+{
+    BLOCK,
+    SLOPE
+};
+
+struct Block
+{
+    glm::vec3 pos;
+    glm::vec3 rot;
+    BlockType type;
+};
 
 struct RayIntersection
 {
@@ -54,7 +68,7 @@ RayIntersection RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::
 
     bool intersection = !(tN > tF);
     //std::cout << "TN: " << tN << " TF: " << tF << '\n';
-    std::cout << "Ray intersection: " << intersection << '\n';
+    //std::cout << "Ray intersection: " << intersection << '\n';
 
     //std::cout << "T1 is " << t1.x << " " << t1.y << " " << t1.z << '\n';
     //std::cout << "T1.yzx is " << t1.y << " " << t1.z << " " << t1.x << '\n';
@@ -75,7 +89,7 @@ RayIntersection RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::
         myNormal = {0.0f, 0.0f, 1.0f};
 
     myNormal = -glm::sign(rayDir) * myNormal;
-    std::cout << "My normal is " << myNormal.x << " " << myNormal.y << " " << myNormal.z << '\n';
+    //std::cout << "My normal is " << myNormal.x << " " << myNormal.y << " " << myNormal.z << '\n';
 
     return RayIntersection{intersection, glm::vec2{tN, tF}, normal};
 }
@@ -316,20 +330,14 @@ int main()
     glm::vec2 mousePos;
 
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
-    glm::vec3 boxSize{3.0f};
+    glm::vec3 boxSize{2.f};
     auto cubePos = glm::vec3{1.0f, 0.0f, 0.0f};
 
-    std::vector<glm::vec3> slopesPos{
-        glm::vec3{-1.0f, 0.0f, 0.0f},
-        glm::vec3{0.0f, 0.0f, 0.0f},
-        glm::vec3{1.0f, 0.0f, 0.0f},
-        glm::vec3{0.0f, 0.0f, -1.0f},
-    };
-    std::vector<glm::vec3> slopesRotation{
-        glm::vec3{0.0f, 0.0f, -90.0f},
-        glm::vec3{0.0f, 0.0f, 0.0f},
-        glm::vec3{0.0f, 0.0f, 90.0f},
-        glm::vec3{0.0f, 180.0f, 0.0f}
+    std::vector<Block> blocks{
+        {glm::vec3{-1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, -90.0f}, SLOPE},
+        {glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, SLOPE},
+        {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 90.0f}, SLOPE},
+        {glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 180.0f, 0.0f}, SLOPE},
     };
     bool gravity = false;
     bool noclip = false;
@@ -369,15 +377,14 @@ int main()
             }
         }
 
-        // Camera
-        
-        float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 5.0f;
-        float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 5.0f + 1.5f;
+        // Camera      
+        float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 8.0f;
+        float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 8.0f + 1.5f;
         float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 5.0f; 
-        glm::vec3 cameraPos{x, 3.0f, z};
+        glm::vec3 cameraPos{x, 5.0f, z};
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
         glm::vec3 origin{0.0f};
-        glm::mat4 view = glm::lookAt(cameraPos + playerPos, playerPos, glm::vec3{0.0f, 1.0f, 0.0f});
+        glm::mat4 view = glm::lookAt(cameraPos, origin, glm::vec3{0.0f, 1.0f, 0.0f});
 
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
@@ -398,7 +405,7 @@ int main()
         if(state[SDL_SCANCODE_E])
             moveDir.y -= 1;
         if(state[SDL_SCANCODE_F])
-            playerPos = glm::vec3{0.0f};
+            playerPos = glm::vec3{0.0f, 2.0f, 0.0f};
         
         playerPos = playerPos + moveDir * speed;
         if(isOnSlope)
@@ -406,12 +413,20 @@ int main()
         if(gravity)
             playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
 
+        // Player and blocks collision
+        std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)
+        {
+            auto toA = glm::length(a.pos - cameraPos);
+            auto toB = glm::length(b.pos- cameraPos);
+            return toA < toB;
+        });
+
         std::vector<glm::mat4> models;
         isOnSlope = false;
-        for(int i = 0; i < slopesPos.size(); i++)
+        for(int i = 0; i < blocks.size(); i++)
         {
-            auto slopePos = slopesPos[i] * boxSize;
-            auto angle = slopesRotation[i];
+            auto slopePos = blocks[i].pos * boxSize;
+            auto angle = blocks[i].rot;
 
             // Collision player and slope i
             auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(angle.y), glm::vec3{0.0f, 1.0f, 0.0f});
@@ -454,9 +469,6 @@ int main()
         }
 
         // Gravity
-        std::cout << "IsGrounded: " << grounded << '\n';
-        std::cout << "isOnSlope: " << isOnSlope << '\n';
-        std::cout << "Gravity: " << gravity <<'\n';
         if(noclip || grounded)
             gravity = false;
         else
@@ -475,18 +487,54 @@ int main()
             glm::vec4 clipPos = nd / 1.0f;
             glm::mat4 screenToWorld = glm::inverse(projection * view);
             glm::vec4 worldRayDir = screenToWorld * clipPos;
-            std::cout << "World ray dir is " << worldRayDir.x << " " << worldRayDir.y << " " << worldRayDir.z << "\n";
+            //std::cout << "World ray dir is " << worldRayDir.x << " " << worldRayDir.y << " " << worldRayDir.z << "\n";
 
             // Check intersection
-            for(auto model : models)
-            {
+            for(int i = 0; i < models.size(); i++)
+            {  
+                auto model = models[i];
                 glm::mat4 worldToModel = glm::inverse(model);
                 glm::vec3 rayOrigin = glm::vec3{worldToModel * glm::vec4(cameraPos, 1.0f)};
-                std::cout << "Ray World origin is " << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << "\n";
-                std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
+                //std::cout << "Ray World origin is " << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << "\n";
+                //std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
                 glm::vec3 rayDir = glm::normalize(glm::vec3{worldToModel * worldRayDir});
 
-                auto intersection = RayAABBIntersection(rayOrigin, rayDir, boxSize);
+                
+                auto type = blocks[i].type;
+                RayIntersection intersection;
+                switch (type)
+                {
+                case SLOPE:
+                    {
+                        intersection = RaySlopeIntersection(rayOrigin, rayDir, glm::vec3{0.5f});
+                        break;
+                    }
+                default:
+                    {
+                        intersection = RayAABBIntersection(rayOrigin, rayDir, glm::vec3{0.5f});
+                        break;
+                    }
+                }
+
+                if(intersection.intersects)
+                {
+                    auto pos = blocks[i].pos;
+                    auto angle = blocks[i].rot;
+                    auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(angle.y), glm::vec3{0.0f, 1.0f, 0.0f});
+                    rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+                    rotation = glm::rotate(rotation, glm::radians(angle.z), glm::vec3{0.0f, 0.0f, 1.0f});                    
+                    glm::vec3 normal = rotation * glm::vec4{intersection.normal, 1.0f};
+
+                    auto newBlockPos = pos + normal;
+                    auto newBlockType = BLOCK;
+                    auto newBlockRot = glm::vec3{0.0f};
+
+                    blocks.push_back({newBlockPos, newBlockRot, newBlockType});
+
+                    PrintVec(pos, "Pos");
+                    PrintVec(newBlockPos, "NewBlockPos");
+                    break;
+                }
             }
         }
 
@@ -506,12 +554,23 @@ int main()
         for(int i = 0; i < models.size(); i++)
         {
             auto model = models[i];
+            auto type = blocks[i].type;
             auto transform = projection * view * model;
 
-            slopeVao.Bind();
+            
             shader.SetUniformInt("isPlayer", 0);
             shader.SetUniformMat4("transform", transform);
-            glDrawElements(GL_TRIANGLES, slopeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+            if(type == SLOPE)
+            {
+                slopeVao.Bind();
+                glDrawElements(GL_TRIANGLES, slopeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+            }
+            else
+            {
+                vao.Bind();
+                glDrawElements(GL_TRIANGLES, vao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+            }
+
         }
 
         // Draw Player
