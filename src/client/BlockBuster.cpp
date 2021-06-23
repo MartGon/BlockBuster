@@ -342,6 +342,7 @@ int main()
     bool gravity = false;
     bool noclip = false;
     bool isOnSlope = false;
+    uint frame = 0;
     while(!quit)
     {
         bool clicked = false;
@@ -389,7 +390,7 @@ int main()
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
-        float gravitySpeed = -0.4f;
+        float gravitySpeed = -0.1f;
 
         glm::vec3 moveDir{0};
         if(state[SDL_SCANCODE_A])
@@ -423,10 +424,10 @@ int main()
 
         std::vector<glm::mat4> models;
         isOnSlope = false;
-        for(int i = 0; i < blocks.size(); i++)
+        for(auto block : blocks)
         {
-            auto slopePos = blocks[i].pos * boxSize;
-            auto angle = blocks[i].rot;
+            auto slopePos = block.pos * boxSize;
+            auto angle = block.rot;
 
             // Collision player and slope i
             auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(angle.y), glm::vec3{0.0f, 1.0f, 0.0f});
@@ -444,7 +445,7 @@ int main()
                 glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
 
                 // Check for slope orientation and fix offset is model space
-                if (i & 1 && boxIntersect.normal.z == boxIntersect.normal.y)
+                if (boxIntersect.normal.z > 0.0f && boxIntersect.normal.y > 0.0f)
                 {
                     offset.z = 0.0f;
                     offset.y *= 2.0f;
