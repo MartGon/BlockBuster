@@ -383,9 +383,10 @@ int main()
         float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 8.0f + 1.5f;
         float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 5.0f; 
         glm::vec3 cameraPos{x, 5.0f, z};
+        cameraPos += playerPos;
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
         glm::vec3 origin{0.0f};
-        glm::mat4 view = glm::lookAt(cameraPos, origin, glm::vec3{0.0f, 1.0f, 0.0f});
+        glm::mat4 view = glm::lookAt(cameraPos, playerPos, glm::vec3{0.0f, 1.0f, 0.0f});
 
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
