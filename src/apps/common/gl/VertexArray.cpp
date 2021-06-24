@@ -15,7 +15,7 @@ void GL::VertexArray::Bind()
     glBindVertexArray(handle_);
 }
 
-void GL::VertexArray::AttribPointer(unsigned int index, int size, GLenum type, bool normalized, uint64_t offset, int stride)
+void GL::VertexArray::AttribPointer(unsigned int index, int size, GLenum type, bool normalized, uint64_t offset, unsigned int stride)
 {
     Bind();
     glVertexAttribPointer(index, size, type, normalized, stride, reinterpret_cast<void*>(offset));

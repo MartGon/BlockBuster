@@ -280,6 +280,76 @@ int main()
                     });
     vao.AttribPointer(0, 3, GL_FLOAT, false, 0);
 
+    GL::VertexArray cubeVao;
+    cubeVao.GenVBO(std::vector<float>
+    {   
+        // Down
+        -0.5, -0.5, -0.5,       0.0, -1.0, 0.0,
+        -0.5, -0.5, 0.5,        0.0, -1.0, 0.0,
+        0.5, -0.5, -0.5,        0.0, -1.0, 0.0,
+        0.5, -0,5, 0.5,         0.0, -1.0, 0.0,
+
+        // Up
+        -0.5, 0.5, -0.5,        0.0, 1.0, 0.0,
+        -0.5, 0.5, 0.5,         0.0, 1.0, 0.0,
+        0.5, 0.5, -0.5,         0.0, 1.0, 0.0,
+        0.5, 0,5, 0.5,          0.0, 1.0, 0.0,
+
+        // Front
+        -0.5, 0.5, 0.5,         0.0, 0.0, 1.0,
+        -0.5, -0.5, 0.5,        0.0, 0.0, 1.0,
+        0.5, 0.5, 0.5,          0.0, 0.0, 1.0,
+        0.5, -0,5, 0.5,         0.0, 0.0, 1.0,
+
+        // Back
+        -0.5, 0.5, -0.5,        0.0, 0.0, -1.0,
+        -0.5, -0.5, -0.5,       0.0, 0.0, -1.0,
+        0.5, 0.5, -0.5,         0.0, 0.0, -1.0,
+        0.5, -0,5, -0.5,        0.0, 0.0, -1.0,
+
+        // Left
+        -0.5, 0.5, -0.5,       -1.0, 0.0, 0.0,
+        -0.5, -0.5, 0.5,       -1.0, 0.0, 0.0,
+        -0.5, -0.5, -0.5,      -1.0, 0.0, 0.0,
+        -0.5, 0,5, 0.5,        -1.0, 0.0, 0.0,
+
+        // Right
+        0.5, 0.5, -0.5,         1.0, 0.0, 0.0,
+        0.5, -0.5, -0.5,        1.0, 0.0, 0.0,
+        0.5, -0.5, 0.5,         1.0, 0.0, 0.0,
+        0.5, 0,5, 0.5,          1.0, 0.0, 0.0,
+    });
+    cubeVao.SetIndices({
+        // Down
+        0, 1, 2,
+        1, 2, 3,
+
+        /*
+        // Up
+        4, 5, 6,
+        5, 6, 7,
+
+        // Front
+        8, 9, 10,
+        9, 10, 11,
+
+        // Back
+        12, 13, 14,
+        13, 14, 15,
+
+        // Right
+        16, 17, 18,
+        17, 18, 19,
+
+        // Left
+        20, 21, 22,
+        21, 22, 23,
+        */
+
+    });
+    cubeVao.AttribPointer(0, 3, GL_FLOAT, false, 0, 6 * sizeof(float));
+    cubeVao.AttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), 6 * sizeof(float));
+
     GL::VertexArray slopeVao;
     slopeVao.GenVBO(std::vector<float>
     {
@@ -585,17 +655,17 @@ int main()
             }
             else
             {
-                vao.Bind();
-                glDrawElements(GL_TRIANGLES, vao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+                cubeVao.Bind();
+                glDrawElements(GL_TRIANGLES, cubeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
             }
 
         }
 
         // Draw Player
-        vao.Bind();
+        cubeVao.Bind();
         shader.SetUniformInt("isPlayer", 1);
         shader.SetUniformMat4("transform", playerTransform);
-        glDrawElements(GL_TRIANGLES, vao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, cubeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
 
         // Draw GUI
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

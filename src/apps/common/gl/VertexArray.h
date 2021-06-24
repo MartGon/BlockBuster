@@ -20,7 +20,7 @@ namespace GL
         VertexArray& operator=(VertexArray&&);
 
         void Bind();
-        void AttribPointer(unsigned int index, int size, GLenum type, bool normalized, uint64_t offset, int stride = 0);
+        void AttribPointer(unsigned int index, int size, GLenum type, bool normalized, uint64_t offset, unsigned int stride = 0);
 
         template <typename T>
         void GenVBO(const std::vector<T>& data)
