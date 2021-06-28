@@ -9,6 +9,9 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 #include <imgui/backends/imgui_impl_sdl.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 #include <iostream>
 #include <algorithm>
 
@@ -284,40 +287,40 @@ int main()
     cubeVao.GenVBO(std::vector<float>
     {   
         // Down
-        -0.5, -0.5, -0.5,       0.0, -1.0, 0.0,
-        -0.5, -0.5, 0.5,        0.0, -1.0, 0.0,
-        0.5, -0.5, -0.5,        0.0, -1.0, 0.0,
-        0.5, -0.5, 0.5,         0.0, -1.0, 0.0,
+        -0.5, -0.5, -0.5,       0.0, -1.0, 0.0,     0.0f, 0.0f,
+        -0.5, -0.5, 0.5,        0.0, -1.0, 0.0,     0.0f, 1.0f,
+        0.5, -0.5, -0.5,        0.0, -1.0, 0.0,     1.0f, 0.0f,
+        0.5, -0.5, 0.5,         0.0, -1.0, 0.0,     1.0f, 1.0f,
 
         // Up
-        -0.5, 0.5, -0.5,        0.0, 1.0, 0.0,
-        -0.5, 0.5, 0.5,         0.0, 1.0, 0.0,
-        0.5, 0.5, -0.5,         0.0, 1.0, 0.0,
-        0.5, 0.5, 0.5,          0.0, 1.0, 0.0,
+        -0.5, 0.5, -0.5,        0.0, 1.0, 0.0,      0.0f, 0.0f,
+        -0.5, 0.5, 0.5,         0.0, 1.0, 0.0,      0.0f, 1.0f,
+        0.5, 0.5, -0.5,         0.0, 1.0, 0.0,      1.0f, 0.0f,
+        0.5, 0.5, 0.5,          0.0, 1.0, 0.0,      1.0f, 1.0f,
 
         // Front
-        -0.5, 0.5, 0.5,         0.0, 0.0, 1.0,
-        -0.5, -0.5, 0.5,        0.0, 0.0, 1.0,
-        0.5, 0.5, 0.5,          0.0, 0.0, 1.0,
-        0.5, -0.5, 0.5,         0.0, 0.0, 1.0,
+        -0.5, 0.5, 0.5,         0.0, 0.0, 1.0,      0.0f, 0.0f,
+        -0.5, -0.5, 0.5,        0.0, 0.0, 1.0,      0.0f, 1.0f,
+        0.5, 0.5, 0.5,          0.0, 0.0, 1.0,      1.0f, 0.0f,
+        0.5, -0.5, 0.5,         0.0, 0.0, 1.0,      1.0f, 1.0f,
 
         // Back
-        -0.5, 0.5, -0.5,        0.0, 0.0, -1.0,
-        -0.5, -0.5, -0.5,       0.0, 0.0, -1.0,
-        0.5, 0.5, -0.5,         0.0, 0.0, -1.0,
-        0.5, -0.5, -0.5,        0.0, 0.0, -1.0,
+        -0.5, 0.5, -0.5,        0.0, 0.0, -1.0,     0.0f, 0.0f,
+        -0.5, -0.5, -0.5,       0.0, 0.0, -1.0,     0.0f, 1.0f,
+        0.5, 0.5, -0.5,         0.0, 0.0, -1.0,     1.0f, 0.0f,
+        0.5, -0.5, -0.5,        0.0, 0.0, -1.0,     1.0f, 1.0f,
 
         // Left
-        -0.5, -0.5, -0.5,      -1.0, 0.0, 0.0,
-        -0.5, 0.5, -0.5,       -1.0, 0.0, 0.0,
-        -0.5, -0.5, 0.5,       -1.0, 0.0, 0.0,
-        -0.5, 0.5, 0.5,        -1.0, 0.0, 0.0,
+        -0.5, -0.5, -0.5,      -1.0, 0.0, 0.0,      0.0f, 0.0f,
+        -0.5, 0.5, -0.5,       -1.0, 0.0, 0.0,      0.0f, 1.0f,
+        -0.5, -0.5, 0.5,       -1.0, 0.0, 0.0,      1.0f, 0.0f,
+        -0.5, 0.5, 0.5,        -1.0, 0.0, 0.0,      1.0f, 1.0f,
 
         // Right
-        0.5, -0.5, -0.5,      -1.0, 0.0, 0.0,
-        0.5, 0.5, -0.5,       -1.0, 0.0, 0.0,
-        0.5, -0.5, 0.5,       -1.0, 0.0, 0.0,
-        0.5, 0.5, 0.5,        -1.0, 0.0, 0.0,
+        0.5, -0.5, -0.5,      -1.0, 0.0, 0.0,       0.0f, 0.0f,
+        0.5, 0.5, -0.5,       -1.0, 0.0, 0.0,       0.0f, 1.0f,
+        0.5, -0.5, 0.5,       -1.0, 0.0, 0.0,       1.0f, 0.0f,
+        0.5, 0.5, 0.5,        -1.0, 0.0, 0.0,       1.0f, 1.0f,
     });
     cubeVao.SetIndices({
         // Down
@@ -345,8 +348,31 @@ int main()
         21, 22, 23,
 
     });
-    cubeVao.AttribPointer(0, 3, GL_FLOAT, false, 0, 6 * sizeof(float));
-    cubeVao.AttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), 6 * sizeof(float));
+    cubeVao.AttribPointer(0, 3, GL_FLOAT, false, 0, 8 * sizeof(float));
+    cubeVao.AttribPointer(1, 3, GL_FLOAT, false, 3 * sizeof(float), 8 * sizeof(float));
+    cubeVao.AttribPointer(2, 2, GL_FLOAT, false, 6 * sizeof(float), 8 * sizeof(float));
+
+    std::filesystem::path textureFolder{TEXTURES_DIR};
+    std::filesystem::path texturePath = textureFolder / "wood.png";
+    int sizeX, sizeY, channels = 0;
+    auto data = stbi_load(texturePath.c_str(), &sizeX, &sizeY, &channels, 0);
+
+    if(data)
+    {
+        uint texture = 0;
+        glGenTextures(1, &texture);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        stbi_image_free(data);
+    }
 
     GL::VertexArray slopeVao;
     slopeVao.GenVBO(std::vector<float>
@@ -663,6 +689,7 @@ int main()
         cubeVao.Bind();
         shader.SetUniformInt("isPlayer", 1);
         shader.SetUniformMat4("transform", playerTransform);
+        shader.SetUniformInt("uTexture", 0);
         glDrawElements(GL_TRIANGLES, cubeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
 
         // Draw GUI
