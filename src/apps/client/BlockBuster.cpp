@@ -353,7 +353,7 @@ int main()
     cubeVao.AttribPointer(2, 2, GL_FLOAT, false, 6 * sizeof(float), 8 * sizeof(float));
 
     std::filesystem::path textureFolder{TEXTURES_DIR};
-    std::filesystem::path texturePath = textureFolder / "wood.png";
+    std::filesystem::path texturePath = textureFolder / "SmoothStone.png";
     int sizeX, sizeY, channels = 0;
     auto data = stbi_load(texturePath.c_str(), &sizeX, &sizeY, &channels, 0);
 
@@ -364,7 +364,7 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sizeX, sizeY, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, sizeX, sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
