@@ -18,6 +18,8 @@
 #include <gl/Shader.h>
 #include <gl/VertexArray.h>
 
+#include <rendering/Camera.h>
+
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
@@ -478,9 +480,10 @@ int main()
         float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 5.0f; 
         glm::vec3 cameraPos{x, 5.0f, z};
         cameraPos += playerPos;
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
-        glm::vec3 origin{0.0f};
-        glm::mat4 view = glm::lookAt(cameraPos, playerPos, glm::vec3{0.0f, 1.0f, 0.0f});
+        Rendering::Camera camera;
+        camera.SetPos(cameraPos);
+        camera.SetTarget(playerPos);
+        camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
 
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
@@ -539,7 +542,7 @@ int main()
                 {
                     // Collision resolution in model space
                     glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
-                    PrintVec(boxIntersect.normal, "Normal");
+                    //PrintVec(boxIntersect.normal, "Normal");
 
                     // Check for slope orientation and fix offset is model space
                     if (boxIntersect.normal.z > 0.0f && boxIntersect.normal.y > 0.0f)
@@ -588,7 +591,7 @@ int main()
 
         // Player transfrom
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
-        auto playerTransform = projection * view * playerModel;
+        auto playerTransform = camera.GetTransformMat() * playerModel;
 
         // Ray intersection
         if(clicked)
@@ -597,7 +600,7 @@ int main()
             glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
             glm::vec4 nd{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
             glm::vec4 clipPos = nd / 1.0f;
-            glm::mat4 screenToWorld = glm::inverse(projection * view);
+            glm::mat4 screenToWorld = glm::inverse(camera.GetTransformMat());
             glm::vec4 worldRayDir = screenToWorld * clipPos;
             //std::cout << "World ray dir is " << worldRayDir.x << " " << worldRayDir.y << " " << worldRayDir.z << "\n";
 
@@ -667,7 +670,7 @@ int main()
         {
             auto model = models[i];
             auto type = blocks[i].type;
-            auto transform = projection * view * model;
+            auto transform = camera.GetTransformMat() * model;
 
             
             shader.SetUniformInt("isPlayer", 0);
