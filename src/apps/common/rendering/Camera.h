@@ -21,6 +21,7 @@ namespace Rendering
         void SetParam(Param param, float value);
         void SetPos(glm::vec3 pos);
         void SetTarget(glm::vec3 target);
+        void SetYawPitchTarget(float yaw, float pitch);
 
         glm::vec3 GetPos();
         glm::vec3 GetTarget();

@@ -14,6 +14,16 @@ void Rendering::Camera::SetPos(glm::vec3 pos)
     pos_ = pos;
 }
 
+void Rendering::Camera::SetYawPitchTarget(float yaw, float pitch)
+{
+    glm::vec3 offset;
+    offset.x = glm::sin(pitch) * glm::cos(yaw);
+    offset.y = glm::cos(pitch);
+    offset.z = glm::sin(pitch) * glm::sin(yaw);
+
+    target_ = pos_ + offset;
+}
+
 void Rendering::Camera::SetTarget(glm::vec3 target)
 {
     target_ = target;

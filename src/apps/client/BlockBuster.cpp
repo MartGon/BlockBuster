@@ -475,14 +475,13 @@ int main()
         }
 
         // Camera      
-        float z = glm::sin((float)SDL_GetTicks() / 1000.0f) * 8.0f;
-        float x = glm::cos((float)SDL_GetTicks() / 1000.0f) * 8.0f + 1.5f;
-        float y = glm::cos((float)SDL_GetTicks() / 4000.0f) * 5.0f; 
-        glm::vec3 cameraPos{x, 5.0f, z};
-        cameraPos += playerPos;
+        glm::vec3 cameraPos{0.0f, 1.0f, 6.0f};
         Rendering::Camera camera;
         camera.SetPos(cameraPos);
-        camera.SetTarget(playerPos);
+        float var = glm::cos(SDL_GetTicks() / 4000.f);
+        float pitch = glm::radians(90.0f) * var;
+        float yaw = glm::radians(180.0f) * var;
+        camera.SetYawPitchTarget(yaw, glm::radians(90.0f));
         camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
 
         // Move Player
