@@ -61,7 +61,7 @@ void Rendering::Camera::UpdateViewMat()
     glm::vec3 offset;
     offset.x = glm::sin(pitch) * glm::cos(yaw);
     offset.y = glm::cos(pitch);
-    offset.z = glm::sin(pitch) * glm::sin(yaw);
+    offset.z = -glm::sin(pitch) * glm::sin(yaw);
 
     auto target = pos_ + offset;
     viewMat_ = glm::lookAt(pos_, target, UP);

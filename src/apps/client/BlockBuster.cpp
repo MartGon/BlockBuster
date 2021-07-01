@@ -475,13 +475,13 @@ int main()
         }
 
         // Camera      
-        glm::vec3 cameraPos{0.0f, 1.0f, 6.0f};
+        glm::vec3 cameraPos{0.0f, 0.5f, 0.5f};
         Rendering::Camera camera;
-        camera.SetPos(cameraPos);
+        camera.SetPos(playerPos);
         float var = glm::cos(SDL_GetTicks() / 1000.f);
-        float pitch = glm::radians(90.0f) * var;
-        float yaw = glm::radians(180.0f) * var;
-        camera.SetRotation(glm::radians(90.0f), yaw);
+        float pitch = glm::radians(90.0f);
+        float yaw = glm::radians(90.0f);
+        camera.SetRotation(pitch, yaw);
         camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
 
         // Move Player
@@ -692,7 +692,7 @@ int main()
         shader.SetUniformInt("isPlayer", 1);
         shader.SetUniformMat4("transform", playerTransform);
         shader.SetUniformInt("uTexture", 0);
-        glDrawElements(GL_TRIANGLES, cubeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+        //glDrawElements(GL_TRIANGLES, cubeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
 
         // Draw GUI
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
