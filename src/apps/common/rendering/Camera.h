@@ -25,6 +25,7 @@ namespace Rendering
 
         glm::vec3 GetPos();
         glm::vec2 GetRotation();
+        glm::vec3 GetFront();
 
         glm::mat4 GetProjMat();
         glm::mat4 GetViewMat();
@@ -41,6 +42,7 @@ namespace Rendering
 
         glm::mat4 projMat_;
         glm::mat4 viewMat_;
+        glm::vec3 front_;
 
         static const glm::vec3 UP;
     };

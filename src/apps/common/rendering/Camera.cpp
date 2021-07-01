@@ -25,11 +25,12 @@ void Rendering::Camera::SetRotation(float pitch, float yaw)
 
 void Rendering::Camera::SetTarget(glm::vec3 target)
 {
-    auto dir = glm::normalize(target - pos_);
-    auto pitch = glm::acos(dir.y);
-    auto yaw = glm::atan(-dir.z, dir.x);
+    auto front = glm::normalize(target - pos_);
+    auto pitch = glm::acos(front.y);
+    auto yaw = glm::atan(-front.z, front.x);
     rotation_ = glm::vec2{pitch, yaw};
-    
+
+    front_ = front;
     viewMat_ = glm::lookAt(pos_, target, UP);
 }
 
@@ -41,6 +42,11 @@ glm::vec3 Rendering::Camera::GetPos()
 glm::vec2 Rendering::Camera::GetRotation()
 {
     return glm::vec2{rotation_.x, rotation_.y};
+}
+
+glm::vec3 Rendering::Camera::GetFront()
+{
+    return front_;
 }
 
 glm::mat4 Rendering::Camera::GetProjMat()
@@ -63,11 +69,12 @@ void Rendering::Camera::UpdateViewMat()
     auto pitch = rotation_.x;
     auto yaw = rotation_.y;
 
-    glm::vec3 offset;
-    offset.x = glm::sin(pitch) * glm::cos(yaw);
-    offset.y = glm::cos(pitch);
-    offset.z = glm::sin(pitch) * -glm::sin(yaw);
+    glm::vec3 front;
+    front.x = glm::sin(pitch) * glm::cos(yaw);
+    front.y = glm::cos(pitch);
+    front.z = glm::sin(pitch) * -glm::sin(yaw);
 
-    auto target = pos_ + offset;
+    auto target = pos_ + front;
+    front_ = front;
     viewMat_ = glm::lookAt(pos_, target, UP);
 }
