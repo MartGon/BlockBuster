@@ -25,6 +25,11 @@ void Rendering::Camera::SetRotation(float pitch, float yaw)
 
 void Rendering::Camera::SetTarget(glm::vec3 target)
 {
+    auto dir = glm::normalize(target - pos_);
+    auto pitch = glm::acos(dir.y);
+    auto yaw = glm::atan(-dir.z, dir.x);
+    rotation_ = glm::vec2{pitch, yaw};
+    
     viewMat_ = glm::lookAt(pos_, target, UP);
 }
 
@@ -61,7 +66,7 @@ void Rendering::Camera::UpdateViewMat()
     glm::vec3 offset;
     offset.x = glm::sin(pitch) * glm::cos(yaw);
     offset.y = glm::cos(pitch);
-    offset.z = -glm::sin(pitch) * glm::sin(yaw);
+    offset.z = glm::sin(pitch) * -glm::sin(yaw);
 
     auto target = pos_ + offset;
     viewMat_ = glm::lookAt(pos_, target, UP);
