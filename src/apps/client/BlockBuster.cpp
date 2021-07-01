@@ -478,10 +478,10 @@ int main()
         glm::vec3 cameraPos{0.0f, 1.0f, 6.0f};
         Rendering::Camera camera;
         camera.SetPos(cameraPos);
-        float var = glm::cos(SDL_GetTicks() / 4000.f);
+        float var = glm::cos(SDL_GetTicks() / 1000.f);
         float pitch = glm::radians(90.0f) * var;
         float yaw = glm::radians(180.0f) * var;
-        camera.SetYawPitchTarget(yaw, glm::radians(90.0f));
+        camera.SetRotation(glm::radians(90.0f), yaw);
         camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
 
         // Move Player
@@ -590,7 +590,7 @@ int main()
 
         // Player transfrom
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
-        auto playerTransform = camera.GetTransformMat() * playerModel;
+        auto playerTransform = camera.GetProjViewMat() * playerModel;
 
         // Ray intersection
         if(clicked)
@@ -599,7 +599,7 @@ int main()
             glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
             glm::vec4 nd{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
             glm::vec4 clipPos = nd / 1.0f;
-            glm::mat4 screenToWorld = glm::inverse(camera.GetTransformMat());
+            glm::mat4 screenToWorld = glm::inverse(camera.GetProjViewMat());
             glm::vec4 worldRayDir = screenToWorld * clipPos;
             //std::cout << "World ray dir is " << worldRayDir.x << " " << worldRayDir.y << " " << worldRayDir.z << "\n";
 
@@ -669,7 +669,7 @@ int main()
         {
             auto model = models[i];
             auto type = blocks[i].type;
-            auto transform = camera.GetTransformMat() * model;
+            auto transform = camera.GetProjViewMat() * model;
 
             
             shader.SetUniformInt("isPlayer", 0);
