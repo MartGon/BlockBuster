@@ -10,6 +10,19 @@ GL::VertexArray::~VertexArray()
     glDeleteVertexArrays(1, &handle_);
 }
 
+GL::VertexArray::VertexArray(GL::VertexArray&& other)
+{
+    *this = std::move(other);
+}
+
+GL::VertexArray& GL::VertexArray::operator=(GL::VertexArray&& other)
+{
+    glDeleteVertexArrays(1, &handle_);
+    this->handle_ = other.handle_;
+
+    return *this;
+}
+
 void GL::VertexArray::Bind()
 {
     glBindVertexArray(handle_);
