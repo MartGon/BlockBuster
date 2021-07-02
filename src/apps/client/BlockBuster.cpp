@@ -356,8 +356,17 @@ int main()
     cubeVao.AttribPointer(2, 2, GL_FLOAT, false, 6 * sizeof(float), 8 * sizeof(float));
 
     std::filesystem::path textureFolder{TEXTURES_DIR};
-    std::filesystem::path texturePath = textureFolder / "SmoothStone.png";
+    std::filesystem::path texturePath = textureFolder / "SmoothStones.png";
     GL::Texture texture{texturePath};
+    try
+    {
+        std::cout << "Hello!\n";
+        texture.Load();
+    }
+    catch(const GL::Texture::LoadError& e)
+    {
+        std::cout << "Error when loading texture " + e.path_.string() + ": " +  e.what() << '\n';
+    }
 
     GL::VertexArray slopeVao;
     slopeVao.GenVBO(std::vector<float>

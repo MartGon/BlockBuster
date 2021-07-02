@@ -20,19 +20,23 @@ namespace GL
         Texture(Texture&& other);
         Texture& operator=(Texture&& other);
 
+        void Load(bool flipVertically = false);
         void Bind();
 
         // Exceptions
         class LoadError : public std::runtime_error
         {
         public:
-            LoadError(const char* msg) : runtime_error(msg) {}
+            LoadError(std::filesystem::path path, const char* msg) : path_{path}, runtime_error(msg) {}
+        
+            const std::filesystem::path path_;
         };
 
     private:
 
-        unsigned int handle_;
-        glm::ivec2 dimensions_;
-        int format_;
+        std::filesystem::path path_;
+        unsigned int handle_ = 0;
+        glm::ivec2 dimensions_{0, 0};
+        int format_ = 0;
     };
 }
