@@ -17,6 +17,7 @@
 
 #include <gl/Shader.h>
 #include <gl/VertexArray.h>
+#include <gl/Texture.h>
 
 #include <rendering/Camera.h>
 
@@ -356,25 +357,7 @@ int main()
 
     std::filesystem::path textureFolder{TEXTURES_DIR};
     std::filesystem::path texturePath = textureFolder / "SmoothStone.png";
-    int sizeX, sizeY, channels = 0;
-    auto data = stbi_load(texturePath.c_str(), &sizeX, &sizeY, &channels, 0);
-
-    if(data)
-    {
-        uint texture = 0;
-        glGenTextures(1, &texture);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, sizeX, sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        stbi_image_free(data);
-    }
+    GL::Texture texture{texturePath};
 
     GL::VertexArray slopeVao;
     slopeVao.GenVBO(std::vector<float>
@@ -484,9 +467,6 @@ int main()
         camera.SetTarget(playerPos);
         camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
         auto rotation = camera.GetRotation();
-        std::cout << "Camera Rotation. Pitch " << glm::degrees(rotation.x) << " " << "Yaw " << glm::degrees(rotation.y) << "\n";
-        std::cout << "Camera Rotation. Pitch " << rotation.x << " " << "Yaw " << rotation.y << "\n";
-
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
@@ -684,6 +664,8 @@ int main()
             }
             else
             {
+                glActiveTexture(GL_TEXTURE0);
+                texture.Bind();
                 cubeVao.Bind();
                 glDrawElements(GL_TRIANGLES, cubeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
             }
