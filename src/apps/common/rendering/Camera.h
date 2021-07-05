@@ -2,8 +2,6 @@
 
 #include <glm/glm.hpp>
 
-
-
 namespace Rendering
 {
     class Camera

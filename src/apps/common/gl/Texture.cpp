@@ -60,7 +60,8 @@ GL::Texture& GL::Texture::operator=(Texture&& other)
     return *this;
 }
 
-void GL::Texture::Bind()
+void GL::Texture::Bind(unsigned int activeTexture) const
 {
+    glActiveTexture(activeTexture);
     glBindTexture(GL_TEXTURE_2D, handle_);
 }

@@ -21,7 +21,7 @@ namespace GL
         Texture& operator=(Texture&& other);
 
         void Load(bool flipVertically = false);
-        void Bind();
+        void Bind(unsigned int activeTexture = GL_TEXTURE0) const;
 
         // Exceptions
         class LoadError : public std::runtime_error

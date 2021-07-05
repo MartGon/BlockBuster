@@ -20,6 +20,7 @@
 #include <gl/Texture.h>
 
 #include <rendering/Camera.h>
+#include <rendering/Mesh.h>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
@@ -246,7 +247,8 @@ int main()
     GL::Shader shader{vertex, fragment};
     shader.Use();
 
-    GL::VertexArray cubeVao;
+    Rendering::Mesh cube;
+    GL::VertexArray& cubeVao = cube.GetVAO();
     cubeVao.GenVBO(std::vector<float>
     {   
         // Down
@@ -327,8 +329,10 @@ int main()
     {
         std::cout << "Error when loading texture " + e.path_.string() + ": " +  e.what() << '\n';
     }
+    cube.SetTexture(&texture);
 
-    GL::VertexArray slopeVao;
+    Rendering::Mesh slope;
+    GL::VertexArray& slopeVao = slope.GetVAO();
     slopeVao.GenVBO(std::vector<float>
     {
         // Base
@@ -627,25 +631,19 @@ int main()
             shader.SetUniformMat4("transform", transform);
             if(type == SLOPE)
             {
-                slopeVao.Bind();
-                glDrawElements(GL_TRIANGLES, slopeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+                slope.Draw(shader);
             }
             else
             {
-                glActiveTexture(GL_TEXTURE0);
-                texture.Bind();
-                cubeVao.Bind();
-                glDrawElements(GL_TRIANGLES, cubeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+                cube.Draw(shader);
             }
 
         }
 
         // Draw Player
-        cubeVao.Bind();
         shader.SetUniformInt("isPlayer", 1);
         shader.SetUniformMat4("transform", playerTransform);
-        shader.SetUniformInt("uTexture", 0);
-        glDrawElements(GL_TRIANGLES, cubeVao.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+        cube.Draw(shader);
 
         // Draw GUI
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
