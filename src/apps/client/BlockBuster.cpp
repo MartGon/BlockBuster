@@ -246,46 +246,6 @@ int main()
     GL::Shader shader{vertex, fragment};
     shader.Use();
 
-    GL::VertexArray vao;
-    vao.GenVBO(std::vector<float>
-    {
-        -0.5, -0.5, -0.5,
-        0.5, -0.5, -0.5,
-        0.5, 0.5, -0.5,
-        -0.5, 0.5, -0.5,
-        
-        -0.5, -0.5, 0.5,
-        0.5, -0.5, 0.5,
-        0.5, 0.5, 0.5,
-        -0.5, 0.5, 0.5,
-    });
-    vao.SetIndices({
-                    // Front Face
-                    0, 1, 2,
-                    3, 0, 2,
-
-                    // Back face
-                    4, 5, 6,
-                    7, 4, 6,
-
-                    // Left Face
-                    0, 4, 3,
-                    7, 4, 3,
-
-                    // Right face
-                    1, 2, 5,
-                    6, 2, 5,
-
-                    // Up face
-                    2, 3, 6,
-                    7, 3, 6,
-
-                    // Down face
-                    0, 1, 4,
-                    5, 1, 4
-                    });
-    vao.AttribPointer(0, 3, GL_FLOAT, false, 0);
-
     GL::VertexArray cubeVao;
     cubeVao.GenVBO(std::vector<float>
     {   
@@ -356,7 +316,7 @@ int main()
     cubeVao.AttribPointer(2, 2, GL_FLOAT, false, 6 * sizeof(float), 8 * sizeof(float));
 
     std::filesystem::path textureFolder{TEXTURES_DIR};
-    std::filesystem::path texturePath = textureFolder / "SmoothStones.png";
+    std::filesystem::path texturePath = textureFolder / "SmoothStone.png";
     GL::Texture texture{texturePath};
     try
     {
@@ -663,7 +623,6 @@ int main()
             auto type = blocks[i].type;
             auto transform = camera.GetProjViewMat() * model;
 
-            
             shader.SetUniformInt("isPlayer", 0);
             shader.SetUniformMat4("transform", transform);
             if(type == SLOPE)
