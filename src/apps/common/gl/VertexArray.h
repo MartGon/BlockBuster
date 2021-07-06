@@ -22,10 +22,18 @@ namespace GL
         return GL_INT;
     }
 
-
     class VertexArray final
     {
     public:
+
+        enum Attribute
+        {
+            POS_COORDINATES,
+            NORMALS,
+            TEXTURE_COORDINATES,
+            COLOR
+        };
+
         VertexArray();
         ~VertexArray();
 
