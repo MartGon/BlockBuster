@@ -56,6 +56,10 @@ GL::Texture& GL::Texture::operator=(Texture&& other)
 {
     glDeleteTextures(1, &handle_);
     this->handle_ = other.handle_;
+    this->dimensions_ = other.dimensions_;
+    this->format_ = other.format_;
+    this->path_ = other.path_;
+    other.handle_ = 0;
 
     return *this;
 }

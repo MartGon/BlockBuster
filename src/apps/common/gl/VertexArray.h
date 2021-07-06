@@ -39,9 +39,9 @@ namespace GL
         }
 
     private:
-        unsigned int handle_;
+        unsigned int handle_ = 0;
         std::vector<Buffer<Vertex>> vbos_;
         Buffer<Element> ebo_;
-        unsigned int eboSize_;
+        unsigned int eboSize_= 0;
     };
 }

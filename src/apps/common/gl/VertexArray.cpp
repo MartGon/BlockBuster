@@ -18,7 +18,12 @@ GL::VertexArray::VertexArray(GL::VertexArray&& other)
 GL::VertexArray& GL::VertexArray::operator=(GL::VertexArray&& other)
 {
     glDeleteVertexArrays(1, &handle_);
+
     this->handle_ = other.handle_;
+    this->vbos_ = std::move(other.vbos_);
+    this->ebo_ = std::move(other.ebo_);
+    this->eboSize_ = other.eboSize_;
+    other.handle_ = 0;
 
     return *this;
 }

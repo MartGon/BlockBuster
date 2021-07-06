@@ -49,7 +49,9 @@ namespace GL
         Buffer& operator=(Buffer&& other)
         {
             glDeleteBuffers(1, &handle_);
+            
             handle_ = other.handle_;
+            other.handle_ = 0;
 
             return *this;
         }
@@ -66,6 +68,6 @@ namespace GL
         }
 
     private:
-        unsigned int handle_;
+        unsigned int handle_ = 0;
     };
 }
