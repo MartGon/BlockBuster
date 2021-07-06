@@ -7,6 +7,22 @@
 
 namespace GL
 {   
+    template<typename T>
+    constexpr inline unsigned int GetGLType();
+
+    template<>
+    constexpr inline unsigned int GetGLType<float>()
+    {
+        return GL_FLOAT;
+    }
+
+    template<>
+    constexpr inline unsigned int GetGLType<int>()
+    {
+        return GL_INT;
+    }
+
+
     class VertexArray final
     {
     public:
@@ -20,15 +36,19 @@ namespace GL
         VertexArray& operator=(VertexArray&&);
 
         void Bind();
-        void AttribPointer(unsigned int index, int size, GLenum type, bool normalized, uint64_t offset, unsigned int stride = 0);
-
+        
         template <typename T>
-        void GenVBO(const std::vector<T>& data)
+        void GenVBO(const std::vector<T>& data, int mag)
         {
+            unsigned int index = vbos_.size();
+            auto type = GetGLType<T>();
+
             Bind();
             auto& vbo = vbos_.emplace_back();
             vbo.Bind();
             vbo.SetData(data);
+            glVertexAttribPointer(index, mag, type, false, 0, nullptr);
+            glEnableVertexAttribArray(index);
         }
 
         void SetIndices(const std::vector<unsigned int>& indices);
