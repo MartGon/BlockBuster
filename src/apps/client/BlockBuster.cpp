@@ -213,6 +213,46 @@ AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 s
     return AABBIntersection{intersects, offset, min, normal};
 }
 
+struct Ray
+{
+    glm::vec3 origin;
+    glm::vec3 destiny;
+};
+
+Ray MyScreenToWorld(glm::vec2 mousePos, glm::mat4 projViewMat)
+{
+    glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
+    glm::vec4 nd{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, 
+                (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, 
+                (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
+    nd.z = -1.0f;
+    glm::vec4 clipPos = nd / 1.0f;
+    glm::mat4 screenToWorld = glm::inverse(projViewMat);
+    glm::vec4 worldPos = screenToWorld * clipPos;
+    worldPos = worldPos / worldPos.w;
+
+    return Ray{glm::vec3{0.0f}, worldPos};
+}
+
+Ray ScreenToWorld(glm::vec2 mousePos, glm::mat4 projViewMat)
+{
+    glm::vec4 rayStartND{(mousePos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, 
+                (mousePos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, 
+                -1.0f, 1.0f};
+    glm::vec4 rayEndND{(mousePos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, 
+                (mousePos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, 
+                0.0f, 1.0f};
+        
+    glm::mat4 screenToWorld = glm::inverse(projViewMat);
+    glm::vec4 rayStartWorld = screenToWorld * rayStartND; rayStartWorld /= rayStartWorld.w;
+    glm::vec4 rayEndWorld = screenToWorld * rayEndND;   rayEndWorld /= rayEndWorld.w;
+
+    glm::vec3 rayDir = rayEndWorld - rayStartWorld;
+    //rayDir = glm::normalize(rayDir);
+
+    return Ray{rayStartWorld, rayEndWorld};
+}
+
 Rendering::Mesh GenerateCube()
 {
     Rendering::Mesh cube;
@@ -461,14 +501,16 @@ int main()
     glm::vec2 mousePos;
 
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
-    glm::vec3 boxSize{2.f};
+    glm::vec3 boxSize{6.f};
     auto cubePos = glm::vec3{1.0f, 0.0f, 0.0f};
 
     std::vector<Block> blocks{
-        {glm::vec3{-1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, -90.0f}, SLOPE},
+        {glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK},
+        /*
         {glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, SLOPE},
         {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 90.0f}, SLOPE},
         {glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 180.0f, 0.0f}, SLOPE},
+        */
     };
     bool gravity = false;
     bool noclip = false;
@@ -601,7 +643,7 @@ int main()
                 if(boxIntersect.intersects)
                 {
                     playerPos = playerPos + boxIntersect.offset;
-                    PrintVec(boxIntersect.normal, "Normal");
+                    //PrintVec(boxIntersect.normal, "Normal");
 
                     auto isGround = boxIntersect.normal.y > 0.0f;
                     if(isGround)
@@ -631,23 +673,22 @@ int main()
         if(clicked)
         {
             // Window to eye
-            glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
-            glm::vec4 nd{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
-            glm::vec4 clipPos = nd / 1.0f;
-            glm::mat4 screenToWorld = glm::inverse(camera.GetProjViewMat());
-            glm::vec4 worldRayDir = screenToWorld * clipPos;
-            //std::cout << "World ray dir is " << worldRayDir.x << " " << worldRayDir.y << " " << worldRayDir.z << "\n";
+            auto ray = ScreenToWorld(mousePos, camera.GetProjViewMat());
 
             // Check intersection
             for(int i = 0; i < models.size(); i++)
             {  
-                auto model = models[i];
-                glm::mat4 worldToModel = glm::inverse(model);
-                glm::vec3 rayOrigin = glm::vec3{worldToModel * glm::vec4(cameraPos, 1.0f)};
-                //std::cout << "Ray World origin is " << cameraPos.x << " " << cameraPos.y << " " << cameraPos.z << "\n";
-                //std::cout << "Ray Model origin is " << rayOrigin.x << " " << rayOrigin.y << " " << rayOrigin.z << "\n";
-                glm::vec3 rayDir = glm::normalize(glm::vec3{worldToModel * worldRayDir});
 
+                //auto model = glm::translate(glm::mat4{1.0f}, blocks[i].pos * boxSize);
+                auto model = models[i];
+                
+                glm::mat4 worldToModel = glm::inverse(model);
+                glm::vec3 modelRayOrigin = glm::vec3{worldToModel * glm::vec4(ray.origin, 1.0f)};
+                glm::vec3 modelRayDest = worldToModel * glm::vec4{ray.destiny, 1.0f};
+                glm::vec3 rayDir = glm::normalize(modelRayDest - modelRayOrigin);
+                PrintVec(modelRayOrigin, "Origin");
+                PrintVec(modelRayDest, "Deset");
+                PrintVec(rayDir, "Dir");
                 
                 auto type = blocks[i].type;
                 RayIntersection intersection;
@@ -655,12 +696,12 @@ int main()
                 {
                 case SLOPE:
                     {
-                        intersection = RaySlopeIntersection(rayOrigin, rayDir, glm::vec3{0.5f});
+                        intersection = RaySlopeIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f} * boxSize);
                         break;
                     }
                 default:
                     {
-                        intersection = RayAABBIntersection(rayOrigin, rayDir, glm::vec3{0.5f});
+                        intersection = RayAABBIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f});
                         break;
                     }
                 }
