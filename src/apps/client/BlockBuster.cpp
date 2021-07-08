@@ -505,12 +505,12 @@ int main()
     auto cubePos = glm::vec3{1.0f, 0.0f, 0.0f};
 
     std::vector<Block> blocks{
-        {glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK},
-        /*
+        {glm::vec3{-1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK},
+        
         {glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, SLOPE},
-        {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 90.0f}, SLOPE},
+        {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 90.0f}, BLOCK},
         {glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 180.0f, 0.0f}, SLOPE},
-        */
+        
     };
     bool gravity = false;
     bool noclip = false;
@@ -695,7 +695,7 @@ int main()
                 {
                 case SLOPE:
                     {
-                        intersection = RaySlopeIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f} * boxSize);
+                        intersection = RaySlopeIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f});
                         break;
                     }
                 default:
