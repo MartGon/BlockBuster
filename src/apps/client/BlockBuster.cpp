@@ -501,7 +501,7 @@ int main()
     glm::vec2 mousePos;
 
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
-    glm::vec3 boxSize{6.f};
+    glm::vec3 boxSize{2.f};
     auto cubePos = glm::vec3{1.0f, 0.0f, 0.0f};
 
     std::vector<Block> blocks{
@@ -643,9 +643,8 @@ int main()
                 if(boxIntersect.intersects)
                 {
                     playerPos = playerPos + boxIntersect.offset;
-                    //PrintVec(boxIntersect.normal, "Normal");
 
-                    auto isGround = boxIntersect.normal.y > 0.0f;
+                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
                     if(isGround)
                         grounded = true; 
                 }
@@ -673,7 +672,7 @@ int main()
         if(clicked)
         {
             // Window to eye
-            auto ray = ScreenToWorld(mousePos, camera.GetProjViewMat());
+            auto ray = MyScreenToWorld(mousePos, camera.GetProjViewMat());
 
             // Check intersection
             for(int i = 0; i < models.size(); i++)
@@ -683,7 +682,7 @@ int main()
                 auto model = models[i];
                 
                 glm::mat4 worldToModel = glm::inverse(model);
-                glm::vec3 modelRayOrigin = glm::vec3{worldToModel * glm::vec4(ray.origin, 1.0f)};
+                glm::vec3 modelRayOrigin = glm::vec3{worldToModel * glm::vec4(cameraPos, 1.0f)};
                 glm::vec3 modelRayDest = worldToModel * glm::vec4{ray.destiny, 1.0f};
                 glm::vec3 rayDir = glm::normalize(modelRayDest - modelRayOrigin);
                 PrintVec(modelRayOrigin, "Origin");
