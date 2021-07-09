@@ -22,6 +22,8 @@
 #include <rendering/Camera.h>
 #include <rendering/Mesh.h>
 
+#include <collisions/Collisions.h>
+
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
@@ -38,21 +40,6 @@ struct Block
     BlockType type;
 };
 
-struct RayIntersection
-{
-    bool intersects;
-    glm::vec2 ts;
-    glm::vec3 normal;
-};
-
-struct AABBIntersection
-{
-    bool intersects;
-    glm::vec3 offset;
-    glm::vec3 min;
-    glm::vec3 normal;
-};
-
 void PrintVec(glm::vec3 vec, std::string name)
 {
     std::cout << name << " is " << vec.x << " " << vec.y << " " << vec.z << '\n';
@@ -61,156 +48,6 @@ void PrintVec(glm::vec3 vec, std::string name)
 float FixFloat(float a, float precision)
 {
     return (float)round(a / precision) * precision;
-}
-
-RayIntersection RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize)
-{
-    glm::vec3 m = 1.0f / rayDir;
-    glm::vec3 n = m * rayOrigin;
-    glm::vec3 k = glm::abs(m) * boxSize;
-    auto t1 = -n - k;
-    auto t2 = -n + k;
-    float tN = glm::max(glm::max(t1.x, t1.y), t1.z);
-    float tF = glm::min(glm::min(t2.x, t2.y), t2.z);
-
-    bool intersection = !(tN > tF);
-    //std::cout << "TN: " << tN << " TF: " << tF << '\n';
-    //std::cout << "Ray intersection: " << intersection << '\n';
-
-    //std::cout << "T1 is " << t1.x << " " << t1.y << " " << t1.z << '\n';
-    //std::cout << "T1.yzx is " << t1.y << " " << t1.z << " " << t1.x << '\n';
-    //std::cout << "T1.zyx is " << t1.z << " " << t1.x << " " << t1.y << '\n';
-    auto step1 = glm::step(glm::vec3{t1.y, t1.z, t1.x}, t1);
-    //std::cout << "Step 1 is " << step1.x << " " << step1.y << " " << step1.z << '\n';
-    auto step2 = glm::step(glm::vec3{t1.z, t1.x, t1.y}, t1);
-    //std::cout << "Step 2 is " << step2.x << " " << step2.y << " " << step2.z << '\n';
-    auto normal = -glm::sign(rayDir) * step1 * step2;
-    //std::cout << "Normal is " << normal.x << " " << normal.y << " " << normal.z << '\n';
-
-    glm::vec3 myNormal;
-    if (tN == t1.x)
-        myNormal = {1.0f, 0.0f, 0.0f};
-    else if(tN == t1.y)
-        myNormal = {0.0f, 1.0f, 0.0f};
-    else
-        myNormal = {0.0f, 0.0f, 1.0f};
-
-    myNormal = -glm::sign(rayDir) * myNormal;
-    //std::cout << "My normal is " << myNormal.x << " " << myNormal.y << " " << myNormal.z << '\n';
-
-    return RayIntersection{intersection, glm::vec2{tN, tF}, normal};
-}
-
-bool RaySlopeIntersectionCheckPoint(glm::vec3 point)
-{   
-    bool intersects = false;
-    auto min = glm::sign(point) * glm::step(glm::abs(glm::vec3{point.y, point.z, point.x}), glm::abs(point)) 
-        * glm::step(glm::abs(glm::vec3{point.z, point.x, point.y}), glm::abs(point));
-
-    if(min.z == -1 || min.y == -1)
-    {
-        intersects = true;
-    }
-
-    if(min.x == 1 || min.x == -1)
-    {        
-        intersects = point.y <= (-1 * point.z);
-    }
-
-    return intersects;
-}
-
-RayIntersection RaySlopeIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize)
-{
-    auto aabbIntersect = RayAABBIntersection(rayOrigin, rayDir, boxSize);
-    RayIntersection intersection{false, aabbIntersect.ts, aabbIntersect.normal};
-    if(aabbIntersect.intersects)
-    {
-        auto normal = aabbIntersect.normal;
-        auto nearPoint = rayOrigin + rayDir * aabbIntersect.ts.x;
-        auto farPoint = rayOrigin + rayDir * aabbIntersect.ts.y;
-        PrintVec(nearPoint + glm::vec3{0.5f}, "Near Point");
-        PrintVec(farPoint + glm::vec3{0.5f}, "Far Point");
-
-        auto nearInt = RaySlopeIntersectionCheckPoint(nearPoint);
-        auto farInt = RaySlopeIntersectionCheckPoint(farPoint);
-        std::cout << "NearInt: " << nearInt << "\n";
-        std::cout << "FarInt: " << farInt << "\n";
-        intersection.intersects = nearInt || farInt;
-    }
-
-    return intersection;
-}
-
-AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
-{
-    // Move to down-left-back corner
-    posA = posA - sizeA * 0.5f;
-    posB = posB - sizeB * 0.5f;
-
-    auto boundA = posA + sizeA;
-    auto boundB = posB + sizeB;
-    auto diffA = boundB - posA;
-    auto diffB = boundA - posB;
-
-    //PrintVec(diffA, "DiffA");
-    //PrintVec(diffB, "diffB");
-
-    auto sign = glm::sign(posA - posB);
-    auto min = glm::min(diffA, diffB);
-    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-    auto normal = minAxis * sign;
-    auto offset = sign * min * minAxis;
-
-    auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
-    bool intersects = collision.x && collision.y && collision.z;
-
-    return AABBIntersection{intersects, offset, min, normal};
-}
-
-AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f)
-{
-    auto posB = glm::vec3{0.0f};
-
-    posA = posA - sizeA * 0.5f;
-    posB = posB - sizeB * 0.5f;
-
-    auto boundA = posA + sizeA;
-    auto boundB = posB + sizeB;
-    auto diffA = boundB - posA;
-    auto diffB = boundA - posB;
-
-    auto distance = posA - posB;
-    auto sign = glm::sign(distance);
-    auto min = glm::min(diffA, diffB);
-
-    // Checking for collision with slope side
-    bool isAbove = sign.y >= 0.0f;
-    bool isInFront = sign.z > 0.0f;
-    if(isInFront && isAbove)
-    {   
-        min.y = diffA.z - (posA.y - posB.y);
-        min.z = diffA.y - (posA.z - posB.z);
-
-        // Dealing with floating point precision
-        min.y = (float)round(min.y / precision) * precision;
-        min.z = (float)round(min.z / precision) * precision;
-
-        // This makes it so it's pushed along the slope normal;
-        min.y *= 0.5f;
-        min.z *= 0.5f;
-    }
-
-    // Collision detection
-    auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
-    auto intersects = collision.x && collision.y && collision.z;
-
-    // Offset and normal calculation
-    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-    auto normal = sign * minAxis;
-    auto offset = sign * min * minAxis;
-
-    return AABBIntersection{intersects, offset, min, normal};
 }
 
 struct Ray
@@ -613,7 +450,7 @@ int main()
                 glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
                 auto transform = translation * rotation;
                 auto posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
-                auto boxIntersect = AABBSlopeCollision(posA, glm::vec3{1.0f}, boxSize);
+                auto boxIntersect = Collisions::AABBSlopeCollision(posA, glm::vec3{1.0f}, boxSize);
                 if(boxIntersect.intersects)
                 {
                     // Collision resolution in model space
@@ -639,7 +476,7 @@ int main()
             }
             else
             {
-                auto boxIntersect = AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize);
+                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize);
                 if(boxIntersect.intersects)
                 {
                     playerPos = playerPos + boxIntersect.offset;
@@ -690,17 +527,17 @@ int main()
                 PrintVec(rayDir, "Dir");
                 
                 auto type = blocks[i].type;
-                RayIntersection intersection;
+                Collisions::RayIntersection intersection;
                 switch (type)
                 {
                 case SLOPE:
                     {
-                        intersection = RaySlopeIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f});
+                        intersection = Collisions::RaySlopeIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f});
                         break;
                     }
                 default:
                     {
-                        intersection = RayAABBIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f});
+                        intersection = Collisions::RayAABBIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f});
                         break;
                     }
                 }
