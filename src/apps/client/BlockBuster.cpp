@@ -138,7 +138,6 @@ int main()
     {
         std::cout << "Error when loading texture " + e.path_.string() + ": " +  e.what() << '\n';
     }
-    cube.SetTexture(&texture);
 
     auto slope = Rendering::Primitive::GenerateSlope();
     
@@ -417,11 +416,11 @@ int main()
             shader.SetUniformMat4("transform", transform);
             if(type == SLOPE)
             {
-                slope.Draw(shader);
+                slope.Draw(shader, &texture);
             }
             else
             {
-                cube.Draw(shader);
+                cube.Draw(shader, &texture);
             }
 
         }
@@ -429,7 +428,7 @@ int main()
         // Draw Player
         shader.SetUniformInt("isPlayer", 1);
         shader.SetUniformMat4("transform", playerTransform);
-        cube.Draw(shader);
+        cube.Draw(shader, &texture);
 
         // Draw GUI
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

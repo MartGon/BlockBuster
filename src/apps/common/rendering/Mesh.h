@@ -18,14 +18,11 @@ namespace Rendering
         Mesh(Mesh&&) = default;
         Mesh& operator=(Mesh&&) = default;
 
-
         GL::VertexArray& GetVAO();
-        void SetTexture(GL::Texture* texture);
         
-        void Draw(GL::Shader& shader);
+        void Draw(GL::Shader& shader, const GL::Texture* texture);
     
     private:
         GL::VertexArray vao_;
-        const GL::Texture* texture_ = nullptr;
     };
 }
