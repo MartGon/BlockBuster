@@ -36,7 +36,9 @@ RayIntersection Collisions::RayAABBIntersection(Ray modelRay, glm::vec3 boxSize)
 RayIntersection Collisions::RayAABBIntersection(Ray worldRay, glm::mat4 modelMat)
 {
     auto modelRay = ToModelSpace(worldRay, modelMat);
-    return RayAABBIntersection(modelRay, glm::vec3{0.5f});
+    auto intersection = RayAABBIntersection(modelRay, glm::vec3{0.5f});
+    intersection.normal = ToWorldSpace(intersection.normal, modelMat);
+    return intersection;
 }
 
 bool RaySlopeIntersectionCheckPoint(glm::vec3 point)
@@ -80,7 +82,9 @@ RayIntersection Collisions::RaySlopeIntersection(Ray modelRay, glm::vec3 boxSize
 RayIntersection Collisions::RaySlopeIntersection(Ray worldRay, glm::mat4 modelMat)
 {
     auto modelRay = ToModelSpace(worldRay, modelMat);
-    return RaySlopeIntersection(modelRay, glm::vec3{0.5f});
+    auto intersection = RaySlopeIntersection(modelRay, glm::vec3{0.5f});
+    intersection.normal = ToWorldSpace(intersection.normal, modelMat);
+    return intersection;
 }
 
 Ray Collisions::ToModelSpace(Ray ray, glm::mat4 modelMat)
@@ -91,6 +95,13 @@ Ray Collisions::ToModelSpace(Ray ray, glm::mat4 modelMat)
     glm::vec3 modelRayDest = worldToModel * glm::vec4{ray.dest, 1.0f};
 
     return Ray{modelRayOrigin, modelRayDest};
+}
+
+glm::vec3 Collisions::ToWorldSpace(glm::vec3 normal, glm::mat4 modelMat)
+{
+    glm::mat4 rotMat = glm::mat4{glm::mat3{modelMat}};
+    normal = glm::normalize(glm::vec3{rotMat * glm::vec4{normal, 1.0f}});
+    return normal;
 }
 
 // AABB

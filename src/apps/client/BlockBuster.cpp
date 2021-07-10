@@ -368,12 +368,8 @@ int main()
                 {
                     auto pos = blocks[i].pos;
                     auto angle = blocks[i].rot;
-                    auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(angle.y), glm::vec3{0.0f, 1.0f, 0.0f});
-                    rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-                    rotation = glm::rotate(rotation, glm::radians(angle.z), glm::vec3{0.0f, 0.0f, 1.0f});                    
-                    glm::vec3 normal = rotation * glm::vec4{intersection.normal, 1.0f};
 
-                    auto newBlockPos = pos + normal;
+                    auto newBlockPos = pos + intersection.normal;
                     auto newBlockType = BLOCK;
                     auto newBlockRot = glm::vec3{0.0f};
 
