@@ -2,6 +2,7 @@ SET(SOURCES
 
     Camera.cpp
     Mesh.cpp
+    Primitive.cpp
 )
 
 
