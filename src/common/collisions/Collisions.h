@@ -3,6 +3,13 @@
 
 namespace Collisions
 {
+    struct Ray
+    {
+        glm::vec3 origin;
+        glm::vec3 dest;
+
+        glm::vec3 GetDir() const;
+    };
 
     struct RayIntersection
     {
@@ -11,8 +18,11 @@ namespace Collisions
         glm::vec3 normal;
     };
 
-    RayIntersection RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize);
-    RayIntersection RaySlopeIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize);
+    RayIntersection RayAABBIntersection(Ray modelRay, glm::vec3 boxSize);
+    RayIntersection RayAABBIntersection(Ray worldRay, glm::mat4 modelMat);
+    RayIntersection RaySlopeIntersection(Ray modelRay, glm::vec3 boxSize);
+    RayIntersection RaySlopeIntersection(Ray worldRay, glm::mat4 modelMat);
+    Ray ToModelSpace(Ray ray, glm::mat4 modelMat);
 
     struct AABBIntersection
     {

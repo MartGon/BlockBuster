@@ -338,7 +338,7 @@ int main()
         if(clicked)
         {
             // Window to eye
-            auto ray = MyScreenToWorld(mousePos, camera.GetProjViewMat());
+            auto point = MyScreenToWorld(mousePos, camera.GetProjViewMat());
 
             // Check intersection
             for(int i = 0; i < models.size(); i++)
@@ -346,27 +346,20 @@ int main()
 
                 //auto model = glm::translate(glm::mat4{1.0f}, blocks[i].pos * boxSize);
                 auto model = models[i];
-                
-                glm::mat4 worldToModel = glm::inverse(model);
-                glm::vec3 modelRayOrigin = glm::vec3{worldToModel * glm::vec4(cameraPos, 1.0f)};
-                glm::vec3 modelRayDest = worldToModel * glm::vec4{ray.destiny, 1.0f};
-                glm::vec3 rayDir = glm::normalize(modelRayDest - modelRayOrigin);
-                PrintVec(modelRayOrigin, "Origin");
-                PrintVec(modelRayDest, "Deset");
-                PrintVec(rayDir, "Dir");
-                
                 auto type = blocks[i].type;
+
+                Collisions::Ray ray{cameraPos, point.destiny};
                 Collisions::RayIntersection intersection;
                 switch (type)
                 {
                 case SLOPE:
                     {
-                        intersection = Collisions::RaySlopeIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f});
+                        intersection = Collisions::RaySlopeIntersection(ray, model);
                         break;
                     }
                 default:
                     {
-                        intersection = Collisions::RayAABBIntersection(modelRayOrigin, rayDir, glm::vec3{0.5f});
+                        intersection = Collisions::RayAABBIntersection(ray, model);
                         break;
                     }
                 }

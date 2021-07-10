@@ -2,8 +2,20 @@
 
 using namespace Collisions;
 
-RayIntersection Collisions::RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize)
+// Ray
+
+glm::vec3 Ray::GetDir() const
 {
+    return glm::normalize(this->dest - this->origin);
+}
+
+
+// RayIntersections
+
+RayIntersection Collisions::RayAABBIntersection(Ray modelRay, glm::vec3 boxSize)
+{
+    auto rayOrigin = modelRay.origin;
+    auto rayDir = modelRay.GetDir();
     glm::vec3 m = 1.0f / rayDir;
     m = glm::clamp(m,-1e30f,1e30f);
     glm::vec3 n = m * rayOrigin;
@@ -19,6 +31,12 @@ RayIntersection Collisions::RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 r
     auto normal = -glm::sign(rayDir) * step1 * step2;
 
     return RayIntersection{intersection, glm::vec2{tN, tF}, normal};
+}
+
+RayIntersection Collisions::RayAABBIntersection(Ray worldRay, glm::mat4 modelMat)
+{
+    auto modelRay = ToModelSpace(worldRay, modelMat);
+    return RayAABBIntersection(modelRay, glm::vec3{0.5f});
 }
 
 bool RaySlopeIntersectionCheckPoint(glm::vec3 point)
@@ -40,15 +58,16 @@ bool RaySlopeIntersectionCheckPoint(glm::vec3 point)
     return intersects;
 }
 
-RayIntersection Collisions::RaySlopeIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize)
+RayIntersection Collisions::RaySlopeIntersection(Ray modelRay, glm::vec3 boxSize)
 {
-    auto aabbIntersect = Collisions::RayAABBIntersection(rayOrigin, rayDir, boxSize);
+    auto aabbIntersect = Collisions::RayAABBIntersection(modelRay, boxSize);
     RayIntersection intersection{false, aabbIntersect.ts, aabbIntersect.normal};
     if(aabbIntersect.intersects)
     {
+        auto rayDir = modelRay.GetDir();
         auto normal = aabbIntersect.normal;
-        auto nearPoint = rayOrigin + rayDir * aabbIntersect.ts.x;
-        auto farPoint = rayOrigin + rayDir * aabbIntersect.ts.y;
+        auto nearPoint = modelRay.origin + rayDir * aabbIntersect.ts.x;
+        auto farPoint = modelRay.origin + rayDir * aabbIntersect.ts.y;
 
         auto nearInt = RaySlopeIntersectionCheckPoint(nearPoint);
         auto farInt = RaySlopeIntersectionCheckPoint(farPoint);
@@ -57,6 +76,24 @@ RayIntersection Collisions::RaySlopeIntersection(glm::vec3 rayOrigin, glm::vec3 
 
     return intersection;
 }
+
+RayIntersection Collisions::RaySlopeIntersection(Ray worldRay, glm::mat4 modelMat)
+{
+    auto modelRay = ToModelSpace(worldRay, modelMat);
+    return RaySlopeIntersection(modelRay, glm::vec3{0.5f});
+}
+
+Ray Collisions::ToModelSpace(Ray ray, glm::mat4 modelMat)
+{
+    glm::mat4 worldToModel = glm::inverse(modelMat);
+
+    glm::vec3 modelRayOrigin = glm::vec3{worldToModel * glm::vec4(ray.origin, 1.0f)};
+    glm::vec3 modelRayDest = worldToModel * glm::vec4{ray.dest, 1.0f};
+
+    return Ray{modelRayOrigin, modelRayDest};
+}
+
+// AABB
 
 AABBIntersection Collisions::AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB)
 {
