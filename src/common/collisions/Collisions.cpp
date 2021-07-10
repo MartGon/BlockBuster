@@ -5,6 +5,7 @@ using namespace Collisions;
 RayIntersection Collisions::RayAABBIntersection(glm::vec3 rayOrigin, glm::vec3 rayDir, glm::vec3 boxSize)
 {
     glm::vec3 m = 1.0f / rayDir;
+    m = glm::clamp(m,-1e30f,1e30f);
     glm::vec3 n = m * rayOrigin;
     glm::vec3 k = glm::abs(m) * boxSize;
     auto t1 = -n - k;

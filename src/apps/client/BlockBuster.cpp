@@ -353,6 +353,9 @@ int main()
     bool noclip = false;
     bool isOnSlope = false;
     uint frame = 0;
+    
+    bool moveCamera = false;
+    glm::vec3 cameraPos{0.0f, 12.0f, 8.0f};
     while(!quit)
     {
         bool clicked = false;
@@ -379,6 +382,8 @@ int main()
                     noclip = !noclip;
                     std::cout << "Toggled noclip : " << noclip << "\n";
                 }
+                if(e.key.keysym.sym == SDLK_x)
+                    moveCamera = !moveCamera;
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 mousePos.x = e.button.x;
@@ -389,8 +394,12 @@ int main()
         }
 
         // Camera
-        float var = glm::cos(SDL_GetTicks() / 1000.f);
-        glm::vec3 cameraPos{0.0f, 12.0f, 4.0f};
+        if(moveCamera)
+        {
+            float var = glm::cos(SDL_GetTicks() / 1000.f);
+            cameraPos.x = var * 8.0f;
+            cameraPos.z = glm::sin(SDL_GetTicks() / 1000.f) * 8.0f;
+        }
         Rendering::Camera camera;
         camera.SetPos(cameraPos);
         float pitch = glm::radians(90.0f);
