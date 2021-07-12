@@ -21,13 +21,13 @@ namespace Rendering
         void SetRotation(float pitch, float yaw);
         void SetTarget(glm::vec3 target);
 
-        glm::vec3 GetPos();
-        glm::vec2 GetRotation();
-        glm::vec3 GetFront();
+        glm::vec3 GetPos() const;
+        glm::vec2 GetRotation() const;
+        glm::vec3 GetFront() const;
 
-        glm::mat4 GetProjMat();
-        glm::mat4 GetViewMat();
-        glm::mat4 GetProjViewMat();
+        glm::mat4 GetProjMat() const;
+        glm::mat4 GetViewMat() const;
+        glm::mat4 GetProjViewMat() const;
 
     private:
 

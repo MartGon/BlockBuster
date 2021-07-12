@@ -22,6 +22,7 @@
 #include <rendering/Camera.h>
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
+#include <rendering/Rendering.h>
 
 #include <collisions/Collisions.h>
 
@@ -49,46 +50,6 @@ void PrintVec(glm::vec3 vec, std::string name)
 float FixFloat(float a, float precision)
 {
     return (float)round(a / precision) * precision;
-}
-
-struct Ray
-{
-    glm::vec3 origin;
-    glm::vec3 destiny;
-};
-
-Ray MyScreenToWorld(glm::vec2 mousePos, glm::mat4 projViewMat)
-{
-    glm::vec3 windowPos{mousePos.x, mousePos.y, 100.0f};
-    glm::vec4 nd{(windowPos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, 
-                (windowPos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, 
-                (2 * windowPos.z - 100.0f - 0.1f) / (100.f - 0.1f), 1.0f};
-    nd.z = -1.0f;
-    glm::vec4 clipPos = nd / 1.0f;
-    glm::mat4 screenToWorld = glm::inverse(projViewMat);
-    glm::vec4 worldPos = screenToWorld * clipPos;
-    worldPos = worldPos / worldPos.w;
-
-    return Ray{glm::vec3{0.0f}, worldPos};
-}
-
-Ray ScreenToWorld(glm::vec2 mousePos, glm::mat4 projViewMat)
-{
-    glm::vec4 rayStartND{(mousePos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, 
-                (mousePos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, 
-                -1.0f, 1.0f};
-    glm::vec4 rayEndND{(mousePos.x * 2.0f) / (float)WINDOW_WIDTH - 1.0f, 
-                (mousePos.y * 2.0f) / (float) WINDOW_HEIGHT - 1.0f, 
-                0.0f, 1.0f};
-        
-    glm::mat4 screenToWorld = glm::inverse(projViewMat);
-    glm::vec4 rayStartWorld = screenToWorld * rayStartND; rayStartWorld /= rayStartWorld.w;
-    glm::vec4 rayEndWorld = screenToWorld * rayEndND;   rayEndWorld /= rayEndWorld.w;
-
-    glm::vec3 rayDir = rayEndWorld - rayStartWorld;
-    //rayDir = glm::normalize(rayDir);
-
-    return Ray{rayStartWorld, rayEndWorld};
 }
 
 int main()
@@ -338,7 +299,7 @@ int main()
         if(clicked)
         {
             // Window to eye
-            auto point = MyScreenToWorld(mousePos, camera.GetProjViewMat());
+            auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{WINDOW_WIDTH, WINDOW_HEIGHT});
 
             // Check intersection
             for(int i = 0; i < models.size(); i++)
@@ -348,7 +309,6 @@ int main()
                 auto model = models[i];
                 auto type = blocks[i].type;
 
-                Collisions::Ray ray{cameraPos, point.destiny};
                 Collisions::RayIntersection intersection;
                 switch (type)
                 {

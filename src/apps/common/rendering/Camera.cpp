@@ -34,32 +34,32 @@ void Rendering::Camera::SetTarget(glm::vec3 target)
     viewMat_ = glm::lookAt(pos_, target, UP);
 }
 
-glm::vec3 Rendering::Camera::GetPos()
+glm::vec3 Rendering::Camera::GetPos() const
 {
     return pos_;
 }
 
-glm::vec2 Rendering::Camera::GetRotation()
+glm::vec2 Rendering::Camera::GetRotation() const
 {
     return glm::vec2{rotation_.x, rotation_.y};
 }
 
-glm::vec3 Rendering::Camera::GetFront()
+glm::vec3 Rendering::Camera::GetFront() const
 {
     return front_;
 }
 
-glm::mat4 Rendering::Camera::GetProjMat()
+glm::mat4 Rendering::Camera::GetProjMat() const
 {
     return projMat_;
 }
 
-glm::mat4 Rendering::Camera::GetViewMat()
+glm::mat4 Rendering::Camera::GetViewMat() const
 {
     return viewMat_;
 }
 
-glm::mat4 Rendering::Camera::GetProjViewMat()
+glm::mat4 Rendering::Camera::GetProjViewMat() const
 {
     return projMat_ * viewMat_;
 }

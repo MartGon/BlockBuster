@@ -1,5 +1,6 @@
-#include <glm/glm.hpp>
+#pragma once
 
+#include <glm/glm.hpp>
 
 namespace Collisions
 {
