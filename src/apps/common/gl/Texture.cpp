@@ -4,6 +4,12 @@
 
 #include <iostream>
 
+GL::Texture GL::Texture::FromFolder(const std::filesystem::path& folderPath, const std::string& textureName)
+{
+    auto texturePath = folderPath / textureName;
+    return GL::Texture{texturePath};
+}
+
 GL::Texture::Texture(std::filesystem::path imagePath) : path_{imagePath}
 {
 

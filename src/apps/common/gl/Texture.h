@@ -11,6 +11,9 @@ namespace GL
     class Texture
     {
     public:
+
+        static Texture FromFolder(const std::filesystem::path& folderPath, const std::string& textureName);
+
         Texture(std::filesystem::path imagePath);
         ~Texture();
 

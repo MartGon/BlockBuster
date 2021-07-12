@@ -84,9 +84,7 @@ int main()
     shader.Use();
 
     auto cube = Rendering::Primitive::GenerateCube();
-    std::filesystem::path textureFolder{TEXTURES_DIR};
-    std::filesystem::path texturePath = textureFolder / "SmoothStone.png";
-    GL::Texture texture{texturePath};
+    GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
     try
     {
         std::cout << "Hello!\n";
@@ -295,8 +293,6 @@ int main()
         auto playerTransform = camera.GetProjViewMat() * playerModel;
 
         // Ray intersection
-
-
         if(clicked)
         {
             // Window to eye
