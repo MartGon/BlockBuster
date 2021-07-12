@@ -10,7 +10,7 @@ GL::Texture GL::Texture::FromFolder(const std::filesystem::path& folderPath, con
     return GL::Texture{texturePath};
 }
 
-GL::Texture::Texture(std::filesystem::path imagePath) : path_{imagePath}
+GL::Texture::Texture(const std::filesystem::path& imagePath) : path_{imagePath}
 {
 
 }

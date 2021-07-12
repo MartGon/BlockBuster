@@ -14,7 +14,7 @@ namespace GL
 
         static Texture FromFolder(const std::filesystem::path& folderPath, const std::string& textureName);
 
-        Texture(std::filesystem::path imagePath);
+        Texture(const std::filesystem::path& imagePath);
         ~Texture();
 
         Texture(Texture& other) = delete;

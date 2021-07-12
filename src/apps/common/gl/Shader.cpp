@@ -12,7 +12,7 @@ GL::Shader GL::Shader::FromFolder(const std::filesystem::path& folder, const std
     return Shader{vertexPath, fragmentPath};
 }
 
-GL::Shader::Shader(std::filesystem::path vertexPath, std::filesystem::path fragmentPath)
+GL::Shader::Shader(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath)
 {
     auto vertex = LoadShader(vertexPath, GL_VERTEX_SHADER);
     auto fragment = LoadShader(fragmentPath, GL_FRAGMENT_SHADER);
@@ -63,7 +63,7 @@ void GL::Shader::SetUniformInt(const std::string& name, int a)
 
 // Private
 
-unsigned int GL::Shader::LoadShader(std::filesystem::path shader, unsigned int shaderType)
+unsigned int GL::Shader::LoadShader(const std::filesystem::path& shader, unsigned int shaderType)
 {
     unsigned int ref;
 

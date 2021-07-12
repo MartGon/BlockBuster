@@ -11,7 +11,7 @@ namespace GL
     public:
         static Shader FromFolder(const std::filesystem::path& folder, const std::string& vertexName, const std::string& fragmentName);
 
-        Shader(std::filesystem::path vertex, std::filesystem::path fragment);
+        Shader(const std::filesystem::path& vertex, const std::filesystem::path& fragment);
         ~Shader();
 
         Shader(const Shader&) = delete;
@@ -27,7 +27,7 @@ namespace GL
 
     private:
 
-        unsigned int LoadShader(std::filesystem::path shader, unsigned int type);
+        unsigned int LoadShader(const std::filesystem::path& shader, unsigned int type);
         void CheckCompileErrors(unsigned int shader, std::string type);
 
         unsigned int CreateProgram(unsigned int vertexShader, unsigned int fragShader);
