@@ -5,6 +5,13 @@
 #include <fstream>
 #include <iostream>
 
+GL::Shader GL::Shader::FromFolder(const std::filesystem::path& folder, const std::string& vertexName, const std::string& fragmentName)
+{
+    std::filesystem::path vertexPath = folder / vertexName;
+    std::filesystem::path fragmentPath = folder / fragmentName;
+    return Shader{vertexPath, fragmentPath};
+}
+
 GL::Shader::Shader(std::filesystem::path vertexPath, std::filesystem::path fragmentPath)
 {
     auto vertex = LoadShader(vertexPath, GL_VERTEX_SHADER);

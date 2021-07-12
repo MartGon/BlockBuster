@@ -9,6 +9,8 @@ namespace GL
     class Shader
     {
     public:
+        static Shader FromFolder(const std::filesystem::path& folder, const std::string& vertexName, const std::string& fragmentName);
+
         Shader(std::filesystem::path vertex, std::filesystem::path fragment);
         ~Shader();
 

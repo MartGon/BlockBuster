@@ -80,10 +80,7 @@ int main()
     }
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    std::filesystem::path shadersDir{SHADERS_DIR};
-    std::filesystem::path vertex = shadersDir / "vertex.glsl";
-    std::filesystem::path fragment = shadersDir / "fragment.glsl";
-    GL::Shader shader{vertex, fragment};
+    GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
     shader.Use();
 
     auto cube = Rendering::Primitive::GenerateCube();
@@ -188,6 +185,7 @@ int main()
         camera.SetTarget(playerPos);
         camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
         auto rotation = camera.GetRotation();
+
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
@@ -222,6 +220,7 @@ int main()
             auto toB = glm::length(b.pos- cameraPos);
             return toA < toB;
         });
+
 
         std::vector<glm::mat4> models;
         isOnSlope = false;
@@ -296,6 +295,8 @@ int main()
         auto playerTransform = camera.GetProjViewMat() * playerModel;
 
         // Ray intersection
+
+
         if(clicked)
         {
             // Window to eye
@@ -310,19 +311,10 @@ int main()
                 auto type = blocks[i].type;
 
                 Collisions::RayIntersection intersection;
-                switch (type)
-                {
-                case SLOPE:
-                    {
-                        intersection = Collisions::RaySlopeIntersection(ray, model);
-                        break;
-                    }
-                default:
-                    {
-                        intersection = Collisions::RayAABBIntersection(ray, model);
-                        break;
-                    }
-                }
+                if(type == SLOPE)
+                    intersection = Collisions::RaySlopeIntersection(ray, model);
+                else
+                    intersection = Collisions::RayAABBIntersection(ray, model);
 
                 if(intersection.intersects)
                 {
