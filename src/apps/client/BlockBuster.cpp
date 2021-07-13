@@ -26,6 +26,8 @@
 
 #include <collisions/Collisions.h>
 
+#include <math/Transform.h>
+
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
@@ -37,8 +39,7 @@ enum BlockType
 
 struct Block
 {
-    glm::vec3 pos;
-    glm::vec3 rot;
+    Math::Transform transform;
     BlockType type;
 };
 
@@ -112,17 +113,13 @@ int main()
     bool quit = false;
 
     glm::vec2 mousePos;
-
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
-    glm::vec3 boxSize{2.f};
-    auto cubePos = glm::vec3{1.0f, 0.0f, 0.0f};
 
     std::vector<Block> blocks{
-        {glm::vec3{-1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK},
-        
-        {glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, SLOPE},
-        {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 90.0f}, BLOCK},
-        {glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 180.0f, 0.0f}, SLOPE},
+        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, 2.0f}, BLOCK},   
+        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, 2.0f}, SLOPE},
+        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 90.0f}, 2.0f}, BLOCK},
+        {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 180.0f, 0.0f}, 2.0f}, SLOPE},
         
     };
     bool gravity = false;
@@ -211,25 +208,13 @@ int main()
         if(gravity)
             playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
 
-        // Player and blocks collision
-        std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)
-        {
-            auto toA = glm::length(a.pos - cameraPos);
-            auto toB = glm::length(b.pos- cameraPos);
-            return toA < toB;
-        });
-
-
-        std::vector<glm::mat4> models;
         isOnSlope = false;
         for(auto block : blocks)
         {
-            auto slopePos = block.pos * boxSize;
-            auto angle = block.rot;
+            auto slopePos = block.transform.position * block.transform.scale;
+            auto angle = block.transform.rotation;
 
-            auto rotation = glm::rotate(glm::mat4{1.0f}, glm::radians(angle.y), glm::vec3{0.0f, 1.0f, 0.0f});
-            rotation = glm::rotate(rotation, glm::radians(0.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-            rotation = glm::rotate(rotation, glm::radians(angle.z), glm::vec3{0.0f, 0.0f, 1.0f});
+            auto rotation = block.transform.GetRotationMat();
 
             if(block.type == SLOPE)
             {
@@ -237,7 +222,7 @@ int main()
                 glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
                 auto transform = translation * rotation;
                 auto posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
-                auto boxIntersect = Collisions::AABBSlopeCollision(posA, glm::vec3{1.0f}, boxSize);
+                auto boxIntersect = Collisions::AABBSlopeCollision(posA, glm::vec3{1.0f}, glm::vec3{block.transform.scale});
                 if(boxIntersect.intersects)
                 {
                     // Collision resolution in model space
@@ -263,7 +248,7 @@ int main()
             }
             else
             {
-                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, boxSize);
+                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
                 if(boxIntersect.intersects)
                 {
                     playerPos = playerPos + boxIntersect.offset;
@@ -273,13 +258,6 @@ int main()
                         grounded = true; 
                 }
             }
-
-            // Calculate cube/slope model matrix
-            glm::mat4 model{1.0f};
-            model = glm::translate(model, slopePos);
-            model = glm::scale(model, boxSize);
-            model = model * rotation;
-            models.push_back(model);
         }
 
         // Gravity
@@ -292,6 +270,14 @@ int main()
         glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
         auto playerTransform = camera.GetProjViewMat() * playerModel;
 
+        // Player and blocks collision
+        std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)
+        {
+            auto toA = glm::length(a.transform.position - cameraPos);
+            auto toB = glm::length(b.transform.position- cameraPos);
+            return toA < toB;
+        });
+
         // Ray intersection
         if(clicked)
         {
@@ -299,11 +285,11 @@ int main()
             auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{WINDOW_WIDTH, WINDOW_HEIGHT});
 
             // Check intersection
-            for(int i = 0; i < models.size(); i++)
+            for(int i = 0; i < blocks.size(); i++)
             {  
 
                 //auto model = glm::translate(glm::mat4{1.0f}, blocks[i].pos * boxSize);
-                auto model = models[i];
+                auto model = blocks[i].transform.GetTransformMat();
                 auto type = blocks[i].type;
 
                 Collisions::RayIntersection intersection;
@@ -314,14 +300,14 @@ int main()
 
                 if(intersection.intersects)
                 {
-                    auto pos = blocks[i].pos;
-                    auto angle = blocks[i].rot;
+                    auto pos = blocks[i].transform.position;
+                    auto angle = blocks[i].transform.rotation;
 
                     auto newBlockPos = pos + intersection.normal;
                     auto newBlockType = BLOCK;
                     auto newBlockRot = glm::vec3{0.0f};
 
-                    blocks.push_back({newBlockPos, newBlockRot, newBlockType});
+                    blocks.push_back({Math::Transform{newBlockPos, newBlockRot, 2.0f}, newBlockType});
 
                     PrintVec(pos, "Pos");
                     PrintVec(newBlockPos, "NewBlockPos");
@@ -343,9 +329,9 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Draw cubes/slopes
-        for(int i = 0; i < models.size(); i++)
+        for(int i = 0; i < blocks.size(); i++)
         {
-            auto model = models[i];
+            auto model = blocks[i].transform.GetTransformMat();
             auto type = blocks[i].type;
             auto transform = camera.GetProjViewMat() * model;
 
