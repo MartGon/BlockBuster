@@ -183,8 +183,8 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform
 
     auto intersection = AABBSlopeCollision(posAABB, glm::vec3{1.f}, glm::vec3{transformSlope.scale});
 
-    intersection.offset = glm::vec4{intersection.offset, 1.0f} * slopeRot;
-    intersection.normal = glm::vec4{intersection.normal, 1.0f} * slopeRot;
+    intersection.offset = slopeRot * glm::vec4{intersection.offset, 1.0f};
+    intersection.normal = slopeRot * glm::vec4{intersection.normal, 1.0f};
 
     return intersection;
 }
