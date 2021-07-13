@@ -114,7 +114,7 @@ int main()
 
     glm::vec2 mousePos;
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
-    float scale = 2.0f;
+    float scale = 5.0f;
 
     std::vector<Block> blocks{
         {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},   
@@ -208,43 +208,33 @@ int main()
             gravity = true;
         if(gravity)
             playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
+        auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f}, 1.0f};
 
         isOnSlope = false;
         for(auto block : blocks)
         {
             auto slopePos = block.transform.position;
-            auto angle = block.transform.rotation;
-
-            auto rotation = block.transform.GetRotationMat();
 
             if(block.type == SLOPE)
             {
                  // Collision player and slope i                
-                glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
-                auto transform = translation * rotation;
-                auto posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
-                auto boxIntersect = Collisions::AABBSlopeCollision(posA, glm::vec3{1.0f}, glm::vec3{block.transform.scale});
+                auto boxIntersect = Collisions::AABBSlopeCollision(playerTransform, block.transform);
                 if(boxIntersect.intersects)
                 {
-                    // Collision resolution in model space
-                    glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
-                    //PrintVec(boxIntersect.normal, "Normal");
-
                     // Check for slope orientation and fix offset is model space
-                    if (boxIntersect.normal.z > 0.0f && boxIntersect.normal.y > 0.0f)
+                    if (boxIntersect.msNormal.z > 0.0f && boxIntersect.msNormal.y > 0.0f)
                     {
-                        offset.z = 0.0f;
-                        offset.y *= 2.0f;
+                        boxIntersect.offset.z = 0.0f;
+                        boxIntersect.offset.y *= 2.0f;
                         isOnSlope = true;
                     }
                     
-                    auto normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
-                    auto isGround = normal.y > 0.0f;
+                    auto isGround = boxIntersect.normal.y > 0.0f;
                     if(isGround)
                         grounded = true;                
 
                     if(!noclip)
-                        playerPos = playerPos + offset;
+                        playerPos = playerPos + boxIntersect.offset;
                 }
             }
             else
@@ -266,10 +256,6 @@ int main()
             gravity = false;
         else
             gravity = true;
-
-        // Player transfrom
-        glm::mat4 playerModel = glm::translate(glm::mat4{1.0f}, playerPos);
-        auto playerTransform = camera.GetProjViewMat() * playerModel;
 
         // Player and blocks collision
         std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)
@@ -308,7 +294,7 @@ int main()
                     auto newBlockType = BLOCK;
                     auto newBlockRot = glm::vec3{0.0f};
 
-                    blocks.push_back({Math::Transform{newBlockPos, newBlockRot, 2.0f}, newBlockType});
+                    blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType});
 
                     PrintVec(pos, "Pos");
                     PrintVec(newBlockPos, "NewBlockPos");
@@ -351,7 +337,8 @@ int main()
 
         // Draw Player
         shader.SetUniformInt("isPlayer", 1);
-        shader.SetUniformMat4("transform", playerTransform);
+        auto transform = camera.GetProjViewMat() * playerTransform.GetTransformMat();
+        shader.SetUniformMat4("transform", transform);
         cube.Draw(shader, &texture);
 
         // Draw GUI

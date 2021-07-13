@@ -126,10 +126,10 @@ AABBIntersection Collisions::AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm:
     auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
     bool intersects = collision.x && collision.y && collision.z;
 
-    return AABBIntersection{intersects, offset, min, normal};
+    return AABBIntersection{intersects, offset, normal};
 }
 
-AABBIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision)
+Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision)
 {
     auto posB = glm::vec3{0.0f};
 
@@ -171,5 +171,20 @@ AABBIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA,
     auto normal = sign * minAxis;
     auto offset = sign * min * minAxis;
 
-    return AABBIntersection{intersects, offset, min, normal};
+    return AABBSlopeIntersection{intersects, offset, normal, normal};
+}
+
+Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope)
+{
+    auto posAABB = transformAABB.position;
+    auto slopeRot = transformSlope.GetRotationMat();
+    auto toSlopeSpace = glm::inverse(transformSlope.GetTranslationMat() * slopeRot);
+    posAABB = toSlopeSpace * glm::vec4{posAABB, 1.0f};
+
+    auto intersection = AABBSlopeCollision(posAABB, glm::vec3{1.f}, glm::vec3{transformSlope.scale});
+
+    intersection.offset = glm::vec4{intersection.offset, 1.0f} * slopeRot;
+    intersection.normal = glm::vec4{intersection.normal, 1.0f} * slopeRot;
+
+    return intersection;
 }

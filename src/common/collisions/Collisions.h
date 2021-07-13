@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include <math/Transform.h>
+
 namespace Collisions
 {
     struct Ray
@@ -30,11 +32,22 @@ namespace Collisions
     {
         bool intersects;
         glm::vec3 offset;
-        glm::vec3 min;
         glm::vec3 normal;
     };
 
     AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB);
-    AABBIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f);
+
+    struct AABBSlopeIntersection
+    {
+        bool intersects;
+        glm::vec3 offset;
+        glm::vec3 normal;
+
+        // Model space normal. This should always hold: rotation * msNormal = normal
+        glm::vec3 msNormal;
+    };
+
+    AABBSlopeIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f);
+    AABBSlopeIntersection AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope);
 
 };
