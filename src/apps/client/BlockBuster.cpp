@@ -114,12 +114,13 @@ int main()
 
     glm::vec2 mousePos;
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
+    float scale = 2.0f;
 
     std::vector<Block> blocks{
-        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, 2.0f}, BLOCK},   
-        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, 2.0f}, SLOPE},
-        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 90.0f}, 2.0f}, BLOCK},
-        {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f}, glm::vec3{0.0f, 180.0f, 0.0f}, 2.0f}, SLOPE},
+        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},   
+        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE},
+        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, BLOCK},
+        {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE},
         
     };
     bool gravity = false;
@@ -211,7 +212,7 @@ int main()
         isOnSlope = false;
         for(auto block : blocks)
         {
-            auto slopePos = block.transform.position * block.transform.scale;
+            auto slopePos = block.transform.position;
             auto angle = block.transform.rotation;
 
             auto rotation = block.transform.GetRotationMat();
@@ -303,7 +304,7 @@ int main()
                     auto pos = blocks[i].transform.position;
                     auto angle = blocks[i].transform.rotation;
 
-                    auto newBlockPos = pos + intersection.normal;
+                    auto newBlockPos = pos + intersection.normal * scale; 
                     auto newBlockType = BLOCK;
                     auto newBlockRot = glm::vec3{0.0f};
 

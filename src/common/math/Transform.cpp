@@ -24,5 +24,5 @@ glm::mat4 Math::Transform::GetScaleMat() const
 
 glm::mat4 Math::Transform::GetTransformMat() const
 {
-    return  GetScaleMat() * GetTranslationMat() * GetRotationMat();
+    return  GetTranslationMat() * GetRotationMat() * GetScaleMat();
 }
