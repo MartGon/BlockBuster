@@ -86,10 +86,11 @@ int main()
 
     auto cube = Rendering::Primitive::GenerateCube();
     GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
+    GL::Texture gTexture = GL::Texture::FromFolder(TEXTURES_DIR, "green.png");
     try
     {
-        std::cout << "Hello!\n";
         texture.Load();
+        gTexture.Load();
     }
     catch(const GL::Texture::LoadError& e)
     {
@@ -114,16 +115,22 @@ int main()
 
     glm::vec2 mousePos;
     glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
-    float scale = 5.0f;
+    float scale = 4.0f;
 
     std::vector<Block> blocks{
-        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},   
+        {Math::Transform{glm::vec3{1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
+        {Math::Transform{glm::vec3{1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
+        {Math::Transform{glm::vec3{-1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
+        {Math::Transform{glm::vec3{-1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
+        {Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
+        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 90.0f, 90.0f}, scale}, SLOPE},   
         {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE},
-        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, BLOCK},
+        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE},
         {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE},
         
     };
     bool gravity = false;
+    const float gravitySpeed = -0.01f;
     bool noclip = false;
     bool isOnSlope = false;
     uint frame = 0;
@@ -134,6 +141,7 @@ int main()
     {
         bool clicked = false;
         bool grounded = false;
+        bool gravity = true;
         SDL_Event e;
         while(SDL_PollEvent(&e) != 0)
         {
@@ -182,10 +190,74 @@ int main()
         camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
         auto rotation = camera.GetRotation();
 
+        PrintVec(playerPos, "Precollison");
+        for(auto block : blocks)
+        {
+            auto slopePos = block.transform.position;
+            auto rotation = block.transform.GetRotationMat();
+
+            if(block.type == SLOPE)
+            {
+                // Collision player and slope i                
+                glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
+                auto transform = translation * rotation;
+                auto posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
+                auto boxIntersect = Collisions::AABBSlopeCollision(posA, glm::vec3{1.0f}, glm::vec3{scale});
+                if(boxIntersect.intersects)
+                {
+                    // Collision resolution in model space
+                    glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
+                    glm::vec3 normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
+
+                    /*
+                    PrintVec(normal, "WorldNormal");
+                    
+                    PrintVec(boxIntersect.minAxis, "MinAxis");
+                    PrintVec(boxIntersect.sign, "Sign");
+                    PrintVec(playerPos, "PlayerPos");
+                    */
+                    //PrintVec(boxIntersect.normal, "Normal");
+
+                    // Check for slope orientation and fix offset is model space
+                    if (normal.y > 0.0f && boxIntersect.normal.y > 0.0f && boxIntersect.normal.z > 0.0f)
+                    {
+                        offset.z = 0.0f;
+                        offset.y *= 2.0f;
+                        gravity = false;
+                        offset.y = offset.y + gravitySpeed;
+                    }
+                    else
+                    {                    
+                        auto isGround = normal.y > 0.0f;
+                        if(isGround)
+                            gravity = false;                
+                    }
+
+                    PrintVec(offset, "Offset");
+                    PrintVec(boxIntersect.min, "Min");
+
+                    if(!noclip)
+                        playerPos = playerPos + offset;
+                }
+            }
+            else
+            {
+                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
+                if(boxIntersect.intersects)
+                {
+                    playerPos = playerPos + boxIntersect.offset;
+
+                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
+                    if(isGround)
+                        gravity = false;
+                }
+            }
+        }
+        PrintVec(playerPos, "Postcollison");
+
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
-        float gravitySpeed = -0.1f;
 
         glm::vec3 moveDir{0};
         if(state[SDL_SCANCODE_A])
@@ -203,59 +275,13 @@ int main()
         if(state[SDL_SCANCODE_F])
             playerPos = glm::vec3{0.0f, 2.0f, 0.0f};
         
+        std::cout << "Gravity: " << gravity << "\n";
         playerPos = playerPos + moveDir * speed;
-        if(isOnSlope)
-            gravity = true;
         if(gravity)
-            playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
-        auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f}, 1.0f};
-
-        isOnSlope = false;
-        for(auto block : blocks)
         {
-            auto slopePos = block.transform.position;
-
-            if(block.type == SLOPE)
-            {
-                 // Collision player and slope i                
-                auto boxIntersect = Collisions::AABBSlopeCollision(playerTransform, block.transform);
-                if(boxIntersect.intersects)
-                {
-                    // Check for slope orientation and fix offset is model space
-                    if (boxIntersect.msNormal.z > 0.0f && boxIntersect.msNormal.y > 0.0f)
-                    {
-                        boxIntersect.offset.z = 0.0f;
-                        boxIntersect.offset.y *= 2.0f;
-                        isOnSlope = true;
-                    }
-                    
-                    auto isGround = boxIntersect.normal.y > 0.0f;
-                    if(isGround)
-                        grounded = true;                
-
-                    if(!noclip)
-                        playerPos = playerPos + boxIntersect.offset;
-                }
-            }
-            else
-            {
-                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
-                if(boxIntersect.intersects)
-                {
-                    playerPos = playerPos + boxIntersect.offset;
-
-                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
-                    if(isGround)
-                        grounded = true; 
-                }
-            }
+            playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
+            PrintVec(playerPos, "PostGravity");
         }
-
-        // Gravity
-        if(noclip || grounded)
-            gravity = false;
-        else
-            gravity = true;
 
         // Player and blocks collision
         std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)
@@ -330,13 +356,14 @@ int main()
             }
             else
             {
-                cube.Draw(shader, &texture);
+                cube.Draw(shader, &gTexture);
             }
 
         }
 
         // Draw Player
         shader.SetUniformInt("isPlayer", 1);
+        auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f}, 1.0f};
         auto transform = camera.GetProjViewMat() * playerTransform.GetTransformMat();
         shader.SetUniformMat4("transform", transform);
         cube.Draw(shader, &texture);

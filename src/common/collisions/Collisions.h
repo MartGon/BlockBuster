@@ -43,8 +43,10 @@ namespace Collisions
         glm::vec3 offset;
         glm::vec3 normal;
 
-        // Model space normal. This should always hold: rotation * msNormal = normal
-        glm::vec3 msNormal;
+        
+        glm::vec3 min;
+        glm::vec3 minAxis;
+        glm::vec3 sign;
     };
 
     AABBSlopeIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f);

@@ -160,6 +160,9 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
         // This makes it so it's pushed along the slope normal;
         min.y *= 0.5f;
         min.z *= 0.5f;
+
+        sign.y = 1.0f;
+        sign.z = 1.0f;
     }
 
     // Collision detection
@@ -171,7 +174,7 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     auto normal = sign * minAxis;
     auto offset = sign * min * minAxis;
 
-    return AABBSlopeIntersection{intersects, offset, normal, normal};
+    return AABBSlopeIntersection{intersects, offset, normal, min, minAxis, sign};
 }
 
 Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope)
