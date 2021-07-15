@@ -48,6 +48,67 @@ void PrintVec(glm::vec3 vec, std::string name)
     std::cout << name << " is " << vec.x << " " << vec.y << " " << vec.z << '\n';
 }
 
+Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 prevPosA, glm::vec3 sizeA, glm::vec3 sizeB, float precision)
+{
+    auto posB = glm::vec3{0.0f};
+    auto delta = posA - prevPosA;
+
+    posA = posA - sizeA * 0.5f;
+    prevPosA = prevPosA - sizeA * 0.5f;
+    posB = posB - sizeB * 0.5f;
+    auto distance = posA - posB;
+    auto prevDistance = prevPosA - posB;
+
+    auto boundA = posA + sizeA;
+    auto boundB = posB + sizeB;
+    auto prevBoundA = prevPosA + sizeA;
+    auto diffA = boundB - posA;
+    auto diffB = boundA - posB;
+    auto prevDiffA = boundB - prevPosA;
+    auto prevDiffB = prevBoundA - posB;
+
+    auto prevSign = glm::sign(prevDistance);
+    auto sign = glm::sign(distance);
+    auto min = glm::min(diffA, diffB);
+    auto prevMin = glm::min(prevDiffA, prevDiffB);
+
+    // Checking for collision with slope side
+    bool wasAbove = prevSign.y >= 0.0f;
+    bool wasInFront = prevSign.z > 0.0f;
+    bool wasInSide = prevMin.x > 0.0f && prevMin.x <= (sizeA.x + sizeB.x);
+    if(wasInFront && wasAbove)
+    {   
+        min.y = diffA.z - (posA.y - posB.y);
+        min.z = diffA.y - (posA.z - posB.z);
+
+        // Dealing with floating point precision
+        min.y = (float)round(min.y / precision) * precision;
+        min.z = (float)round(min.z / precision) * precision;
+
+        min.y *= 0.5f;
+        min.z *= 0.5f;
+
+        sign.y = 1.0f;
+        sign.z = 1.0f;
+    }
+
+    // Collision detection
+    auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
+    auto intersects = collision.x && collision.y && collision.z;
+
+    // Offset and normal calculation
+    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+    auto normal = sign * minAxis;
+    if(wasInFront && wasAbove && wasInSide)
+        normal = glm::vec3{0.0f, 1.0f, 1.0f};
+
+    auto offset = min * normal;
+    PrintVec(min, "Min");
+    PrintVec(offset, "offset");
+
+    return AABBSlopeIntersection{intersects, offset, normal, min, minAxis, sign};
+}
+
 float FixFloat(float a, float precision)
 {
     return (float)round(a / precision) * precision;
@@ -114,7 +175,7 @@ int main()
     bool quit = false;
 
     glm::vec2 mousePos;
-    glm::vec3 playerPos{-1.5f, -0.5f, 0.0f};
+    glm::vec3 playerPos{0.0f, -0.5f, 4.0f};
     float scale = 4.0f;
 
     std::vector<Block> blocks{
@@ -123,14 +184,14 @@ int main()
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
-        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 90.0f, 90.0f}, scale}, SLOPE},   
+        //{Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 90.0f, 90.0f}, scale}, SLOPE},   
         {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE},
-        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE},
-        {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE},
+        //{Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE},
+        //{Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE},
         
     };
     bool gravity = false;
-    const float gravitySpeed = -0.01f;
+    const float gravitySpeed = -0.8f;
     bool noclip = false;
     bool isOnSlope = false;
     uint frame = 0;
@@ -141,7 +202,6 @@ int main()
     {
         bool clicked = false;
         bool grounded = false;
-        bool gravity = true;
         SDL_Event e;
         while(SDL_PollEvent(&e) != 0)
         {
@@ -190,71 +250,6 @@ int main()
         camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
         auto rotation = camera.GetRotation();
 
-        PrintVec(playerPos, "Precollison");
-        for(auto block : blocks)
-        {
-            auto slopePos = block.transform.position;
-            auto rotation = block.transform.GetRotationMat();
-
-            if(block.type == SLOPE)
-            {
-                // Collision player and slope i                
-                glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
-                auto transform = translation * rotation;
-                auto posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
-                auto boxIntersect = Collisions::AABBSlopeCollision(posA, glm::vec3{1.0f}, glm::vec3{scale});
-                if(boxIntersect.intersects)
-                {
-                    // Collision resolution in model space
-                    glm::vec3 offset = rotation * glm::vec4{boxIntersect.offset, 1.0f};
-                    glm::vec3 normal = rotation * glm::vec4{boxIntersect.normal, 1.0f};
-
-                    /*
-                    PrintVec(normal, "WorldNormal");
-                    
-                    PrintVec(boxIntersect.minAxis, "MinAxis");
-                    PrintVec(boxIntersect.sign, "Sign");
-                    PrintVec(playerPos, "PlayerPos");
-                    */
-                    //PrintVec(boxIntersect.normal, "Normal");
-
-                    // Check for slope orientation and fix offset is model space
-                    if (normal.y > 0.0f && boxIntersect.normal.y > 0.0f && boxIntersect.normal.z > 0.0f)
-                    {
-                        offset.z = 0.0f;
-                        offset.y *= 2.0f;
-                        gravity = false;
-                        offset.y = offset.y + gravitySpeed;
-                    }
-                    else
-                    {                    
-                        auto isGround = normal.y > 0.0f;
-                        if(isGround)
-                            gravity = false;                
-                    }
-
-                    PrintVec(offset, "Offset");
-                    PrintVec(boxIntersect.min, "Min");
-
-                    if(!noclip)
-                        playerPos = playerPos + offset;
-                }
-            }
-            else
-            {
-                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
-                if(boxIntersect.intersects)
-                {
-                    playerPos = playerPos + boxIntersect.offset;
-
-                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
-                    if(isGround)
-                        gravity = false;
-                }
-            }
-        }
-        PrintVec(playerPos, "Postcollison");
-
         // Move Player
         auto state = SDL_GetKeyboardState(nullptr);
         float speed = 0.05f;
@@ -276,12 +271,76 @@ int main()
             playerPos = glm::vec3{0.0f, 2.0f, 0.0f};
         
         std::cout << "Gravity: " << gravity << "\n";
+        auto prevPos = playerPos;
         playerPos = playerPos + moveDir * speed;
         if(gravity)
         {
             playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
             PrintVec(playerPos, "PostGravity");
         }
+        gravity = true;
+
+        PrintVec(playerPos, "Precollison");
+        for(auto block : blocks)
+        {
+            auto slopePos = block.transform.position;
+            auto rotation = block.transform.GetRotationMat();
+
+            if(block.type == SLOPE)
+            {
+                // Collision player and slope i                
+                glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
+                auto transform = translation * rotation;
+                glm::vec3 posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
+                glm::vec3 prevPosA = glm::inverse(transform) * glm::vec4{prevPos, 1.0f};
+                auto slopeIntersect = Collisions::AABBSlopeCollision(posA, prevPosA, glm::vec3{1.0f}, glm::vec3{scale});
+                if(slopeIntersect.intersects)
+                {
+                    PrintVec(slopeIntersect.offset, "Offset");
+                    PrintVec(slopeIntersect.normal, "Normal");
+                    glm::vec3 offset = rotation * glm::vec4{slopeIntersect.offset, 1.0f};
+                    glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
+
+                    if (normal.y > 0.0f && slopeIntersect.normal.z > 0.0f && slopeIntersect.normal.y > 0.0f)
+                    {
+                       offset.z = 0.0f;
+                       offset.y *= 2.0f;
+                    }
+                    else if (normal.y > 0.0f)
+                    {
+                        gravity = false;
+                    }
+
+                    playerPos = playerPos + offset;
+                }
+
+                /*
+                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
+                if(boxIntersect.intersects)
+                {
+                    playerPos = playerPos + boxIntersect.offset;
+
+                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
+                    if(isGround)
+                        gravity = false;
+                }
+                */
+            }
+            else
+            {
+                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
+                if(boxIntersect.intersects)
+                {
+                    playerPos = playerPos + boxIntersect.offset;
+
+                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
+                    if(isGround)
+                        gravity = false;
+                }
+            }
+        }
+        PrintVec(playerPos, "Postcollison");
+        std::cout << "\n";
 
         // Player and blocks collision
         std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)

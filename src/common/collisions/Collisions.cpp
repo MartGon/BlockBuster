@@ -129,56 +129,9 @@ AABBIntersection Collisions::AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm:
     return AABBIntersection{intersects, offset, normal};
 }
 
-Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision)
-{
-    auto posB = glm::vec3{0.0f};
-
-    posA = posA - sizeA * 0.5f;
-    posB = posB - sizeB * 0.5f;
-
-    auto boundA = posA + sizeA;
-    auto boundB = posB + sizeB;
-    auto diffA = boundB - posA;
-    auto diffB = boundA - posB;
-
-    auto distance = posA - posB;
-    auto sign = glm::sign(distance);
-    auto min = glm::min(diffA, diffB);
-
-    // Checking for collision with slope side
-    bool isAbove = sign.y >= 0.0f;
-    bool isInFront = sign.z > 0.0f;
-    if(isInFront && isAbove)
-    {   
-        min.y = diffA.z - (posA.y - posB.y);
-        min.z = diffA.y - (posA.z - posB.z);
-
-        // Dealing with floating point precision
-        min.y = (float)round(min.y / precision) * precision;
-        min.z = (float)round(min.z / precision) * precision;
-
-        // This makes it so it's pushed along the slope normal;
-        min.y *= 0.5f;
-        min.z *= 0.5f;
-
-        sign.y = 1.0f;
-        sign.z = 1.0f;
-    }
-
-    // Collision detection
-    auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
-    auto intersects = collision.x && collision.y && collision.z;
-
-    // Offset and normal calculation
-    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
-    auto normal = sign * minAxis;
-    auto offset = sign * min * minAxis;
-
-    return AABBSlopeIntersection{intersects, offset, normal, min, minAxis, sign};
-}
-
 Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope)
 {
+    /*
     auto posAABB = transformAABB.position;
     auto slopeRot = transformSlope.GetRotationMat();
     auto toSlopeSpace = glm::inverse(transformSlope.GetTranslationMat() * slopeRot);
@@ -190,4 +143,5 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform
     intersection.normal = slopeRot * glm::vec4{intersection.normal, 1.0f};
 
     return intersection;
+    */
 }
