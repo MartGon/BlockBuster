@@ -99,12 +99,16 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     // Offset and normal calculation
     auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
     auto normal = sign * minAxis;
-    if(wasInFront && wasAbove && wasInSide)
+    auto collidedFront = prevMin.z > 0.0f && prevMin.z <= (sizeA.z + sizeB.z);
+    if(wasInFront && wasInSide)
+    {
         normal = glm::vec3{0.0f, 1.0f, 1.0f};
+        if(collidedFront && delta.z <= 0.0f)
+            normal.z = 0.0f;
+    }
 
     auto offset = min * normal;
     PrintVec(min, "Min");
-    PrintVec(offset, "offset");
 
     return AABBSlopeIntersection{intersects, offset, normal, min, minAxis, sign};
 }
@@ -188,10 +192,13 @@ int main()
         {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE},
         //{Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE},
         //{Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE},
+        {Math::Transform{glm::vec3{-1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
+        {Math::Transform{glm::vec3{0.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
+        {Math::Transform{glm::vec3{1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         
     };
     bool gravity = false;
-    const float gravitySpeed = -0.8f;
+    const float gravitySpeed = -0.4f;
     bool noclip = false;
     bool isOnSlope = false;
     uint frame = 0;
