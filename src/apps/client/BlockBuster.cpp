@@ -48,7 +48,7 @@ void PrintVec(glm::vec3 vec, std::string name)
     std::cout << name << " is " << vec.x << " " << vec.y << " " << vec.z << '\n';
 }
 
-Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 prevPosA, glm::vec3 sizeA, glm::vec3 sizeB, float precision)
+Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 prevPosA, glm::vec3 sizeA, glm::vec3 sizeB, bool gravity, float graivitySpeed, float precision)
 {
     auto posB = glm::vec3{0.0f};
     auto delta = posA - prevPosA;
@@ -90,6 +90,12 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
 
         sign.y = 1.0f;
         sign.z = 1.0f;
+
+        if(wasInSide && gravity)
+        {
+            min.x += (-graivitySpeed);
+            std::cout << "Increasing size\n";
+        }
     }
 
     // Collision detection
@@ -100,12 +106,6 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
     auto normal = sign * minAxis;
     auto collidedFront = prevMin.z > 0.0f && prevMin.z <= (sizeA.z + sizeB.z);
-    if(wasInFront && wasInSide)
-    {
-        normal = glm::vec3{0.0f, 1.0f, 1.0f};
-        if(collidedFront && delta.z <= 0.0f)
-            normal.z = 0.0f;
-    }
 
     auto offset = min * normal;
     PrintVec(min, "Min");
@@ -188,9 +188,9 @@ int main()
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
-        //{Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 90.0f, 90.0f}, scale}, SLOPE},   
+        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 90.0f, 90.0f}, scale}, SLOPE},   
         {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE},
-        //{Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE},
+        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE},
         //{Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE},
         {Math::Transform{glm::vec3{-1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{0.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
@@ -280,6 +280,7 @@ int main()
         std::cout << "Gravity: " << gravity << "\n";
         auto prevPos = playerPos;
         playerPos = playerPos + moveDir * speed;
+        bool gravityAffected = gravity;
         if(gravity)
         {
             playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
@@ -300,7 +301,7 @@ int main()
                 auto transform = translation * rotation;
                 glm::vec3 posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
                 glm::vec3 prevPosA = glm::inverse(transform) * glm::vec4{prevPos, 1.0f};
-                auto slopeIntersect = Collisions::AABBSlopeCollision(posA, prevPosA, glm::vec3{1.0f}, glm::vec3{scale});
+                auto slopeIntersect = Collisions::AABBSlopeCollision(posA, prevPosA, glm::vec3{1.0f}, glm::vec3{scale}, true, gravitySpeed);
                 if(slopeIntersect.intersects)
                 {
                     PrintVec(slopeIntersect.offset, "Offset");
