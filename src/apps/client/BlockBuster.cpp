@@ -41,6 +41,7 @@ struct Block
 {
     Math::Transform transform;
     BlockType type;
+    std::string name;
 };
 
 void PrintVec(glm::vec3 vec, std::string name)
@@ -75,7 +76,7 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     // Checking for collision with slope side
     bool wasAbove = prevSign.y >= 0.0f;
     bool wasInFront = prevSign.z > 0.0f;
-    bool wasInSide = prevMin.x > 0.0f && prevMin.x <= (sizeA.x + sizeB.x);
+    bool wasInSide = prevMin.x > precision && prevMin.x <= (sizeA.x + sizeB.x);
     if(wasInFront && wasAbove)
     {   
         min.y = diffA.z - (posA.y - posB.y);
@@ -93,7 +94,7 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
 
         if(wasInSide && gravity)
         {
-            min.x += (-graivitySpeed);
+            min.x += (-graivitySpeed / 2);
             std::cout << "Increasing size\n";
         }
     }
@@ -108,7 +109,6 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     auto collidedFront = prevMin.z > 0.0f && prevMin.z <= (sizeA.z + sizeB.z);
 
     auto offset = min * normal;
-    PrintVec(min, "Min");
 
     return AABBSlopeIntersection{intersects, offset, normal, min, minAxis, sign};
 }
@@ -188,10 +188,10 @@ int main()
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
-        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 90.0f, 90.0f}, scale}, SLOPE},   
-        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE},
-        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE},
-        //{Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE},
+        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 90.0f, 90.0f}, scale}, SLOPE, "Left"},   
+        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE, "Mid"},
+        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE, "Right"},
+        {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE, "Back"},
         {Math::Transform{glm::vec3{-1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{0.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
         {Math::Transform{glm::vec3{1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
@@ -289,64 +289,65 @@ int main()
         gravity = true;
 
         PrintVec(playerPos, "Precollison");
-        for(auto block : blocks)
-        {
-            auto slopePos = block.transform.position;
-            auto rotation = block.transform.GetRotationMat();
 
-            if(block.type == SLOPE)
+        bool intersects;
+        do
+        {        
+            std::cout << "hey \n";
+            intersects = false;
+            for(auto block : blocks)
             {
-                // Collision player and slope i                
-                glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
-                auto transform = translation * rotation;
-                glm::vec3 posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
-                glm::vec3 prevPosA = glm::inverse(transform) * glm::vec4{prevPos, 1.0f};
-                auto slopeIntersect = Collisions::AABBSlopeCollision(posA, prevPosA, glm::vec3{1.0f}, glm::vec3{scale}, true, gravitySpeed);
-                if(slopeIntersect.intersects)
-                {
-                    PrintVec(slopeIntersect.offset, "Offset");
-                    PrintVec(slopeIntersect.normal, "Normal");
-                    glm::vec3 offset = rotation * glm::vec4{slopeIntersect.offset, 1.0f};
-                    glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
+                auto slopePos = block.transform.position;
+                auto rotation = block.transform.GetRotationMat();
 
-                    if (normal.y > 0.0f && slopeIntersect.normal.z > 0.0f && slopeIntersect.normal.y > 0.0f)
+                if(block.type == SLOPE)
+                {
+                    // Collision player and slope i                
+                    glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
+                    auto transform = translation * rotation;
+                    glm::vec3 posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
+                    glm::vec3 prevPosA = glm::inverse(transform) * glm::vec4{prevPos, 1.0f};
+                    auto slopeIntersect = Collisions::AABBSlopeCollision(posA, prevPosA, glm::vec3{1.0f}, glm::vec3{scale}, true, gravitySpeed);
+                    if(slopeIntersect.intersects)
                     {
-                       offset.z = 0.0f;
-                       offset.y *= 2.0f;
+                        std::cout << "Collision with " << block.name << "\n";
+                        glm::vec3 offset = rotation * glm::vec4{slopeIntersect.offset, 1.0f};
+                        glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
+
+                        if (normal.y > 0.0f && slopeIntersect.normal.z > 0.0f && slopeIntersect.normal.y > 0.0f)
+                        {
+                            offset.z = 0.0f;
+                            offset.y *= 2.0f;
+                        }
+                        else if (normal.y > 0.0f && glm::abs(normal.x) == 0.0f && glm::abs(normal.z) == 0.0f)
+                        {
+                            gravity = false;
+                        }
+
+                        playerPos = playerPos + offset;
+                        PrintVec(offset, "Offset");
+                        if(!intersects)
+                            intersects = glm::length(offset) > 0.0f;
                     }
-                    else if (normal.y > 0.0f)
+                }
+                else
+                {
+                    auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
+                    if(boxIntersect.intersects)
                     {
-                        gravity = false;
+                        playerPos = playerPos + boxIntersect.offset;
+
+                        auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
+                        if(isGround)
+                            gravity = false;
+
+                        if(!intersects)
+                            intersects = glm::length(boxIntersect.offset) > 0.0f;
                     }
-
-                    playerPos = playerPos + offset;
-                }
-
-                /*
-                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
-                if(boxIntersect.intersects)
-                {
-                    playerPos = playerPos + boxIntersect.offset;
-
-                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
-                    if(isGround)
-                        gravity = false;
-                }
-                */
-            }
-            else
-            {
-                auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
-                if(boxIntersect.intersects)
-                {
-                    playerPos = playerPos + boxIntersect.offset;
-
-                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
-                    if(isGround)
-                        gravity = false;
                 }
             }
-        }
+        }while(intersects);
+
         PrintVec(playerPos, "Postcollison");
         std::cout << "\n";
 
