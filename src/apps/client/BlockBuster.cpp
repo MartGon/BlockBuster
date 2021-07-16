@@ -86,8 +86,8 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     auto prevMin = glm::min(prevDiffA, prevDiffB);
 
     // Checking for collision with slope side
-    bool wasAbove = prevSign.y >= 0.0f;
-    bool wasInFront = prevSign.z > 0.0f;
+    bool wasAbove = prevSign.y >= -precision;
+    bool wasInFront = prevSign.z > precision;
     bool wasInSide = prevMin.x > precision && prevMin.x <= (sizeA.x + sizeB.x);
     if(wasInFront && wasAbove)
     {   
@@ -109,6 +109,7 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
             min.x += (-graivitySpeed / 2);
         }
     }
+    std::cout << "WasInFront " << wasInFront << " wasAbove " <<wasAbove << "\n";
 
     // Collision detection
     auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
@@ -191,7 +192,7 @@ int main()
 
     glm::vec2 mousePos;
     glm::vec3 playerPos{0.0f, -0.5f, 4.0f};
-    float scale = 4.0f;
+    float scale = 3.0f;
 
     std::vector<Block> blocks{
         {Math::Transform{glm::vec3{1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
@@ -304,7 +305,6 @@ int main()
         bool intersects;
         do
         {        
-            std::cout << "hey \n";
             intersects = false;
 
             std::vector<Intersection> intersections;
@@ -323,6 +323,7 @@ int main()
                     auto slopeIntersect = Collisions::AABBSlopeCollision(posA, prevPosA, glm::vec3{1.0f}, glm::vec3{scale}, true, gravitySpeed);
                     if(slopeIntersect.intersects)
                     {
+                        std::cout << "Collision with " << block.name << "\n";
                         auto rotation = block.transform.GetRotationMat();
                         glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
 
@@ -331,7 +332,7 @@ int main()
                             gravity = false;
                         }
 
-                        if(glm::length(slopeIntersect.offset) > 0.0f)
+                        if(glm::length(slopeIntersect.offset) > 0.0005f)
                         {
                             Intersection intersect;
                             intersect.block = block;
@@ -351,7 +352,7 @@ int main()
                         if(isGround)
                             gravity = false;
 
-                        if(glm::length(boxIntersect.offset) > 0.0f)
+                        if(glm::length(boxIntersect.offset) > 0.0005f)
                         {
                             Intersection intersect;
                             intersect.block = block;
@@ -379,7 +380,6 @@ int main()
                     auto slopeIntersect = first.intersection.aabbSlope;
                     auto rotation = block.transform.GetRotationMat();
 
-                    std::cout << "Collision with " << block.name << "\n";
                     glm::vec3 offset = rotation * glm::vec4{slopeIntersect.offset, 1.0f};
                     glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
 
@@ -390,6 +390,7 @@ int main()
                     }
 
                     playerPos = playerPos + offset;
+                    PrintVec(slopeIntersect.min, "min");
                     PrintVec(offset, "Offset");
                     PrintVec(normal, "Normal");
                 }
