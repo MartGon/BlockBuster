@@ -71,6 +71,7 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     posB = posB - sizeB * 0.5f;
     auto distance = posA - posB;
     auto prevDistance = prevPosA - posB;
+    prevDistance.y = round(prevDistance.y / precision) * precision;
 
     auto boundA = posA + sizeA;
     auto boundB = posB + sizeB;
@@ -86,8 +87,9 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     auto prevMin = glm::min(prevDiffA, prevDiffB);
 
     // Checking for collision with slope side
-    bool wasAbove = prevSign.y >= -precision;
-    bool wasInFront = prevSign.z > precision;
+    PrintVec(prevDistance, "PrevDistance");
+    bool wasAbove = prevSign.y >= 0.0f;
+    bool wasInFront = prevSign.z > 0.0f;
     bool wasInSide = prevMin.x > precision && prevMin.x <= (sizeA.x + sizeB.x);
     if(wasInFront && wasAbove)
     {   
@@ -104,7 +106,7 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
         sign.y = 1.0f;
         sign.z = 1.0f;
 
-        if(wasInSide && gravity)
+        if(wasInSide)
         {
             min.x += (-graivitySpeed / 2);
         }
@@ -301,6 +303,7 @@ int main()
         gravity = true;
 
         PrintVec(playerPos, "Precollison");
+        PrintVec(prevPos, "PrevPos");
 
         bool intersects;
         do
