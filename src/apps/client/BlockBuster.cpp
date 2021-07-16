@@ -37,11 +37,23 @@ enum BlockType
     SLOPE
 };
 
+union IntersectionU
+{
+    Collisions::AABBSlopeIntersection aabbSlope;
+    Collisions::AABBIntersection aabb;
+};
+
 struct Block
 {
     Math::Transform transform;
     BlockType type;
     std::string name;
+};
+
+struct Intersection
+{
+    Block block;
+    IntersectionU intersection;
 };
 
 void PrintVec(glm::vec3 vec, std::string name)
@@ -95,7 +107,6 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
         if(wasInSide && gravity)
         {
             min.x += (-graivitySpeed / 2);
-            std::cout << "Increasing size\n";
         }
     }
 
@@ -295,6 +306,8 @@ int main()
         {        
             std::cout << "hey \n";
             intersects = false;
+
+            std::vector<Intersection> intersections;
             for(auto block : blocks)
             {
                 auto slopePos = block.transform.position;
@@ -310,24 +323,23 @@ int main()
                     auto slopeIntersect = Collisions::AABBSlopeCollision(posA, prevPosA, glm::vec3{1.0f}, glm::vec3{scale}, true, gravitySpeed);
                     if(slopeIntersect.intersects)
                     {
-                        std::cout << "Collision with " << block.name << "\n";
-                        glm::vec3 offset = rotation * glm::vec4{slopeIntersect.offset, 1.0f};
+                        auto rotation = block.transform.GetRotationMat();
                         glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
 
-                        if (normal.y > 0.0f && slopeIntersect.normal.z > 0.0f && slopeIntersect.normal.y > 0.0f)
-                        {
-                            offset.z = 0.0f;
-                            offset.y *= 2.0f;
-                        }
-                        else if (normal.y > 0.0f && glm::abs(normal.x) == 0.0f && glm::abs(normal.z) == 0.0f)
+                        if (normal.y > 0.0f && glm::abs(normal.x) < 0.05f && glm::abs(normal.z) < 0.05f)
                         {
                             gravity = false;
                         }
 
-                        playerPos = playerPos + offset;
-                        PrintVec(offset, "Offset");
-                        if(!intersects)
-                            intersects = glm::length(offset) > 0.0f;
+                        if(glm::length(slopeIntersect.offset) > 0.0f)
+                        {
+                            Intersection intersect;
+                            intersect.block = block;
+                            intersect.intersection.aabbSlope = slopeIntersect;
+                            intersections.push_back(intersect);
+
+                            intersects = true;
+                        }
                     }
                 }
                 else
@@ -335,29 +347,73 @@ int main()
                     auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
                     if(boxIntersect.intersects)
                     {
-                        playerPos = playerPos + boxIntersect.offset;
-
                         auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
                         if(isGround)
                             gravity = false;
 
-                        if(!intersects)
-                            intersects = glm::length(boxIntersect.offset) > 0.0f;
+                        if(glm::length(boxIntersect.offset) > 0.0f)
+                        {
+                            Intersection intersect;
+                            intersect.block = block;
+                            intersect.intersection.aabb = boxIntersect;
+                            intersections.push_back(intersect);
+                            
+                            intersects = true;
+                        }
                     }
                 }
             }
+
+            std::sort(intersections.begin(), intersections.end(), [playerPos](Intersection a, Intersection b){
+                auto distToA = glm::length(a.block.transform.position - playerPos);
+                auto distToB = glm::length(b.block.transform.position - playerPos);
+                return distToA < distToB;
+            });
+
+            if(!intersections.empty())
+            {
+                auto first = intersections.front();
+                auto block = first.block;
+                if(block.type == SLOPE)
+                {
+                    auto slopeIntersect = first.intersection.aabbSlope;
+                    auto rotation = block.transform.GetRotationMat();
+
+                    std::cout << "Collision with " << block.name << "\n";
+                    glm::vec3 offset = rotation * glm::vec4{slopeIntersect.offset, 1.0f};
+                    glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
+
+                    if (normal.y > 0.0f && slopeIntersect.normal.z > 0.0f && slopeIntersect.normal.y > 0.0f)
+                    {
+                        offset.z = 0.0f;
+                        offset.y *= 2.0f;
+                    }
+
+                    playerPos = playerPos + offset;
+                    PrintVec(offset, "Offset");
+                    PrintVec(normal, "Normal");
+                }
+                else
+                {
+                    auto boxIntersect = first.intersection.aabb;
+                    playerPos = playerPos + boxIntersect.offset;
+                }
+            }
+
         }while(intersects);
 
         PrintVec(playerPos, "Postcollison");
         std::cout << "\n";
 
         // Player and blocks collision
+        /*
         std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)
         {
             auto toA = glm::length(a.transform.position - cameraPos);
             auto toB = glm::length(b.transform.position- cameraPos);
             return toA < toB;
         });
+        */
 
         // Ray intersection
         if(clicked)
