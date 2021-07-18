@@ -307,6 +307,7 @@ int main()
         PrintVec(prevPos, "PrevPos");
 
         bool intersects;
+        // TODO: Allow to offset the player position only once by collided block.
         do
         {        
             intersects = false;
