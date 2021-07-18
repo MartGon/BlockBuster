@@ -108,7 +108,8 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
 
         if(wasInSide)
         {
-            min.x += (-graivitySpeed / 2);
+            //min.x += (-graivitySpeed / 2);
+            min.x = min.x < glm::min(min.y, min.z) ? glm::max(min.y, min.z) + precision : min.x;
         }
     }
     std::cout << "WasInFront " << wasInFront << " wasAbove " <<wasAbove << "\n";
@@ -164,7 +165,7 @@ int main()
     shader.Use();
 
     auto cube = Rendering::Primitive::GenerateCube();
-    GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
+    GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "green.png");
     GL::Texture gTexture = GL::Texture::FromFolder(TEXTURES_DIR, "green.png");
     try
     {
@@ -202,7 +203,7 @@ int main()
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
-        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 90.0f, 90.0f}, scale}, SLOPE, "Left"},   
+        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{90.0f, 90.0f, 90.0f}, scale}, SLOPE, "Left"},   
         {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE, "Mid"},
         {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE, "Right"},
         {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE, "Back"},
