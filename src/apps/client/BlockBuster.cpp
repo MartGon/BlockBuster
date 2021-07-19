@@ -102,7 +102,7 @@ int main()
 
     auto cube = Rendering::Primitive::GenerateCube();
     GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
-    GL::Texture gTexture = GL::Texture::FromFolder(TEXTURES_DIR, "green.png");
+    GL::Texture gTexture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
     try
     {
         texture.Load();
@@ -145,8 +145,8 @@ int main()
         
         {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE, "Mid"},
         {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{90.0f, 90.0f, 90.0f}, scale}, SLOPE, "Left"},   
-        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE, "Right"},
-        {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE, "Back"},
+        //{Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE, "Right"},
+        //{Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE, "Back"},
         
         
     };
@@ -341,6 +341,14 @@ int main()
         // Ray intersection
         if(clicked)
         {
+            // Sort blocks by proximity to camera
+            std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)
+            {
+                auto toA = glm::length(a.transform.position - cameraPos);
+                auto toB = glm::length(b.transform.position- cameraPos);
+                return toA < toB;
+            });
+
             // Window to eye
             auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{WINDOW_WIDTH, WINDOW_HEIGHT});
 
