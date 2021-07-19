@@ -141,17 +141,18 @@ int main()
         {Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
         {Math::Transform{glm::vec3{-1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
         {Math::Transform{glm::vec3{0.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
-        {Math::Transform{glm::vec3{1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
-        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{90.0f, 90.0f, 90.0f}, scale}, SLOPE, "Left"},   
+        {Math::Transform{glm::vec3{1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK},
+        
         {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, SLOPE, "Mid"},
+        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{90.0f, 90.0f, 90.0f}, scale}, SLOPE, "Left"},   
         {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, SLOPE, "Right"},
         {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, SLOPE, "Back"},
+        
         
     };
     bool gravity = false;
     const float gravitySpeed = -0.4f;
     bool noclip = false;
-    bool isOnSlope = false;
     uint frame = 0;
     
     bool moveCamera = false;
@@ -159,7 +160,6 @@ int main()
     while(!quit)
     {
         bool clicked = false;
-        bool grounded = false;
         SDL_Event e;
         while(SDL_PollEvent(&e) != 0)
         {
@@ -242,6 +242,7 @@ int main()
         PrintVec(playerPos, "Precollison");
         PrintVec(prevPos, "PrevPos");
 
+        // Player and blocks collision
         bool intersects;
         // TODO: Allow to offset the player position only once by collided block.
         do
@@ -257,24 +258,21 @@ int main()
                 if(block.type == SLOPE)
                 {
                     // Collision player and slope i                
-                    glm::mat4 translation = glm::translate(glm::mat4{1.0f}, slopePos);
-                    auto transform = translation * rotation;
-                    glm::vec3 posA = glm::inverse(transform) * glm::vec4{playerPos, 1.0f};
-                    glm::vec3 prevPosA = glm::inverse(transform) * glm::vec4{prevPos, 1.0f};
-                    
-                    auto slopeIntersect = Collisions::AABBSlopeCollision(posA, prevPosA, glm::vec3{1.0f}, glm::vec3{scale});
-                    if(slopeIntersect.intersects)
+                    Math::Transform prevPlayerTransform{prevPos, glm::vec3{0.0f}, 1.0f};
+                    Math::Transform playerTransform{playerPos, glm::vec3{0.0f}, 1.0f};
+                    auto slopeIntersect = Collisions::AABBSlopeCollision(playerTransform, prevPlayerTransform, block.transform);
+                    if(slopeIntersect.collides)
                     {
                         std::cout << "Collision with " << block.name << "\n";
-                        auto rotation = block.transform.GetRotationMat();
-                        glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
+                        glm::vec3 normal = slopeIntersect.normal;
 
                         if (normal.y > 0.0f && glm::abs(normal.x) < 0.05f && glm::abs(normal.z) < 0.05f)
                         {
                             gravity = false;
+                            std::cout << "Gravity disabled\n";
                         }
 
-                        if(glm::length(slopeIntersect.offset) > 0.0005f)
+                        if(slopeIntersect.intersects)
                         {
                             Intersection intersect;
                             intersect.block = block;
@@ -288,13 +286,13 @@ int main()
                 else
                 {
                     auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
-                    if(boxIntersect.intersects)
+                    if(boxIntersect.collides)
                     {
                         auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
                         if(isGround)
                             gravity = false;
 
-                        if(glm::length(boxIntersect.offset) > 0.0005f)
+                        if(boxIntersect.intersects)
                         {
                             Intersection intersect;
                             intersect.block = block;
@@ -320,21 +318,13 @@ int main()
                 if(block.type == SLOPE)
                 {
                     auto slopeIntersect = first.intersection.aabbSlope;
-                    auto rotation = block.transform.GetRotationMat();
-
-                    glm::vec3 offset = rotation * glm::vec4{slopeIntersect.offset, 1.0f};
-                    glm::vec3 normal = rotation * glm::vec4{slopeIntersect.normal, 1.0f};
-
-                    if (normal.y > 0.0f && slopeIntersect.normal.z > 0.0f && slopeIntersect.normal.y > 0.0f)
-                    {
-                        offset.z = 0.0f;
-                        offset.y *= 2.0f;
-                    }
-
+                    auto offset = slopeIntersect.offset;
                     playerPos = playerPos + offset;
+                    PrintVec(playerPos, "PlayerPos");
+                    PrintVec(prevPos, "PrevPo");
                     PrintVec(slopeIntersect.min, "min");
                     PrintVec(offset, "Offset");
-                    PrintVec(normal, "Normal");
+                    PrintVec(slopeIntersect.normal, "Normal");
                 }
                 else
                 {
@@ -347,16 +337,6 @@ int main()
 
         PrintVec(playerPos, "Postcollison");
         std::cout << "\n";
-
-        // Player and blocks collision
-        /*
-        std::sort(blocks.begin(), blocks.end(), [cameraPos](Block a, Block b)
-        {
-            auto toA = glm::length(a.transform.position - cameraPos);
-            auto toB = glm::length(b.transform.position- cameraPos);
-            return toA < toB;
-        });
-        */
 
         // Ray intersection
         if(clicked)

@@ -30,6 +30,7 @@ namespace Collisions
 
     struct AABBIntersection
     {
+        bool collides;
         bool intersects;
         glm::vec3 offset;
         glm::vec3 normal;
@@ -39,6 +40,7 @@ namespace Collisions
 
     struct AABBSlopeIntersection
     {
+        bool collides;
         bool intersects;
         glm::vec3 offset;
         glm::vec3 normal;
@@ -50,6 +52,6 @@ namespace Collisions
     };
 
     AABBSlopeIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 prevPosA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f);
-    AABBSlopeIntersection AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope);
+    AABBSlopeIntersection AABBSlopeCollision(Math::Transform transformAABB, Math::Transform prevTransformAABB, Math::Transform transformSlope, float precision = 0.005f);
 
 };
