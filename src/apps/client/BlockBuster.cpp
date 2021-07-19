@@ -130,8 +130,9 @@ int main()
     bool quit = false;
 
     glm::vec2 mousePos;
-    glm::vec3 playerPos{0.0f, -0.5f, 4.0f};
-    float scale = 3.0f;
+    float scale = 5.0f;
+    float playerScale = 2.0f;
+    Math::Transform playerTransform{glm::vec3{0.0f}, glm::vec3{0.0f}, playerScale};
 
     std::vector<Block> blocks{
         {Math::Transform{glm::vec3{1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, BLOCK}, 
@@ -204,7 +205,7 @@ int main()
         camera.SetPos(cameraPos);
         float pitch = glm::radians(90.0f);
         float yaw = glm::radians(90.0f);
-        camera.SetTarget(playerPos);
+        camera.SetTarget(playerTransform.position);
         camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT);
         auto rotation = camera.GetRotation();
 
@@ -226,20 +227,20 @@ int main()
         if(state[SDL_SCANCODE_E])
             moveDir.y -= 1;
         if(state[SDL_SCANCODE_F])
-            playerPos = glm::vec3{0.0f, 2.0f, 0.0f};
+            playerTransform.position = glm::vec3{0.0f, 2.0f, 0.0f};
         
         std::cout << "Gravity: " << gravity << "\n";
-        auto prevPos = playerPos;
-        playerPos = playerPos + moveDir * speed;
+        auto prevPos = playerTransform.position;
+        playerTransform.position += (moveDir * speed);
         bool gravityAffected = gravity;
         if(gravity)
         {
-            playerPos = playerPos + glm::vec3{0.0f, gravitySpeed, 0.0f};
-            PrintVec(playerPos, "PostGravity");
+            playerTransform.position += glm::vec3{0.0f, gravitySpeed, 0.0f};
+            PrintVec(playerTransform.position, "PostGravity");
         }
         gravity = true;
 
-        PrintVec(playerPos, "Precollison");
+        PrintVec(playerTransform.position, "Precollison");
         PrintVec(prevPos, "PrevPos");
 
         // Player and blocks collision
@@ -252,14 +253,11 @@ int main()
             std::vector<Intersection> intersections;
             for(auto block : blocks)
             {
-                auto slopePos = block.transform.position;
-                auto rotation = block.transform.GetRotationMat();
+                Math::Transform prevPlayerTransform{prevPos, glm::vec3{0.0f}, playerScale};
 
                 if(block.type == SLOPE)
                 {
                     // Collision player and slope i                
-                    Math::Transform prevPlayerTransform{prevPos, glm::vec3{0.0f}, 1.0f};
-                    Math::Transform playerTransform{playerPos, glm::vec3{0.0f}, 1.0f};
                     auto slopeIntersect = Collisions::AABBSlopeCollision(playerTransform, prevPlayerTransform, block.transform);
                     if(slopeIntersect.collides)
                     {
@@ -285,7 +283,7 @@ int main()
                 }
                 else
                 {
-                    auto boxIntersect = Collisions::AABBCollision(playerPos, glm::vec3{1.0f}, slopePos, glm::vec3{block.transform.scale});
+                    auto boxIntersect = Collisions::AABBCollision(playerTransform.position, glm::vec3{playerTransform.scale}, block.transform.position, glm::vec3{block.transform.scale});
                     if(boxIntersect.collides)
                     {
                         auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
@@ -305,6 +303,7 @@ int main()
                 }
             }
 
+            auto playerPos = playerTransform.position;
             std::sort(intersections.begin(), intersections.end(), [playerPos](Intersection a, Intersection b){
                 auto distToA = glm::length(a.block.transform.position - playerPos);
                 auto distToB = glm::length(b.block.transform.position - playerPos);
@@ -319,8 +318,8 @@ int main()
                 {
                     auto slopeIntersect = first.intersection.aabbSlope;
                     auto offset = slopeIntersect.offset;
-                    playerPos = playerPos + offset;
-                    PrintVec(playerPos, "PlayerPos");
+                    playerTransform.position += slopeIntersect.offset;
+                    PrintVec(playerTransform.position, "PlayerPos");
                     PrintVec(prevPos, "PrevPo");
                     PrintVec(slopeIntersect.min, "min");
                     PrintVec(offset, "Offset");
@@ -329,13 +328,13 @@ int main()
                 else
                 {
                     auto boxIntersect = first.intersection.aabb;
-                    playerPos = playerPos + boxIntersect.offset;
+                    playerTransform.position += boxIntersect.offset;
                 }
             }
 
         }while(intersects);
 
-        PrintVec(playerPos, "Postcollison");
+        PrintVec(playerTransform.position, "Postcollison");
         std::cout << "\n";
 
         // Ray intersection
@@ -418,7 +417,6 @@ int main()
 
         // Draw Player
         shader.SetUniformInt("isPlayer", 1);
-        auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f}, 1.0f};
         auto transform = camera.GetProjViewMat() * playerTransform.GetTransformMat();
         shader.SetUniformMat4("transform", transform);
         cube.Draw(shader, &texture);
