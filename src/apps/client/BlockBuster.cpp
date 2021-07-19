@@ -245,7 +245,7 @@ int main()
 
         // Player and blocks collision
         bool intersects;
-        // TODO: Allow to offset the player position only once by collided block.
+        std::vector<glm::vec<3, int>> alreadyOffset;
         do
         {        
             intersects = false;
@@ -254,6 +254,12 @@ int main()
             for(auto block : blocks)
             {
                 Math::Transform prevPlayerTransform{prevPos, glm::vec3{0.0f}, playerScale};
+
+                if(std::find(alreadyOffset.begin(), alreadyOffset.end(), glm::vec<3, int>{block.transform.position}) != alreadyOffset.end())
+                {
+                    std::cout << "Player has already been offset by " << block.name << "\n";
+                    continue;
+                }
 
                 if(block.type == SLOPE)
                 {
@@ -330,6 +336,8 @@ int main()
                     auto boxIntersect = first.intersection.aabb;
                     playerTransform.position += boxIntersect.offset;
                 }
+
+                alreadyOffset.push_back(block.transform.position);
             }
 
         }while(intersects);
