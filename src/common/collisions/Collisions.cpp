@@ -129,6 +129,71 @@ AABBIntersection Collisions::AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm:
     return AABBIntersection{intersects, offset, normal};
 }
 
+Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 prevPosA, glm::vec3 sizeA, glm::vec3 sizeB, float precision)
+{
+    auto posB = glm::vec3{0.0f};
+
+    posA = posA - sizeA * 0.5f;
+    prevPosA = prevPosA - sizeA * 0.5f;
+    posB = posB - sizeB * 0.5f;
+
+    auto distance = posA - posB;
+    auto prevDistance = prevPosA - posB;
+    prevDistance.y = (float)round(prevDistance.y / precision) * precision;
+
+    auto boundA = posA + sizeA;
+    auto boundB = posB + sizeB;
+    auto prevBoundA = prevPosA + sizeA;
+
+    auto diffA = boundB - posA;
+    auto diffB = boundA - posB;
+    auto prevDiffA = boundB - prevPosA;
+    auto prevDiffB = prevBoundA - posB;
+
+    auto sign = glm::sign(distance);
+    auto prevSign = glm::sign(prevDistance);
+    
+    auto min = glm::min(diffA, diffB);
+    auto prevMin = glm::min(prevDiffA, prevDiffB);
+
+    // Checking for collision with slope side
+    bool wasAbove = prevSign.y >= 0.0f;
+    bool wasInFront = prevSign.z > 0.0f;
+    bool wasInSide = prevMin.x > precision && prevMin.x <= (sizeA.x + sizeB.x);
+    if(wasInFront && wasAbove)
+    {   
+        min.y = diffA.z - (posA.y - posB.y);
+        min.z = diffA.y - (posA.z - posB.z);
+
+        // Dealing with floating point precision
+        min.y = (float)round(min.y / precision) * precision;
+        min.z = (float)round(min.z / precision) * precision;
+
+        min.y *= 0.5f;
+        min.z *= 0.5f;
+
+        sign.y = 1.0f;
+        sign.z = 1.0f;
+    }
+
+    if(wasInSide)
+    {
+        min.x = glm::max(min.y, min.z) + precision;
+    }
+
+    // Collision detection
+    auto collision = glm::greaterThanEqual(min, glm::vec3{0.0f}) && glm::lessThan(min, glm::vec3{sizeA + sizeB});
+    auto intersects = collision.x && collision.y && collision.z;
+
+    // Offset and normal calculation
+    auto minAxis = glm::step(min, glm::vec3{min.z, min.x, min.y}) * glm::step(min, glm::vec3{min.y, min.z, min.x});
+    auto normal = sign * minAxis;
+
+    auto offset = min * normal;
+
+    return AABBSlopeIntersection{intersects, offset, normal, min, minAxis, sign};
+}
+
 Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope)
 {
     /*
