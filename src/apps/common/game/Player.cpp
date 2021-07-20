@@ -57,21 +57,18 @@ struct Intersection
 void AppGame::Player::HandleCollisions(std::vector<Game::Block> blocks)
 {
     bool intersects;
+    unsigned int iterations = 0;
+    const unsigned int MAX_ITERATIONS = 10;
     std::vector<glm::vec<3, int>> alreadyOffset;
     do
     {        
         intersects = false;
+        iterations++;
 
         std::vector<Intersection> intersections;
         for(const auto& block : blocks)
         {
             Math::Transform prevPlayerTransform{this->prevPos, glm::vec3{0.0f}, transform.scale};
-
-            if(std::find(alreadyOffset.begin(), alreadyOffset.end(), glm::vec<3, int>{block.transform.position}) != alreadyOffset.end())
-            {
-                std::cout << "Player has already been offset by " << block.name << "\n";
-                continue;
-            }
 
             if(block.type == Game::SLOPE)
             {
@@ -79,17 +76,16 @@ void AppGame::Player::HandleCollisions(std::vector<Game::Block> blocks)
                 auto slopeIntersect = Collisions::AABBSlopeCollision(transform, prevPlayerTransform, block.transform);
                 if(slopeIntersect.collides)
                 {
-                    std::cout << "Collision with " << block.name << "\n";
                     glm::vec3 normal = slopeIntersect.normal;
 
                     if (normal.y > 0.0f && glm::abs(normal.x) < 0.05f && glm::abs(normal.z) < 0.05f)
                     {
                         gravity = false;
-                        std::cout << "Gravity disabled\n";
                     }
 
                     if(slopeIntersect.intersects)
                     {
+                        std::cout << "Intersection with " << block.name << "\n";
                         Intersection intersect;
                         intersect.block = block;
                         intersect.intersection.aabbSlope = slopeIntersect;
@@ -128,12 +124,19 @@ void AppGame::Player::HandleCollisions(std::vector<Game::Block> blocks)
             return distToA < distToB;
         });
 
+        std::sort(intersections.begin(), intersections.end(), [](Intersection a, Intersection b){
+            auto offsetA = glm::length(a.intersection.aabb.offset);
+            auto offsetB = glm::length(b.intersection.aabb.offset);
+            return offsetA < offsetB;
+        });
+
         if(!intersections.empty())
         {
             auto first = intersections.front();
             auto block = first.block;
             if(block.type == Game::SLOPE)
             {
+                std::cout << "Handling collision with " << block.name << "\n";
                 auto slopeIntersect = first.intersection.aabbSlope;
                 auto offset = slopeIntersect.offset;
                 transform.position += slopeIntersect.offset;
@@ -147,5 +150,5 @@ void AppGame::Player::HandleCollisions(std::vector<Game::Block> blocks)
             alreadyOffset.push_back(block.transform.position);
         }
 
-    }while(intersects);
+    }while(intersects && iterations < MAX_ITERATIONS);
 }

@@ -106,7 +106,7 @@ int main()
 
     glm::vec2 mousePos;
     float scale = 5.0f;
-    float playerScale = 2.0f;
+    float playerScale = 1.0f;
     AppGame::Player player;
     player.transform.scale = playerScale;
 
