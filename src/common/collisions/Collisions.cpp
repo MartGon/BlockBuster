@@ -195,7 +195,7 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
 
     auto intersects = collides && glm::length(offset) > precision;
 
-    return AABBSlopeIntersection{collides, intersects, offset, normal, min, minAxis, sign};
+    return AABBSlopeIntersection{collides, intersects, offset, normal};
 }
 
 Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform prevTransformAABB, Math::Transform transformSlope, float precision)

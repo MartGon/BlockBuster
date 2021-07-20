@@ -6,6 +6,7 @@
 
 namespace Collisions
 {
+    // Rays
     struct Ray
     {
         glm::vec3 origin;
@@ -28,6 +29,7 @@ namespace Collisions
     Ray ToModelSpace(Ray ray, glm::mat4 modelMat);
     glm::vec3 ToWorldSpace(glm::vec3 normal, glm::mat4 modelMat);
 
+    // AABB
     struct AABBIntersection
     {
         bool collides;
@@ -38,20 +40,16 @@ namespace Collisions
 
     AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB);
 
+
+    // AABB - Slope
     struct AABBSlopeIntersection
     {
         bool collides;
         bool intersects;
         glm::vec3 offset;
         glm::vec3 normal;
-
-        
-        glm::vec3 min;
-        glm::vec3 minAxis;
-        glm::vec3 sign;
     };
 
     AABBSlopeIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 prevPosA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f);
     AABBSlopeIntersection AABBSlopeCollision(Math::Transform transformAABB, Math::Transform prevTransformAABB, Math::Transform transformSlope, float precision = 0.005f);
-
 };
