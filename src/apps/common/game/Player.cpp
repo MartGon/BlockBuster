@@ -124,12 +124,6 @@ void AppGame::Player::HandleCollisions(std::vector<Game::Block> blocks)
             return distToA < distToB;
         });
 
-        std::sort(intersections.begin(), intersections.end(), [](Intersection a, Intersection b){
-            auto offsetA = glm::length(a.intersection.aabb.offset);
-            auto offsetB = glm::length(b.intersection.aabb.offset);
-            return offsetA < offsetB;
-        });
-
         if(!intersections.empty())
         {
             auto first = intersections.front();
