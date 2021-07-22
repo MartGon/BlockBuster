@@ -1,5 +1,6 @@
 SET(SOURCES
 
+    Client.cpp
     BlockBuster.cpp
 )
 
@@ -16,9 +17,11 @@ target_link_libraries(BlockBuster
     Rendering 
     Math 
     Game 
+    App
     AppsGame
 )
 target_include_directories(BlockBuster PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${OPENGL_INCLUDE_DIR} 
     ${DEPS_FOLDER} 
     ${DEPS_FOLDER}/imgui 
