@@ -1,8 +1,30 @@
 SET(SOURCES
 
     Editor.cpp
+    BlockBuster.cpp
 )
 
-add_executable(MapEditor ${SOURCES})
-target_link_libraries(MapEditor GLAD ${X11_LIBRARIES} ${OPENGL_LIBRARIES} ${CMAKE_DL_LIBS} ${SDL2_LIBRARIES} Threads::Threads GL)
-target_include_directories(MapEditor PUBLIC include ${OPENGL_INCLUDE_DIR} ${GLAD_INCLUDE_DIR} ${DEPS_FOLDER} ${COMMON_DIR})
+add_executable(Editor ${SOURCES})
+target_link_libraries(Editor 
+    imgui 
+    GLAD 
+    ${X11_LIBRARIES} 
+    ${OPENGL_LIBRARIES}
+    ${SDL2_LIBRARIES}
+    Threads::Threads 
+    Collisions 
+    GL 
+    Rendering 
+    Math 
+    Game 
+    App
+    AppsGame
+)
+target_include_directories(Editor PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${OPENGL_INCLUDE_DIR} 
+    ${DEPS_FOLDER} 
+    ${DEPS_FOLDER}/imgui 
+    ${COMMON_DIR} 
+    ${APPS_COMMON_DIR}
+)

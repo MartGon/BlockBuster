@@ -29,6 +29,8 @@ namespace Rendering
         glm::mat4 GetViewMat() const;
         glm::mat4 GetProjViewMat() const;
 
+        static const glm::vec3 UP;
+
     private:
 
         void UpdateViewMat();
@@ -41,7 +43,5 @@ namespace Rendering
         glm::mat4 projMat_;
         glm::mat4 viewMat_;
         glm::vec3 front_;
-
-        static const glm::vec3 UP;
     };
 }

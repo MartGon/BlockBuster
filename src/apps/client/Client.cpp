@@ -47,7 +47,6 @@ void BlockBuster::Client::Start()
         {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, Game::SLOPE, "Right"},
         {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, Game::SLOPE, "Back"},
     };
-    std::cout << "Drawing cube " << blocks.size() << "\n";
 }
 
 void PrintVec(glm::vec3 vec, std::string name)

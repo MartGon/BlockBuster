@@ -6,7 +6,8 @@ SET(SOURCES
 
 
 add_library(App ${SOURCES})
-target_link_libraries(App 
+target_link_libraries(App
+    imgui
     GLAD 
     ${X11_LIBRARIES} 
     ${OPENGL_LIBRARIES} 

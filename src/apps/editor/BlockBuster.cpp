@@ -31,7 +31,7 @@
 #include <game/Block.h>
 #include <game/Player.h>
 
-#include <Client.h>
+#include <Editor.h>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
@@ -40,7 +40,7 @@ int main()
 {
     App::Configuration config{
         App::Configuration::WindowConfig{
-            "Client",
+            "Editor",
             WINDOW_WIDTH,
             WINDOW_HEIGHT,
             SDL_WINDOWPOS_CENTERED,
@@ -50,12 +50,12 @@ int main()
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE
         }
     };
-    BlockBuster::Client client(config);
-    client.Start();
+    BlockBuster::Editor editor(config);
+    editor.Start();
 
-    while(!client.Quit())
+    while(!editor.Quit())
     {
-        client.Update();
+        editor.Update();
     }
 
     return 0;

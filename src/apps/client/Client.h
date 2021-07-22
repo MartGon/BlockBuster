@@ -23,6 +23,7 @@ namespace BlockBuster
         void Start() override;
         void Update() override;
         bool Quit() override;
+        
     private:
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
         Rendering::Mesh cube;
