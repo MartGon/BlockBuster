@@ -247,14 +247,15 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos)
     {
         if(tool == PLACE_BLOCK)
         {
+            auto yaw = (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f;
+
             auto block = blocks[index];
             auto pos = block.transform.position;
-            auto angle = block.transform.rotation;
             auto scale = block.transform.scale;
 
             auto newBlockPos = pos + intersection.normal * scale;
+            auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
             auto newBlockType = blockType;
-            auto newBlockRot = glm::vec3{0.0f};
 
             blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType});
         }
