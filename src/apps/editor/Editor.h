@@ -37,7 +37,7 @@ namespace BlockBuster
         std::vector<Game::Block> blocks;
         const float BLOCK_SCALE = 2.0f;
         const float CAMERA_MOVE_SPEED = 0.25f;
-        const float CAMERA_ROT_SPEED = glm::radians(2.5f);
+        const float CAMERA_ROT_SPEED = glm::radians(1.0f);
 
         bool quit;
     };

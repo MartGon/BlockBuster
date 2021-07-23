@@ -34,7 +34,8 @@ void BlockBuster::Editor::Start()
 
     // World
     blocks = {
-        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * BLOCK_SCALE, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK_SCALE}, Game::BLOCK}
+        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * BLOCK_SCALE, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK_SCALE}, Game::BLOCK},
+        {Math::Transform{glm::vec3{0.0f, 6.0f, 0.0f} * BLOCK_SCALE, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK_SCALE}, Game::BLOCK},
     };
 }
 
@@ -113,8 +114,8 @@ void BlockBuster::Editor::UpdateCamera()
     if(state[SDL_SCANCODE_RIGHT])
         yaw += -CAMERA_ROT_SPEED;
     
-    cameraRot.x = glm::min(cameraRot.x + pitch, glm::pi<float>() - 0.01f);
-    cameraRot.y = glm::min(cameraRot.y + yaw, glm::two_pi<float>());
+    cameraRot.x = glm::max(glm::min(cameraRot.x + pitch, glm::pi<float>() - CAMERA_ROT_SPEED), CAMERA_ROT_SPEED);
+    cameraRot.y = cameraRot.y + yaw;
     camera.SetRotation(cameraRot.x, cameraRot.y);
     
     auto cameraPos = camera.GetPos();
