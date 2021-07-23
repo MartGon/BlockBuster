@@ -26,7 +26,9 @@ namespace BlockBuster
         
     private:
 
+        void GUI();
         void UpdateCamera();
+        void UseTool(glm::vec<2, int> mousePos);
 
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
         GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
@@ -39,6 +41,17 @@ namespace BlockBuster
         const float CAMERA_MOVE_SPEED = 0.25f;
         const float CAMERA_ROT_SPEED = glm::radians(1.0f);
 
-        bool quit;
+        bool quit = false;
+
+        // GUI
+        enum Tool
+        {
+            PLACE_BLOCK,
+            REMOVE_BLOCK
+        };
+        Tool tool = PLACE_BLOCK;
+        Game::BlockType blockType = Game::BlockType::BLOCK;
+
+        ImVec4 color;
     };
 }

@@ -112,6 +112,9 @@ void BlockBuster::Client::Update()
     // Ray intersection
     if(clicked)
     {
+        // Window to eye
+        auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{config.window.width, config.window.height});
+
         // Sort blocks by proximity to camera
         auto cameraPos = this->cameraPos;
         std::sort(blocks.begin(), blocks.end(), [cameraPos](Game::Block a, Game::Block b)
@@ -121,14 +124,9 @@ void BlockBuster::Client::Update()
             return toA < toB;
         });
 
-        // Window to eye
-        auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{config.window.width, config.window.height});
-
         // Check intersection
         for(int i = 0; i < blocks.size(); i++)
         {  
-
-            //auto model = glm::translate(glm::mat4{1.0f}, blocks[i].pos * boxSize);
             auto model = blocks[i].transform.GetTransformMat();
             auto type = blocks[i].type;
 

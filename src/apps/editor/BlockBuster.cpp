@@ -58,5 +58,7 @@ int main()
         editor.Update();
     }
 
+    std::cout << "Quitting\n";
+
     return 0;
 }
