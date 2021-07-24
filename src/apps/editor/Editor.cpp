@@ -151,6 +151,81 @@ void BlockBuster::Editor::UpdateCamera()
     camera.SetPos(cameraPos);
 }
 
+void BlockBuster::Editor::MenuBar()
+{
+    if(ImGui::BeginMenuBar())
+    {
+        if(ImGui::BeginMenu("File", true))
+        {
+            if(ImGui::MenuItem("New Map", "Ctrl + N"))
+            {
+                std::cout << "New Map\n";
+                SDL_SetWindowTitle(window_, "Editor - New Map");
+            }
+
+            ImGui::Separator();
+
+            if(ImGui::MenuItem("Save", "Ctrl + S"))
+            {
+                std::cout << "Saving map\n";
+            }
+
+            if(ImGui::MenuItem("Save As", "Ctrl + Shift + S"))
+            {
+                std::cout << "Saving map as\n";
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if(ImGui::BeginMenu("Edit", true))
+        {
+            if(ImGui::MenuItem("Undo", "Ctrl + Z"))
+            {
+                std::cout << "Undoing\n";
+            }
+
+            if(ImGui::MenuItem("Redo", "Ctrl + Shift + Z"))
+            {
+                std::cout << "Redoing\n";
+            }
+
+            ImGui::Separator();
+
+            if(ImGui::MenuItem("Go to Block", "Ctrl + G"))
+            {
+                std::cout << "Going to block\n";
+            }
+
+            ImGui::Separator();
+
+            if(ImGui::MenuItem("Mouse camera mode", "C", mouseCamera))
+            {
+                mouseCamera = !mouseCamera;
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if(ImGui::BeginMenu("Settings", true))
+        {
+            if(ImGui::MenuItem("Graphics"))
+            {
+
+            }
+
+            if(ImGui::MenuItem("Display"))
+            {
+
+            }
+
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMenuBar();
+    }
+}
+
 void BlockBuster::Editor::GUI()
 {
     // Start the Dear ImGui frame
@@ -161,23 +236,25 @@ void BlockBuster::Editor::GUI()
     bool open;
     ImGui::SetNextWindowPos(ImVec2{0, 0}, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2{(float)config.window.width, 0}, ImGuiCond_Always);
-    if(ImGui::Begin("Editor", &open, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
+    if(ImGui::Begin("Editor", &open, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar))
     {
+        MenuBar();
+
         ImGui::Text("Tools");
         bool pbSelected = tool == PLACE_BLOCK;
         bool rbSelected = tool == REMOVE_BLOCK;
 
-        if(ImGui::BeginTable("Tools", 2, 0, ImVec2{180, 0}))
+        if(ImGui::BeginTable("Tools", 2, 0, ImVec2{100, 0}))
         {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            if(ImGui::Selectable("Place Block", &pbSelected, 0, ImVec2{80, 20}))
+            if(ImGui::Selectable("Place", &pbSelected, 0, ImVec2{0, 0}))
             {
                 std::cout << "Placing block enabled\n";
                 tool = PLACE_BLOCK;
             }
             ImGui::TableNextColumn();
-            if(ImGui::Selectable("Remove Block", &rbSelected, 0, ImVec2{120, 20}))
+            if(ImGui::Selectable("Remove", &rbSelected, 0, ImVec2{0, 0}))
             {
                 std::cout << "Removing block enabled\n";
                 tool = REMOVE_BLOCK;
@@ -186,11 +263,13 @@ void BlockBuster::Editor::GUI()
             ImGui::EndTable();
         }
 
+        ImGui::Separator();
+        ImGui::Text("Tool Options");
+
         ImGui::Text("Block");
         ImGui::ColorEdit4("ColorEdit", &color.x);
+
         ImGui::Text("Block Type");
-        
-        
         if(ImGui::RadioButton("Block", blockType == Game::BlockType::BLOCK))
         {
             blockType = Game::BlockType::BLOCK;

@@ -26,9 +26,12 @@ namespace BlockBuster
         
     private:
 
-        void GUI();
         void UpdateCamera();
         void UseTool(glm::vec<2, int> mousePos);
+
+        // GUI
+        void MenuBar();
+        void GUI();
 
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
         GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
@@ -43,7 +46,7 @@ namespace BlockBuster
 
         bool quit = false;
 
-        // GUI
+        // Editor
         enum Tool
         {
             PLACE_BLOCK,
@@ -52,6 +55,8 @@ namespace BlockBuster
         Tool tool = PLACE_BLOCK;
         Game::BlockType blockType = Game::BlockType::BLOCK;
 
+        // GUI
         ImVec4 color;
+        bool mouseCamera = false;
     };
 }
