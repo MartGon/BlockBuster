@@ -69,7 +69,7 @@ namespace BlockBuster
         };
         Tool tool = PLACE_BLOCK;
         Game::BlockType blockType = Game::BlockType::BLOCK;
-        RotationAxis axis = RotationAxis::X;
+        RotationAxis axis = RotationAxis::Y;
 
         // GUI
         ImVec4 color;
