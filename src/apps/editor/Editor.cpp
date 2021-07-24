@@ -65,7 +65,7 @@ void BlockBuster::Editor::Update()
                 glm::vec2 mousePos;
                 mousePos.x = e.button.x;
                 mousePos.y = config.window.height - e.button.y;
-                UseTool(mousePos);
+                UseTool(mousePos, e.button.button == SDL_BUTTON_RIGHT);
                 std::cout << "Click coords " << mousePos.x << " " << mousePos.y << "\n";
             }
         }
@@ -103,6 +103,16 @@ void BlockBuster::Editor::Update()
 bool BlockBuster::Editor::Quit()
 {
     return quit;
+}
+
+Game::Block* BlockBuster::Editor::GetBlock(glm::vec3 pos)
+{   
+    Game::Block* block = nullptr;
+    for(auto& b : blocks)
+        if(b.transform.position == pos)
+            block = &b;
+
+    return block;
 }
 
 void BlockBuster::Editor::UpdateCamera()
@@ -236,49 +246,76 @@ void BlockBuster::Editor::GUI()
     bool open;
     ImGui::SetNextWindowPos(ImVec2{0, 0}, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2{(float)config.window.width, 0}, ImGuiCond_Always);
-    if(ImGui::Begin("Editor", &open, ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar))
+    auto windowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar;
+    if(ImGui::Begin("Editor", &open, windowFlags))
     {
         MenuBar();
 
-        ImGui::Text("Tools");
         bool pbSelected = tool == PLACE_BLOCK;
-        bool rbSelected = tool == REMOVE_BLOCK;
+        bool rotbSelected = tool == ROTATE_BLOCK;
 
-        if(ImGui::BeginTable("Tools", 2, 0, ImVec2{100, 0}))
+        ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit;
+        if(ImGui::BeginTable("#Tools", 2, tableFlags, ImVec2{0, 0}))
         {
+            // Title Column 1
+            ImGui::TableSetupColumn("Tools", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Tool Options", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableHeadersRow();
+            
+            // Tools Table
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            if(ImGui::Selectable("Place", &pbSelected, 0, ImVec2{0, 0}))
+            if(ImGui::BeginTable("##Tools", 2, 0, ImVec2{120, 0}))
             {
-                std::cout << "Placing block enabled\n";
-                tool = PLACE_BLOCK;
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                if(ImGui::Selectable("Place", &pbSelected, 0, ImVec2{0, 0}))
+                {
+                    std::cout << "Placing block enabled\n";
+                    tool = PLACE_BLOCK;
+                }
+
+                ImGui::TableNextColumn();
+                if(ImGui::Selectable("Rotate", &rotbSelected, 0, ImVec2{0, 0}))
+                {
+                    std::cout << "Rotating block enabled\n";
+                    tool = ROTATE_BLOCK;
+                }
+
+                ImGui::EndTable();
             }
+
+            // Tools Options
             ImGui::TableNextColumn();
-            if(ImGui::Selectable("Remove", &rbSelected, 0, ImVec2{0, 0}))
+
+            if(pbSelected)
             {
-                std::cout << "Removing block enabled\n";
-                tool = REMOVE_BLOCK;
+                ImGui::Text("Color");
+                ImGui::SameLine();
+                ImGui::ColorEdit4("", &color.x);
+
+                ImGui::Text("Block Type");
+                ImGui::SameLine();
+                ImGui::RadioButton("Block", &blockType, Game::BlockType::BLOCK);
+                ImGui::SameLine();
+
+                ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
+                ImGui::SameLine();
+            }
+
+            if(rotbSelected)            
+            {
+                ImGui::Text("Axis");
+
+                ImGui::SameLine();
+                ImGui::RadioButton("X", &axis, RotationAxis::X);
+                ImGui::SameLine();
+                ImGui::RadioButton("Y", &axis, RotationAxis::Y);
+                ImGui::SameLine();
+                ImGui::RadioButton("Z", &axis, RotationAxis::Z);
             }
 
             ImGui::EndTable();
-        }
-
-        ImGui::Separator();
-        ImGui::Text("Tool Options");
-
-        ImGui::Text("Block");
-        ImGui::ColorEdit4("ColorEdit", &color.x);
-
-        ImGui::Text("Block Type");
-        if(ImGui::RadioButton("Block", blockType == Game::BlockType::BLOCK))
-        {
-            blockType = Game::BlockType::BLOCK;
-        }
-        ImGui::SameLine();
-
-        if(ImGui::RadioButton("Slope", blockType == Game::BlockType::SLOPE))
-        {
-            blockType = Game::BlockType::SLOPE;
         }
     }
 
@@ -288,7 +325,7 @@ void BlockBuster::Editor::GUI()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos)
+void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
 {
     // Window to eye
     auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{config.window.width, config.window.height});
@@ -324,24 +361,52 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos)
     
     if(index != -1)
     {
-        if(tool == PLACE_BLOCK)
+        // Use appropiate Tool
+        switch(tool)
         {
-            auto yaw = (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f;
+            case PLACE_BLOCK:
+            {
+                if(rightButton)
+                {
+                    if(blocks.size() > 1)
+                        blocks.erase(blocks.begin() + index);
+                    break;
+                }
+                else
+                {
+                    auto yaw = (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f;
 
-            auto block = blocks[index];
-            auto pos = block.transform.position;
-            auto scale = block.transform.scale;
+                    auto block = blocks[index];
+                    auto pos = block.transform.position;
+                    auto scale = block.transform.scale;
 
-            auto newBlockPos = pos + intersection.normal * scale;
-            auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
-            auto newBlockType = blockType;
+                    auto newBlockPos = pos + intersection.normal * scale;
+                    auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
+                    auto newBlockType = blockType;
+                    if(!GetBlock(newBlockPos))
+                    {
+                        blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType});
+                        std::cout << "Block added at \n";
+                    }
+                }
 
-            blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType});
-        }
-        else if(tool == REMOVE_BLOCK)
-        {
-            if(blocks.size() > 1)
-                blocks.erase(blocks.begin() + index);
+                break;
+            }            
+            case ROTATE_BLOCK:
+            {
+                auto& block = blocks[index];
+                float mod = rightButton ? -90.0f : 90.0f;
+                if(block.type == Game::BlockType::SLOPE)
+                {
+                    if(axis == RotationAxis::X)
+                        block.transform.rotation.x += mod;
+                    else if(axis == RotationAxis::Y)
+                        block.transform.rotation.y += mod;
+                    else
+                        block.transform.rotation.z += mod;
+                    break;
+                }
+            }
         }
     }
 }
