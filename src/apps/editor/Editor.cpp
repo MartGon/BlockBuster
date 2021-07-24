@@ -78,20 +78,19 @@ void BlockBuster::Editor::Update()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     for(int i = 0; i < blocks.size(); i++)
     {
-        auto model = blocks[i].transform.GetTransformMat();
-        auto type = blocks[i].type;
+        auto block = blocks[i];
+        auto model = block.transform.GetTransformMat();
+        auto type = block.type;
         auto transform = camera.GetProjViewMat() * model;
 
         shader.SetUniformInt("isPlayer", 0);
         shader.SetUniformMat4("transform", transform);
-        if(type == Game::SLOPE)
-        {
-            slope.Draw(shader, &texture);
-        }
-        else
-        {
-            cube.Draw(shader, &texture);
-        }
+        auto& mesh = GetMesh(block.type);
+        auto display = block.display;
+        if(display.type == Game::DisplayType::TEXTURE)
+            mesh.Draw(shader, &texture);
+        else if(display.type == Game::DisplayType::COLOR)
+            mesh.Draw(shader, display.display.color.color);
     }
 
     // GUI
@@ -103,6 +102,11 @@ void BlockBuster::Editor::Update()
 bool BlockBuster::Editor::Quit()
 {
     return quit;
+}
+
+Rendering::Mesh& BlockBuster::Editor::GetMesh(Game::BlockType blockType)
+{
+    return blockType == Game::BlockType::SLOPE ? slope : cube;
 }
 
 Game::Block* BlockBuster::Editor::GetBlock(glm::vec3 pos)
@@ -222,9 +226,17 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
                     auto newBlockPos = pos + intersection.normal * scale;
                     auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
                     auto newBlockType = blockType;
+
+                    Game::Display display;
+                    display.type = displayType;
+                    if(displayType == Game::DisplayType::COLOR)
+                        display.display.color.color = displayColor;
+                    else if(displayType == Game::DisplayType::TEXTURE)
+                        display.display.texture.textureId = 0;
+
                     if(!GetBlock(newBlockPos))
                     {
-                        blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType});
+                        blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, display});
                         std::cout << "Block added at \n";
                     }
                 }
@@ -418,17 +430,26 @@ void BlockBuster::Editor::GUI()
 
             if(pbSelected)
             {
-                ImGui::Text("Color");
-                ImGui::SameLine();
-                ImGui::ColorEdit4("", &color.x);
-
                 ImGui::Text("Block Type");
                 ImGui::SameLine();
                 ImGui::RadioButton("Block", &blockType, Game::BlockType::BLOCK);
                 ImGui::SameLine();
 
                 ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
+
+                ImGui::Text("Display Type");
                 ImGui::SameLine();
+                ImGui::RadioButton("Texture", &displayType, Game::DisplayType::TEXTURE);
+                ImGui::SameLine();
+
+                ImGui::RadioButton("Color", &displayType, Game::DisplayType::COLOR);
+
+                if(displayType == Game::DisplayType::COLOR)
+                {
+                    ImGui::Text("Color");
+                    ImGui::SameLine();
+                    ImGui::ColorEdit4("", &displayColor.x);
+                }
             }
 
             if(rotbSelected)            

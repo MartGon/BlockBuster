@@ -26,6 +26,9 @@ namespace BlockBuster
         
     private:
 
+        // Rendering
+        Rendering::Mesh& GetMesh(Game::BlockType type);
+
         // World
         Game::Block* GetBlock(glm::vec3 pos);
 
@@ -50,7 +53,6 @@ namespace BlockBuster
         // World
         std::vector<Game::Block> blocks;
         const float BLOCK_SCALE = 2.0f;
-
         
         // Editor
         bool quit = false;
@@ -79,8 +81,14 @@ namespace BlockBuster
             SAVE_AS
         };
 
-        ImVec4 color;
+        // Tool - Place
+        ImVec4 displayColor;
+        Game::DisplayType displayType = Game::DisplayType::TEXTURE;
+        
+        // Edit
         bool mouseCamera = false;
+
+        // Save
         PopUpState state = PopUpState::NONE;
         char fileName[16] = "Map.bbm";
     };

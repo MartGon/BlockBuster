@@ -21,6 +21,7 @@ namespace Rendering
         GL::VertexArray& GetVAO();
         
         void Draw(GL::Shader& shader, const GL::Texture* texture);
+        void Draw(GL::Shader& shader, glm::vec4 color);
     
     private:
         GL::VertexArray vao_;

@@ -54,6 +54,13 @@ void GL::Shader::SetUniformMat4(const std::string& name, const glm::mat4& mat)
     glUniformMatrix4fv(location, 1, false, glm::value_ptr(mat));
 }
 
+void GL::Shader::SetUniformVec4(const std::string& name, const glm::vec4& vec)
+{
+    Use();
+    auto location = glGetUniformLocation(handle_, name.c_str());
+    glUniform4fv(location, 1, glm::value_ptr(vec));
+}
+
 void GL::Shader::SetUniformInt(const std::string& name, int a)
 {
     Use();

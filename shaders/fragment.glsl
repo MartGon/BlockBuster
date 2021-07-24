@@ -5,12 +5,25 @@ in vec3 fragPos;
 in vec2 texCoords;
 
 uniform int isPlayer;
+uniform int textureType;
+uniform vec4 color;
 uniform sampler2D uTexture;
+
+const int TEXTURE_TYPE = 1;
+const int COLOR_TYPE = 2;
 
 void main()
 {
-    if(isPlayer == 1)
-        fragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    vec2 cTexCoords = texCoords - vec2(0.5, 0.5);
+
+    if(textureType == COLOR_TYPE)
+    {
+        if(abs(cTexCoords.x) > 0.475 || abs(cTexCoords.y) > 0.475)
+            //fragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            fragColor = abs(color  - vec4(1.0f));
+        else
+            fragColor = color;
+    }
     else
         fragColor = texture(uTexture, texCoords);
 }
