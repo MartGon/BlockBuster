@@ -117,6 +117,9 @@ Game::Block* BlockBuster::Editor::GetBlock(glm::vec3 pos)
 
 void BlockBuster::Editor::UpdateCamera()
 {
+    if(io_->WantCaptureKeyboard)
+        return;
+
     auto state = SDL_GetKeyboardState(nullptr);
 
     auto cameraRot = camera.GetRotation();
@@ -161,8 +164,132 @@ void BlockBuster::Editor::UpdateCamera()
     camera.SetPos(cameraPos);
 }
 
+void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
+{
+    // Window to eye
+    auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{config.window.width, config.window.height});
+
+    // Sort blocks by proximity to camera
+    auto cameraPos = this->camera.GetPos();
+    std::sort(blocks.begin(), blocks.end(), [cameraPos](Game::Block a, Game::Block b)
+    {
+        auto toA = glm::length(a.transform.position - cameraPos);
+        auto toB = glm::length(b.transform.position- cameraPos);
+        return toA < toB;
+    });
+
+    // Check intersection
+    int index = -1;
+    Collisions::RayIntersection intersection;
+    for(int i = 0; i < blocks.size(); i++)
+    {  
+        auto model = blocks[i].transform.GetTransformMat();
+        auto type = blocks[i].type;
+
+        if(type == Game::SLOPE)
+            intersection = Collisions::RaySlopeIntersection(ray, model);
+        else
+            intersection = Collisions::RayAABBIntersection(ray, model);
+
+        if(intersection.intersects)
+        {
+            index = i;
+            break;
+        }
+    }
+    
+    if(index != -1)
+    {
+        // Use appropiate Tool
+        switch(tool)
+        {
+            case PLACE_BLOCK:
+            {
+                if(rightButton)
+                {
+                    if(blocks.size() > 1)
+                        blocks.erase(blocks.begin() + index);
+                    break;
+                }
+                else
+                {
+                    auto yaw = (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f;
+
+                    auto block = blocks[index];
+                    auto pos = block.transform.position;
+                    auto scale = block.transform.scale;
+
+                    auto newBlockPos = pos + intersection.normal * scale;
+                    auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
+                    auto newBlockType = blockType;
+                    if(!GetBlock(newBlockPos))
+                    {
+                        blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType});
+                        std::cout << "Block added at \n";
+                    }
+                }
+
+                break;
+            }            
+            case ROTATE_BLOCK:
+            {
+                auto& block = blocks[index];
+                float mod = rightButton ? -90.0f : 90.0f;
+                if(block.type == Game::BlockType::SLOPE)
+                {
+                    if(axis == RotationAxis::X)
+                        block.transform.rotation.x += mod;
+                    else if(axis == RotationAxis::Y)
+                        block.transform.rotation.y += mod;
+                    else
+                        block.transform.rotation.z += mod;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void BlockBuster::Editor::SaveAsPopUp()
+{
+    if(state == PopUpState::SAVE_AS)
+        ImGui::OpenPopup("Save as");
+
+    auto displaySize = io_->DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+    if(ImGui::BeginPopupModal("Save as", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
+    {   
+        
+        ImGui::GetWindowSize();
+
+        if(ImGui::InputText("File name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            
+        }
+
+        if(ImGui::Button("Accept"))
+        {
+            std::cout << "Saving map as " << fileName << "\n";
+            ImGui::CloseCurrentPopup();
+            state = PopUpState::NONE;
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Cancel"))
+        {
+            ImGui::CloseCurrentPopup();
+            state = PopUpState::NONE;
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
 void BlockBuster::Editor::MenuBar()
 {
+    // Pop Ups
+    SaveAsPopUp();
+
     if(ImGui::BeginMenuBar())
     {
         if(ImGui::BeginMenu("File", true))
@@ -182,7 +309,8 @@ void BlockBuster::Editor::MenuBar()
 
             if(ImGui::MenuItem("Save As", "Ctrl + Shift + S"))
             {
-                std::cout << "Saving map as\n";
+                state = PopUpState::SAVE_AS;
+                std::cout << "Opening PopUp\n";
             }
 
             ImGui::EndMenu();
@@ -323,90 +451,4 @@ void BlockBuster::Editor::GUI()
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
-{
-    // Window to eye
-    auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{config.window.width, config.window.height});
-
-    // Sort blocks by proximity to camera
-    auto cameraPos = this->camera.GetPos();
-    std::sort(blocks.begin(), blocks.end(), [cameraPos](Game::Block a, Game::Block b)
-    {
-        auto toA = glm::length(a.transform.position - cameraPos);
-        auto toB = glm::length(b.transform.position- cameraPos);
-        return toA < toB;
-    });
-
-    // Check intersection
-    int index = -1;
-    Collisions::RayIntersection intersection;
-    for(int i = 0; i < blocks.size(); i++)
-    {  
-        auto model = blocks[i].transform.GetTransformMat();
-        auto type = blocks[i].type;
-
-        if(type == Game::SLOPE)
-            intersection = Collisions::RaySlopeIntersection(ray, model);
-        else
-            intersection = Collisions::RayAABBIntersection(ray, model);
-
-        if(intersection.intersects)
-        {
-            index = i;
-            break;
-        }
-    }
-    
-    if(index != -1)
-    {
-        // Use appropiate Tool
-        switch(tool)
-        {
-            case PLACE_BLOCK:
-            {
-                if(rightButton)
-                {
-                    if(blocks.size() > 1)
-                        blocks.erase(blocks.begin() + index);
-                    break;
-                }
-                else
-                {
-                    auto yaw = (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f;
-
-                    auto block = blocks[index];
-                    auto pos = block.transform.position;
-                    auto scale = block.transform.scale;
-
-                    auto newBlockPos = pos + intersection.normal * scale;
-                    auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
-                    auto newBlockType = blockType;
-                    if(!GetBlock(newBlockPos))
-                    {
-                        blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType});
-                        std::cout << "Block added at \n";
-                    }
-                }
-
-                break;
-            }            
-            case ROTATE_BLOCK:
-            {
-                auto& block = blocks[index];
-                float mod = rightButton ? -90.0f : 90.0f;
-                if(block.type == Game::BlockType::SLOPE)
-                {
-                    if(axis == RotationAxis::X)
-                        block.transform.rotation.x += mod;
-                    else if(axis == RotationAxis::Y)
-                        block.transform.rotation.y += mod;
-                    else
-                        block.transform.rotation.z += mod;
-                    break;
-                }
-            }
-        }
-    }
 }

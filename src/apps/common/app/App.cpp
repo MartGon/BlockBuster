@@ -33,7 +33,7 @@ App::App::App(Configuration config) : config{config}
     // ImGUI
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
+    io_ = &ImGui::GetIO();
 
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForOpenGL(window_, context_);

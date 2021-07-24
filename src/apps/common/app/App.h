@@ -27,6 +27,7 @@ namespace App
     protected:
         Configuration config;
 
+        ImGuiIO* io_;
         SDL_Window* window_;
         SDL_GLContext context_;
     };

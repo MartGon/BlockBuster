@@ -34,6 +34,7 @@ namespace BlockBuster
         void UseTool(glm::vec<2, int> mousePos, bool rightButton = false);
 
         // GUI
+        void SaveAsPopUp();
         void MenuBar();
         void GUI();
 
@@ -72,7 +73,15 @@ namespace BlockBuster
         RotationAxis axis = RotationAxis::Y;
 
         // GUI
+        enum class PopUpState
+        {
+            NONE,
+            SAVE_AS
+        };
+
         ImVec4 color;
         bool mouseCamera = false;
+        PopUpState state = PopUpState::NONE;
+        char fileName[16] = "Map.bbm";
     };
 }
