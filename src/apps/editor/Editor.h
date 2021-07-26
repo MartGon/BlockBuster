@@ -31,12 +31,15 @@ namespace BlockBuster
 
         // World
         Game::Block* GetBlock(glm::vec3 pos);
+        void SaveMap();
+        void LoadMap();
 
         // Editor
         void UpdateCamera();
         void UseTool(glm::vec<2, int> mousePos, bool rightButton = false);
 
         // GUI
+        void OpenMapPopUp();
         void SaveAsPopUp();
         void MenuBar();
         void GUI();
@@ -52,7 +55,6 @@ namespace BlockBuster
 
         // World
         std::vector<Game::Block> blocks;
-        const float BLOCK_SCALE = 2.0f;
         
         // Editor
         bool quit = false;
@@ -78,7 +80,8 @@ namespace BlockBuster
         enum class PopUpState
         {
             NONE,
-            SAVE_AS
+            SAVE_AS,
+            OPEN_MAP
         };
 
         // Tool - Place
@@ -91,5 +94,8 @@ namespace BlockBuster
         // Save
         PopUpState state = PopUpState::NONE;
         char fileName[16] = "Map.bbm";
+
+        // Options
+        float blockScale = 2.0f;
     };
 }

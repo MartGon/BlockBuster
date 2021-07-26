@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 
 #include <glm/gtc/constants.hpp>
 
@@ -35,7 +36,7 @@ void BlockBuster::Editor::Start()
 
     // World
     blocks = {
-        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * BLOCK_SCALE, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK_SCALE}, Game::BLOCK},
+        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, blockScale}, Game::BLOCK},
         //{Math::Transform{glm::vec3{0.0f, 6.0f, 0.0f} * BLOCK_SCALE, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK_SCALE}, Game::BLOCK},
     };
 }
@@ -117,6 +118,113 @@ Game::Block* BlockBuster::Editor::GetBlock(glm::vec3 pos)
             block = &b;
 
     return block;
+}
+
+template<typename T>
+void WriteToFile(std::fstream& file, T val)
+{
+    file.write(reinterpret_cast<char*>(&val), sizeof(T));
+}
+
+template <typename T>
+T ReadFromFile(std::fstream& file)
+{
+    T val;
+    file.read(reinterpret_cast<char*>(&val), sizeof(T));
+    return val;
+}
+
+void SaveVec3(std::fstream& file, glm::vec3 vec)
+{
+    WriteToFile(file, vec.x);
+    WriteToFile(file, vec.y);
+    WriteToFile(file, vec.z);
+}
+
+glm::vec3 ReadVec3(std::fstream& file)
+{
+    glm::vec3 vec;
+    vec.x = ReadFromFile<float>(file);
+    vec.y = ReadFromFile<float>(file);
+    vec.z = ReadFromFile<float>(file);
+
+    return vec;
+}
+
+void SaveVec4(std::fstream& file, glm::vec4 vec)
+{
+    SaveVec3(file, vec);
+    WriteToFile(file, vec.w);
+}
+
+glm::vec4 ReadVec4(std::fstream& file)
+{
+    glm::vec3 vec3 = ReadVec3(file);
+    float w = ReadFromFile<float>(file);
+    return glm::vec4{vec3, w};
+}
+
+void BlockBuster::Editor::SaveMap()
+{
+    std::fstream file{fileName, file.binary | file.out};
+    if(!file.is_open())
+    {
+        std::cout << "Could not open file " << fileName << '\n';
+        return;
+    }
+
+    // Header
+    WriteToFile(file, blocks.size());
+    WriteToFile(file, blockScale);
+
+    // Save player pos
+
+    // Blocks
+    for(auto& block : blocks)
+    {
+        WriteToFile(file, block.type);
+        SaveVec3(file, block.transform.position);
+        if(block.type == Game::BlockType::SLOPE)
+            SaveVec3(file, block.transform.rotation);
+
+        WriteToFile(file, block.display.type);
+        if(block.display.type == Game::DisplayType::COLOR)
+            SaveVec4(file, block.display.display.color.color);
+        else
+            WriteToFile(file, block.display.display.texture.textureId);
+    }
+}
+
+void BlockBuster::Editor::LoadMap()
+{
+    std::fstream file{fileName, file.binary | file.in};
+    if(!file.is_open())
+    {
+        std::cout << "Could not open file " << fileName << '\n';
+        return;
+    }
+
+    auto count = ReadFromFile<std::size_t>(file);
+    blockScale = ReadFromFile<float>(file);
+    blocks.clear();
+    blocks.reserve(count);
+    for(std::size_t i = 0; i < count; i++)
+    {
+        Game::Block block;
+        block.type = ReadFromFile<Game::BlockType>(file);
+        block.transform.position = ReadVec3(file);
+        block.transform.scale = blockScale;
+        if(block.type == Game::BlockType::SLOPE)
+            block.transform.rotation = ReadVec3(file);
+
+        block.display.type = ReadFromFile<Game::DisplayType>(file);
+        if(block.display.type == Game::DisplayType::COLOR)
+            block.display.display.color.color = ReadVec4(file);
+        else
+            block.display.display.texture.textureId = ReadFromFile<int>(file);
+
+        blocks.push_back(block);
+    }
 }
 
 void BlockBuster::Editor::UpdateCamera()
@@ -269,19 +377,43 @@ void BlockBuster::Editor::SaveAsPopUp()
 
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-    if(ImGui::BeginPopupModal("Save as", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove))
+    if(ImGui::BeginPopupModal("Save as", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
-        
-        ImGui::GetWindowSize();
-
-        if(ImGui::InputText("File name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-            
-        }
-
+        ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
         if(ImGui::Button("Accept"))
         {
             std::cout << "Saving map as " << fileName << "\n";
+            SaveMap();
+            ImGui::CloseCurrentPopup();
+            state = PopUpState::NONE;
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Cancel"))
+        {
+            ImGui::CloseCurrentPopup();
+            state = PopUpState::NONE;
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
+void BlockBuster::Editor::OpenMapPopUp()
+{
+    if(state == PopUpState::OPEN_MAP)
+        ImGui::OpenPopup("Open Map");
+
+    auto displaySize = io_->DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+    if(ImGui::BeginPopupModal("Open Map", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    {   
+        ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
+        if(ImGui::Button("Accept"))
+        {
+            std::cout << "Opening map " << fileName << "\n";
+            LoadMap();
+
             ImGui::CloseCurrentPopup();
             state = PopUpState::NONE;
         }
@@ -300,6 +432,7 @@ void BlockBuster::Editor::SaveAsPopUp()
 void BlockBuster::Editor::MenuBar()
 {
     // Pop Ups
+    OpenMapPopUp();
     SaveAsPopUp();
 
     if(ImGui::BeginMenuBar())
@@ -310,6 +443,14 @@ void BlockBuster::Editor::MenuBar()
             {
                 std::cout << "New Map\n";
                 SDL_SetWindowTitle(window_, "Editor - New Map");
+            }
+
+            ImGui::Separator();
+
+            if(ImGui::MenuItem("Open Map", "Ctrl + O"))
+            {
+                state = PopUpState::OPEN_MAP;
+                std::cout << "Opening PopUp\n";
             }
 
             ImGui::Separator();
