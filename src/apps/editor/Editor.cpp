@@ -195,6 +195,7 @@ void BlockBuster::Editor::SaveMap()
     }
 
     // Header
+    WriteToFile(file, magicNumber);
     WriteToFile(file, blocks.size());
     WriteToFile(file, blockScale);
 
@@ -224,6 +225,13 @@ bool BlockBuster::Editor::LoadMap()
     if(!file.is_open())
     {
         std::cout << "Could not open file " << fileName << '\n';
+        return false;
+    }
+
+    auto magic = ReadFromFile<int>(file);
+    if(magic != magicNumber)
+    {
+        std::cout << "Wrong file format for file " << fileName << "\n";
         return false;
     }
 
@@ -669,7 +677,7 @@ void BlockBuster::Editor::GUI()
         bool rotbSelected = tool == ROTATE_BLOCK;
 
         ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit;
-        if(ImGui::BeginTable("#Tools", 2, tableFlags, ImVec2{0, 0}))
+        if(ImGui::BeginTable("#Tools", 2, 0, ImVec2{0, 0}))
         {
             // Title Column 1
             ImGui::TableSetupColumn("Tools", ImGuiTableColumnFlags_WidthFixed);

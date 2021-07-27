@@ -95,6 +95,7 @@ namespace BlockBuster
         // File
         PopUpState state = PopUpState::NONE;
         char fileName[16] = "Map.bbm";
+        const int magicNumber = 0xB010F0;
         bool onPopUp = false;
         bool newMap = true;
         std::string errorText;
