@@ -677,20 +677,31 @@ void BlockBuster::Editor::GUI()
         bool rotbSelected = tool == ROTATE_BLOCK;
 
         ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit;
+        ImGui::SetCursorPosX(0);
         if(ImGui::BeginTable("#Tools", 2, 0, ImVec2{0, 0}))
         {
             // Title Column 1
-            ImGui::TableSetupColumn("Tools", ImGuiTableColumnFlags_WidthFixed);
-            ImGui::TableSetupColumn("Tool Options", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableHeadersRow();
+            ImGui::TableSetupColumn("##Tools", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("##Tool Options", 0);
+            
+            ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TableHeader("##Tools");
+            ImGui::SameLine();
+            ImGui::Text("Tools");
+
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TableHeader("##Tool Options");
+            ImGui::SameLine();
+            ImGui::Text("Tools Options");
             
             // Tools Table
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             if(ImGui::BeginTable("##Tools", 2, 0, ImVec2{120, 0}))
             {
-                ImGui::TableNextRow();
                 ImGui::TableNextColumn();
+                ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
                 if(ImGui::Selectable("Place", &pbSelected, 0, ImVec2{0, 0}))
                 {
                     std::cout << "Placing block enabled\n";
@@ -703,6 +714,7 @@ void BlockBuster::Editor::GUI()
                     std::cout << "Rotating block enabled\n";
                     tool = ROTATE_BLOCK;
                 }
+                ImGui::PopStyleVar();
 
                 ImGui::EndTable();
             }
