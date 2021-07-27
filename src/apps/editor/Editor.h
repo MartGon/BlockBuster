@@ -31,6 +31,7 @@ namespace BlockBuster
 
         // World
         Game::Block* GetBlock(glm::vec3 pos);
+        void InitMap();
         void SaveMap();
         void LoadMap();
 
@@ -39,6 +40,7 @@ namespace BlockBuster
         void UseTool(glm::vec<2, int> mousePos, bool rightButton = false);
 
         // GUI
+        void RenameWindow(std::string name);
         void OpenMapPopUp();
         void SaveAsPopUp();
         void MenuBar();
@@ -81,7 +83,9 @@ namespace BlockBuster
         {
             NONE,
             SAVE_AS,
-            OPEN_MAP
+            OPEN_MAP,
+            GRAPHICS_SETTINGS,
+            DISPLAY_SETTINGS
         };
 
         // Tool - Place
@@ -94,6 +98,7 @@ namespace BlockBuster
         // Save
         PopUpState state = PopUpState::NONE;
         char fileName[16] = "Map.bbm";
+        bool newMap = true;
 
         // Options
         float blockScale = 2.0f;

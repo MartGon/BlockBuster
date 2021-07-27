@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <fstream>
+#include <cstring>
 
 #include <glm/gtc/constants.hpp>
 
@@ -35,10 +36,10 @@ void BlockBuster::Editor::Start()
     camera.SetTarget(glm::vec3{0.0f});
 
     // World
-    blocks = {
-        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, blockScale}, Game::BLOCK},
-        //{Math::Transform{glm::vec3{0.0f, 6.0f, 0.0f} * BLOCK_SCALE, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK_SCALE}, Game::BLOCK},
-    };
+    InitMap();
+
+    // Gui Setup
+    RenameWindow("New Map");
 }
 
 void BlockBuster::Editor::Update()
@@ -162,6 +163,14 @@ glm::vec4 ReadVec4(std::fstream& file)
     glm::vec3 vec3 = ReadVec3(file);
     float w = ReadFromFile<float>(file);
     return glm::vec4{vec3, w};
+}
+
+void BlockBuster::Editor::InitMap()
+{
+    blocks = {
+        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, blockScale}, Game::BLOCK},
+        //{Math::Transform{glm::vec3{0.0f, 6.0f, 0.0f} * BLOCK_SCALE, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK_SCALE}, Game::BLOCK},
+    };
 }
 
 void BlockBuster::Editor::SaveMap()
@@ -370,6 +379,12 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
     }
 }
 
+void BlockBuster::Editor::RenameWindow(std::string name)
+{
+    std::string title = "Editor - " + name;
+    SDL_SetWindowTitle(window_, title.c_str());
+}
+
 void BlockBuster::Editor::SaveAsPopUp()
 {
     if(state == PopUpState::SAVE_AS)
@@ -382,8 +397,10 @@ void BlockBuster::Editor::SaveAsPopUp()
         ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
         if(ImGui::Button("Accept"))
         {
-            std::cout << "Saving map as " << fileName << "\n";
             SaveMap();
+            RenameWindow(fileName);
+            newMap = false;
+
             ImGui::CloseCurrentPopup();
             state = PopUpState::NONE;
         }
@@ -411,8 +428,9 @@ void BlockBuster::Editor::OpenMapPopUp()
         ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
         if(ImGui::Button("Accept"))
         {
-            std::cout << "Opening map " << fileName << "\n";
             LoadMap();
+            RenameWindow(fileName);
+            newMap = false;
 
             ImGui::CloseCurrentPopup();
             state = PopUpState::NONE;
@@ -441,8 +459,10 @@ void BlockBuster::Editor::MenuBar()
         {
             if(ImGui::MenuItem("New Map", "Ctrl + N"))
             {
-                std::cout << "New Map\n";
-                SDL_SetWindowTitle(window_, "Editor - New Map");
+                InitMap();
+                std::strcpy(fileName, "NewMap.bbm");
+                RenameWindow("New Map");
+                newMap = true;
             }
 
             ImGui::Separator();
@@ -450,20 +470,21 @@ void BlockBuster::Editor::MenuBar()
             if(ImGui::MenuItem("Open Map", "Ctrl + O"))
             {
                 state = PopUpState::OPEN_MAP;
-                std::cout << "Opening PopUp\n";
             }
 
             ImGui::Separator();
 
             if(ImGui::MenuItem("Save", "Ctrl + S"))
             {
-                std::cout << "Saving map\n";
+                if(newMap)
+                    state = PopUpState::SAVE_AS;
+                else
+                    SaveMap();
             }
 
             if(ImGui::MenuItem("Save As", "Ctrl + Shift + S"))
             {
                 state = PopUpState::SAVE_AS;
-                std::cout << "Opening PopUp\n";
             }
 
             ImGui::EndMenu();
