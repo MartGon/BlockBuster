@@ -1,3 +1,4 @@
+#include <SDL2/SDL.h>
 
 #include <string>
 
@@ -5,6 +6,13 @@ namespace App
 {
     struct Configuration
     {
+        enum WindowMode
+        {
+            WINDOW,
+            FULLSCREEN,
+            BORDERLESS = SDL_WINDOW_FULLSCREEN_DESKTOP
+        };
+
         struct  WindowConfig
         {
             std::string name;
@@ -12,6 +20,8 @@ namespace App
             int height;
             int xPos;
             int yPos;
+            WindowMode mode;
+            bool vsync = false;
         };
 
         struct OpenGLConfig

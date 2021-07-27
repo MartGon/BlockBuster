@@ -478,11 +478,92 @@ void BlockBuster::Editor::OpenMapPopUp()
     }
 }
 
+void BlockBuster::Editor::GraphicsPopUp()
+{
+    if(state == PopUpState::VIDEO_SETTINGS)
+    {
+        ImGui::OpenPopup("Video");
+        state = PopUpState::NONE;
+        onPopUp = true;
+    }
+
+    auto displaySize = io_->DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+    if(ImGui::BeginPopupModal("Video", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    {   
+        std::string currentRes = std::to_string(config.window.width) + " x " + std::to_string(config.window.height);
+        if(ImGui::BeginCombo("Resolution", currentRes.c_str()))
+        {
+            int displays = SDL_GetNumVideoDisplays();
+
+            for(int i = 0; i < 1; i++)
+            {
+                auto displayModes = SDL_GetNumDisplayModes(i);
+
+                for(int j = 0; j < displayModes; j++)
+                {
+                    SDL_DisplayMode mode;
+                    if(!SDL_GetDisplayMode(i, j, &mode))
+                    {
+                        std::string res = std::to_string(mode.w) + " x " + std::to_string(mode.h) + " " + std::to_string(mode.refresh_rate) + " Hz";
+                        if(ImGui::Selectable(res.c_str(), config.window.width == mode.w && config.window.height == mode.h))
+                        {
+                            config.window.width = mode.w;
+                            config.window.height = mode.h;
+                        }
+                    }
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+
+        ImGui::Text("Window Mode");
+        ImGui::RadioButton("Windowed", &config.window.mode, ::App::Configuration::WindowMode::WINDOW); ImGui::SameLine();
+        ImGui::RadioButton("Fullscreen", &config.window.mode, ::App::Configuration::WindowMode::FULLSCREEN); ImGui::SameLine();
+        ImGui::RadioButton("Borderless", &config.window.mode, ::App::Configuration::WindowMode::BORDERLESS);
+
+        ImGui::Checkbox("Vsync", &config.window.vsync);
+
+        if(ImGui::Button("Accept"))
+        {
+            SDL_SetWindowSize(window_, config.window.width, config.window.height);
+            SDL_SetWindowFullscreen(window_, config.window.mode);
+            glViewport(0, 0, config.window.width, config.window.height);
+            camera.SetParam(camera.ASPECT_RATIO, (float) config.window.width / (float) config.window.height);
+            if(SDL_GL_SetSwapInterval(config.window.vsync) == 0)
+            {
+                std::cout << "Vsync enabled\n";
+            }
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Apply"))
+        {
+            SDL_SetWindowSize(window_, config.window.width, config.window.height);
+            SDL_SetWindowFullscreen(window_, config.window.mode);
+            camera.SetParam(camera.ASPECT_RATIO, (float) config.window.width / (float) config.window.height);
+            glViewport(0, 0, config.window.width, config.window.height);
+            SDL_GL_SetSwapInterval(config.window.vsync);
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Cancel"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+}
+
 void BlockBuster::Editor::MenuBar()
 {
     // Pop Ups
     OpenMapPopUp();
     SaveAsPopUp();
+    GraphicsPopUp();
 
     if(ImGui::BeginMenuBar())
     {
@@ -552,12 +633,12 @@ void BlockBuster::Editor::MenuBar()
 
         if(ImGui::BeginMenu("Settings", true))
         {
-            if(ImGui::MenuItem("Graphics"))
+            if(ImGui::MenuItem("Video", "Ctrl + Shift + G"))
             {
-
+                state = PopUpState::VIDEO_SETTINGS;
             }
 
-            if(ImGui::MenuItem("Display"))
+            if(ImGui::MenuItem("Language"))
             {
 
             }

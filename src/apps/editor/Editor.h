@@ -43,6 +43,7 @@ namespace BlockBuster
         void RenameWindow(std::string name);
         void OpenMapPopUp();
         void SaveAsPopUp();
+        void GraphicsPopUp();
         void MenuBar();
         void GUI();
 
@@ -84,8 +85,7 @@ namespace BlockBuster
             NONE,
             SAVE_AS,
             OPEN_MAP,
-            GRAPHICS_SETTINGS,
-            DISPLAY_SETTINGS
+            VIDEO_SETTINGS,
         };
 
         // Tool - Place
@@ -95,6 +95,7 @@ namespace BlockBuster
         // File
         PopUpState state = PopUpState::NONE;
         char fileName[16] = "Map.bbm";
+        bool onPopUp = false;
         bool newMap = true;
         std::string errorText;
         

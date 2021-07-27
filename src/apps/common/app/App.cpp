@@ -20,6 +20,8 @@ App::App::App(Configuration config) : config{config}
         std::string msg = "SDL_CreateWindow failed: " + std::string(SDL_GetError()) + "\n";
         throw InitError(msg.c_str());
     }
+    SDL_SetWindowFullscreen(window_, config.window.mode);
+
     context_ = SDL_GL_CreateContext(window_);
     SDL_GL_MakeCurrent(window_, context_);
 
