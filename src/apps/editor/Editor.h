@@ -33,7 +33,7 @@ namespace BlockBuster
         Game::Block* GetBlock(glm::vec3 pos);
         void InitMap();
         void SaveMap();
-        void LoadMap();
+        bool LoadMap();
 
         // Editor
         void UpdateCamera();
@@ -91,14 +91,15 @@ namespace BlockBuster
         // Tool - Place
         ImVec4 displayColor;
         Game::DisplayType displayType = Game::DisplayType::TEXTURE;
-        
-        // Edit
-        bool mouseCamera = false;
 
-        // Save
+        // File
         PopUpState state = PopUpState::NONE;
         char fileName[16] = "Map.bbm";
         bool newMap = true;
+        std::string errorText;
+        
+        // Edit
+        bool mouseCamera = false;
 
         // Options
         float blockScale = 2.0f;

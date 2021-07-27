@@ -135,21 +135,33 @@ T ReadFromFile(std::fstream& file)
     return val;
 }
 
-void SaveVec3(std::fstream& file, glm::vec3 vec)
+void SaveVec2(std::fstream& file, glm::vec2 vec)
 {
     WriteToFile(file, vec.x);
     WriteToFile(file, vec.y);
+}
+
+glm::vec2 ReadVec2(std::fstream& file)
+{
+    glm::vec2 vec;
+    vec.x = ReadFromFile<float>(file);
+    vec.y = ReadFromFile<float>(file);
+
+    return vec;
+}
+
+void SaveVec3(std::fstream& file, glm::vec3 vec)
+{
+    SaveVec2(file, vec);
     WriteToFile(file, vec.z);
 }
 
 glm::vec3 ReadVec3(std::fstream& file)
 {
-    glm::vec3 vec;
-    vec.x = ReadFromFile<float>(file);
-    vec.y = ReadFromFile<float>(file);
-    vec.z = ReadFromFile<float>(file);
+    auto vec2 = ReadVec2(file);
+    float z = ReadFromFile<float>(file);
 
-    return vec;
+    return glm::vec3{vec2, z};
 }
 
 void SaveVec4(std::fstream& file, glm::vec4 vec)
@@ -186,7 +198,9 @@ void BlockBuster::Editor::SaveMap()
     WriteToFile(file, blocks.size());
     WriteToFile(file, blockScale);
 
-    // Save player pos
+    // Camera Pos/Rot
+    SaveVec3(file, camera.GetPos());
+    SaveVec2(file, camera.GetRotation());
 
     // Blocks
     for(auto& block : blocks)
@@ -204,17 +218,23 @@ void BlockBuster::Editor::SaveMap()
     }
 }
 
-void BlockBuster::Editor::LoadMap()
+bool BlockBuster::Editor::LoadMap()
 {
     std::fstream file{fileName, file.binary | file.in};
     if(!file.is_open())
     {
         std::cout << "Could not open file " << fileName << '\n';
-        return;
+        return false;
     }
 
     auto count = ReadFromFile<std::size_t>(file);
     blockScale = ReadFromFile<float>(file);
+
+    auto cameraPos = ReadVec3(file);
+    auto cameraRot = ReadVec2(file);
+    camera.SetPos(cameraPos);
+    camera.SetRotation(cameraRot.x, cameraRot.y);
+
     blocks.clear();
     blocks.reserve(count);
     for(std::size_t i = 0; i < count; i++)
@@ -234,6 +254,8 @@ void BlockBuster::Editor::LoadMap()
 
         blocks.push_back(block);
     }
+
+    return true;
 }
 
 void BlockBuster::Editor::UpdateCamera()
@@ -428,20 +450,29 @@ void BlockBuster::Editor::OpenMapPopUp()
         ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
         if(ImGui::Button("Accept"))
         {
-            LoadMap();
-            RenameWindow(fileName);
-            newMap = false;
+            if(LoadMap())
+            {
+                RenameWindow(fileName);
+                newMap = false;
+                errorText = "";
 
-            ImGui::CloseCurrentPopup();
-            state = PopUpState::NONE;
+                ImGui::CloseCurrentPopup();
+                state = PopUpState::NONE;
+            }
+            else
+                errorText = "Could not load map " + std::string(fileName);
         }
 
         ImGui::SameLine();
         if(ImGui::Button("Cancel"))
         {
+            errorText = "";
             ImGui::CloseCurrentPopup();
             state = PopUpState::NONE;
         }
+
+        if(!errorText.empty())
+            ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", errorText.c_str());
 
         ImGui::EndPopup();
     }
