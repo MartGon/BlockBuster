@@ -24,9 +24,9 @@ namespace App
         virtual void Update() = 0;
         virtual bool Quit() = 0;
     
-    protected:
+    
         Configuration config;
-
+    protected:
         ImGuiIO* io_;
         SDL_Window* window_;
         SDL_GLContext context_;

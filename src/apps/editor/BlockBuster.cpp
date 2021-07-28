@@ -45,11 +45,29 @@ int main()
             WINDOW_HEIGHT,
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
+
         },
         App::Configuration::OpenGLConfig{
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE
         }
     };
+
+    std::filesystem::path configPath("editor.ini");
+    try
+    {
+        config = App::LoadConfig(configPath);
+    }
+    catch(const std::out_of_range& e)
+    {
+        std::cerr << "Configuration file is corrupted:" << e.what() << '\n';
+        std::exit(-1);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        std::cerr << "Loading default config\n";
+    }
+
     BlockBuster::Editor editor(config);
     editor.Start();
 
@@ -57,6 +75,8 @@ int main()
     {
         editor.Update();
     }
+
+    App::WriteConfig(editor.config, configPath);
 
     std::cout << "Quitting\n";
 

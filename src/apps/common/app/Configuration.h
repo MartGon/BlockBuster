@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 
 #include <string>
+#include <filesystem>
 
 namespace App
 {
@@ -21,7 +22,7 @@ namespace App
             int xPos;
             int yPos;
             WindowMode mode;
-            bool vsync = false;
+            bool vsync = true;
         };
 
         struct OpenGLConfig
@@ -34,4 +35,7 @@ namespace App
         WindowConfig window;
         OpenGLConfig openGL;
     };
+
+    void WriteConfig(Configuration config, std::filesystem::path filePath);
+    Configuration LoadConfig(std::filesystem::path filepath);
 }
