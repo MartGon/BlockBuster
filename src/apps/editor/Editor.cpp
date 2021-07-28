@@ -486,40 +486,92 @@ void BlockBuster::Editor::OpenMapPopUp()
     }
 }
 
-void BlockBuster::Editor::GraphicsPopUp()
+std::vector<SDL_DisplayMode> GetDisplayModes()
+{
+    std::vector<SDL_DisplayMode> displayModes;
+
+    int displays = SDL_GetNumVideoDisplays();
+    for(int i = 0; i < 1; i++)
+    {
+        auto numDisplayModes = SDL_GetNumDisplayModes(i);
+
+        displayModes.reserve(numDisplayModes);
+        for(int j = 0; j < numDisplayModes; j++)
+        {
+            SDL_DisplayMode mode;
+            if(!SDL_GetDisplayMode(i, j, &mode))
+            {
+                displayModes.push_back(mode);
+            }
+        }
+    }
+
+    return displayModes;
+}
+
+void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration& config)
+{
+    auto& winConfig = config.window;
+    if(winConfig.mode == ::App::Configuration::BORDERLESS || winConfig.mode == ::App::Configuration::FULLSCREEN)
+    {
+        auto displayModes = GetDisplayModes();
+        std::sort(displayModes.begin(), displayModes.end(), [](SDL_DisplayMode a, SDL_DisplayMode b)
+        {
+            return a.w > b.w || a.h > b.h;
+        });
+
+        auto maxResMode = displayModes.front();
+        config.window.width = maxResMode.w;
+        config.window.height = maxResMode.h; 
+    }
+    auto width = winConfig.width;
+    auto height = winConfig.height;
+
+    SDL_SetWindowSize(window_, width, height);
+    SDL_SetWindowFullscreen(window_, winConfig.mode);
+    glViewport(0, 0, width, height);
+    camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
+    SDL_GL_SetSwapInterval(winConfig.vsync);
+
+    SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+}
+
+std::string DisplayModeToString(int w, int h, int rr)
+{
+    return std::to_string(w) + " x " + std::to_string(h) + " " + std::to_string(rr) + " Hz";
+}
+
+std::string DisplayModeToString(SDL_DisplayMode mode)
+{
+    return std::to_string(mode.w) + " x " + std::to_string(mode.h) + " " + std::to_string(mode.refresh_rate) + " Hz";
+}
+
+void BlockBuster::Editor::VideoOptionsPopUp()
 {
     if(state == PopUpState::VIDEO_SETTINGS)
     {
         ImGui::OpenPopup("Video");
         state = PopUpState::NONE;
         onPopUp = true;
+        preConfig = config;
     }
 
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
     if(ImGui::BeginPopupModal("Video", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
-        std::string currentRes = std::to_string(config.window.width) + " x " + std::to_string(config.window.height);
-        if(ImGui::BeginCombo("Resolution", currentRes.c_str()))
+        std::string resolution = DisplayModeToString(preConfig.window.width, preConfig.window.height, preConfig.window.refreshRate);
+        if(ImGui::BeginCombo("Resolution", resolution.c_str()))
         {
-            int displays = SDL_GetNumVideoDisplays();
-
-            for(int i = 0; i < 1; i++)
+            auto displayModes = GetDisplayModes();
+            for(auto& mode : displayModes)
             {
-                auto displayModes = SDL_GetNumDisplayModes(i);
-
-                for(int j = 0; j < displayModes; j++)
+                bool selected = preConfig.window.mode == mode.w && preConfig.window.mode == mode.h && preConfig.window.refreshRate == mode.refresh_rate;
+                if(ImGui::Selectable(DisplayModeToString(mode).c_str(), selected))
                 {
-                    SDL_DisplayMode mode;
-                    if(!SDL_GetDisplayMode(i, j, &mode))
-                    {
-                        std::string res = std::to_string(mode.w) + " x " + std::to_string(mode.h) + " " + std::to_string(mode.refresh_rate) + " Hz";
-                        if(ImGui::Selectable(res.c_str(), config.window.width == mode.w && config.window.height == mode.h))
-                        {
-                            config.window.width = mode.w;
-                            config.window.height = mode.h;
-                        }
-                    }
+                    preConfig.window.width = mode.w;
+                    preConfig.window.height = mode.h;
+                    preConfig.window.refreshRate = mode.refresh_rate;
                 }
             }
 
@@ -527,38 +579,31 @@ void BlockBuster::Editor::GraphicsPopUp()
         }
 
         ImGui::Text("Window Mode");
-        ImGui::RadioButton("Windowed", &config.window.mode, ::App::Configuration::WindowMode::WINDOW); ImGui::SameLine();
-        ImGui::RadioButton("Fullscreen", &config.window.mode, ::App::Configuration::WindowMode::FULLSCREEN); ImGui::SameLine();
-        ImGui::RadioButton("Borderless", &config.window.mode, ::App::Configuration::WindowMode::BORDERLESS);
+        ImGui::RadioButton("Windowed", &preConfig.window.mode, ::App::Configuration::WindowMode::WINDOW); ImGui::SameLine();
+        ImGui::RadioButton("Fullscreen", &preConfig.window.mode, ::App::Configuration::WindowMode::FULLSCREEN); ImGui::SameLine();
+        ImGui::RadioButton("Borderless", &preConfig.window.mode, ::App::Configuration::WindowMode::BORDERLESS);
 
         ImGui::Checkbox("Vsync", &config.window.vsync);
 
         if(ImGui::Button("Accept"))
         {
-            SDL_SetWindowSize(window_, config.window.width, config.window.height);
-            SDL_SetWindowFullscreen(window_, config.window.mode);
-            glViewport(0, 0, config.window.width, config.window.height);
-            camera.SetParam(camera.ASPECT_RATIO, (float) config.window.width / (float) config.window.height);
-            if(SDL_GL_SetSwapInterval(config.window.vsync) == 0)
-            {
-                std::cout << "Vsync enabled\n";
-            }
+            ApplyVideoOptions(preConfig);
             ImGui::CloseCurrentPopup();
+            config = preConfig;
         }
 
         ImGui::SameLine();
         if(ImGui::Button("Apply"))
         {
-            SDL_SetWindowSize(window_, config.window.width, config.window.height);
-            SDL_SetWindowFullscreen(window_, config.window.mode);
-            camera.SetParam(camera.ASPECT_RATIO, (float) config.window.width / (float) config.window.height);
-            glViewport(0, 0, config.window.width, config.window.height);
-            SDL_GL_SetSwapInterval(config.window.vsync);
+            ApplyVideoOptions(preConfig);
         }
 
         ImGui::SameLine();
         if(ImGui::Button("Cancel"))
         {
+            ApplyVideoOptions(config);
+            preConfig = config;
+
             ImGui::CloseCurrentPopup();
         }
 
@@ -571,7 +616,7 @@ void BlockBuster::Editor::MenuBar()
     // Pop Ups
     OpenMapPopUp();
     SaveAsPopUp();
-    GraphicsPopUp();
+    VideoOptionsPopUp();
 
     if(ImGui::BeginMenuBar())
     {
@@ -666,8 +711,9 @@ void BlockBuster::Editor::GUI()
     ImGui::NewFrame();
 
     bool open;
+    auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{0, 0}, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2{(float)config.window.width, 0}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2{(float)displaySize.x, 0}, ImGuiCond_Always);
     auto windowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar;
     if(ImGui::Begin("Editor", &open, windowFlags))
     {

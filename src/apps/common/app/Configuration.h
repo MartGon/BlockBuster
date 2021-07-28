@@ -23,6 +23,7 @@ namespace App
             int yPos;
             WindowMode mode;
             bool vsync = true;
+            int refreshRate;
         };
 
         struct OpenGLConfig

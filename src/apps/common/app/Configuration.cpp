@@ -22,6 +22,7 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
     file << "Name=" << config.window.name << '\n';
     file << "Width=" << config.window.width << '\n';
     file << "Height=" << config.window.height << '\n';
+    file << "RefreshRate=" << config.window.refreshRate << '\n';
     file << "xPos=" << config.window.xPos << '\n';
     file << "yPos=" << config.window.yPos << '\n';
     file << "mode=" << config.window.mode << '\n';
@@ -75,6 +76,7 @@ App::Configuration App::LoadConfig(std::filesystem::path filePath)
     config.window.name = dictionary.at("Name");
     config.window.width = GetIntType(dictionary, "Width");
     config.window.height = GetIntType(dictionary, "Height");
+    config.window.refreshRate = GetIntType(dictionary, "RefreshRate");
     config.window.xPos = GetIntType(dictionary, "xPos");
     config.window.yPos = GetIntType(dictionary, "yPos");
     config.window.mode = GetIntType<App::Configuration::WindowMode>(dictionary, "mode");

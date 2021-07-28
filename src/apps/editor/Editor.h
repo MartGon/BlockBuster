@@ -43,9 +43,12 @@ namespace BlockBuster
         void RenameWindow(std::string name);
         void OpenMapPopUp();
         void SaveAsPopUp();
-        void GraphicsPopUp();
+        void VideoOptionsPopUp();
         void MenuBar();
         void GUI();
+
+        // Options
+        void ApplyVideoOptions(::App::Configuration& config);
 
         // Rendering
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
@@ -99,6 +102,9 @@ namespace BlockBuster
         bool onPopUp = false;
         bool newMap = true;
         std::string errorText;
+
+        // Config
+        ::App::Configuration preConfig;
         
         // Edit
         bool mouseCamera = false;
