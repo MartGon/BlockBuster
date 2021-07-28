@@ -60,6 +60,19 @@ void BlockBuster::Editor::Update()
         case SDL_QUIT:
             quit = true;
             break;
+        case SDL_WINDOWEVENT:
+            if(e.window.event == SDL_WINDOWEVENT_RESIZED)
+            {
+                auto flags = SDL_GetWindowFlags(window_);
+                if(!(preConfig.window.mode == preConfig.BORDERLESS || config.window.mode == preConfig.BORDERLESS))
+                {
+                    std::cout << "Resized\n";
+                    config.window.width = e.window.data1;
+                    config.window.height = e.window.data2;
+                    ApplyVideoOptions(config);
+                }
+            }
+            break;
         case SDL_MOUSEBUTTONDOWN:
             if(!io.WantCaptureMouse)
             {
@@ -511,20 +524,22 @@ std::vector<SDL_DisplayMode> GetDisplayModes()
 void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration& config)
 {
     auto& winConfig = config.window;
+    auto width = winConfig.width;
+    auto height = winConfig.height;
     if(winConfig.mode == ::App::Configuration::BORDERLESS || winConfig.mode == ::App::Configuration::FULLSCREEN)
     {
         SDL_SetWindowDisplayMode(window_, NULL);
     }
-    auto width = winConfig.width;
-    auto height = winConfig.height;
+    else
+        SDL_SetWindowSize(window_, width, height);
 
-    SDL_SetWindowSize(window_, width, height);
     SDL_SetWindowFullscreen(window_, winConfig.mode);
+    SDL_GetWindowSize(window_, &width, &height);
     glViewport(0, 0, width, height);
     camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
     SDL_GL_SetSwapInterval(winConfig.vsync);
 
-    SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    //SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
 std::string DisplayModeToString(int w, int h, int rr)
