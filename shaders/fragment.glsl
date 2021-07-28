@@ -19,8 +19,14 @@ void main()
     if(textureType == COLOR_TYPE)
     {
         if(abs(cTexCoords.x) > 0.475 || abs(cTexCoords.y) > 0.475)
-            //fragColor = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            fragColor = abs(color  - vec4(1.0f));
+        {
+            vec4 negColor = abs(color  - vec4(1.0f));
+            float darkness = (color.r + color.g + color.b) / 3.0;
+            if(darkness < 0.5)
+                fragColor = vec4(1.0);
+            else
+                fragColor = vec4(0.0);
+        }
         else
             fragColor = color;
     }
