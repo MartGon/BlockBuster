@@ -58,7 +58,6 @@ void BlockBuster::Editor::Update()
                 quit = true;
             break;
         case SDL_QUIT:
-            std::cout << "Quitting\n";
             quit = true;
             break;
         case SDL_MOUSEBUTTONDOWN:
@@ -514,15 +513,7 @@ void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration& config)
     auto& winConfig = config.window;
     if(winConfig.mode == ::App::Configuration::BORDERLESS || winConfig.mode == ::App::Configuration::FULLSCREEN)
     {
-        auto displayModes = GetDisplayModes();
-        std::sort(displayModes.begin(), displayModes.end(), [](SDL_DisplayMode a, SDL_DisplayMode b)
-        {
-            return a.w > b.w || a.h > b.h;
-        });
-
-        auto maxResMode = displayModes.front();
-        config.window.width = maxResMode.w;
-        config.window.height = maxResMode.h; 
+        SDL_SetWindowDisplayMode(window_, NULL);
     }
     auto width = winConfig.width;
     auto height = winConfig.height;
