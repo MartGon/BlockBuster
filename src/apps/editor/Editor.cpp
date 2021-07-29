@@ -32,7 +32,9 @@ void BlockBuster::Editor::Start()
 
     // Camera pos
     camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
-    camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)config.window.width / (float)config.window.height);
+    int width, height;
+    SDL_GetWindowSize(window_, &width, &height);
+    camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
     camera.SetTarget(glm::vec3{0.0f});
 
     // World
@@ -61,17 +63,7 @@ void BlockBuster::Editor::Update()
             quit = true;
             break;
         case SDL_WINDOWEVENT:
-            if(e.window.event == SDL_WINDOWEVENT_RESIZED)
-            {
-                auto flags = SDL_GetWindowFlags(window_);
-                if(!(preConfig.window.mode == preConfig.BORDERLESS || config.window.mode == preConfig.BORDERLESS))
-                {
-                    std::cout << "Resized\n";
-                    config.window.width = e.window.data1;
-                    config.window.height = e.window.data2;
-                    ApplyVideoOptions(config);
-                }
-            }
+            HandleWindowEvent(e.window);
             break;
         case SDL_MOUSEBUTTONDOWN:
             if(!io.WantCaptureMouse)
@@ -521,25 +513,43 @@ std::vector<SDL_DisplayMode> GetDisplayModes()
     return displayModes;
 }
 
+void BlockBuster::Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
+{
+    if(winEvent.event == SDL_WINDOWEVENT_RESIZED)
+    {
+        int width = winEvent.data1;
+        int height = winEvent.data2;
+        std::cout << "Resized/Restored to " << width << " " << height <<"\n";
+        auto flags = SDL_GetWindowFlags(window_);
+        glViewport(0, 0, width, height);
+        camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
+    }
+}
+
 void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration& config)
 {
     auto& winConfig = config.window;
     auto width = winConfig.width;
     auto height = winConfig.height;
-    if(winConfig.mode == ::App::Configuration::BORDERLESS || winConfig.mode == ::App::Configuration::FULLSCREEN)
+    SDL_SetWindowFullscreen(window_, winConfig.mode);
+
+    if(winConfig.mode == ::App::Configuration::FULLSCREEN)
     {
         SDL_SetWindowDisplayMode(window_, NULL);
+        auto display = SDL_GetWindowDisplayIndex(window_);
+        SDL_DisplayMode mode;
+        SDL_GetDesktopDisplayMode(display, &mode);
+        width = mode.w;
+        height = mode.h;
     }
-    else
-        SDL_SetWindowSize(window_, width, height);
+    SDL_SetWindowSize(window_, width, height);
 
-    SDL_SetWindowFullscreen(window_, winConfig.mode);
     SDL_GetWindowSize(window_, &width, &height);
     glViewport(0, 0, width, height);
     camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
     SDL_GL_SetSwapInterval(winConfig.vsync);
 
-    //SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
 std::string DisplayModeToString(int w, int h, int rr)
@@ -564,6 +574,8 @@ void BlockBuster::Editor::VideoOptionsPopUp()
 
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+
+    bool closed = onPopUp;
     if(ImGui::BeginPopupModal("Video", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
         std::string resolution = DisplayModeToString(preConfig.window.width, preConfig.window.height, preConfig.window.refreshRate);
@@ -589,13 +601,14 @@ void BlockBuster::Editor::VideoOptionsPopUp()
         ImGui::RadioButton("Fullscreen", &preConfig.window.mode, ::App::Configuration::WindowMode::FULLSCREEN); ImGui::SameLine();
         ImGui::RadioButton("Borderless", &preConfig.window.mode, ::App::Configuration::WindowMode::BORDERLESS);
 
-        ImGui::Checkbox("Vsync", &config.window.vsync);
+        ImGui::Checkbox("Vsync", &preConfig.window.vsync);
 
         if(ImGui::Button("Accept"))
         {
             ApplyVideoOptions(preConfig);
-            ImGui::CloseCurrentPopup();
             config = preConfig;
+
+            ImGui::CloseCurrentPopup();
         }
 
         ImGui::SameLine();
@@ -614,6 +627,11 @@ void BlockBuster::Editor::VideoOptionsPopUp()
         }
 
         ImGui::EndPopup();
+    }
+    else if(closed)
+    {
+        ApplyVideoOptions(config);
+        preConfig = config;
     }
 }
 

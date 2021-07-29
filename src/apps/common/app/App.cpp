@@ -30,7 +30,23 @@ App::App::App(Configuration config) : config{config}
         std::string msg =  "gladLoadGLLoader failed \n";
         throw InitError(msg.c_str());
     }
-    glViewport(0, 0, config.window.width, config.window.height);
+
+    // Get window size after enabling fullscreen
+    int width, height;
+    SDL_GetWindowSize(window_, &width, &height);
+    if(config.window.mode == Configuration::FULLSCREEN)
+    {
+        SDL_SetWindowDisplayMode(window_, NULL);
+        auto display = SDL_GetWindowDisplayIndex(window_);
+        SDL_DisplayMode mode;
+        SDL_GetDesktopDisplayMode(display, &mode);
+        width = mode.w;
+        height = mode.h;
+
+        SDL_SetWindowSize(window_, width, height);
+    }
+    
+    glViewport(0, 0, width, height);
 
     // ImGUI
     IMGUI_CHECKVERSION();

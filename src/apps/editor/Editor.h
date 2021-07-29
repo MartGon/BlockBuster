@@ -48,6 +48,7 @@ namespace BlockBuster
         void GUI();
 
         // Options
+        void HandleWindowEvent(SDL_WindowEvent winEvent);
         void ApplyVideoOptions(::App::Configuration& config);
 
         // Rendering
