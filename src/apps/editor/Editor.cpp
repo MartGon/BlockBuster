@@ -515,6 +515,8 @@ std::vector<SDL_DisplayMode> GetDisplayModes()
 
 void BlockBuster::Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
 {
+    std::cout << "Window event type " << (int)winEvent.event << "\n";
+
     if(winEvent.event == SDL_WINDOWEVENT_RESIZED)
     {
         int width = winEvent.data1;
@@ -565,12 +567,7 @@ std::string DisplayModeToString(SDL_DisplayMode mode)
 void BlockBuster::Editor::VideoOptionsPopUp()
 {
     if(state == PopUpState::VIDEO_SETTINGS)
-    {
         ImGui::OpenPopup("Video");
-        state = PopUpState::NONE;
-        onPopUp = true;
-        preConfig = config;
-    }
 
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
@@ -607,6 +604,7 @@ void BlockBuster::Editor::VideoOptionsPopUp()
         {
             ApplyVideoOptions(preConfig);
             config = preConfig;
+            state = PopUpState::NONE;
 
             ImGui::CloseCurrentPopup();
         }
@@ -622,14 +620,17 @@ void BlockBuster::Editor::VideoOptionsPopUp()
         {
             ApplyVideoOptions(config);
             preConfig = config;
-
+            state = PopUpState::NONE;
+            
             ImGui::CloseCurrentPopup();
         }
 
         ImGui::EndPopup();
     }
-    else if(closed)
+    else if(state == PopUpState::VIDEO_SETTINGS)
     {
+        std::cout << "Window was closed\n";
+        state = PopUpState::NONE;
         ApplyVideoOptions(config);
         preConfig = config;
     }
@@ -713,6 +714,8 @@ void BlockBuster::Editor::MenuBar()
             if(ImGui::MenuItem("Video", "Ctrl + Shift + G"))
             {
                 state = PopUpState::VIDEO_SETTINGS;
+                preConfig = config;
+                onPopUp = true;
             }
 
             if(ImGui::MenuItem("Language"))
