@@ -2,6 +2,7 @@
 
 #include <string>
 #include <filesystem>
+#include <unordered_map>
 
 namespace App
 {
@@ -14,11 +15,11 @@ namespace App
             BORDERLESS = SDL_WINDOW_FULLSCREEN_DESKTOP
         };
 
-        struct  WindowConfig
+        struct WindowConfig
         {
             std::string name;
-            int width;
-            int height;
+            int resolutionW;
+            int resolutionH;
             int xPos;
             int yPos;
             WindowMode mode;
@@ -35,6 +36,9 @@ namespace App
 
         WindowConfig window;
         OpenGLConfig openGL;
+
+        // Extra options by application
+        std::unordered_map<std::string, std::string> options;
     };
 
     void WriteConfig(Configuration config, std::filesystem::path filePath);

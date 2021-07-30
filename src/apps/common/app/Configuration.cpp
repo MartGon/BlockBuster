@@ -6,6 +6,12 @@
 
 #include <unordered_map>
 
+void WriteValuePairs(std::fstream& file, const std::unordered_map<std::string, std::string>& options)
+{
+    for(const auto& pair : options)
+        file << pair.first << '=' << pair.second << '\n';
+}
+
 void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
 {
     std::fstream file{filePath, file.out};
@@ -20,8 +26,8 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
 
     file << "### Window Options ###" << '\n';
     file << "Name=" << config.window.name << '\n';
-    file << "Width=" << config.window.width << '\n';
-    file << "Height=" << config.window.height << '\n';
+    file << "Width=" << config.window.resolutionW << '\n';
+    file << "Height=" << config.window.resolutionH << '\n';
     file << "RefreshRate=" << config.window.refreshRate << '\n';
     file << "xPos=" << config.window.xPos << '\n';
     file << "yPos=" << config.window.yPos << '\n';
@@ -33,6 +39,10 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
     file << "majorVersion=" << config.openGL.majorVersion << '\n';
     file << "minorVersion=" << config.openGL.minorVersion << '\n';
     file << "profileMask=" << config.openGL.profileMask << '\n';
+    file << '\n';
+
+    file << "### " << config.window.name << " Options ###" << '\n';
+    WriteValuePairs(file, config.options);
     file << '\n';
 }
 
@@ -56,9 +66,18 @@ std::unordered_map<std::string, std::string> LoadKeyValuePairs(std::fstream& fil
 }
 
 template <typename T = int>
-T GetIntType(const std::unordered_map<std::string, std::string>& dictionary, std::string key)
+T ExtractInt(std::unordered_map<std::string, std::string>& dictionary, std::string key)
 {
-    return static_cast<T>(std::stoi(dictionary.at(key)));
+    auto value = dictionary.at(key);
+    dictionary.erase(key);
+    return static_cast<T>(std::stoi(value));
+}
+
+std::string ExtractString(std::unordered_map<std::string, std::string>& dictionary, std::string key)
+{
+    auto value = dictionary.at(key);
+    dictionary.erase(key);
+    return value;
 }
 
 App::Configuration App::LoadConfig(std::filesystem::path filePath)
@@ -69,22 +88,22 @@ App::Configuration App::LoadConfig(std::filesystem::path filePath)
         throw std::runtime_error("Could not open file " + filePath.string() + '\n');
     }
 
-    auto dictionary = LoadKeyValuePairs(file);
-
     App::Configuration config;
 
-    config.window.name = dictionary.at("Name");
-    config.window.width = GetIntType(dictionary, "Width");
-    config.window.height = GetIntType(dictionary, "Height");
-    config.window.refreshRate = GetIntType(dictionary, "RefreshRate");
-    config.window.xPos = GetIntType(dictionary, "xPos");
-    config.window.yPos = GetIntType(dictionary, "yPos");
-    config.window.mode = GetIntType<App::Configuration::WindowMode>(dictionary, "mode");
-    config.window.vsync = GetIntType(dictionary, "vsync");
+    config.options = LoadKeyValuePairs(file);
 
-    config.openGL.majorVersion = GetIntType(dictionary, "majorVersion");
-    config.openGL.minorVersion = GetIntType(dictionary, "minorVersion");
-    config.openGL.minorVersion = GetIntType(dictionary, "profileMask");
+    config.window.name = ExtractString(config.options, "Name");
+    config.window.resolutionW = ExtractInt(config.options, "Width"); 
+    config.window.resolutionH = ExtractInt(config.options, "Height");
+    config.window.refreshRate = ExtractInt(config.options, "RefreshRate");
+    config.window.xPos = ExtractInt(config.options, "xPos");
+    config.window.yPos = ExtractInt(config.options, "yPos");
+    config.window.mode = ExtractInt<App::Configuration::WindowMode>(config.options, "mode");
+    config.window.vsync = ExtractInt(config.options, "vsync");
+
+    config.openGL.majorVersion = ExtractInt(config.options, "majorVersion");
+    config.openGL.minorVersion = ExtractInt(config.options, "minorVersion");
+    config.openGL.minorVersion = ExtractInt(config.options, "profileMask");
 
     return config;
 }

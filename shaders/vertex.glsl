@@ -5,13 +5,11 @@ layout (location = 2) in vec2 iTexCoords;
 
 uniform mat4 transform;
 
-out vec3 fragPos;
 out vec2 texCoords;
 
 void main()
 {
     vec4 worldPos = transform * vec4(pos, 1.0f);
-    fragPos = pos; 
     texCoords = iTexCoords; 
     gl_Position = worldPos;
 }

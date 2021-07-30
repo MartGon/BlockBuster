@@ -14,7 +14,7 @@ App::App::App(Configuration config) : config{config}
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, config.openGL.minorVersion);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, config.openGL.profileMask);
 
-    window_ = SDL_CreateWindow(config.window.name.c_str(), config.window.xPos, config.window.yPos, config.window.width, config.window.height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    window_ = SDL_CreateWindow(config.window.name.c_str(), config.window.xPos, config.window.yPos, config.window.resolutionW, config.window.resolutionH, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if(!window_)
     {
         std::string msg = "SDL_CreateWindow failed: " + std::string(SDL_GetError()) + "\n";

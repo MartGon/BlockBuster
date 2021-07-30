@@ -75,6 +75,7 @@ int main()
     {
         editor.Update();
     }
+    editor.Shutdown();
 
     App::WriteConfig(editor.config, configPath);
 

@@ -22,6 +22,7 @@ namespace BlockBuster
 
         void Start() override;
         void Update() override;
+        void Shutdown() override;
         bool Quit() override;
         
     private:
@@ -42,7 +43,7 @@ namespace BlockBuster
 
         // Options
         void HandleWindowEvent(SDL_WindowEvent winEvent);
-        void ApplyVideoOptions(::App::Configuration& config);
+        void ApplyVideoOptions(::App::Configuration::WindowConfig& config);
 
         // GUI
         void RenameMainWindow(std::string name);
@@ -107,7 +108,7 @@ namespace BlockBuster
         std::string errorText;
 
         // Config
-        ::App::Configuration preConfig;
+        ::App::Configuration::WindowConfig preConfig;
         
         // Edit
         bool mouseCamera = false;

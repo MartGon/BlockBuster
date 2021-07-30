@@ -40,10 +40,17 @@ void BlockBuster::Editor::Start()
     camera.SetTarget(glm::vec3{0.0f});
 
     // World
-    InitMap();
-
-    // Gui Setup
-    RenameMainWindow("New Map");
+    if(auto mapIt = config.options.find("Map"); mapIt!= config.options.end() && mapIt->second.size() < 16)
+    {
+        std::strcpy(fileName, mapIt->second.c_str());
+        LoadMap();
+        RenameMainWindow(fileName);
+    }
+    else
+    {
+        InitMap();
+        RenameMainWindow("New Map");
+    }
 }
 
 void BlockBuster::Editor::Update()
@@ -110,6 +117,11 @@ void BlockBuster::Editor::Update()
 bool BlockBuster::Editor::Quit()
 {
     return quit;
+}
+
+void BlockBuster::Editor::Shutdown()
+{
+    config.options["Map"] = std::string(fileName);
 }
 
 // #### Rendering #### \\
@@ -449,11 +461,10 @@ void BlockBuster::Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
     }
 }
 
-void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration& config)
+void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
 {
-    auto& winConfig = config.window;
-    auto width = winConfig.width;
-    auto height = winConfig.height;
+    auto width = winConfig.resolutionW;
+    auto height = winConfig.resolutionH;
     SDL_SetWindowFullscreen(window_, winConfig.mode);
 
     if(winConfig.mode == ::App::Configuration::FULLSCREEN)
@@ -598,18 +609,18 @@ void BlockBuster::Editor::VideoOptionsPopUp()
     bool onPopUp = state == PopUpState::VIDEO_SETTINGS;
     if(ImGui::BeginPopupModal("Video", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
-        std::string resolution = DisplayModeToString(preConfig.window.width, preConfig.window.height, preConfig.window.refreshRate);
+        std::string resolution = DisplayModeToString(preConfig.resolutionW, preConfig.resolutionH, preConfig.refreshRate);
         if(ImGui::BeginCombo("Resolution", resolution.c_str()))
         {
             auto displayModes = GetDisplayModes();
             for(auto& mode : displayModes)
             {
-                bool selected = preConfig.window.mode == mode.w && preConfig.window.mode == mode.h && preConfig.window.refreshRate == mode.refresh_rate;
+                bool selected = preConfig.mode == mode.w && preConfig.mode == mode.h && preConfig.refreshRate == mode.refresh_rate;
                 if(ImGui::Selectable(DisplayModeToString(mode).c_str(), selected))
                 {
-                    preConfig.window.width = mode.w;
-                    preConfig.window.height = mode.h;
-                    preConfig.window.refreshRate = mode.refresh_rate;
+                    preConfig.resolutionW = mode.w;
+                    preConfig.resolutionH = mode.h;
+                    preConfig.refreshRate = mode.refresh_rate;
                 }
             }
 
@@ -617,16 +628,16 @@ void BlockBuster::Editor::VideoOptionsPopUp()
         }
 
         ImGui::Text("Window Mode");
-        ImGui::RadioButton("Windowed", &preConfig.window.mode, ::App::Configuration::WindowMode::WINDOW); ImGui::SameLine();
-        ImGui::RadioButton("Fullscreen", &preConfig.window.mode, ::App::Configuration::WindowMode::FULLSCREEN); ImGui::SameLine();
-        ImGui::RadioButton("Borderless", &preConfig.window.mode, ::App::Configuration::WindowMode::BORDERLESS);
+        ImGui::RadioButton("Windowed", &preConfig.mode, ::App::Configuration::WindowMode::WINDOW); ImGui::SameLine();
+        ImGui::RadioButton("Fullscreen", &preConfig.mode, ::App::Configuration::WindowMode::FULLSCREEN); ImGui::SameLine();
+        ImGui::RadioButton("Borderless", &preConfig.mode, ::App::Configuration::WindowMode::BORDERLESS);
 
-        ImGui::Checkbox("Vsync", &preConfig.window.vsync);
+        ImGui::Checkbox("Vsync", &preConfig.vsync);
 
         if(ImGui::Button("Accept"))
         {
             ApplyVideoOptions(preConfig);
-            config = preConfig;
+            config.window = preConfig;
             state = PopUpState::NONE;
 
             ImGui::CloseCurrentPopup();
@@ -641,8 +652,8 @@ void BlockBuster::Editor::VideoOptionsPopUp()
         ImGui::SameLine();
         if(ImGui::Button("Cancel"))
         {
-            ApplyVideoOptions(config);
-            preConfig = config;
+            ApplyVideoOptions(config.window);
+            preConfig = config.window;
             state = PopUpState::NONE;
             
             ImGui::CloseCurrentPopup();
@@ -653,9 +664,9 @@ void BlockBuster::Editor::VideoOptionsPopUp()
     // Triggered when X button is pressed, same effect as cancel
     else if(state == PopUpState::VIDEO_SETTINGS)
     {
+        ApplyVideoOptions(config.window);
+        preConfig = config.window;
         state = PopUpState::NONE;
-        ApplyVideoOptions(config);
-        preConfig = config;
     }
 }
 
@@ -737,7 +748,7 @@ void BlockBuster::Editor::MenuBar()
             if(ImGui::MenuItem("Video", "Ctrl + Shift + G"))
             {
                 state = PopUpState::VIDEO_SETTINGS;
-                preConfig = config;
+                preConfig = config.window;
             }
 
             if(ImGui::MenuItem("Language"))

@@ -84,7 +84,7 @@ void BlockBuster::Client::Update()
             break;
         case SDL_MOUSEBUTTONDOWN:
             mousePos.x = e.button.x;
-            mousePos.y = config.window.height - e.button.y;
+            mousePos.y = config.window.resolutionH - e.button.y;
             clicked = true;
             std::cout << "Click coords " << mousePos.x << " " << mousePos.y << "\n";
         }
@@ -102,7 +102,7 @@ void BlockBuster::Client::Update()
     float pitch = glm::radians(90.0f);
     float yaw = glm::radians(90.0f);
     camera.SetTarget(player.transform.position);
-    camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)config.window.width / (float)config.window.height);
+    camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)config.window.resolutionW / (float)config.window.resolutionH);
     auto rotation = camera.GetRotation();
 
     // Move Player
@@ -113,7 +113,7 @@ void BlockBuster::Client::Update()
     if(clicked)
     {
         // Window to eye
-        auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{config.window.width, config.window.height});
+        auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{config.window.resolutionW, config.window.resolutionH});
 
         // Sort blocks by proximity to camera
         auto cameraPos = this->cameraPos;

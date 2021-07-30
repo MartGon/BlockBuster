@@ -1,7 +1,6 @@
 #version 330 core
 out vec4 fragColor;
 
-in vec3 fragPos;
 in vec2 texCoords;
 
 uniform int isPlayer;

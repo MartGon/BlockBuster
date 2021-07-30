@@ -20,9 +20,10 @@ namespace App
         App(Configuration config);
         virtual ~App();
 
-        virtual void Start() = 0;
+        virtual void Start() {};
         virtual void Update() = 0;
         virtual bool Quit() = 0;
+        virtual void Shutdown() {};
     
     
         Configuration config;
