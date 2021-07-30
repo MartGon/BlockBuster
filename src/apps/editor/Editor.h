@@ -27,6 +27,7 @@ namespace BlockBuster
     private:
 
         // Rendering
+        glm::vec<2, int> GetWindowSize();
         Rendering::Mesh& GetMesh(Game::BlockType type);
 
         // World
@@ -39,17 +40,17 @@ namespace BlockBuster
         void UpdateCamera();
         void UseTool(glm::vec<2, int> mousePos, bool rightButton = false);
 
+        // Options
+        void HandleWindowEvent(SDL_WindowEvent winEvent);
+        void ApplyVideoOptions(::App::Configuration& config);
+
         // GUI
-        void RenameWindow(std::string name);
+        void RenameMainWindow(std::string name);
         void OpenMapPopUp();
         void SaveAsPopUp();
         void VideoOptionsPopUp();
         void MenuBar();
         void GUI();
-
-        // Options
-        void HandleWindowEvent(SDL_WindowEvent winEvent);
-        void ApplyVideoOptions(::App::Configuration& config);
 
         // Rendering
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
@@ -66,21 +67,26 @@ namespace BlockBuster
         // Editor
         bool quit = false;
 
+        // Tools
         enum Tool
         {
             PLACE_BLOCK,
-
             ROTATE_BLOCK
         };
+        Tool tool = PLACE_BLOCK;
 
+        // Tool - Place
+        ImVec4 displayColor;
+        Game::DisplayType displayType = Game::DisplayType::TEXTURE;
+        Game::BlockType blockType = Game::BlockType::BLOCK;
+
+        // Tool - Rotate
         enum class RotationAxis
         {
             X,
             Y,
             Z
         };
-        Tool tool = PLACE_BLOCK;
-        Game::BlockType blockType = Game::BlockType::BLOCK;
         RotationAxis axis = RotationAxis::Y;
 
         // GUI
@@ -91,16 +97,11 @@ namespace BlockBuster
             OPEN_MAP,
             VIDEO_SETTINGS,
         };
-
-        // Tool - Place
-        ImVec4 displayColor;
-        Game::DisplayType displayType = Game::DisplayType::TEXTURE;
+        PopUpState state = PopUpState::NONE;
 
         // File
-        PopUpState state = PopUpState::NONE;
         char fileName[16] = "Map.bbm";
         const int magicNumber = 0xB010F0;
-        bool onPopUp = false;
         bool newMap = true;
         std::string errorText;
 

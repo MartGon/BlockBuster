@@ -7,6 +7,8 @@
 
 #include <glm/gtc/constants.hpp>
 
+// #### Public Interface #### \\
+
 void BlockBuster::Editor::Start()
 {
     // Shaders
@@ -41,7 +43,7 @@ void BlockBuster::Editor::Start()
     InitMap();
 
     // Gui Setup
-    RenameWindow("New Map");
+    RenameMainWindow("New Map");
 }
 
 void BlockBuster::Editor::Update()
@@ -70,7 +72,7 @@ void BlockBuster::Editor::Update()
             {
                 glm::vec2 mousePos;
                 mousePos.x = e.button.x;
-                mousePos.y = config.window.height - e.button.y;
+                mousePos.y = GetWindowSize().y - e.button.y;
                 UseTool(mousePos, e.button.button == SDL_BUTTON_RIGHT);
                 std::cout << "Click coords " << mousePos.x << " " << mousePos.y << "\n";
             }
@@ -110,20 +112,22 @@ bool BlockBuster::Editor::Quit()
     return quit;
 }
 
+// #### Rendering #### \\
+
+glm::vec<2, int> BlockBuster::Editor::GetWindowSize()
+{
+    glm::vec<2, int> size;
+    SDL_GetWindowSize(window_, &size.x, &size.y);
+
+    return size;
+}
+
 Rendering::Mesh& BlockBuster::Editor::GetMesh(Game::BlockType blockType)
 {
     return blockType == Game::BlockType::SLOPE ? slope : cube;
 }
 
-Game::Block* BlockBuster::Editor::GetBlock(glm::vec3 pos)
-{   
-    Game::Block* block = nullptr;
-    for(auto& b : blocks)
-        if(b.transform.position == pos)
-            block = &b;
-
-    return block;
-}
+// #### World #### \\
 
 template<typename T>
 void WriteToFile(std::fstream& file, T val)
@@ -179,6 +183,16 @@ glm::vec4 ReadVec4(std::fstream& file)
     glm::vec3 vec3 = ReadVec3(file);
     float w = ReadFromFile<float>(file);
     return glm::vec4{vec3, w};
+}
+
+Game::Block* BlockBuster::Editor::GetBlock(glm::vec3 pos)
+{   
+    Game::Block* block = nullptr;
+    for(auto& b : blocks)
+        if(b.transform.position == pos)
+            block = &b;
+
+    return block;
 }
 
 void BlockBuster::Editor::InitMap()
@@ -270,6 +284,8 @@ bool BlockBuster::Editor::LoadMap()
     return true;
 }
 
+// #### Editor #### \\
+
 void BlockBuster::Editor::UpdateCamera()
 {
     if(io_->WantCaptureKeyboard)
@@ -322,7 +338,8 @@ void BlockBuster::Editor::UpdateCamera()
 void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
 {
     // Window to eye
-    auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{config.window.width, config.window.height});
+    auto winSize = GetWindowSize();
+    auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{winSize.x, winSize.y});
 
     // Sort blocks by proximity to camera
     auto cameraPos = this->camera.GetPos();
@@ -413,7 +430,49 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
     }
 }
 
-void BlockBuster::Editor::RenameWindow(std::string name)
+// #### Options #### \\
+
+void BlockBuster::Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
+{
+    if(winEvent.event == SDL_WINDOWEVENT_RESIZED)
+    {
+        int width = winEvent.data1;
+        int height = winEvent.data2;
+        auto flags = SDL_GetWindowFlags(window_);
+        glViewport(0, 0, width, height);
+        camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
+    }
+}
+
+void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration& config)
+{
+    auto& winConfig = config.window;
+    auto width = winConfig.width;
+    auto height = winConfig.height;
+    SDL_SetWindowFullscreen(window_, winConfig.mode);
+
+    if(winConfig.mode == ::App::Configuration::FULLSCREEN)
+    {
+        SDL_SetWindowDisplayMode(window_, NULL);
+        auto display = SDL_GetWindowDisplayIndex(window_);
+        SDL_DisplayMode mode;
+        SDL_GetDesktopDisplayMode(display, &mode);
+        width = mode.w;
+        height = mode.h;
+    }
+    SDL_SetWindowSize(window_, width, height);
+
+    SDL_GetWindowSize(window_, &width, &height);
+    glViewport(0, 0, width, height);
+    camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
+    SDL_GL_SetSwapInterval(winConfig.vsync);
+
+    SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+}
+
+// #### GUI #### \\
+
+void BlockBuster::Editor::RenameMainWindow(std::string name)
 {
     std::string title = "Editor - " + name;
     SDL_SetWindowTitle(window_, title.c_str());
@@ -432,7 +491,7 @@ void BlockBuster::Editor::SaveAsPopUp()
         if(ImGui::Button("Accept"))
         {
             SaveMap();
-            RenameWindow(fileName);
+            RenameMainWindow(fileName);
             newMap = false;
 
             ImGui::CloseCurrentPopup();
@@ -464,7 +523,7 @@ void BlockBuster::Editor::OpenMapPopUp()
         {
             if(LoadMap())
             {
-                RenameWindow(fileName);
+                RenameMainWindow(fileName);
                 newMap = false;
                 errorText = "";
 
@@ -513,47 +572,6 @@ std::vector<SDL_DisplayMode> GetDisplayModes()
     return displayModes;
 }
 
-void BlockBuster::Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
-{
-    std::cout << "Window event type " << (int)winEvent.event << "\n";
-
-    if(winEvent.event == SDL_WINDOWEVENT_RESIZED)
-    {
-        int width = winEvent.data1;
-        int height = winEvent.data2;
-        std::cout << "Resized/Restored to " << width << " " << height <<"\n";
-        auto flags = SDL_GetWindowFlags(window_);
-        glViewport(0, 0, width, height);
-        camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
-    }
-}
-
-void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration& config)
-{
-    auto& winConfig = config.window;
-    auto width = winConfig.width;
-    auto height = winConfig.height;
-    SDL_SetWindowFullscreen(window_, winConfig.mode);
-
-    if(winConfig.mode == ::App::Configuration::FULLSCREEN)
-    {
-        SDL_SetWindowDisplayMode(window_, NULL);
-        auto display = SDL_GetWindowDisplayIndex(window_);
-        SDL_DisplayMode mode;
-        SDL_GetDesktopDisplayMode(display, &mode);
-        width = mode.w;
-        height = mode.h;
-    }
-    SDL_SetWindowSize(window_, width, height);
-
-    SDL_GetWindowSize(window_, &width, &height);
-    glViewport(0, 0, width, height);
-    camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
-    SDL_GL_SetSwapInterval(winConfig.vsync);
-
-    SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-}
-
 std::string DisplayModeToString(int w, int h, int rr)
 {
     return std::to_string(w) + " x " + std::to_string(h) + " " + std::to_string(rr) + " Hz";
@@ -572,7 +590,7 @@ void BlockBuster::Editor::VideoOptionsPopUp()
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
-    bool closed = onPopUp;
+    bool onPopUp = state == PopUpState::VIDEO_SETTINGS;
     if(ImGui::BeginPopupModal("Video", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
         std::string resolution = DisplayModeToString(preConfig.window.width, preConfig.window.height, preConfig.window.refreshRate);
@@ -627,9 +645,9 @@ void BlockBuster::Editor::VideoOptionsPopUp()
 
         ImGui::EndPopup();
     }
+    // Triggered when X button is pressed, same effect as cancel
     else if(state == PopUpState::VIDEO_SETTINGS)
     {
-        std::cout << "Window was closed\n";
         state = PopUpState::NONE;
         ApplyVideoOptions(config);
         preConfig = config;
@@ -651,7 +669,7 @@ void BlockBuster::Editor::MenuBar()
             {
                 InitMap();
                 std::strcpy(fileName, "NewMap.bbm");
-                RenameWindow("New Map");
+                RenameMainWindow("New Map");
                 newMap = true;
             }
 
@@ -715,7 +733,6 @@ void BlockBuster::Editor::MenuBar()
             {
                 state = PopUpState::VIDEO_SETTINGS;
                 preConfig = config;
-                onPopUp = true;
             }
 
             if(ImGui::MenuItem("Language"))
