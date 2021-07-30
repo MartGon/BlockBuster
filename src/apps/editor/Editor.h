@@ -77,9 +77,8 @@ namespace BlockBuster
         Tool tool = PLACE_BLOCK;
 
         // Tool - Place
-        ImVec4 displayColor;
-        int textureId;
-        Game::DisplayType displayType = Game::DisplayType::TEXTURE;
+
+        Game::Display display = {Game::DisplayType::COLOR, Game::ColorDisplay{glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}}};
         Game::BlockType blockType = Game::BlockType::BLOCK;
 
         // Tool - Rotate

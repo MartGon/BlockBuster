@@ -395,13 +395,6 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
                     auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
                     auto newBlockType = blockType;
 
-                    Game::Display display;
-                    display.type = displayType;
-                    if(displayType == Game::DisplayType::COLOR)
-                        display.display.color.color = displayColor;
-                    else if(displayType == Game::DisplayType::TEXTURE)
-                        display.display.texture.textureId = 0;
-
                     if(!GetBlock(newBlockPos))
                     {
                         blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, display});
@@ -429,24 +422,13 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
             case PAINT_BLOCK:
             {
                 auto& block = blocks[index];
-                Game::Display display;
                 if(!rightButton)
                 {
-                    display.type = displayType;
-                    if(displayType == Game::DisplayType::COLOR)
-                        display.display.color.color = displayColor;
-                    else if(displayType == Game::DisplayType::TEXTURE)
-                        display.display.texture.textureId = 0;
                     block.display = display;
                 }
                 else
                 {
                     display = block.display;
-                    displayType = display.type;
-                    if(displayType == Game::DisplayType::COLOR)
-                        displayColor = display.display.color.color;
-                    else if(displayType == Game::DisplayType::TEXTURE)
-                        textureId = display.display.texture.textureId;
                 }
             }
         }
@@ -858,16 +840,16 @@ void BlockBuster::Editor::GUI()
             {
                 ImGui::Text("Display Type");
                 ImGui::SameLine();
-                ImGui::RadioButton("Texture", &displayType, Game::DisplayType::TEXTURE);
+                ImGui::RadioButton("Texture", &display.type, Game::DisplayType::TEXTURE);
                 ImGui::SameLine();
 
-                ImGui::RadioButton("Color", &displayType, Game::DisplayType::COLOR);
+                ImGui::RadioButton("Color", &display.type, Game::DisplayType::COLOR);
 
-                if(displayType == Game::DisplayType::COLOR)
+                if(display.type == Game::DisplayType::COLOR)
                 {
                     ImGui::Text("Color");
                     ImGui::SameLine();
-                    ImGui::ColorEdit4("", &displayColor.x);
+                    ImGui::ColorEdit4("", &display.display.color.color.x);
                 }
             }
 
