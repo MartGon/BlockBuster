@@ -71,12 +71,14 @@ namespace BlockBuster
         enum Tool
         {
             PLACE_BLOCK,
-            ROTATE_BLOCK
+            ROTATE_BLOCK,
+            PAINT_BLOCK
         };
         Tool tool = PLACE_BLOCK;
 
         // Tool - Place
         ImVec4 displayColor;
+        int textureId;
         Game::DisplayType displayType = Game::DisplayType::TEXTURE;
         Game::BlockType blockType = Game::BlockType::BLOCK;
 

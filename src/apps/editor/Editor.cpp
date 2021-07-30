@@ -426,6 +426,29 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
                     break;
                 }
             }
+            case PAINT_BLOCK:
+            {
+                auto& block = blocks[index];
+                Game::Display display;
+                if(!rightButton)
+                {
+                    display.type = displayType;
+                    if(displayType == Game::DisplayType::COLOR)
+                        display.display.color.color = displayColor;
+                    else if(displayType == Game::DisplayType::TEXTURE)
+                        display.display.texture.textureId = 0;
+                    block.display = display;
+                }
+                else
+                {
+                    display = block.display;
+                    displayType = display.type;
+                    if(displayType == Game::DisplayType::COLOR)
+                        displayColor = display.display.color.color;
+                    else if(displayType == Game::DisplayType::TEXTURE)
+                        textureId = display.display.texture.textureId;
+                }
+            }
         }
     }
 }
@@ -765,6 +788,7 @@ void BlockBuster::Editor::GUI()
 
         bool pbSelected = tool == PLACE_BLOCK;
         bool rotbSelected = tool == ROTATE_BLOCK;
+        bool paintSelected = tool == PAINT_BLOCK;
 
         ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit;
         ImGui::SetCursorPosX(0);
@@ -804,6 +828,15 @@ void BlockBuster::Editor::GUI()
                     std::cout << "Rotating block enabled\n";
                     tool = ROTATE_BLOCK;
                 }
+
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                if(ImGui::Selectable("Paint", &paintSelected, 0, ImVec2{0, 0}))
+                {
+                    std::cout << "Paint block enabled\n";
+                    tool = PAINT_BLOCK;
+                }
+
                 ImGui::PopStyleVar();
 
                 ImGui::EndTable();
@@ -818,9 +851,11 @@ void BlockBuster::Editor::GUI()
                 ImGui::SameLine();
                 ImGui::RadioButton("Block", &blockType, Game::BlockType::BLOCK);
                 ImGui::SameLine();
-
                 ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
+            }
 
+            if(pbSelected || paintSelected)
+            {
                 ImGui::Text("Display Type");
                 ImGui::SameLine();
                 ImGui::RadioButton("Texture", &displayType, Game::DisplayType::TEXTURE);
