@@ -47,6 +47,7 @@ void BlockBuster::Editor::Start()
         std::strcpy(fileName, mapName.c_str());
         LoadMap();
         RenameMainWindow(mapName);
+        newMap = false;
     }
     else
     {
@@ -975,7 +976,7 @@ void BlockBuster::Editor::GUI()
                                 display.display.texture.textureId = textureId;
                             }
                             ImGui::SetCursorPos(pos);
-                            
+
                             void* data = reinterpret_cast<void*>(texture->GetGLId());
                             ImGui::Image(data, iconSize);
                         }       
