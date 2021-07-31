@@ -28,16 +28,15 @@ void BlockBuster::Editor::Start()
     {
         std::cout << "Error when loading texture " + e.path_.string() + ": " +  e.what() << '\n';
     }
+    textures.push_back(&texture);
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
 
     // Camera pos
-    camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
     int width, height;
     SDL_GetWindowSize(window_, &width, &height);
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
-    camera.SetTarget(glm::vec3{0.0f});
 
     // World
     if(auto mapIt = config.options.find("Map"); mapIt!= config.options.end() && mapIt->second.size() < 16)
@@ -49,6 +48,8 @@ void BlockBuster::Editor::Start()
     else
     {
         InitMap();
+        camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
+        camera.SetTarget(glm::vec3{0.0f});
         RenameMainWindow("New Map");
     }
 }
@@ -756,6 +757,8 @@ void BlockBuster::Editor::MenuBar()
 
             }
 
+            ImGui::Checkbox("Show demo window", &showDemo);
+
             ImGui::EndMenu();
         }
 
@@ -783,8 +786,8 @@ void BlockBuster::Editor::GUI()
         bool rotbSelected = tool == ROTATE_BLOCK;
         bool paintSelected = tool == PAINT_BLOCK;
 
-        ImGuiTableFlags tableFlags = ImGuiTableFlags_SizingFixedFit;
         ImGui::SetCursorPosX(0);
+        auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit;
         if(ImGui::BeginTable("#Tools", 2, 0, ImVec2{0, 0}))
         {
             // Title Column 1
@@ -859,8 +862,45 @@ void BlockBuster::Editor::GUI()
                 if(display.type == Game::DisplayType::COLOR)
                 {
                     ImGui::Text("Color");
-                    ImGui::SameLine();
+                    //ImGui::SameLine();
                     ImGui::ColorEdit4("", &display.display.color.color.x);
+                }
+                else if(display.type == Game::DisplayType::TEXTURE)
+                {
+                    ImGui::Text("Palette");
+                    const glm::vec2 iconSize{32.f};
+                    const glm::vec2 selectSize = iconSize + glm::vec2{2.0f};
+                    const auto effectiveSize = glm::vec2{selectSize.x + 8.0f, selectSize.y + 6.0f};
+                    const auto MAX_ROWS = 2;
+                    const auto MAX_COLUMNS = 64;
+                    const auto scrollbarOffsetX = 14.0f;
+
+                    glm::vec2 region = ImGui::GetContentRegionAvail();
+                    int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
+                    glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * MAX_ROWS};
+                    auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
+                    if(ImGui::BeginTable("Texture Palette", columns, tableFlags, tableSize))
+                    {                        
+                        for(unsigned int i = 0; i < textures.size(); i++)
+                        {
+                            ImGui::TableNextColumn();
+                            std::string label = "##selectable" + std::to_string(i);
+
+                            bool firstRowElement = (i % columns) == 0;
+                            glm::vec2 offset = (firstRowElement ? glm::vec2{4.0f, 0.0f} : glm::vec2{0.0f});
+                            glm::vec2 size = selectSize + offset;
+                            glm::vec2 pos = (glm::vec2)ImGui::GetCursorPos() + (size - iconSize) / 2.0f + offset / 2.0f;
+                            ImGui::Selectable(label.c_str(), i == (texture.GetGLId() - 1), 0, size);
+                            ImGui::SetCursorPos(pos);
+                            void* data = reinterpret_cast<void*>(texture.GetGLId());
+                            ImGui::Image(data, iconSize);
+                        }
+                        
+                        ImGui::TableNextRow();
+                        
+                        ImGui::EndTable();
+                    }
+                    
                 }
             }
 
@@ -881,6 +921,9 @@ void BlockBuster::Editor::GUI()
     }
 
     ImGui::End();
+
+    if(showDemo)
+        ImGui::ShowDemoWindow(&showDemo);
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

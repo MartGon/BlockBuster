@@ -56,6 +56,7 @@ namespace BlockBuster
         // Rendering
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
         GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
+        std::vector<GL::Texture*> textures;
         Rendering::Mesh cube;
         Rendering::Mesh slope;
         Rendering::Camera camera;
@@ -115,5 +116,8 @@ namespace BlockBuster
 
         // Options
         float blockScale = 2.0f;
+
+        // Debug
+        bool showDemo = false;
     };
 }

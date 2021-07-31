@@ -26,6 +26,11 @@ namespace GL
         void Load(bool flipVertically = false);
         void Bind(unsigned int activeTexture = GL_TEXTURE0) const;
 
+        unsigned int GetGLId() const
+        {
+            return handle_;
+        }
+
         // Exceptions
         class LoadError : public std::runtime_error
         {
