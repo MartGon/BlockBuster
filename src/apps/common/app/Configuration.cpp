@@ -48,9 +48,9 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
 
 std::unordered_map<std::string, std::string> LoadKeyValuePairs(std::fstream& file)
 {
-    char line[32];
+    char line[255];
     std::unordered_map<std::string, std::string> keyValues;
-    while(file.getline(line, 32))
+    while(file.getline(line, 255))
     {
         std::string strLine{line};
         auto index = strLine.find('=');

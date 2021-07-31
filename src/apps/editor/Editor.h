@@ -30,6 +30,7 @@ namespace BlockBuster
         // Rendering
         glm::vec<2, int> GetWindowSize();
         Rendering::Mesh& GetMesh(Game::BlockType type);
+        bool LoadTexture();
 
         // World
         Game::Block* GetBlock(glm::vec3 pos);
@@ -44,19 +45,23 @@ namespace BlockBuster
         // Options
         void HandleWindowEvent(SDL_WindowEvent winEvent);
         void ApplyVideoOptions(::App::Configuration::WindowConfig& config);
+        std::string GetConfigOption(const std::string& key, std::string defaultValue = "");
 
         // GUI
-        void RenameMainWindow(std::string name);
+        void RenameMainWindow(const std::string& name);
         void OpenMapPopUp();
         void SaveAsPopUp();
+        void LoadTexturePopUp();
         void VideoOptionsPopUp();
         void MenuBar();
         void GUI();
 
         // Rendering
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
-        GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
-        std::vector<GL::Texture*> textures;
+        std::filesystem::path textureFolder = TEXTURES_DIR;
+        const int MAX_TEXTURES = 32;
+        int textureId = 0;
+        std::vector<GL::Texture> textures;
         Rendering::Mesh cube;
         Rendering::Mesh slope;
         Rendering::Camera camera;
@@ -98,6 +103,7 @@ namespace BlockBuster
             NONE,
             SAVE_AS,
             OPEN_MAP,
+            LOAD_TEXTURE,
             VIDEO_SETTINGS,
         };
         PopUpState state = PopUpState::NONE;
@@ -107,6 +113,9 @@ namespace BlockBuster
         const int magicNumber = 0xB010F0;
         bool newMap = true;
         std::string errorText;
+
+        // Texture
+        char textureFilename[32] = "texture.png";
 
         // Config
         ::App::Configuration::WindowConfig preConfig;

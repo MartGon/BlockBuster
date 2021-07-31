@@ -19,7 +19,8 @@ void BlockBuster::Editor::Start()
     slope = Rendering::Primitive::GenerateSlope();
 
     // Textures
-    texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
+    textureFolder = GetConfigOption("TextureFolder", TEXTURES_DIR);
+    GL::Texture texture = GL::Texture::FromFolder(textureFolder, "SmoothStone.png");
     try
     {
         texture.Load();
@@ -28,7 +29,8 @@ void BlockBuster::Editor::Start()
     {
         std::cout << "Error when loading texture " + e.path_.string() + ": " +  e.what() << '\n';
     }
-    textures.push_back(&texture);
+    textures.reserve(MAX_TEXTURES);
+    textures.push_back(std::move(texture));
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
@@ -39,11 +41,12 @@ void BlockBuster::Editor::Start()
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
 
     // World
-    if(auto mapIt = config.options.find("Map"); mapIt!= config.options.end() && mapIt->second.size() < 16)
+    auto mapName = GetConfigOption("Map", "Map.bbm");
+    if(!mapName.empty() && mapName.size() < 16)
     {
-        std::strcpy(fileName, mapIt->second.c_str());
+        std::strcpy(fileName, mapName.c_str());
         LoadMap();
-        RenameMainWindow(fileName);
+        RenameMainWindow(mapName);
     }
     else
     {
@@ -104,7 +107,7 @@ void BlockBuster::Editor::Update()
         auto& mesh = GetMesh(block.type);
         auto display = block.display;
         if(display.type == Game::DisplayType::TEXTURE)
-            mesh.Draw(shader, &texture);
+            mesh.Draw(shader, &textures[display.display.texture.textureId]);
         else if(display.type == Game::DisplayType::COLOR)
             mesh.Draw(shader, display.display.color.color);
     }
@@ -123,6 +126,7 @@ bool BlockBuster::Editor::Quit()
 void BlockBuster::Editor::Shutdown()
 {
     config.options["Map"] = std::string(fileName);
+    config.options["TextureFolder"] = textureFolder.string();
 }
 
 // #### Rendering #### \\
@@ -138,6 +142,25 @@ glm::vec<2, int> BlockBuster::Editor::GetWindowSize()
 Rendering::Mesh& BlockBuster::Editor::GetMesh(Game::BlockType blockType)
 {
     return blockType == Game::BlockType::SLOPE ? slope : cube;
+}
+
+bool BlockBuster::Editor::LoadTexture()
+{
+    if(textures.size() >= MAX_TEXTURES)
+        return false;
+
+    auto texture = GL::Texture::FromFolder(textureFolder, textureFilename);
+    try
+    {
+        texture.Load();
+    }
+    catch(const GL::Texture::LoadError& e)
+    {
+        return false;
+    }
+    textures.push_back(std::move(texture));
+
+    return true;
 }
 
 // #### World #### \\
@@ -398,7 +421,7 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
                 }
                 else
                 {
-                    auto yaw = (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f;
+                    auto yaw = blockType == Game::BlockType::SLOPE ?  (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f : 0.0f;
 
                     auto block = blocks[index];
                     auto pos = block.transform.position;
@@ -412,6 +435,7 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
                     {
                         blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, display});
                         std::cout << "Block added at \n";
+                        std::cout << "Texture id is " << display.display.texture.textureId << "\n";
                     }
                 }
 
@@ -487,12 +511,65 @@ void BlockBuster::Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& 
     SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
+std::string BlockBuster::Editor::GetConfigOption(const std::string& key, std::string defaultValue)
+{
+    std::string ret = defaultValue;
+    auto it = config.options.find(key);
+
+    if(it != config.options.end())
+    {
+        ret = it->second;
+    }
+
+    return ret;
+}
+
 // #### GUI #### \\
 
-void BlockBuster::Editor::RenameMainWindow(std::string name)
+void BlockBuster::Editor::RenameMainWindow(const std::string& name)
 {
     std::string title = "Editor - " + name;
     SDL_SetWindowTitle(window_, title.c_str());
+}
+
+void BlockBuster::Editor::OpenMapPopUp()
+{
+    if(state == PopUpState::OPEN_MAP)
+        ImGui::OpenPopup("Open Map");
+
+    auto displaySize = io_->DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+    if(ImGui::BeginPopupModal("Open Map", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    {   
+        ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
+        if(ImGui::Button("Accept"))
+        {
+            if(LoadMap())
+            {
+                RenameMainWindow(fileName);
+                newMap = false;
+                errorText = "";
+
+                ImGui::CloseCurrentPopup();
+                state = PopUpState::NONE;
+            }
+            else
+                errorText = "Could not load map " + std::string(fileName);
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Cancel"))
+        {
+            errorText = "";
+            ImGui::CloseCurrentPopup();
+            state = PopUpState::NONE;
+        }
+
+        if(!errorText.empty())
+            ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", errorText.c_str());
+
+        ImGui::EndPopup();
+    }
 }
 
 void BlockBuster::Editor::SaveAsPopUp()
@@ -526,35 +603,30 @@ void BlockBuster::Editor::SaveAsPopUp()
     }
 }
 
-void BlockBuster::Editor::OpenMapPopUp()
+void BlockBuster::Editor::LoadTexturePopUp()
 {
-    if(state == PopUpState::OPEN_MAP)
-        ImGui::OpenPopup("Open Map");
+    if(state == PopUpState::LOAD_TEXTURE)
+        ImGui::OpenPopup("Load Texture");
 
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-    if(ImGui::BeginPopupModal("Open Map", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    if(ImGui::BeginPopupModal("Load Texture", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
-        ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
-        if(ImGui::Button("Accept"))
+        bool accept = ImGui::InputText("File Name", textureFilename, 32, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        if(ImGui::Button("Accept") || accept)
         {
-            if(LoadMap())
+            if(LoadTexture())
             {
-                RenameMainWindow(fileName);
-                newMap = false;
-                errorText = "";
-
                 ImGui::CloseCurrentPopup();
                 state = PopUpState::NONE;
             }
             else
-                errorText = "Could not load map " + std::string(fileName);
+                errorText = "Could not open texture " + std::string(textureFilename);
         }
 
         ImGui::SameLine();
         if(ImGui::Button("Cancel"))
         {
-            errorText = "";
             ImGui::CloseCurrentPopup();
             state = PopUpState::NONE;
         }
@@ -867,7 +939,11 @@ void BlockBuster::Editor::GUI()
                 }
                 else if(display.type == Game::DisplayType::TEXTURE)
                 {
+                    LoadTexturePopUp();
+
                     ImGui::Text("Palette");
+
+                    // Palette
                     const glm::vec2 iconSize{32.f};
                     const glm::vec2 selectSize = iconSize + glm::vec2{2.0f};
                     const auto effectiveSize = glm::vec2{selectSize.x + 8.0f, selectSize.y + 6.0f};
@@ -877,7 +953,9 @@ void BlockBuster::Editor::GUI()
 
                     glm::vec2 region = ImGui::GetContentRegionAvail();
                     int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
-                    glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * MAX_ROWS};
+                    int minRows = (int)glm::ceil((float)textures.size() / (float)columns);
+                    int rows = glm::min(MAX_ROWS, minRows);
+                    glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * rows};
                     auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
                     if(ImGui::BeginTable("Texture Palette", columns, tableFlags, tableSize))
                     {                        
@@ -890,17 +968,26 @@ void BlockBuster::Editor::GUI()
                             glm::vec2 offset = (firstRowElement ? glm::vec2{4.0f, 0.0f} : glm::vec2{0.0f});
                             glm::vec2 size = selectSize + offset;
                             glm::vec2 pos = (glm::vec2)ImGui::GetCursorPos() + (size - iconSize) / 2.0f + offset / 2.0f;
-                            ImGui::Selectable(label.c_str(), i == (texture.GetGLId() - 1), 0, size);
+                            auto texture = &textures[i];
+                            if(ImGui::Selectable(label.c_str(), i == textureId, 0, size))
+                            {
+                                textureId = i;
+                                display.display.texture.textureId = textureId;
+                            }
                             ImGui::SetCursorPos(pos);
-                            void* data = reinterpret_cast<void*>(texture.GetGLId());
+                            
+                            void* data = reinterpret_cast<void*>(texture->GetGLId());
                             ImGui::Image(data, iconSize);
-                        }
-                        
+                        }       
                         ImGui::TableNextRow();
                         
                         ImGui::EndTable();
                     }
-                    
+
+                    if(ImGui::Button("Add Texture"))
+                    {
+                        state = PopUpState::LOAD_TEXTURE;
+                    }
                 }
             }
 
