@@ -238,8 +238,15 @@ Game::Block* BlockBuster::Editor::GetBlock(glm::vec3 pos)
 void BlockBuster::Editor::InitMap()
 {
     blocks = {
-        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, blockScale}, Game::BLOCK},
-        //{Math::Transform{glm::vec3{0.0f, 6.0f, 0.0f} * BLOCK_SCALE, glm::vec3{0.0f, 0.0f, 0.0f}, BLOCK_SCALE}, Game::BLOCK},
+        {
+            Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, blockScale}, 
+            Game::BLOCK, Game::Display{Game::DisplayType::COLOR, Game::ColorDisplay{glm::vec4{1.0f}}}
+        },
+    };
+    textures.clear();
+    colors.clear();
+    colors = {
+        glm::vec4{1.0f},
     };
 }
 
@@ -339,7 +346,6 @@ bool BlockBuster::Editor::LoadMap()
         catch(const GL::Texture::LoadError& e)
         {
             std::cout << "Could not load texture file " << texturePath << "\n";
-            return false;
         }
         std::cout << "Loaded texture file " << texturePath << "\n";
         textures.push_back(std::move(texture));
