@@ -258,7 +258,21 @@ void BlockBuster::Editor::SaveMap()
     WriteToFile(file, blockScale);
 
     // Texture Table
+    WriteToFile(file, textures.size());
+    for(auto i = 0; i < textures.size(); i++)
+    {
+        auto texturePath =  textures[i].GetPath().string();
+        for(auto c : texturePath)
+            WriteToFile(file, c);
+        WriteToFile(file, '\0');
+    }
 
+    // Colors table
+    WriteToFile(file, colors.size());
+    for(auto i = 0; i < colors.size(); i++)
+    {
+        SaveVec4(file, colors[i]);
+    }
 
     // Camera Pos/Rot
     SaveVec3(file, camera.GetPos());
@@ -274,7 +288,12 @@ void BlockBuster::Editor::SaveMap()
 
         WriteToFile(file, block.display.type);
         if(block.display.type == Game::DisplayType::COLOR)
-            SaveVec4(file, block.display.display.color.color);
+        {
+            auto color = block.display.display.color.color;
+            auto colorIt = std::find(colors.begin(), colors.end(), color);
+            int colorId = colorIt - colors.begin();
+            WriteToFile(file, colorId);
+        }
         else
             WriteToFile(file, block.display.display.texture.textureId);
     }
@@ -299,11 +318,50 @@ bool BlockBuster::Editor::LoadMap()
     auto count = ReadFromFile<std::size_t>(file);
     blockScale = ReadFromFile<float>(file);
 
+    // Texture Table
+    auto textureSize = ReadFromFile<std::size_t>(file);
+    textures.clear();
+    textures.reserve(textureSize);
+    for(auto i = 0; i < textureSize; i++)
+    {
+        std::string texturePath;
+        char c = ReadFromFile<char>(file);
+        while(c != '\0' && !file.eof())
+        {   
+            texturePath.push_back(c);
+            c = ReadFromFile<char>(file);
+        }
+
+        GL::Texture texture{texturePath};
+        try{
+            texture.Load();
+        }
+        catch(const GL::Texture::LoadError& e)
+        {
+            std::cout << "Could not load texture file " << texturePath << "\n";
+            return false;
+        }
+        std::cout << "Loaded texture file " << texturePath << "\n";
+        textures.push_back(std::move(texture));
+    }
+
+    // Color Table
+    auto colorsSize = ReadFromFile<std::size_t>(file);
+    colors.clear();
+    colors.reserve(colorsSize);
+    for(auto i = 0; i < colorsSize; i++)
+    {
+        auto color = ReadVec4(file);
+        colors.push_back(color);
+    }
+
+    // Camera Pos/Rot
     auto cameraPos = ReadVec3(file);
     auto cameraRot = ReadVec2(file);
     camera.SetPos(cameraPos);
     camera.SetRotation(cameraRot.x, cameraRot.y);
 
+    // Blocks
     blocks.clear();
     blocks.reserve(count);
     for(auto i = 0; i < count; i++)
@@ -317,7 +375,10 @@ bool BlockBuster::Editor::LoadMap()
 
         block.display.type = ReadFromFile<Game::DisplayType>(file);
         if(block.display.type == Game::DisplayType::COLOR)
-            block.display.display.color.color = ReadVec4(file);
+        {
+            auto colorId = ReadFromFile<int>(file);
+            block.display.display.color.color = colors[colorId];
+        }
         else
             block.display.display.texture.textureId = ReadFromFile<int>(file);
 

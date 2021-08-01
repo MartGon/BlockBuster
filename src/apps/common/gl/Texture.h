@@ -30,6 +30,11 @@ namespace GL
         {
             return handle_;
         }
+        
+        std::filesystem::path GetPath() const
+        {
+            return path_;
+        }
 
         // Exceptions
         class LoadError : public std::runtime_error
