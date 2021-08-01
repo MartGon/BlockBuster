@@ -474,6 +474,16 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
                 else
                 {
                     display = block.display;
+                    if(display.type == Game::DisplayType::TEXTURE)
+                    {
+                        textureId = display.display.texture.textureId;
+                        display.display.texture.textureId = textureId;
+                    }
+                    else if(display.type == Game::DisplayType::COLOR)
+                    {
+                        auto it = std::find(colors.begin(), colors.end(), display.display.color.color);
+                        colorId = it - colors.begin();
+                    }
                 }
             }
         }
@@ -768,6 +778,8 @@ void BlockBuster::Editor::MenuBar()
                 std::strcpy(fileName, "NewMap.bbm");
                 RenameMainWindow("New Map");
                 newMap = true;
+                camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
+                camera.SetTarget(glm::vec3{0.0f});
             }
 
             ImGui::Separator();
@@ -934,10 +946,14 @@ void BlockBuster::Editor::GUI()
             {
                 ImGui::Text("Display Type");
                 ImGui::SameLine();
-                ImGui::RadioButton("Texture", &display.type, Game::DisplayType::TEXTURE);
+                if(ImGui::RadioButton("Texture", &display.type, Game::DisplayType::TEXTURE))
+                {
+                    display.display.texture.textureId = textureId;
+                }
                 ImGui::SameLine();
 
-                ImGui::RadioButton("Color", &display.type, Game::DisplayType::COLOR);
+                if(ImGui::RadioButton("Color", &display.type, Game::DisplayType::COLOR))
+                    display.display.color.color = colors[colorId];
 
                 if(display.type == Game::DisplayType::COLOR)
                 {
