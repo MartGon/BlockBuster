@@ -13,6 +13,8 @@
 #include <game/Player.h>
 #include <game/Block.h>
 
+#include <functional>
+
 namespace BlockBuster
 {
     class Editor : public App::App
@@ -27,6 +29,16 @@ namespace BlockBuster
         
     private:
 
+        // Enums
+        enum class PopUpState
+        {
+            NONE,
+            SAVE_AS,
+            OPEN_MAP,
+            LOAD_TEXTURE,
+            VIDEO_SETTINGS,
+        };
+
         // Rendering
         Rendering::Mesh& GetMesh(Game::BlockType type);
         bool LoadTexture();
@@ -35,7 +47,7 @@ namespace BlockBuster
         Game::Block* GetBlock(glm::vec3 pos);
         void NewMap();
         void SaveMap();
-        bool LoadMap();
+        bool OpenMap();
 
         // Editor
         void UpdateCamera();
@@ -53,6 +65,20 @@ namespace BlockBuster
         void SaveAsPopUp();
         void LoadTexturePopUp();
         void VideoOptionsPopUp();
+        struct BasicPopUpParams
+        {
+            PopUpState popUpState;
+            std::string name;
+            char* textBuffer; 
+            size_t bufferSize;
+            std::function<bool()> onAccept;
+            std::function<void()> onCancel;
+            std::string errorPrefix;
+
+            bool& onError;
+            std::string& errorText;
+        };
+        void EditTextPopUp(const BasicPopUpParams& params);
         void MenuBar();
         void GUI();
 
@@ -92,35 +118,29 @@ namespace BlockBuster
         RotationAxis axis = RotationAxis::Y;
 
         // Tool - Paint
-        bool pickingColor = false;
-        Game::DisplayType displayType;
+        Game::DisplayType displayType = Game::DisplayType::COLOR;
         int textureId = 0;
         int colorId = 0;
+
         std::filesystem::path textureFolder = TEXTURES_DIR;
+        char textureFilename[32] = "texture.png";
+
         const int MAX_TEXTURES = 32;
         std::vector<GL::Texture> textures;
-        glm::vec4 colorPick;
         std::vector<glm::vec4> colors;
 
+        bool pickingColor = false;
+        glm::vec4 colorPick;
+
         // GUI
-        enum class PopUpState
-        {
-            NONE,
-            SAVE_AS,
-            OPEN_MAP,
-            LOAD_TEXTURE,
-            VIDEO_SETTINGS,
-        };
         PopUpState state = PopUpState::NONE;
+        bool onError = false;
+        std::string errorText;
 
         // File
         char fileName[16] = "Map.bbm";
         const int magicNumber = 0xB010F0;
         bool newMap = true;
-        std::string errorText;
-
-        // Texture
-        char textureFilename[32] = "texture.png";
 
         // Config
         ::App::Configuration::WindowConfig preConfig;

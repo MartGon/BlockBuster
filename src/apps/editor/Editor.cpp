@@ -42,12 +42,14 @@ void BlockBuster::Editor::Start()
     
     // World
     auto mapName = GetConfigOption("Map", "Map.bbm");
+    bool mapLoaded = false;
     if(!mapName.empty() && mapName.size() < 16)
     {
         std::strcpy(fileName, mapName.c_str());
-        LoadMap();
+        mapLoaded = OpenMap();
     }
-    else
+    
+    if(!mapLoaded)
         NewMap();
 }
 
@@ -303,7 +305,7 @@ void BlockBuster::Editor::SaveMap()
     newMap = false;
 }
 
-bool BlockBuster::Editor::LoadMap()
+bool BlockBuster::Editor::OpenMap()
 {
     std::fstream file{fileName, file.binary | file.in};
     if(!file.is_open())
@@ -624,101 +626,71 @@ std::string BlockBuster::Editor::GetConfigOption(const std::string& key, std::st
 
 void BlockBuster::Editor::OpenMapPopUp()
 {
-    if(state == PopUpState::OPEN_MAP)
-        ImGui::OpenPopup("Open Map");
-
-    auto displaySize = io_->DisplaySize;
-    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-    if(ImGui::BeginPopupModal("Open Map", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-    {   
-        ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
-        if(ImGui::Button("Accept"))
-        {
-            if(LoadMap())
-            {
-                errorText = "";
-
-                ImGui::CloseCurrentPopup();
-                state = PopUpState::NONE;
-            }
-            else
-                errorText = "Could not load map " + std::string(fileName);
-        }
-
-        ImGui::SameLine();
-        if(ImGui::Button("Cancel"))
-        {
-            errorText = "";
-            ImGui::CloseCurrentPopup();
-            state = PopUpState::NONE;
-        }
-
-        if(!errorText.empty())
-            ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", errorText.c_str());
-
-        ImGui::EndPopup();
-    }
+    std::string errorPrefix = "Could not open map ";
+    auto onAccept = std::bind(&BlockBuster::Editor::OpenMap, this);
+    auto onCancel = [](){};
+    BasicPopUpParams params{PopUpState::OPEN_MAP, "Open Map", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
+    EditTextPopUp(params);
 }
 
 void BlockBuster::Editor::SaveAsPopUp()
 {
-    if(state == PopUpState::SAVE_AS)
-        ImGui::OpenPopup("Save as");
-
-    auto displaySize = io_->DisplaySize;
-    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-    if(ImGui::BeginPopupModal("Save as", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-    {   
-        ImGui::InputText("File Name", fileName, 16, ImGuiInputTextFlags_EnterReturnsTrue);
-        if(ImGui::Button("Accept"))
-        {
-            SaveMap();
-
-            ImGui::CloseCurrentPopup();
-            state = PopUpState::NONE;
-        }
-
-        ImGui::SameLine();
-        if(ImGui::Button("Cancel"))
-        {
-            ImGui::CloseCurrentPopup();
-            state = PopUpState::NONE;
-        }
-
-        ImGui::EndPopup();
-    }
+    std::string errorPrefix = "Could not save map ";
+    auto onAccept = [this](){this->SaveMap(); return true;};
+    auto onCancel = [](){};
+    BasicPopUpParams params{PopUpState::SAVE_AS, "Save As", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
+    EditTextPopUp(params);
 }
 
 void BlockBuster::Editor::LoadTexturePopUp()
 {
-    if(state == PopUpState::LOAD_TEXTURE)
-        ImGui::OpenPopup("Load Texture");
+    std::string errorPrefix = "Could not open texture ";
+    auto onAccept = std::bind(&BlockBuster::Editor::LoadTexture, this);
+    auto onCancel = [](){};
+    BasicPopUpParams params{PopUpState::LOAD_TEXTURE, "Load Texture", textureFilename, 32, onAccept, onCancel, errorPrefix, onError, errorText};
+    EditTextPopUp(params);
+}
+
+void BlockBuster::Editor::EditTextPopUp(const BasicPopUpParams& params)
+{
+    if(state == params.popUpState)
+        ImGui::OpenPopup(params.name.c_str());
 
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-    if(ImGui::BeginPopupModal("Load Texture", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    if(ImGui::BeginPopupModal(params.name.c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
-        bool accept = ImGui::InputText("File Name", textureFilename, 32, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        bool accept = ImGui::InputText("EditText", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        bool ok = true;
         if(ImGui::Button("Accept") || accept)
         {
-            if(LoadTexture())
+            ok = params.onAccept();
+
+            if(ok)
             {
+                params.onError = false;
+                
                 ImGui::CloseCurrentPopup();
                 state = PopUpState::NONE;
             }
             else
-                errorText = "Could not open texture " + std::string(textureFilename);
+            {
+                params.onError = true;
+                params.errorText = params.errorPrefix + params.textBuffer + '\n';
+            }
         }
 
         ImGui::SameLine();
         if(ImGui::Button("Cancel"))
         {
+            params.onCancel();
+
             ImGui::CloseCurrentPopup();
             state = PopUpState::NONE;
         }
 
-        if(!errorText.empty())
-            ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", errorText.c_str());
+        if(params.onError)
+            ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", params.errorText.c_str());
 
         ImGui::EndPopup();
     }
@@ -1080,7 +1052,7 @@ void BlockBuster::Editor::GUI()
                         
                         if(displayType == Game::DisplayType::TEXTURE)
                         {
-                            auto texture = &textures[i];
+                            GL::Texture* texture = &textures[i];
                             void* data = reinterpret_cast<void*>(texture->GetGLId());
                             ImGui::Image(data, iconSize);
                         }
