@@ -28,6 +28,10 @@ namespace App
     
         Configuration config;
     protected:
+
+        glm::vec<2, int> GetWindowSize();
+        void RenameMainWindow(const std::string& name);
+
         ImGuiIO* io_;
         SDL_Window* window_;
         SDL_GLContext context_;

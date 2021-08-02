@@ -39,9 +39,6 @@ void BlockBuster::Editor::Start()
     int width, height;
     SDL_GetWindowSize(window_, &width, &height);
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
-
-    // Color palette
-    colors = {glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f}};
     
     // World
     auto mapName = GetConfigOption("Map", "Map.bbm");
@@ -49,16 +46,9 @@ void BlockBuster::Editor::Start()
     {
         std::strcpy(fileName, mapName.c_str());
         LoadMap();
-        RenameMainWindow(mapName);
-        newMap = false;
     }
     else
-    {
-        InitMap();
-        camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
-        camera.SetTarget(glm::vec3{0.0f});
-        RenameMainWindow("New Map");
-    }
+        NewMap();
 }
 
 void BlockBuster::Editor::Update()
@@ -93,6 +83,7 @@ void BlockBuster::Editor::Update()
             }
         }
     }
+    
     // Camera
     UpdateCamera();
 
@@ -134,14 +125,6 @@ void BlockBuster::Editor::Shutdown()
 }
 
 // #### Rendering #### \\
-
-glm::vec<2, int> BlockBuster::Editor::GetWindowSize()
-{
-    glm::vec<2, int> size;
-    SDL_GetWindowSize(window_, &size.x, &size.y);
-
-    return size;
-}
 
 Rendering::Mesh& BlockBuster::Editor::GetMesh(Game::BlockType blockType)
 {
@@ -235,19 +218,32 @@ Game::Block* BlockBuster::Editor::GetBlock(glm::vec3 pos)
     return block;
 }
 
-void BlockBuster::Editor::InitMap()
+void BlockBuster::Editor::NewMap()
 {
+    // Texture pallete
+    textures.clear();
+
+    // Color palette
+    colors = {glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f}};
+
+    // Camera
+    camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
+    camera.SetTarget(glm::vec3{0.0f});
+
+    // Set first block
     blocks = {
         {
             Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, blockScale}, 
             Game::BLOCK, Game::Display{Game::DisplayType::COLOR, Game::ColorDisplay{glm::vec4{1.0f}}}
         },
     };
-    textures.clear();
-    colors.clear();
-    colors = {
-        glm::vec4{1.0f},
-    };
+
+    // Window
+    RenameMainWindow("New Map");
+    newMap = true;
+
+    // Filename
+    std::strcpy(fileName, "NewMap.bbm");
 }
 
 void BlockBuster::Editor::SaveMap()
@@ -304,6 +300,9 @@ void BlockBuster::Editor::SaveMap()
         else
             WriteToFile(file, block.display.display.texture.textureId);
     }
+
+    // Update flag
+    newMap = false;
 }
 
 bool BlockBuster::Editor::LoadMap()
@@ -347,7 +346,6 @@ bool BlockBuster::Editor::LoadMap()
         {
             std::cout << "Could not load texture file " << texturePath << "\n";
         }
-        std::cout << "Loaded texture file " << texturePath << "\n";
         textures.push_back(std::move(texture));
     }
 
@@ -390,6 +388,10 @@ bool BlockBuster::Editor::LoadMap()
 
         blocks.push_back(block);
     }
+
+    // Window
+    RenameMainWindow(fileName);
+    newMap = false;
 
     return true;
 }
@@ -611,12 +613,6 @@ std::string BlockBuster::Editor::GetConfigOption(const std::string& key, std::st
 
 // #### GUI #### \\
 
-void BlockBuster::Editor::RenameMainWindow(const std::string& name)
-{
-    std::string title = "Editor - " + name;
-    SDL_SetWindowTitle(window_, title.c_str());
-}
-
 void BlockBuster::Editor::OpenMapPopUp()
 {
     if(state == PopUpState::OPEN_MAP)
@@ -631,8 +627,6 @@ void BlockBuster::Editor::OpenMapPopUp()
         {
             if(LoadMap())
             {
-                RenameMainWindow(fileName);
-                newMap = false;
                 errorText = "";
 
                 ImGui::CloseCurrentPopup();
@@ -670,8 +664,6 @@ void BlockBuster::Editor::SaveAsPopUp()
         if(ImGui::Button("Accept"))
         {
             SaveMap();
-            RenameMainWindow(fileName);
-            newMap = false;
 
             ImGui::CloseCurrentPopup();
             state = PopUpState::NONE;
@@ -841,12 +833,7 @@ void BlockBuster::Editor::MenuBar()
         {
             if(ImGui::MenuItem("New Map", "Ctrl + N"))
             {
-                InitMap();
-                std::strcpy(fileName, "NewMap.bbm");
-                RenameMainWindow("New Map");
-                newMap = true;
-                camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
-                camera.SetTarget(glm::vec3{0.0f});
+                NewMap();
             }
 
             ImGui::Separator();
@@ -1126,6 +1113,7 @@ void BlockBuster::Editor::GUI()
                             if(std::find(colors.begin(), colors.end(), color) == colors.end())
                             {
                                 colors.push_back(display.display.color.color);
+                                colorId = colors.size() - 1;
                             }
                         }
                     }

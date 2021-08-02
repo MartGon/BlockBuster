@@ -28,13 +28,12 @@ namespace BlockBuster
     private:
 
         // Rendering
-        glm::vec<2, int> GetWindowSize();
         Rendering::Mesh& GetMesh(Game::BlockType type);
         bool LoadTexture();
 
         // World
         Game::Block* GetBlock(glm::vec3 pos);
-        void InitMap();
+        void NewMap();
         void SaveMap();
         bool LoadMap();
 
@@ -48,7 +47,6 @@ namespace BlockBuster
         std::string GetConfigOption(const std::string& key, std::string defaultValue = "");
 
         // GUI
-        void RenameMainWindow(const std::string& name);
         void OpenMapPopUp();
         void SaveAsPopUp();
         void LoadTexturePopUp();
@@ -58,7 +56,6 @@ namespace BlockBuster
 
         // Rendering
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
-        std::filesystem::path textureFolder = TEXTURES_DIR;
         Rendering::Mesh cube;
         Rendering::Mesh slope;
         Rendering::Camera camera;
@@ -93,12 +90,13 @@ namespace BlockBuster
         RotationAxis axis = RotationAxis::Y;
 
         // Tool - Paint
-        const int MAX_TEXTURES = 32;
-        int textureId = 0;
-        int colorId = 0;
         bool pickingColor = false;
         Game::Display display = {Game::DisplayType::COLOR, Game::ColorDisplay{glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}}};
+        std::filesystem::path textureFolder = TEXTURES_DIR;
+        const int MAX_TEXTURES = 32;
+        int textureId = 0;
         std::vector<GL::Texture> textures;
+        int colorId = 0;
         std::vector<glm::vec4> colors;
 
         // GUI

@@ -70,3 +70,19 @@ App::App::~App()
 
     SDL_Quit();
 }
+
+// Protected
+
+glm::vec<2, int> App::App::GetWindowSize()
+{
+    glm::vec<2, int> size;
+    SDL_GetWindowSize(window_, &size.x, &size.y);
+
+    return size;
+}
+
+void App::App::RenameMainWindow(const std::string& name)
+{
+    std::string title = "Editor - " + name;
+    SDL_SetWindowTitle(window_, title.c_str());
+}
