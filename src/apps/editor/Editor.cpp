@@ -1018,7 +1018,8 @@ void BlockBuster::Editor::GUI()
                     {
                         ImGui::TableNextColumn();
                         std::string label = "##selectable" + std::to_string(i);
-                    
+
+                        // This part of the code is to "fix" the display of the palette
                         bool firstRowElement = (i % columns) == 0;
                         glm::vec2 offset = (firstRowElement ? glm::vec2{4.0f, 0.0f} : glm::vec2{0.0f});
                         glm::vec2 size = selectSize + offset;
@@ -1034,6 +1035,7 @@ void BlockBuster::Editor::GUI()
                             
                             pos += glm::vec2{-1.0f, 0.0f};
                         }
+                        // Until around here
                         
                         bool selected = displayType == Game::DisplayType::TEXTURE && i == textureId || 
                             displayType == Game::DisplayType::COLOR && i == colorId;
