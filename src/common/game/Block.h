@@ -12,26 +12,10 @@ namespace Game
         COLOR
     };
 
-    struct ColorDisplay
-    {
-        glm::vec4 color;
-    };
-
-    struct TextureDisplay
-    {
-        int textureId;
-    };
-
-    union DisplayU
-    {
-        ColorDisplay color;
-        TextureDisplay texture;
-    };
-
     struct Display
     {
         DisplayType type;
-        DisplayU display;
+        int id;
     };
 
     enum BlockType

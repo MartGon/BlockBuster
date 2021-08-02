@@ -102,9 +102,9 @@ void BlockBuster::Editor::Update()
         auto& mesh = GetMesh(block.type);
         auto display = block.display;
         if(display.type == Game::DisplayType::TEXTURE)
-            mesh.Draw(shader, &textures[display.display.texture.textureId]);
+            mesh.Draw(shader, &textures[display.id]);
         else if(display.type == Game::DisplayType::COLOR)
-            mesh.Draw(shader, display.display.color.color);
+            mesh.Draw(shader, colors[display.id]);
     }
 
     // GUI
@@ -234,7 +234,7 @@ void BlockBuster::Editor::NewMap()
     blocks = {
         {
             Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, blockScale}, 
-            Game::BLOCK, Game::Display{Game::DisplayType::COLOR, Game::ColorDisplay{glm::vec4{1.0f}}}
+            Game::BLOCK, Game::Display{Game::DisplayType::COLOR, 2}
         },
     };
 
@@ -292,13 +292,11 @@ void BlockBuster::Editor::SaveMap()
         WriteToFile(file, block.display.type);
         if(block.display.type == Game::DisplayType::COLOR)
         {
-            auto color = block.display.display.color.color;
-            auto colorIt = std::find(colors.begin(), colors.end(), color);
-            int colorId = colorIt - colors.begin();
+            auto colorId = block.display.id;
             WriteToFile(file, colorId);
         }
         else
-            WriteToFile(file, block.display.display.texture.textureId);
+            WriteToFile(file, block.display.id);
     }
 
     // Update flag
@@ -381,10 +379,10 @@ bool BlockBuster::Editor::LoadMap()
         if(block.display.type == Game::DisplayType::COLOR)
         {
             auto colorId = ReadFromFile<int>(file);
-            block.display.display.color.color = colors[colorId];
+            block.display.id = colorId;
         }
         else
-            block.display.display.texture.textureId = ReadFromFile<int>(file);
+            block.display.id = ReadFromFile<int>(file);
 
         blocks.push_back(block);
     }
@@ -392,6 +390,9 @@ bool BlockBuster::Editor::LoadMap()
     // Window
     RenameMainWindow(fileName);
     newMap = false;
+
+    // Color Palette
+    colorPick = colors[colorId];
 
     return true;
 }
@@ -504,15 +505,12 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
                     auto scale = block.transform.scale;
 
                     auto newBlockPos = pos + intersection.normal * scale;
-                    auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
-                    auto newBlockType = blockType;
-
                     if(!GetBlock(newBlockPos))
                     {
+                        auto display = GetBlockDisplay();
+                        auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
+                        auto newBlockType = blockType;
                         blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, display});
-
-                        std::cout << "Block added at \n";
-                        std::cout << "Texture id is " << display.display.texture.textureId << "\n";
                     }
                 }
 
@@ -538,25 +536,36 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, bool rightButton)
                 auto& block = blocks[index];
                 if(!rightButton)
                 {
-                    block.display = display;
+                    block.display = GetBlockDisplay();
                 }
                 else
                 {
-                    display = block.display;
-                    if(display.type == Game::DisplayType::TEXTURE)
-                    {
-                        textureId = display.display.texture.textureId;
-                        display.display.texture.textureId = textureId;
-                    }
-                    else if(display.type == Game::DisplayType::COLOR)
-                    {
-                        auto it = std::find(colors.begin(), colors.end(), display.display.color.color);
-                        colorId = it - colors.begin();
-                    }
+                    SetBlockDisplay(block.display);
                 }
             }
         }
     }
+}
+
+Game::Display BlockBuster::Editor::GetBlockDisplay()
+{
+    Game::Display display;
+    display.type = displayType;
+    if(displayType == Game::DisplayType::COLOR)
+        display.id = colorId;
+    else if(displayType == Game::DisplayType::TEXTURE)
+        display.id = textureId;
+
+    return display;
+}
+
+void BlockBuster::Editor::SetBlockDisplay(Game::Display display)
+{
+    displayType = display.type;
+    if(displayType == Game::DisplayType::TEXTURE)
+        textureId = display.id;
+    else if(displayType == Game::DisplayType::COLOR)
+        colorId = display.id;
 }
 
 // #### Options #### \\
@@ -1000,20 +1009,16 @@ void BlockBuster::Editor::GUI()
             {
                 ImGui::Text("Display Type");
                 ImGui::SameLine();
-                if(ImGui::RadioButton("Texture", &display.type, Game::DisplayType::TEXTURE))
-                {
-                    display.display.texture.textureId = textureId;
-                }
+                ImGui::RadioButton("Texture", &displayType, Game::DisplayType::TEXTURE);
                 ImGui::SameLine();
 
-                if(ImGui::RadioButton("Color", &display.type, Game::DisplayType::COLOR))
-                    display.display.color.color = colors[colorId];
+                ImGui::RadioButton("Color", &displayType, Game::DisplayType::COLOR);
 
-                if(display.type == Game::DisplayType::COLOR)
+                if(displayType == Game::DisplayType::COLOR)
                 {
                     
                 }
-                else if(display.type == Game::DisplayType::TEXTURE)
+                else if(displayType == Game::DisplayType::TEXTURE)
                 {
                     LoadTexturePopUp();
                 }
@@ -1021,7 +1026,7 @@ void BlockBuster::Editor::GUI()
                 ImGui::Text("Palette");
 
                 // Palette
-                const glm::vec2 iconSize = display.type == Game::DisplayType::TEXTURE ? glm::vec2{32.f} : glm::vec2{20.f};
+                const glm::vec2 iconSize = displayType == Game::DisplayType::TEXTURE ? glm::vec2{32.f} : glm::vec2{20.f};
                 const glm::vec2 selectSize = iconSize + glm::vec2{2.0f};
                 const auto effectiveSize = glm::vec2{selectSize.x + 8.0f, selectSize.y + 6.0f};
                 const auto MAX_ROWS = 2;
@@ -1030,7 +1035,7 @@ void BlockBuster::Editor::GUI()
 
                 glm::vec2 region = ImGui::GetContentRegionAvail();
                 int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
-                int entries = display.type == Game::DisplayType::TEXTURE ? textures.size() : colors.size();
+                int entries = displayType == Game::DisplayType::TEXTURE ? textures.size() : colors.size();
                 int minRows = glm::max((int)glm::ceil((float)entries / (float)columns), 1);
                 int rows = glm::min(MAX_ROWS, minRows);
                 glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * rows};
@@ -1048,7 +1053,7 @@ void BlockBuster::Editor::GUI()
                         glm::vec2 cursorPos = ImGui::GetCursorPos();
                         glm::vec2 pos = cursorPos + (size - iconSize) / 2.0f + offset / 2.0f;
                         
-                        if(display.type == Game::DisplayType::COLOR)
+                        if(displayType == Game::DisplayType::COLOR)
                         {
                             auto newPos = cursorPos + glm::vec2{0.0f, -3.0f};
                             size += glm::vec2{-2.0f, 0.0f};
@@ -1058,30 +1063,28 @@ void BlockBuster::Editor::GUI()
                             pos += glm::vec2{-1.0f, 0.0f};
                         }
                         
-                        bool selected = display.type == Game::DisplayType::TEXTURE && i == textureId || 
-                            display.type == Game::DisplayType::COLOR && i == colorId;
+                        bool selected = displayType == Game::DisplayType::TEXTURE && i == textureId || 
+                            displayType == Game::DisplayType::COLOR && i == colorId;
                         if(ImGui::Selectable(label.c_str(), selected, 0, size))
                         {
-                            if(display.type == Game::DisplayType::TEXTURE)
+                            if(displayType == Game::DisplayType::TEXTURE)
                             {
                                 textureId = i;
-                                display.display.texture.textureId = textureId;
                             }
-                            else if(display.type == Game::DisplayType::COLOR)
+                            else if(displayType == Game::DisplayType::COLOR)
                             {
                                 colorId = i;
-                                display.display.color.color = colors[colorId];
                             }
                         }
                         ImGui::SetCursorPos(pos);
                         
-                        if(display.type == Game::DisplayType::TEXTURE)
+                        if(displayType == Game::DisplayType::TEXTURE)
                         {
                             auto texture = &textures[i];
                             void* data = reinterpret_cast<void*>(texture->GetGLId());
                             ImGui::Image(data, iconSize);
                         }
-                        else if(display.type == Game::DisplayType::COLOR)
+                        else if(displayType == Game::DisplayType::COLOR)
                         {
                             ImGui::ColorButton("## color", colors[i]);
                         }
@@ -1091,34 +1094,34 @@ void BlockBuster::Editor::GUI()
                     ImGui::EndTable();
                 }
 
-                if(display.type == Game::DisplayType::COLOR)
+                if(displayType == Game::DisplayType::COLOR)
                 {
-                    if(ImGui::ColorButton("Chosen Color", display.display.color.color))
+                    if(ImGui::ColorButton("Chosen Color", colors[colorId]))
                     {
                         ImGui::OpenPopup("Color Picker");
                         pickingColor = true;
                     }
                     if(ImGui::BeginPopup("Color Picker"))
                     {
-                        if(ImGui::ColorPicker4("##picker", &display.display.color.color.x, ImGuiColorEditFlags__OptionsDefault))
+                        if(ImGui::ColorPicker4("##picker", &colorPick.x, ImGuiColorEditFlags__OptionsDefault))
                             colorId = -1;
                         ImGui::EndPopup();
                     }
                     else if(pickingColor)
                     {
                         pickingColor = false;
-                        if(display.type == Game::DisplayType::COLOR)
+                        if(displayType == Game::DisplayType::COLOR)
                         {
-                            auto color = display.display.color.color;
+                            auto color = colorPick;
                             if(std::find(colors.begin(), colors.end(), color) == colors.end())
                             {
-                                colors.push_back(display.display.color.color);
+                                colors.push_back(colorPick);
                                 colorId = colors.size() - 1;
                             }
                         }
                     }
                 }
-                else if(display.type == Game::DisplayType::TEXTURE)
+                else if(displayType == Game::DisplayType::TEXTURE)
                 {
                     if(ImGui::Button("Add Texture"))
                     {

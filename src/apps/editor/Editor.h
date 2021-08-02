@@ -40,6 +40,8 @@ namespace BlockBuster
         // Editor
         void UpdateCamera();
         void UseTool(glm::vec<2, int> mousePos, bool rightButton = false);
+        Game::Display GetBlockDisplay();
+        void SetBlockDisplay(Game::Display display);
 
         // Options
         void HandleWindowEvent(SDL_WindowEvent winEvent);
@@ -91,12 +93,13 @@ namespace BlockBuster
 
         // Tool - Paint
         bool pickingColor = false;
-        Game::Display display = {Game::DisplayType::COLOR, Game::ColorDisplay{glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}}};
+        Game::DisplayType displayType;
+        int textureId = 0;
+        int colorId = 0;
         std::filesystem::path textureFolder = TEXTURES_DIR;
         const int MAX_TEXTURES = 32;
-        int textureId = 0;
         std::vector<GL::Texture> textures;
-        int colorId = 0;
+        glm::vec4 colorPick;
         std::vector<glm::vec4> colors;
 
         // GUI
