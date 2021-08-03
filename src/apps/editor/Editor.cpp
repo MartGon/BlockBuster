@@ -88,6 +88,9 @@ void BlockBuster::Editor::Update()
     // Hover
     if(!io.WantCaptureMouse)
     {
+        // Reset previewColor
+        preColorBlockIndex = -1;
+
         auto mousePos = GetMousePos();
         UseTool(mousePos, ActionType::HOVER);
     }
@@ -109,7 +112,7 @@ void BlockBuster::Editor::Update()
         shader.SetUniformInt("hasBorder", true);
         shader.SetUniformMat4("transform", transform);
         auto& mesh = GetMesh(block.type);
-        auto display = block.display;
+        auto display = tool == PAINT_BLOCK && preColorBlockIndex == i ? GetBlockDisplay() : block.display;
         if(display.type == Game::DisplayType::TEXTURE)
             mesh.Draw(shader, &textures[display.id]);
         else if(display.type == Game::DisplayType::COLOR)
@@ -130,7 +133,8 @@ void BlockBuster::Editor::Update()
         auto transform = camera.GetProjViewMat() * model;
         shader.SetUniformMat4("transform", transform);
         shader.SetUniformInt("hasBorder", false);
-        cube.Draw(shader, cursor.color, GL_LINE);
+        auto& mesh = GetMesh(cursor.type);
+        mesh.Draw(shader, cursor.color, GL_LINE);
     }
 
     // GUI
@@ -535,48 +539,38 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
     {
         case PLACE_BLOCK:
         {
-            if(actionType == ActionType::LEFT_BUTTON && index != -1)
+            if(index != -1)
             {
-                auto yaw = blockType == Game::BlockType::SLOPE ?  (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f : 0.0f;
-
-                auto block = blocks[index];
-                auto pos = block.transform.position;
-                auto scale = block.transform.scale;
-
-                auto newBlockPos = pos + intersection.normal * scale;
-                if(!GetBlock(newBlockPos))
-                {
-                    auto display = GetBlockDisplay();
-                    auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
-                    auto newBlockType = blockType;
-                    blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, display});
-                }
-            }
-            if(actionType == ActionType::RIGHT_BUTTON && index != -1)
-            {
-                if(blocks.size() > 1)
-                    blocks.erase(blocks.begin() + index);
-                break;
-            }
-            if(actionType == ActionType::HOVER)
-            {
-                if(index != -1)
+                if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::HOVER)
                 {
                     auto block = blocks[index];
                     auto pos = block.transform.position;
                     auto scale = block.transform.scale;
 
-                    auto cursorPos = pos + intersection.normal * scale;
-                    if(!GetBlock(cursorPos))
+                    auto newBlockPos = pos + intersection.normal * scale;
+                    if(!GetBlock(newBlockPos))
                     {
-                        cursor.enabled = true;
-                        cursor.transform.position = cursorPos;
-                        const auto yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
-                        const auto darkBlue = glm::vec4{20.f / 255.f, 0.0f, 0.5f, 1.0f};
-                        cursor.color = yellow;
-                        if(block.display.type == Game::DisplayType::COLOR)
+                        auto yaw = blockType == Game::BlockType::SLOPE ? (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f : 0.0f;
+                        auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
+
+                        if(actionType == ActionType::LEFT_BUTTON)
                         {
-                            cursor.color = GetBorderColor(colors[block.display.id], darkBlue, yellow);
+                            auto display = GetBlockDisplay();                            
+                            auto newBlockType = blockType;
+                            std::cout << "Block added\n";
+                            blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, display});
+                        }
+                        else if(actionType == ActionType::HOVER)
+                        {
+                            cursor.enabled = true;
+                            cursor.transform.position = newBlockPos;
+                            cursor.transform.rotation = newBlockRot;
+                            cursor.color = yellow;
+                            cursor.type = blockType;
+                            if(block.display.type == Game::DisplayType::COLOR)
+                            {
+                                cursor.color = GetBorderColor(colors[block.display.id], darkBlue, yellow);
+                            }
                         }
                     }
                     else
@@ -585,32 +579,58 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
                         cursor.enabled = false;
                     }
                 }
-                else
+                else if(actionType == ActionType::RIGHT_BUTTON)
                 {
-                    // Disable cursor
-                    cursor.enabled = false;
+                    if(blocks.size() > 1)
+                        blocks.erase(blocks.begin() + index);
+                    break;
                 }
             }
-
+            else
+            {
+                cursor.enabled = false;
+            }
             break;
-        }            
+        }               
         case ROTATE_BLOCK:
         {
             if(index != -1)
             {
                 auto& block = blocks[index];
-                float mod = actionType == ActionType::RIGHT_BUTTON ? -90.0f : 90.0f;
-                if(block.type == Game::BlockType::SLOPE)
+                if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::RIGHT_BUTTON)
                 {
-                    if(axis == RotationAxis::X)
-                        block.transform.rotation.x += mod;
-                    else if(axis == RotationAxis::Y)
-                        block.transform.rotation.y += mod;
+                    float mod = actionType == ActionType::RIGHT_BUTTON ? -90.0f : 90.0f;
+                    if(block.type == Game::BlockType::SLOPE)
+                    {
+                        if(axis == RotationAxis::X)
+                            block.transform.rotation.x += mod;
+                        else if(axis == RotationAxis::Y)
+                            block.transform.rotation.y += mod;
+                        else
+                            block.transform.rotation.z += mod;
+                        break;
+                    }
+                }
+                if(actionType == ActionType::HOVER)
+                {
+                    if(block.type == Game::BlockType::SLOPE)
+                    {
+                        cursor.enabled = true;
+                        cursor.transform.position = block.transform.position;
+                        cursor.type = Game::BlockType::BLOCK;
+                        if(block.display.type == Game::DisplayType::COLOR)
+                        {
+                            cursor.color = GetBorderColor(colors[block.display.id], darkBlue, yellow);
+                        }
+                    }
                     else
-                        block.transform.rotation.z += mod;
-                    break;
+                        cursor.enabled = false;
                 }
             }
+            else
+                cursor.enabled = false;
+
+            break;
         }
         case PAINT_BLOCK:
         {
@@ -625,7 +645,13 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
                 {
                     SetBlockDisplay(block.display);
                 }
+                if(actionType == ActionType::HOVER)
+                {
+                    std::cout << "Hovering over block " << index << "\n";
+                    preColorBlockIndex = index;
+                }
             }
+            break;
         }
     }
 }

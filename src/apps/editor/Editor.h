@@ -143,11 +143,17 @@ namespace BlockBuster
         bool pickingColor = false;
         glm::vec4 colorPick;
 
+        const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
+        const glm::vec4 darkBlue = glm::vec4{20.f / 255.f, 0.0f, 0.5f, 1.0f};
+
+        int preColorBlockIndex = 0;
+
         // Tools - Cursor
         struct Cursor{
             bool enabled = false;
             Math::Transform transform;
             glm::vec4 color;
+            Game::BlockType type;
         };
         Cursor cursor;
 
