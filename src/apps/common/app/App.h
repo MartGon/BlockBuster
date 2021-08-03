@@ -30,6 +30,7 @@ namespace App
     protected:
 
         glm::vec<2, int> GetWindowSize();
+        glm::vec<2, int> GetMousePos();
         void RenameMainWindow(const std::string& name);
 
         ImGuiIO* io_;

@@ -11,10 +11,16 @@ enum TextureType
     COLOR = 2
 };
 
-void Rendering::Mesh::Draw(GL::Shader& shader, const GL::Texture* texture)
+void Rendering::Mesh::Prepare(GL::Shader& shader, int mode)
 {
+    glPolygonMode(GL_FRONT_AND_BACK, mode);
     shader.Use();
     vao_.Bind();
+}
+
+void Rendering::Mesh::Draw(GL::Shader& shader, const GL::Texture* texture, int mode)
+{
+    Prepare(shader, mode);
     shader.SetUniformInt("uTexture", 0);
     shader.SetUniformInt("textureType", TEXTURE);
     if(texture)
@@ -22,10 +28,9 @@ void Rendering::Mesh::Draw(GL::Shader& shader, const GL::Texture* texture)
     glDrawElements(GL_TRIANGLES, vao_.GetIndicesCount(), GL_UNSIGNED_INT, 0);
 }
 
-void Rendering::Mesh::Draw(GL::Shader& shader, glm::vec4 color)
+void Rendering::Mesh::Draw(GL::Shader& shader, glm::vec4 color, int mode)
 {
-    shader.Use();
-    vao_.Bind();
+    Prepare(shader, mode);
     shader.SetUniformInt("textureType", COLOR);
     shader.SetUniformVec4("color", color);
     glDrawElements(GL_TRIANGLES, vao_.GetIndicesCount(), GL_UNSIGNED_INT, 0);

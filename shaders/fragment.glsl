@@ -3,9 +3,12 @@ out vec4 fragColor;
 
 in vec2 texCoords;
 
+uniform bool hasBorder;
 uniform int isPlayer;
 uniform int textureType;
+
 uniform vec4 color;
+uniform vec4 borderColor;
 uniform sampler2D uTexture;
 
 const int TEXTURE_TYPE = 1;
@@ -17,14 +20,9 @@ void main()
 
     if(textureType == COLOR_TYPE)
     {
-        if(abs(cTexCoords.x) > 0.475 || abs(cTexCoords.y) > 0.475)
+        if(hasBorder && (abs(cTexCoords.x) > 0.475 || abs(cTexCoords.y) > 0.475))
         {
-            vec4 negColor = abs(color  - vec4(1.0f));
-            float darkness = (color.r + color.g + color.b) / 3.0;
-            if(darkness < 0.5)
-                fragColor = vec4(1.0);
-            else
-                fragColor = vec4(0.0);
+            fragColor = borderColor;
         }
         else
             fragColor = color;

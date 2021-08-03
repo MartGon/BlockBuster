@@ -39,9 +39,18 @@ namespace BlockBuster
             VIDEO_SETTINGS,
         };
 
+        enum class ActionType
+        {
+            LEFT_BUTTON,
+            RIGHT_BUTTON,
+            HOVER
+        };
+
         // Rendering
         Rendering::Mesh& GetMesh(Game::BlockType type);
+        glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
         bool LoadTexture();
+        bool IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName);
 
         // World
         Game::Block* GetBlock(glm::vec3 pos);
@@ -51,7 +60,7 @@ namespace BlockBuster
 
         // Editor
         void UpdateCamera();
-        void UseTool(glm::vec<2, int> mousePos, bool rightButton = false);
+        void UseTool(glm::vec<2, int> mousePos, ActionType actionType = ActionType::LEFT_BUTTON);
         Game::Display GetBlockDisplay();
         void SetBlockDisplay(Game::Display display);
 
@@ -60,7 +69,7 @@ namespace BlockBuster
         void ApplyVideoOptions(::App::Configuration::WindowConfig& config);
         std::string GetConfigOption(const std::string& key, std::string defaultValue = "");
 
-        // GUI
+        // GUI - PopUps
         void OpenMapPopUp();
         void SaveAsPopUp();
         void LoadTexturePopUp();
@@ -79,6 +88,8 @@ namespace BlockBuster
             std::string& errorText;
         };
         void EditTextPopUp(const BasicPopUpParams& params);
+
+        // GUI - Main gui
         void MenuBar();
         void GUI();
 
@@ -131,6 +142,14 @@ namespace BlockBuster
 
         bool pickingColor = false;
         glm::vec4 colorPick;
+
+        // Tools - Cursor
+        struct Cursor{
+            bool enabled = false;
+            Math::Transform transform;
+            glm::vec4 color;
+        };
+        Cursor cursor;
 
         // GUI
         PopUpState state = PopUpState::NONE;

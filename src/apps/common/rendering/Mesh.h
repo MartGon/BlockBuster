@@ -20,10 +20,12 @@ namespace Rendering
 
         GL::VertexArray& GetVAO();
         
-        void Draw(GL::Shader& shader, const GL::Texture* texture);
-        void Draw(GL::Shader& shader, glm::vec4 color);
+        void Draw(GL::Shader& shader, const GL::Texture* texture, int mode = GL_FILL);
+        void Draw(GL::Shader& shader, glm::vec4 color, int mode = GL_FILL);
     
     private:
+        void Prepare(GL::Shader& shader, int mode);
+
         GL::VertexArray vao_;
     };
 }

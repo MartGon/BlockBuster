@@ -81,6 +81,15 @@ glm::vec<2, int> App::App::GetWindowSize()
     return size;
 }
 
+glm::vec<2, int> App::App::GetMousePos()
+{
+    glm::vec<2, int> mousePos;
+    SDL_GetMouseState(&mousePos.x, &mousePos.y);
+    mousePos.y = GetWindowSize().y - mousePos.y;
+
+    return mousePos;
+}
+
 void App::App::RenameMainWindow(const std::string& name)
 {
     std::string title = "Editor - " + name;
