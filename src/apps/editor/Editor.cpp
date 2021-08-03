@@ -39,6 +39,7 @@ void BlockBuster::Editor::Start()
     int width, height;
     SDL_GetWindowSize(window_, &width, &height);
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
+    camera.SetParam(Rendering::Camera::Param::FOV, glm::radians(75.0f));
     
     // World
     auto mapName = GetConfigOption("Map", "Map.bbm");
@@ -125,7 +126,7 @@ void BlockBuster::Editor::Update()
     }
 
     // Draw Cursor
-    if(cursor.enabled)
+    if(cursor.enabled && cursor.show)
     {
         auto cursorTransform = cursor.transform;
         cursorTransform.scale = blockScale;
@@ -1083,6 +1084,8 @@ void BlockBuster::Editor::GUI()
                 ImGui::RadioButton("Block", &blockType, Game::BlockType::BLOCK);
                 ImGui::SameLine();
                 ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
+
+                ImGui::Checkbox("Show cursor", &cursor.show);
             }
 
             if(pbSelected || paintSelected)
@@ -1222,6 +1225,7 @@ void BlockBuster::Editor::GUI()
                 ImGui::RadioButton("Y", &axis, RotationAxis::Y);
                 ImGui::SameLine();
                 ImGui::RadioButton("Z", &axis, RotationAxis::Z);
+                ImGui::Checkbox("Show cursor", &cursor.show);
             }
 
             ImGui::EndTable();

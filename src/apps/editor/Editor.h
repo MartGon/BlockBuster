@@ -150,6 +150,7 @@ namespace BlockBuster
 
         // Tools - Cursor
         struct Cursor{
+            bool show = true;
             bool enabled = false;
             Math::Transform transform;
             glm::vec4 color;
