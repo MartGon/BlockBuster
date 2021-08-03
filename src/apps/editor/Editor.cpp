@@ -351,6 +351,7 @@ void BlockBuster::Editor::SaveMap()
     }
 
     // Update flag
+    RenameMainWindow(fileName);
     newMap = false;
 }
 
