@@ -25,7 +25,7 @@ RayIntersection Collisions::RayAABBIntersection(Ray modelRay, glm::vec3 boxSize)
     float tN = glm::max(glm::max(t1.x, t1.y), t1.z);
     float tF = glm::min(glm::min(t2.x, t2.y), t2.z);
 
-    bool intersection = !(tN > tF);
+    bool intersection = !(tN > tF) && tF > 0.0f;
     auto step1 = glm::step(glm::vec3{t1.y, t1.z, t1.x}, t1);
     auto step2 = glm::step(glm::vec3{t1.z, t1.x, t1.y}, t1);
     auto normal = -glm::sign(rayDir) * step1 * step2;
