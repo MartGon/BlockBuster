@@ -200,7 +200,6 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
 
 Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform prevTransformAABB, Math::Transform transformSlope, float precision)
 {
-    
     auto posAABB = transformAABB.position;
     auto prevPosAABB = prevTransformAABB.position;
 
@@ -214,14 +213,14 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform
     auto intersection = AABBSlopeCollision(posAABB, prevPosAABB, glm::vec3{transformAABB.scale}, glm::vec3{transformSlope.scale});
     auto slopeSpaceNormal = intersection.normal;
 
-    intersection.offset = slopeRot * glm::vec4{intersection.offset, 1.0f};
-    intersection.normal = slopeRot * glm::vec4{intersection.normal, 1.0f};
-
     if (intersection.normal.y > 0.0f && slopeSpaceNormal.z > 0.0f && slopeSpaceNormal.y > 0.0f)
     {
         intersection.offset.z = 0.0f;
         intersection.offset.y *= 2.0f;
     }
+    
+    intersection.offset = slopeRot * glm::vec4{intersection.offset, 1.0f};
+    intersection.normal = slopeRot * glm::vec4{intersection.normal, 1.0f};
 
     return intersection;
 }
