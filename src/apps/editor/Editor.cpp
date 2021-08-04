@@ -64,16 +64,6 @@ void BlockBuster::Editor::Update()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Clear GUI buffer
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(window_);
-    ImGui::NewFrame();
-
-    if(playerMode)
-        UpdatePlayerMode();
-    else
-        UpdateEditor();
-
     // Draw cubes/slopes
     for(int i = 0; i < blocks.size(); i++)
     {
@@ -98,9 +88,10 @@ void BlockBuster::Editor::Update()
         }
     }
 
-    // Draw GUI
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    if(playerMode)
+        UpdatePlayerMode();
+    else
+        UpdateEditor();
 
     SDL_GL_SwapWindow(window_);
 }
@@ -1164,6 +1155,11 @@ void BlockBuster::Editor::MenuBar()
 
 void BlockBuster::Editor::GUI()
 {
+    // Clear GUI buffer
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window_);
+    ImGui::NewFrame();
+
     bool open;
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{0, 0}, ImGuiCond_Always);
@@ -1391,4 +1387,8 @@ void BlockBuster::Editor::GUI()
 
     if(showDemo)
         ImGui::ShowDemoWindow(&showDemo);
+
+    // Draw GUI
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
