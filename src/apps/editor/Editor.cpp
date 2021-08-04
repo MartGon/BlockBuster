@@ -68,6 +68,22 @@ void BlockBuster::Editor::Update()
         case SDL_KEYDOWN:
             if(e.key.keysym.sym == SDLK_ESCAPE)
                 quit = true;
+            if(e.key.keysym.sym == SDLK_f)
+            {
+                cameraMode = cameraMode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
+                if(cameraMode == CameraMode::FPS)
+                {
+                    io.ConfigFlags |= ImGuiConfigFlags_::ImGuiConfigFlags_NoMouseCursorChange;
+                    SDL_SetWindowGrab(window_, SDL_TRUE);
+                    SDL_SetRelativeMouseMode(SDL_TRUE);
+                }
+                else
+                {
+                    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+                    SDL_SetWindowGrab(window_, SDL_FALSE);
+                    SDL_SetRelativeMouseMode(SDL_FALSE);
+                }
+            }
             break;
         case SDL_QUIT:
             quit = true;
@@ -83,6 +99,11 @@ void BlockBuster::Editor::Update()
                 UseTool(mousePos, actionType);
                 std::cout << "Click coords " << mousePos.x << " " << mousePos.y << "\n";
             }
+            break;
+        case SDL_MOUSEMOTION:
+            if(cameraMode == CameraMode::FPS)
+                UpdateFPSCameraRotation(e.motion);
+            break;
         }
     }
 
@@ -97,7 +118,10 @@ void BlockBuster::Editor::Update()
     }
     
     // Camera
-    UpdateCamera();
+    if(cameraMode == CameraMode::EDITOR)
+        UpdateEditorCamera();
+    else if(cameraMode == CameraMode::FPS)
+        UpdateFPSCameraPosition();
 
     // Draw cubes/slopes
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -126,6 +150,7 @@ void BlockBuster::Editor::Update()
     }
 
     // Draw Cursor
+    glDisable(GL_DEPTH_TEST);
     if(cursor.enabled && cursor.show)
     {
         auto cursorTransform = cursor.transform;
@@ -137,6 +162,7 @@ void BlockBuster::Editor::Update()
         auto& mesh = GetMesh(cursor.type);
         mesh.Draw(shader, cursor.color, GL_LINE);
     }
+    glEnable(GL_DEPTH_TEST);
 
     // GUI
     GUI();
@@ -452,13 +478,13 @@ bool BlockBuster::Editor::OpenMap()
 
 // #### Editor #### \\
 
-void BlockBuster::Editor::UpdateCamera()
+void BlockBuster::Editor::UpdateEditorCamera()
 {
     if(io_->WantCaptureKeyboard)
         return;
-
     auto state = SDL_GetKeyboardState(nullptr);
 
+    // Rotation
     auto cameraRot = camera.GetRotation();
     float pitch = 0.0f;
     float yaw = 0.0f;
@@ -476,6 +502,7 @@ void BlockBuster::Editor::UpdateCamera()
     cameraRot.y = cameraRot.y + yaw;
     camera.SetRotation(cameraRot.x, cameraRot.y);
     
+    // Position
     auto cameraPos = camera.GetPos();
     auto front = camera.GetFront();
     auto xAxis = glm::normalize(-glm::cross(front, Rendering::Camera::UP));
@@ -493,12 +520,51 @@ void BlockBuster::Editor::UpdateCamera()
         moveDir.y += 1;
     if(state[SDL_SCANCODE_E])
         moveDir.y -= 1;
-    if(state[SDL_SCANCODE_F])
-        cameraPos = glm::vec3{0.0f, 2.0f, 0.0f};
+    //if(state[SDL_SCANCODE_F])
+    //    cameraPos = glm::vec3{0.0f, 2.0f, 0.0f};
            
     auto offset = glm::length(moveDir) > 0.0f ? (glm::normalize(moveDir) * CAMERA_MOVE_SPEED) : moveDir;
     cameraPos += offset;
     camera.SetPos(cameraPos);
+}
+
+void BlockBuster::Editor::UpdateFPSCameraPosition()
+{
+    auto state = SDL_GetKeyboardState(nullptr);
+
+    auto cameraPos = camera.GetPos();
+    auto front = camera.GetFront();
+    auto xAxis = glm::normalize(-glm::cross(front, Rendering::Camera::UP));
+    auto zAxis = glm::normalize(-glm::cross(xAxis, Rendering::Camera::UP));
+    glm::vec3 moveDir{0};
+    if(state[SDL_SCANCODE_A])
+        moveDir += xAxis;
+    if(state[SDL_SCANCODE_D])
+        moveDir += -xAxis;
+    if(state[SDL_SCANCODE_W])
+        moveDir += front;
+    if(state[SDL_SCANCODE_S])
+        moveDir += -front;
+    if(state[SDL_SCANCODE_Q])
+        moveDir.y += 1.0f;
+    if(state[SDL_SCANCODE_E])
+        moveDir.y += -1.0f;
+
+    auto offset = glm::length(moveDir) > 0.0f ? (glm::normalize(moveDir) * CAMERA_MOVE_SPEED) : moveDir;
+    cameraPos += offset;
+    camera.SetPos(cameraPos);
+}
+
+void BlockBuster::Editor::UpdateFPSCameraRotation(SDL_MouseMotionEvent motion)
+{
+    auto cameraRot = camera.GetRotation();
+    auto pitch = cameraRot.x;
+    auto yaw = cameraRot.y;
+
+    pitch = glm::max(glm::min(pitch + motion.yrel * CAMERA_ROT_SPEED  / 10.0f, glm::pi<float>() - CAMERA_ROT_SPEED), CAMERA_ROT_SPEED);
+    yaw = yaw - motion.xrel * CAMERA_ROT_SPEED / 10.0f;
+
+    camera.SetRotation(pitch, yaw);
 }
 
 void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)

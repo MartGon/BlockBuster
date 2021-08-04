@@ -46,6 +46,12 @@ namespace BlockBuster
             HOVER
         };
 
+        enum class CameraMode
+        {
+            EDITOR = 0,
+            FPS
+        };
+
         // Rendering
         Rendering::Mesh& GetMesh(Game::BlockType type);
         glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
@@ -59,7 +65,9 @@ namespace BlockBuster
         bool OpenMap();
 
         // Editor
-        void UpdateCamera();
+        void UpdateEditorCamera();
+        void UpdateFPSCameraPosition();
+        void UpdateFPSCameraRotation(SDL_MouseMotionEvent motion);
         void UseTool(glm::vec<2, int> mousePos, ActionType actionType = ActionType::LEFT_BUTTON);
         Game::Display GetBlockDisplay();
         void SetBlockDisplay(Game::Display display);
@@ -98,6 +106,7 @@ namespace BlockBuster
         Rendering::Mesh cube;
         Rendering::Mesh slope;
         Rendering::Camera camera;
+        CameraMode cameraMode = CameraMode::EDITOR;
         const float CAMERA_MOVE_SPEED = 0.25f;
         const float CAMERA_ROT_SPEED = glm::radians(1.0f);
 
