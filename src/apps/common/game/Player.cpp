@@ -14,7 +14,7 @@ void AppGame::Player::Update()
     // Move
     auto state = SDL_GetKeyboardState(nullptr);
 
-    glm::vec3 moveDir{0};
+    glm::vec3 moveDir{0.0f};
     if(state[SDL_SCANCODE_A])
         moveDir.x -= 1;
     if(state[SDL_SCANCODE_D])
@@ -23,12 +23,11 @@ void AppGame::Player::Update()
         moveDir.z -= 1;
     if(state[SDL_SCANCODE_S])
         moveDir.z += 1;
-    if(state[SDL_SCANCODE_Q])
-        moveDir.y += 1;
-    if(state[SDL_SCANCODE_E])
-        moveDir.y -= 1;
-    if(state[SDL_SCANCODE_F])
-        transform.position = glm::vec3{0.0f, 2.0f, 0.0f};
+
+    // Rotate moveDir
+    auto rotMat = transform.GetRotationMat();
+    moveDir = glm::vec3{rotMat * glm::vec4{moveDir, 1.0f}};
+    moveDir = glm::length(moveDir) > 0.0f ? glm::normalize(moveDir) : moveDir;
     
     this->prevPos = transform.position;
     transform.position += (moveDir * speed);
@@ -54,7 +53,7 @@ struct Intersection
 
 #include <iostream>
 
-void AppGame::Player::HandleCollisions(std::vector<Game::Block> blocks)
+void AppGame::Player::HandleCollisions(const std::vector<Game::Block>& blocks)
 {
     bool intersects;
     unsigned int iterations = 0;

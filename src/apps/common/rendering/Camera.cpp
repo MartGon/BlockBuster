@@ -73,6 +73,7 @@ void Rendering::Camera::UpdateViewMat()
     front.x = glm::sin(pitch) * glm::cos(yaw);
     front.y = glm::cos(pitch);
     front.z = glm::sin(pitch) * -glm::sin(yaw);
+    front = glm::normalize(front);
 
     auto target = pos_ + front;
     front_ = front;

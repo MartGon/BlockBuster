@@ -65,12 +65,17 @@ namespace BlockBuster
         bool OpenMap();
 
         // Editor
+        void UpdateEditor();
         void UpdateEditorCamera();
         void UpdateFPSCameraPosition();
         void UpdateFPSCameraRotation(SDL_MouseMotionEvent motion);
+        void SetCameraMode(CameraMode cameraMode);
         void UseTool(glm::vec<2, int> mousePos, ActionType actionType = ActionType::LEFT_BUTTON);
         Game::Display GetBlockDisplay();
         void SetBlockDisplay(Game::Display display);
+
+        // Test Mode
+        void UpdatePlayerMode();
 
         // Options
         void HandleWindowEvent(SDL_WindowEvent winEvent);
@@ -181,6 +186,7 @@ namespace BlockBuster
         ::App::Configuration::WindowConfig preConfig;
         
         // Edit
+        // TODO - Enable FPS camera while middle mouse button is pressed
         bool mouseCamera = false;
 
         // Options
@@ -188,5 +194,9 @@ namespace BlockBuster
 
         // Debug
         bool showDemo = false;
+
+        // Test
+        bool playerMode = false;
+        AppGame::Player player;
     };
 }

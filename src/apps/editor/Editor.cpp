@@ -52,80 +52,29 @@ void BlockBuster::Editor::Start()
     
     if(!mapLoaded)
         NewMap();
+
+    // Test
+    player.transform.position = glm::vec3{0.0f};
+    player.transform.rotation = glm::vec3{0.0f};
 }
 
 void BlockBuster::Editor::Update()
 {
-    // Handle Events    
-    SDL_Event e;
-    ImGuiIO& io = ImGui::GetIO();
-    while(SDL_PollEvent(&e) != 0)
-    {
-        ImGui_ImplSDL2_ProcessEvent(&e);
-
-        switch(e.type)
-        {
-        case SDL_KEYDOWN:
-            if(e.key.keysym.sym == SDLK_ESCAPE)
-                quit = true;
-            if(e.key.keysym.sym == SDLK_f)
-            {
-                cameraMode = cameraMode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
-                if(cameraMode == CameraMode::FPS)
-                {
-                    io.ConfigFlags |= ImGuiConfigFlags_::ImGuiConfigFlags_NoMouseCursorChange;
-                    SDL_SetWindowGrab(window_, SDL_TRUE);
-                    SDL_SetRelativeMouseMode(SDL_TRUE);
-                }
-                else
-                {
-                    io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
-                    SDL_SetWindowGrab(window_, SDL_FALSE);
-                    SDL_SetRelativeMouseMode(SDL_FALSE);
-                }
-            }
-            break;
-        case SDL_QUIT:
-            quit = true;
-            break;
-        case SDL_WINDOWEVENT:
-            HandleWindowEvent(e.window);
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-            if(!io.WantCaptureMouse)
-            {
-                auto mousePos = GetMousePos();
-                ActionType actionType = e.button.button == SDL_BUTTON_RIGHT ? ActionType::RIGHT_BUTTON : ActionType::LEFT_BUTTON;
-                UseTool(mousePos, actionType);
-                std::cout << "Click coords " << mousePos.x << " " << mousePos.y << "\n";
-            }
-            break;
-        case SDL_MOUSEMOTION:
-            if(cameraMode == CameraMode::FPS)
-                UpdateFPSCameraRotation(e.motion);
-            break;
-        }
-    }
-
-    // Hover
-    if(!io.WantCaptureMouse)
-    {
-        // Reset previewColor
-        preColorBlockIndex = -1;
-
-        auto mousePos = GetMousePos();
-        UseTool(mousePos, ActionType::HOVER);
-    }
-    
-    // Camera
-    if(cameraMode == CameraMode::EDITOR)
-        UpdateEditorCamera();
-    else if(cameraMode == CameraMode::FPS)
-        UpdateFPSCameraPosition();
-
-    // Draw cubes/slopes
+    // Clear Buffer
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Clear GUI buffer
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window_);
+    ImGui::NewFrame();
+
+    if(playerMode)
+        UpdatePlayerMode();
+    else
+        UpdateEditor();
+
+    // Draw cubes/slopes
     for(int i = 0; i < blocks.size(); i++)
     {
         auto block = blocks[i];
@@ -149,23 +98,9 @@ void BlockBuster::Editor::Update()
         }
     }
 
-    // Draw Cursor
-    glDisable(GL_DEPTH_TEST);
-    if(cursor.enabled && cursor.show)
-    {
-        auto cursorTransform = cursor.transform;
-        cursorTransform.scale = blockScale;
-        auto model = cursorTransform.GetTransformMat();
-        auto transform = camera.GetProjViewMat() * model;
-        shader.SetUniformMat4("transform", transform);
-        shader.SetUniformInt("hasBorder", false);
-        auto& mesh = GetMesh(cursor.type);
-        mesh.Draw(shader, cursor.color, GL_LINE);
-    }
-    glEnable(GL_DEPTH_TEST);
-
-    // GUI
-    GUI();
+    // Draw GUI
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     SDL_GL_SwapWindow(window_);
 }
@@ -478,6 +413,91 @@ bool BlockBuster::Editor::OpenMap()
 
 // #### Editor #### \\
 
+void BlockBuster::Editor::UpdateEditor()
+{
+    // Handle Events    
+    SDL_Event e;
+    ImGuiIO& io = ImGui::GetIO();
+    while(SDL_PollEvent(&e) != 0)
+    {
+        ImGui_ImplSDL2_ProcessEvent(&e);
+
+        switch(e.type)
+        {
+        case SDL_KEYDOWN:
+            if(e.key.keysym.sym == SDLK_ESCAPE)
+                quit = true;
+            if(e.key.keysym.sym == SDLK_f)
+            {
+                auto mode = cameraMode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
+                SetCameraMode(mode);
+            }
+            if(e.key.keysym.sym == SDLK_p)
+            {
+                playerMode = !playerMode;
+                std::cout << "Player mode enabled: " << playerMode << "\n";
+                if(playerMode)
+                {
+                    player.transform.position = camera.GetPos();
+                    SetCameraMode(CameraMode::FPS);
+                }
+            }
+            break;
+        case SDL_QUIT:
+            quit = true;
+            break;
+        case SDL_WINDOWEVENT:
+            HandleWindowEvent(e.window);
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            if(!io.WantCaptureMouse)
+            {
+                auto mousePos = GetMousePos();
+                ActionType actionType = e.button.button == SDL_BUTTON_RIGHT ? ActionType::RIGHT_BUTTON : ActionType::LEFT_BUTTON;
+                UseTool(mousePos, actionType);
+                std::cout << "Click coords " << mousePos.x << " " << mousePos.y << "\n";
+            }
+            break;
+        case SDL_MOUSEMOTION:
+            if(cameraMode == CameraMode::FPS)
+                UpdateFPSCameraRotation(e.motion);
+            break;
+        }
+    }
+
+    // Hover
+    if(!io.WantCaptureMouse)
+    {
+        // Reset previewColor
+        preColorBlockIndex = -1;
+
+        auto mousePos = GetMousePos();
+        UseTool(mousePos, ActionType::HOVER);
+    }
+    
+    // Camera
+    if(cameraMode == CameraMode::EDITOR)
+        UpdateEditorCamera();
+    else if(cameraMode == CameraMode::FPS)
+        UpdateFPSCameraPosition();
+
+    // Draw Cursor
+    if(cursor.enabled && cursor.show)
+    {
+        auto cursorTransform = cursor.transform;
+        cursorTransform.scale = blockScale;
+        auto model = cursorTransform.GetTransformMat();
+        auto transform = camera.GetProjViewMat() * model;
+        shader.SetUniformMat4("transform", transform);
+        shader.SetUniformInt("hasBorder", false);
+        auto& mesh = GetMesh(cursor.type);
+        mesh.Draw(shader, cursor.color, GL_LINE);
+    }
+
+    // Create GUI
+    GUI();
+}
+
 void BlockBuster::Editor::UpdateEditorCamera()
 {
     if(io_->WantCaptureKeyboard)
@@ -557,6 +577,9 @@ void BlockBuster::Editor::UpdateFPSCameraPosition()
 
 void BlockBuster::Editor::UpdateFPSCameraRotation(SDL_MouseMotionEvent motion)
 {
+    auto winSize = GetWindowSize();
+    SDL_WarpMouseInWindow(window_, winSize.x / 2, winSize.y / 2);
+
     auto cameraRot = camera.GetRotation();
     auto pitch = cameraRot.x;
     auto yaw = cameraRot.y;
@@ -567,11 +590,31 @@ void BlockBuster::Editor::UpdateFPSCameraRotation(SDL_MouseMotionEvent motion)
     camera.SetRotation(pitch, yaw);
 }
 
+void BlockBuster::Editor::SetCameraMode(CameraMode mode)
+{
+    cameraMode = mode;
+    auto& io = ImGui::GetIO();
+    if(cameraMode == CameraMode::FPS)
+    {
+        io.ConfigFlags |= ImGuiConfigFlags_::ImGuiConfigFlags_NoMouseCursorChange;
+        SDL_SetWindowGrab(window_, SDL_TRUE);
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+    }
+    else
+    {
+        io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
+        SDL_SetWindowGrab(window_, SDL_FALSE);
+        SDL_SetRelativeMouseMode(SDL_FALSE);
+    }
+}
+
 void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
 {
     // Window to eye
     auto winSize = GetWindowSize();
     auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{winSize.x, winSize.y});
+    if(cameraMode == CameraMode::FPS)
+        ray = Collisions::Ray{camera.GetPos(), camera.GetPos() + camera.GetFront()};
 
     // Sort blocks by proximity to camera
     auto cameraPos = this->camera.GetPos();
@@ -743,6 +786,57 @@ void BlockBuster::Editor::SetBlockDisplay(Game::Display display)
         textureId = display.id;
     else if(displayType == Game::DisplayType::COLOR)
         colorId = display.id;
+}
+
+// #### Test Mode #### \\
+
+void BlockBuster::Editor::UpdatePlayerMode()
+{
+    SDL_Event e;
+    ImGuiIO& io = ImGui::GetIO();
+    while(SDL_PollEvent(&e) != 0)
+    {
+        ImGui_ImplSDL2_ProcessEvent(&e);
+
+        switch(e.type)
+        {
+        case SDL_KEYDOWN:
+            if(e.key.keysym.sym == SDLK_ESCAPE)
+                quit = true;
+            if(e.key.keysym.sym == SDLK_p)
+            {
+                playerMode = !playerMode;
+                std::cout << "Player mode enabled: " << playerMode << "\n";
+                if(playerMode)
+                {
+                    player.transform.position = camera.GetPos();
+                    SetCameraMode(CameraMode::FPS);
+                }
+            }
+            break;
+        case SDL_QUIT:
+            quit = true;
+            break;
+        case SDL_WINDOWEVENT:
+            HandleWindowEvent(e.window);
+            break;
+        case SDL_MOUSEMOTION:
+            if(cameraMode == CameraMode::FPS)
+                UpdateFPSCameraRotation(e.motion);
+            break;
+        }
+    }
+
+    player.transform.rotation = glm::vec3{0.0f, glm::degrees(camera.GetRotation().y) - 90.0f, 0.0f};
+    std::cout << "Player rot " << player.transform.rotation.y << "\n";
+
+    player.Update();
+    player.HandleCollisions(blocks);
+    auto playerPos = player.transform.position;
+    std::cout << "Player pos is " << playerPos.x << " " << playerPos.y << " " << playerPos.z << "\n";
+
+    auto cameraPos = playerPos + glm::vec3{0.0f, 2.f, 0.0f};
+    camera.SetPos(cameraPos);
 }
 
 // #### Options #### \\
@@ -1070,11 +1164,6 @@ void BlockBuster::Editor::MenuBar()
 
 void BlockBuster::Editor::GUI()
 {
-    // Start the Dear ImGui frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(window_);
-    ImGui::NewFrame();
-
     bool open;
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{0, 0}, ImGuiCond_Always);
@@ -1302,7 +1391,4 @@ void BlockBuster::Editor::GUI()
 
     if(showDemo)
         ImGui::ShowDemoWindow(&showDemo);
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

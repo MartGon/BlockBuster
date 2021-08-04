@@ -16,11 +16,11 @@ namespace AppGame
 
         void Update();
         void HandleSDLEvent(const SDL_Event& event);
-        void HandleCollisions(std::vector<Game::Block> blocks);
+        void HandleCollisions(const std::vector<Game::Block>& blocks);
         
         Math::Transform transform;
 
-        float speed = 0.05f;
+        float speed = 0.1f;
         float gravitySpeed = -0.4f;
 
     private:
