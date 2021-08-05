@@ -32,11 +32,12 @@ void AppGame::Player::Update()
     this->prevPos = transform.position;
     transform.position += (moveDir * speed);
     bool gravityAffected = gravity;
-    if(gravity)
+    if(isOnSlope || gravity)
     {
         transform.position += glm::vec3{0.0f, gravitySpeed, 0.0f};
     }
     gravity = true;
+    isOnSlope = false;
 }
 
 union IntersectionU
@@ -80,6 +81,10 @@ void AppGame::Player::HandleCollisions(const std::vector<Game::Block>& blocks)
                     if (normal.y > 0.0f && glm::abs(normal.x) < 0.05f && glm::abs(normal.z) < 0.05f)
                     {
                         gravity = false;
+                    }
+                    else if(normal.y > 0.0f)
+                    {
+                        isOnSlope = true;
                     }
 
                     if(slopeIntersect.intersects)

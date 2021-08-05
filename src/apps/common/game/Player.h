@@ -26,6 +26,7 @@ namespace AppGame
     private:
         glm::vec3 prevPos;
         bool gravity = false;
+        bool isOnSlope = false;
     };
 
 }
