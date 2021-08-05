@@ -53,9 +53,8 @@ void BlockBuster::Editor::Start()
     if(!mapLoaded)
         NewMap();
 
-    // Test
-    player.transform.position = glm::vec3{0.0f};
-    player.transform.rotation = glm::vec3{0.0f};
+    // Cursor
+    cursor.show = GetConfigOption("showCursor", "1") == "1";
 }
 
 void BlockBuster::Editor::Update()
@@ -105,6 +104,7 @@ void BlockBuster::Editor::Shutdown()
 {
     config.options["Map"] = std::string(fileName);
     config.options["TextureFolder"] = textureFolder.string();
+    config.options["showCursor"] = std::to_string(cursor.show);
 }
 
 // #### Rendering #### \\
@@ -416,25 +416,13 @@ void BlockBuster::Editor::UpdateEditor()
         switch(e.type)
         {
         case SDL_KEYDOWN:
-            if(io.WantTextInput)
-                break;
+        case SDL_KEYUP:
+            {
+                if(io.WantTextInput)
+                    break;
 
-            if(e.key.keysym.sym == SDLK_ESCAPE)
-                quit = true;
-            if(e.key.keysym.sym == SDLK_f)
-            {
-                auto mode = cameraMode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
-                SetCameraMode(mode);
-            }
-            if(e.key.keysym.sym == SDLK_p)
-            {
-                playerMode = !playerMode;
-                std::cout << "Player mode enabled: " << playerMode << "\n";
-                if(playerMode)
-                {
-                    player.transform.position = camera.GetPos();
-                    SetCameraMode(CameraMode::FPS);
-                }
+                auto keyEvent = e.key;
+                HandleKeyShortCut(keyEvent);
             }
             break;
         case SDL_QUIT:
@@ -461,14 +449,14 @@ void BlockBuster::Editor::UpdateEditor()
             }
             break;
         case SDL_MOUSEBUTTONUP:
-        {
-            auto button = e.button.button;
-            if(button == SDL_BUTTON_MIDDLE)
             {
-                SetCameraMode(CameraMode::EDITOR);
+                auto button = e.button.button;
+                if(button == SDL_BUTTON_MIDDLE)
+                {
+                    SetCameraMode(CameraMode::EDITOR);
+                }
             }
             break;
-        }
         case SDL_MOUSEMOTION:
             if(cameraMode == CameraMode::FPS)
                 UpdateFPSCameraRotation(e.motion);
@@ -588,6 +576,9 @@ void BlockBuster::Editor::UpdateFPSCameraPosition()
 
 void BlockBuster::Editor::UpdateFPSCameraRotation(SDL_MouseMotionEvent motion)
 {
+    auto winSize = GetWindowSize();
+    SDL_WarpMouseInWindow(window_, winSize.x / 2, winSize.y / 2);
+
     auto cameraRot = camera.GetRotation();
     auto pitch = cameraRot.x;
     auto yaw = cameraRot.y;
@@ -780,6 +771,57 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
     }
 }
 
+void BlockBuster::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
+{
+    auto& io = ImGui::GetIO();
+    if(key.type == SDL_KEYDOWN)
+    {
+        auto sym = key.keysym.sym;
+        if(sym == SDLK_ESCAPE)
+            quit = true;
+
+        if(sym == SDLK_f)
+        {
+            auto mode = cameraMode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
+            SetCameraMode(mode);
+        }
+        
+        if(sym == SDLK_p)
+        {
+            playerMode = !playerMode;
+            std::cout << "Player mode enabled: " << playerMode << "\n";
+            if(playerMode)
+            {
+                player.transform.position = camera.GetPos();
+                SetCameraMode(CameraMode::FPS);
+            }
+        }
+
+        if(sym == SDLK_n && io.KeyCtrl)
+            NewMap();
+
+        if(sym == SDLK_s && io.KeyCtrl)
+            MenuSave();
+
+        if(sym == SDLK_s && io.KeyCtrl && io.KeyShift)
+            MenuSaveAs();
+
+        if(sym == SDLK_o && io.KeyCtrl)
+            MenuOpenMap();
+
+        if(sym >= SDLK_1 &&  sym <= SDLK_3 && io.KeyCtrl)
+            tool = static_cast<Tool>(sym - SDLK_1);
+
+        if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl)
+        {
+            if(tool == Tool::PLACE_BLOCK)
+                blockType = static_cast<Game::BlockType>(sym - SDLK_1);
+            if(tool == Tool::ROTATE_BLOCK)
+                axis = static_cast<RotationAxis>(sym - SDLK_1 + 1);
+        }
+    }
+}
+
 Game::Display BlockBuster::Editor::GetBlockDisplay()
 {
     Game::Display display;
@@ -942,7 +984,7 @@ void BlockBuster::Editor::EditTextPopUp(const BasicPopUpParams& params)
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
     if(ImGui::BeginPopupModal(params.name.c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
-        bool accept = ImGui::InputText("EditText", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        bool accept = ImGui::InputText("File name", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         bool ok = true;
         if(ImGui::Button("Accept") || accept)
         {
@@ -1096,29 +1138,26 @@ void BlockBuster::Editor::MenuBar()
         {
             if(ImGui::MenuItem("New Map", "Ctrl + N"))
             {
-                NewMap();
+                MenuNewMap();
             }
 
             ImGui::Separator();
 
             if(ImGui::MenuItem("Open Map", "Ctrl + O"))
             {
-                state = PopUpState::OPEN_MAP;
+                MenuOpenMap();
             }
 
             ImGui::Separator();
 
             if(ImGui::MenuItem("Save", "Ctrl + S"))
             {
-                if(newMap)
-                    state = PopUpState::SAVE_AS;
-                else
-                    SaveMap();
+                MenuSave();
             }
 
             if(ImGui::MenuItem("Save As", "Ctrl + Shift + S"))
             {
-                state = PopUpState::SAVE_AS;
+                MenuSaveAs();
             }
 
             ImGui::EndMenu();
@@ -1173,6 +1212,29 @@ void BlockBuster::Editor::MenuBar()
 
         ImGui::EndMenuBar();
     }
+}
+
+void BlockBuster::Editor::MenuNewMap()
+{
+    NewMap();
+}
+
+void BlockBuster::Editor::MenuOpenMap()
+{
+    state = PopUpState::OPEN_MAP;
+}
+
+void BlockBuster::Editor::MenuSave()
+{
+    if(newMap)
+        state = PopUpState::SAVE_AS;
+    else
+        SaveMap();
+}
+
+void BlockBuster::Editor::MenuSaveAs()
+{
+    state = PopUpState::SAVE_AS;
 }
 
 void BlockBuster::Editor::GUI()
@@ -1354,11 +1416,14 @@ void BlockBuster::Editor::GUI()
 
                 if(displayType == Game::DisplayType::COLOR)
                 {
+
                     if(ImGui::ColorButton("Chosen Color", colors[colorId]))
                     {
                         ImGui::OpenPopup("Color Picker");
                         pickingColor = true;
                     }
+                    ImGui::SameLine();
+                    ImGui::Text("Select color");
                     if(ImGui::BeginPopup("Color Picker"))
                     {
                         if(ImGui::ColorPicker4("##picker", &colorPick.x, ImGuiColorEditFlags__OptionsDefault))

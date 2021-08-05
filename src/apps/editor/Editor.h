@@ -66,11 +66,15 @@ namespace BlockBuster
 
         // Editor
         void UpdateEditor();
+
         void UpdateEditorCamera();
         void UpdateFPSCameraPosition();
         void UpdateFPSCameraRotation(SDL_MouseMotionEvent motion);
         void SetCameraMode(CameraMode cameraMode);
+
         void UseTool(glm::vec<2, int> mousePos, ActionType actionType = ActionType::LEFT_BUTTON);
+        void HandleKeyShortCut(const SDL_KeyboardEvent& e);
+
         Game::Display GetBlockDisplay();
         void SetBlockDisplay(Game::Display display);
 
@@ -102,8 +106,15 @@ namespace BlockBuster
         };
         void EditTextPopUp(const BasicPopUpParams& params);
 
-        // GUI - Main gui
+        // GUI
         void MenuBar();
+
+        // Menu - File
+        void MenuNewMap();
+        void MenuOpenMap();
+        void MenuSave();
+        void MenuSaveAs();
+
         void GUI();
 
         // Rendering
