@@ -39,6 +39,12 @@ namespace BlockBuster
             VIDEO_SETTINGS,
         };
 
+        enum TabState
+        {
+            TOOLS_TAB,
+            OPTIONS_TAB
+        };
+
         enum class ActionType
         {
             LEFT_BUTTON,
@@ -60,6 +66,7 @@ namespace BlockBuster
 
         // World
         Game::Block* GetBlock(glm::vec3 pos);
+        void ResizeBlocks();
         void NewMap();
         void SaveMap();
         bool OpenMap();
@@ -185,6 +192,7 @@ namespace BlockBuster
 
         // GUI
         PopUpState state = PopUpState::NONE;
+        TabState tabState = TabState::TOOLS_TAB;
         bool onError = false;
         std::string errorText;
 
