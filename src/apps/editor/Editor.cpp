@@ -701,16 +701,18 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
                 auto& block = blocks[index];
                 if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::RIGHT_BUTTON)
                 {
-                    float mod = actionType == ActionType::RIGHT_BUTTON ? -90.0f : 90.0f;
+                    int mod = actionType == ActionType::RIGHT_BUTTON ? -90 : 90;
                     if(block.type == Game::BlockType::SLOPE)
                     {
+                        glm::ivec3 rot = block.transform.rotation;
                         if(axis == RotationAxis::X)
-                            block.transform.rotation.x += mod;
+                            rot.x += mod;
                         else if(axis == RotationAxis::Y)
-                            block.transform.rotation.y += mod;
-                        else
-                            block.transform.rotation.z += mod;
-                        break;
+                            rot.y += mod;
+                        else if(axis == RotationAxis::Z)
+                            rot.z = ((rot.z + mod) % 270);
+
+                        block.transform.rotation = rot;
                     }
                 }
                 if(actionType == ActionType::HOVER)
@@ -1370,8 +1372,6 @@ void BlockBuster::Editor::GUI()
             {
                 ImGui::Text("Axis");
 
-                ImGui::SameLine();
-                ImGui::RadioButton("X", &axis, RotationAxis::X);
                 ImGui::SameLine();
                 ImGui::RadioButton("Y", &axis, RotationAxis::Y);
                 ImGui::SameLine();
