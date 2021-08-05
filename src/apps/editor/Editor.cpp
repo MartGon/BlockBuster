@@ -416,6 +416,9 @@ void BlockBuster::Editor::UpdateEditor()
         switch(e.type)
         {
         case SDL_KEYDOWN:
+            if(io.WantTextInput)
+                break;
+
             if(e.key.keysym.sym == SDLK_ESCAPE)
                 quit = true;
             if(e.key.keysym.sym == SDLK_f)
@@ -443,12 +446,29 @@ void BlockBuster::Editor::UpdateEditor()
         case SDL_MOUSEBUTTONDOWN:
             if(!io.WantCaptureMouse)
             {
-                auto mousePos = GetMousePos();
-                ActionType actionType = e.button.button == SDL_BUTTON_RIGHT ? ActionType::RIGHT_BUTTON : ActionType::LEFT_BUTTON;
-                UseTool(mousePos, actionType);
-                std::cout << "Click coords " << mousePos.x << " " << mousePos.y << "\n";
+                auto button = e.button.button;
+                if(button == SDL_BUTTON_RIGHT || button == SDL_BUTTON_LEFT)
+                {
+                    ActionType actionType = button == SDL_BUTTON_RIGHT ? ActionType::RIGHT_BUTTON : ActionType::LEFT_BUTTON;
+                    auto mousePos = GetMousePos();
+                    UseTool(mousePos, actionType);
+                }
+
+                if(button == SDL_BUTTON_MIDDLE)
+                {
+                    SetCameraMode(CameraMode::FPS);
+                }
             }
             break;
+        case SDL_MOUSEBUTTONUP:
+        {
+            auto button = e.button.button;
+            if(button == SDL_BUTTON_MIDDLE)
+            {
+                SetCameraMode(CameraMode::EDITOR);
+            }
+            break;
+        }
         case SDL_MOUSEMOTION:
             if(cameraMode == CameraMode::FPS)
                 UpdateFPSCameraRotation(e.motion);
@@ -568,9 +588,6 @@ void BlockBuster::Editor::UpdateFPSCameraPosition()
 
 void BlockBuster::Editor::UpdateFPSCameraRotation(SDL_MouseMotionEvent motion)
 {
-    auto winSize = GetWindowSize();
-    SDL_WarpMouseInWindow(window_, winSize.x / 2, winSize.y / 2);
-
     auto cameraRot = camera.GetRotation();
     auto pitch = cameraRot.x;
     auto yaw = cameraRot.y;
@@ -596,6 +613,9 @@ void BlockBuster::Editor::SetCameraMode(CameraMode mode)
         io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
         SDL_SetWindowGrab(window_, SDL_FALSE);
         SDL_SetRelativeMouseMode(SDL_FALSE);
+
+        auto winSize = GetWindowSize();
+        SDL_WarpMouseInWindow(window_, winSize.x / 2, winSize.y / 2);
     }
 }
 
