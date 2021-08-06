@@ -268,7 +268,7 @@ void BlockBuster::Editor::NewMap()
 void BlockBuster::Editor::SaveMap()
 {
     std::filesystem::path mapPath = mapsFolder / fileName;
-    std::fstream file{fileName, file.binary | file.out};
+    std::fstream file{mapPath, file.binary | file.out};
     if(!file.is_open())
     {
         std::cout << "Could not open file " << fileName << '\n';
