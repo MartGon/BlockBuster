@@ -898,6 +898,7 @@ void BlockBuster::Editor::Exit()
         if(playerMode)
             playerMode = false;
         OpenWarningPopUp(std::bind(&BlockBuster::Editor::Exit, this));
+        SetCameraMode(CameraMode::EDITOR);
     }
     else
         quit = true;
@@ -945,12 +946,10 @@ void BlockBuster::Editor::UpdatePlayerMode()
     }
 
     player.transform.rotation = glm::vec3{0.0f, glm::degrees(camera.GetRotation().y) - 90.0f, 0.0f};
-    std::cout << "Player rot " << player.transform.rotation.y << "\n";
 
     player.Update();
     player.HandleCollisions(blocks);
     auto playerPos = player.transform.position;
-    std::cout << "Player pos is " << playerPos.x << " " << playerPos.y << " " << playerPos.z << "\n";
 
     auto cameraPos = playerPos + glm::vec3{0.0f, 2.f, 0.0f};
     camera.SetPos(cameraPos);

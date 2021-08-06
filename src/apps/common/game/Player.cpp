@@ -3,6 +3,7 @@
 #include <collisions/Collisions.h>
 
 #include <algorithm>
+#include <iostream>
 
 void AppGame::Player::HandleSDLEvent(const SDL_Event& event)
 {
@@ -11,6 +12,8 @@ void AppGame::Player::HandleSDLEvent(const SDL_Event& event)
 
 void AppGame::Player::Update()
 {
+    this->prevPos = transform.position;
+
     // Move
     auto state = SDL_GetKeyboardState(nullptr);
 
@@ -29,10 +32,30 @@ void AppGame::Player::Update()
     moveDir = glm::vec3{rotMat * glm::vec4{moveDir, 1.0f}};
     moveDir = glm::length(moveDir) > 0.0f ? glm::normalize(moveDir) : moveDir;
     
-    this->prevPos = transform.position;
-    transform.position += (moveDir * speed);
-    bool gravityAffected = gravity;
-    if(isOnSlope || gravity)
+    glm::vec3 velocity = moveDir * speed;
+    // Velocity on slope's normal axis is doubled
+    if(isOnSlope)
+    {
+        // Projected dir onto slope plane
+        moveDir = moveDir - glm::dot(moveDir, slopeNormal) * slopeNormal;
+        auto mod = glm::max(glm::step(glm::vec3{0.005}, glm::abs(slopeNormal)) * 2.0f, glm::vec3{1.0f});
+        velocity = moveDir * mod * speed;
+    }
+    
+    transform.position += velocity;
+    // Fix height on slope
+    if(isOnSlope)
+    {
+        auto slopeHeight = slopeTransform.position.y;
+        auto slopeScale = slopeTransform.scale;
+        auto maxHeight = slopeHeight + (slopeScale - transform.scale / 2);
+        auto minHeight = slopeHeight - (slopeScale - transform.scale / 2);
+        transform.position.y = glm::max(glm::min(maxHeight, transform.position.y), minHeight);
+    }
+
+    auto pos = transform.position;
+    std::cout << "Desired pos " << pos.x << " " << pos.y << " " << pos.z << "\n";
+    if(gravity)
     {
         transform.position += glm::vec3{0.0f, gravitySpeed, 0.0f};
     }
@@ -51,8 +74,6 @@ struct Intersection
     Game::Block block;
     IntersectionU intersection;
 };
-
-#include <iostream>
 
 void AppGame::Player::HandleCollisions(const std::vector<Game::Block>& blocks)
 {
@@ -76,20 +97,23 @@ void AppGame::Player::HandleCollisions(const std::vector<Game::Block>& blocks)
                 auto slopeIntersect = Collisions::AABBSlopeCollision(transform, prevPlayerTransform, block.transform);
                 if(slopeIntersect.collides)
                 {
+                    //std::cout << "Collides w Slope\n";
                     glm::vec3 normal = slopeIntersect.normal;
 
-                    if (normal.y > 0.0f && glm::abs(normal.x) < 0.05f && glm::abs(normal.z) < 0.05f)
+                    if (normal.y > 0.0f)
                     {
                         gravity = false;
-                    }
-                    else if(normal.y > 0.0f)
-                    {
-                        isOnSlope = true;
+                        if(glm::abs(normal.x) > 0.05f || glm::abs(normal.z) > 0.05f)
+                        {
+                            isOnSlope = true;
+                            slopeNormal = glm::normalize(normal);
+                            slopeTransform = block.transform;
+                        }
                     }
 
                     if(slopeIntersect.intersects)
                     {
-                        std::cout << "Intersection with " << block.name << "\n";
+                        //std::cout << "Intersection with " << block.name << "\n";
                         Intersection intersect;
                         intersect.block = block;
                         intersect.intersection.aabbSlope = slopeIntersect;
@@ -104,6 +128,7 @@ void AppGame::Player::HandleCollisions(const std::vector<Game::Block>& blocks)
                 auto boxIntersect = Collisions::AABBCollision(transform.position, glm::vec3{transform.scale}, block.transform.position, glm::vec3{block.transform.scale});
                 if(boxIntersect.collides)
                 {
+                    //std::cout << "Collides w Box\n";
                     auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
                     if(isGround)
                         gravity = false;
@@ -134,7 +159,7 @@ void AppGame::Player::HandleCollisions(const std::vector<Game::Block>& blocks)
             auto block = first.block;
             if(block.type == Game::SLOPE)
             {
-                std::cout << "Handling collision with " << block.name << "\n";
+                //std::cout << "Handling collision with " << block.name << "\n";
                 auto slopeIntersect = first.intersection.aabbSlope;
                 auto offset = slopeIntersect.offset;
                 transform.position += slopeIntersect.offset;
@@ -145,8 +170,16 @@ void AppGame::Player::HandleCollisions(const std::vector<Game::Block>& blocks)
                 transform.position += boxIntersect.offset;
             }
 
+            auto o = first.intersection.aabb.offset;
+            std::cout << "Player was offset by " << o.x << " " << o.y << " " << o.z << " by a " << block.type << " at y level " << block.transform.position.y << "\n";
             alreadyOffset.push_back(block.transform.position);
         }
 
     }while(intersects && iterations < MAX_ITERATIONS);
+
+    auto pos = transform.position;
+    std::cout << "After collision pos " << pos.x << " " << pos.y << " " << pos.z << "\n";
+
+    std::cout << "Gravity Enabled " << gravity << "\n";
+    std::cout << "Is on Slope " << isOnSlope << "\n";
 }
