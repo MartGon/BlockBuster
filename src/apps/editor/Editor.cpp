@@ -254,7 +254,10 @@ void BlockBuster::Editor::NewMap()
 
     // Window
     RenameMainWindow("New Map");
+
+    // Flags
     newMap = true;
+    unsaved = false;
 
     // Filename
     std::strcpy(fileName, "NewMap.bbm");
@@ -313,9 +316,11 @@ void BlockBuster::Editor::SaveMap()
             WriteToFile(file, block.display.id);
     }
 
-    // Update flag
     RenameMainWindow(fileName);
+
+    // Update flag
     newMap = false;
+    unsaved = false;
 }
 
 bool BlockBuster::Editor::OpenMap()
@@ -404,7 +409,10 @@ bool BlockBuster::Editor::OpenMap()
 
     // Window
     RenameMainWindow(fileName);
+
+    // Update flag
     newMap = false;
+    unsaved = false;
 
     // Color Palette
     colorPick = colors[colorId];
@@ -436,7 +444,7 @@ void BlockBuster::Editor::UpdateEditor()
             }
             break;
         case SDL_QUIT:
-            quit = true;
+            Exit();
             break;
         case SDL_WINDOWEVENT:
             HandleWindowEvent(e.window);
@@ -680,8 +688,9 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
                         {
                             auto display = GetBlockDisplay();                            
                             auto newBlockType = blockType;
-                            std::cout << "Block added\n";
                             blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, display});
+
+                            SetUnsaved(true);
                         }
                         else if(actionType == ActionType::HOVER)
                         {
@@ -705,7 +714,11 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
                 else if(actionType == ActionType::RIGHT_BUTTON)
                 {
                     if(blocks.size() > 1)
+                    {
                         blocks.erase(blocks.begin() + index);
+                        SetUnsaved(true);
+                    }
+
                     break;
                 }
             }
@@ -734,6 +747,7 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
                             rot.z = ((rot.z + mod) % 270);
 
                         block.transform.rotation = rot;
+                        SetUnsaved(true);
                     }
                 }
                 if(actionType == ActionType::HOVER)
@@ -765,6 +779,7 @@ void BlockBuster::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionTy
                 if(actionType == ActionType::LEFT_BUTTON)
                 {
                     block.display = GetBlockDisplay();
+                    SetUnsaved(true);
                 }
                 if(actionType == ActionType::RIGHT_BUTTON)
                 {
@@ -788,7 +803,7 @@ void BlockBuster::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
     {
         auto sym = key.keysym.sym;
         if(sym == SDLK_ESCAPE)
-            quit = true;
+            Exit();
 
         if(sym == SDLK_f)
         {
@@ -808,7 +823,7 @@ void BlockBuster::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
         }
 
         if(sym == SDLK_n && io.KeyCtrl)
-            NewMap();
+            MenuNewMap();
 
         if(sym == SDLK_s && io.KeyCtrl)
             MenuSave();
@@ -857,6 +872,33 @@ void BlockBuster::Editor::SetBlockDisplay(Game::Display display)
         colorId = display.id;
 }
 
+void BlockBuster::Editor::SetUnsaved(bool unsaved)
+{
+    this->unsaved = unsaved;
+    if(unsaved)
+        RenameMainWindow(fileName + std::string("*"));
+    else
+        RenameMainWindow(fileName);
+}
+
+void BlockBuster::Editor::OpenWarningPopUp(std::function<void()> onExit)
+{
+    state = PopUpState::UNSAVED_WARNING;
+    onWarningExit = onExit;
+}
+
+void BlockBuster::Editor::Exit()
+{
+    if(unsaved)
+    {
+        if(playerMode)
+            playerMode = false;
+        OpenWarningPopUp(std::bind(&BlockBuster::Editor::Exit, this));
+    }
+    else
+        quit = true;
+}
+
 // #### Test Mode #### \\
 
 void BlockBuster::Editor::UpdatePlayerMode()
@@ -871,7 +913,7 @@ void BlockBuster::Editor::UpdatePlayerMode()
         {
         case SDL_KEYDOWN:
             if(e.key.keysym.sym == SDLK_ESCAPE)
-                quit = true;
+                Exit();
             if(e.key.keysym.sym == SDLK_p)
             {
                 playerMode = !playerMode;
@@ -886,7 +928,7 @@ void BlockBuster::Editor::UpdatePlayerMode()
             }
             break;
         case SDL_QUIT:
-            quit = true;
+            Exit();
             break;
         case SDL_WINDOWEVENT:
             HandleWindowEvent(e.window);
@@ -1141,6 +1183,50 @@ void BlockBuster::Editor::VideoOptionsPopUp()
     }
 }
 
+void BlockBuster::Editor::UnsavedWarningPopUp()
+{
+    if(state == PopUpState::UNSAVED_WARNING)
+        ImGui::OpenPopup("Unsaved content");
+
+    auto displaySize = io_->DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+
+    bool onPopUp = state == PopUpState::UNSAVED_WARNING;
+    if(ImGui::BeginPopupModal("Unsaved content", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("There's unsaved content.\nWhat would you like to do?");
+
+        if(ImGui::Button("Save"))
+        {
+            SaveMap();
+            state = PopUpState::NONE;
+            onWarningExit();
+        }
+        ImGui::SameLine();
+
+        if(ImGui::Button("Don't Save"))
+        {
+            unsaved = false;
+            state = PopUpState::NONE;
+
+            onWarningExit();
+        }
+        ImGui::SameLine();
+
+        if(ImGui::Button("Cancel"))
+        {
+            state = PopUpState::NONE;
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
+    }
+    else if(state == PopUpState::UNSAVED_WARNING)
+    {
+        state = PopUpState::NONE;
+    }
+}
+
 void BlockBuster::Editor::MenuBar()
 {
     // Pop Ups
@@ -1198,13 +1284,6 @@ void BlockBuster::Editor::MenuBar()
                 std::cout << "Going to block\n";
             }
 
-            ImGui::Separator();
-
-            if(ImGui::MenuItem("Mouse camera mode", "C", mouseCamera))
-            {
-                mouseCamera = !mouseCamera;
-            }
-
             ImGui::EndMenu();
         }
 
@@ -1232,12 +1311,26 @@ void BlockBuster::Editor::MenuBar()
 
 void BlockBuster::Editor::MenuNewMap()
 {
-    NewMap();
+    if(unsaved)
+    {
+        state = PopUpState::UNSAVED_WARNING;
+        auto onExit = std::bind(&BlockBuster::Editor::NewMap, this);
+        OpenWarningPopUp(onExit);
+    }
+    else
+        NewMap();
 }
 
 void BlockBuster::Editor::MenuOpenMap()
 {
-    state = PopUpState::OPEN_MAP;
+    if(unsaved)
+    {
+        state = PopUpState::UNSAVED_WARNING;
+        auto onExit = [this](){this->state = PopUpState::OPEN_MAP;};
+        OpenWarningPopUp(onExit);
+    }
+    else
+        state = PopUpState::OPEN_MAP;
 }
 
 void BlockBuster::Editor::MenuSave()
@@ -1267,6 +1360,7 @@ void BlockBuster::Editor::GUI()
     auto windowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar;
     if(ImGui::Begin("Editor", &open, windowFlags))
     {
+        UnsavedWarningPopUp();
         MenuBar();
 
         if(ImGui::BeginTabBar("Tabs"))

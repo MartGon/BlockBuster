@@ -36,6 +36,7 @@ namespace BlockBuster
             SAVE_AS,
             OPEN_MAP,
             LOAD_TEXTURE,
+            UNSAVED_WARNING,
             VIDEO_SETTINGS,
         };
 
@@ -85,6 +86,10 @@ namespace BlockBuster
         Game::Display GetBlockDisplay();
         void SetBlockDisplay(Game::Display display);
 
+        void SetUnsaved(bool unsaved);
+        void OpenWarningPopUp(std::function<void()> onExit);
+        void Exit();
+
         // Test Mode
         void UpdatePlayerMode();
 
@@ -98,6 +103,7 @@ namespace BlockBuster
         void SaveAsPopUp();
         void LoadTexturePopUp();
         void VideoOptionsPopUp();
+        void UnsavedWarningPopUp();
         struct BasicPopUpParams
         {
             PopUpState popUpState;
@@ -138,6 +144,8 @@ namespace BlockBuster
         
         // Editor
         bool quit = false;
+        bool unsaved = true;
+        std::function<void()> onWarningExit;
 
         // Tools
         enum Tool
@@ -203,10 +211,6 @@ namespace BlockBuster
 
         // Config
         ::App::Configuration::WindowConfig preConfig;
-        
-        // Edit
-        // TODO - Enable FPS camera while middle mouse button is pressed
-        bool mouseCamera = false;
 
         // Options
         float blockScale = 2.0f;
