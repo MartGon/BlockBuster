@@ -42,6 +42,7 @@ void BlockBuster::Editor::Start()
     camera.SetParam(Rendering::Camera::Param::FOV, glm::radians(75.0f));
     
     // World
+    mapsFolder = GetConfigOption("MapsFolder", ".");
     auto mapName = GetConfigOption("Map", "Map.bbm");
     bool mapLoaded = false;
     if(!mapName.empty() && mapName.size() < 16)
@@ -104,6 +105,7 @@ void BlockBuster::Editor::Shutdown()
 {
     config.options["Map"] = std::string(fileName);
     config.options["TextureFolder"] = textureFolder.string();
+    config.options["MapsFolder"] = mapsFolder.string();
     config.options["showCursor"] = std::to_string(cursor.show);
 }
 
@@ -265,6 +267,7 @@ void BlockBuster::Editor::NewMap()
 
 void BlockBuster::Editor::SaveMap()
 {
+    std::filesystem::path mapPath = mapsFolder / fileName;
     std::fstream file{fileName, file.binary | file.out};
     if(!file.is_open())
     {
@@ -325,7 +328,8 @@ void BlockBuster::Editor::SaveMap()
 
 bool BlockBuster::Editor::OpenMap()
 {
-    std::fstream file{fileName, file.binary | file.in};
+    std::filesystem::path mapPath = mapsFolder / fileName;
+    std::fstream file{mapPath, file.binary | file.in};
     if(!file.is_open())
     {
         std::cout << "Could not open file " << fileName << '\n';

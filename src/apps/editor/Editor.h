@@ -205,6 +205,7 @@ namespace BlockBuster
         std::string errorText;
 
         // File
+        std::filesystem::path mapsFolder = ".";
         char fileName[16] = "Map.bbm";
         const int magicNumber = 0xB010F0;
         bool newMap = true;
