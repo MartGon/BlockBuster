@@ -142,6 +142,7 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     auto distance = posA - posB;
     auto prevDistance = prevPosA - posB;
     prevDistance.y = (float)round(prevDistance.y / precision) * precision;
+    distance.y = (float)round(distance.y / precision) * precision;
 
     auto sign = glm::sign(distance);
     auto prevSign = glm::sign(prevDistance);

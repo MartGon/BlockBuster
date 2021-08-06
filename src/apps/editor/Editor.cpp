@@ -1602,6 +1602,15 @@ void BlockBuster::Editor::GUI()
                     ResizeBlocks();
                 }
 
+                if(ImGui::SliderFloat("Player speed", &player.speed, 0.01, 1))
+                {
+                }
+
+                if(ImGui::SliderFloat("Player height", &player.transform.position.y, -100, 100))
+                {
+
+                }
+
                 ImGui::EndTabItem();
             }
 

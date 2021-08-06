@@ -34,7 +34,7 @@ void AppGame::Player::Update()
     
     glm::vec3 velocity = moveDir * speed;
     // Velocity on slope's normal axis is doubled
-    if(isOnSlope)
+    if(isOnSlope || wasOnSlope)
     {
         // Projected dir onto slope plane
         moveDir = moveDir - glm::dot(moveDir, slopeNormal) * slopeNormal;
@@ -44,13 +44,13 @@ void AppGame::Player::Update()
     
     transform.position += velocity;
     // Fix height on slope
-    if(isOnSlope)
+    if(isOnSlope || wasOnSlope)
     {
         auto slopeHeight = slopeTransform.position.y;
         auto slopeScale = slopeTransform.scale;
         auto maxHeight = slopeHeight + (slopeScale - transform.scale / 2);
         auto minHeight = slopeHeight - (slopeScale - transform.scale / 2);
-        transform.position.y = glm::max(glm::min(maxHeight, transform.position.y), minHeight);
+        transform.position.y = glm::max(glm::min(maxHeight, transform.position.y), transform.position.y);
     }
 
     auto pos = transform.position;
@@ -60,6 +60,7 @@ void AppGame::Player::Update()
         transform.position += glm::vec3{0.0f, gravitySpeed, 0.0f};
     }
     gravity = true;
+    wasOnSlope = isOnSlope;
     isOnSlope = false;
 }
 
@@ -98,12 +99,13 @@ void AppGame::Player::HandleCollisions(const std::vector<Game::Block>& blocks)
                 if(slopeIntersect.collides)
                 {
                     //std::cout << "Collides w Slope\n";
-                    glm::vec3 normal = slopeIntersect.normal;
+                    glm::vec3 normalSign = glm::sign(slopeIntersect.normal);
+                    glm::vec3 normal = glm::step(glm::vec3{0.005}, glm::abs(slopeIntersect.normal)) * normalSign; 
 
                     if (normal.y > 0.0f)
                     {
                         gravity = false;
-                        if(glm::abs(normal.x) > 0.05f || glm::abs(normal.z) > 0.05f)
+                        if(glm::abs(normal.x) > 0.0f || glm::abs(normal.z) > 0.0f)
                         {
                             isOnSlope = true;
                             slopeNormal = glm::normalize(normal);

@@ -27,6 +27,7 @@ namespace AppGame
         glm::vec3 prevPos;
         bool gravity = false;
         bool isOnSlope = false;
+        bool wasOnSlope = false;
         glm::vec3 slopeNormal;
         Math::Transform slopeTransform;
     };
