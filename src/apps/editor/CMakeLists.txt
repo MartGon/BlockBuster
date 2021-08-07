@@ -2,6 +2,7 @@ SET(SOURCES
 
     Editor.cpp
     BlockBuster.cpp
+    ToolAction.cpp
 )
 
 add_executable(Editor ${SOURCES})

@@ -68,7 +68,7 @@ int main()
         std::cerr << "Loading default config\n";
     }
 
-    BlockBuster::Editor editor(config);
+    BlockBuster::Editor::Editor editor(config);
     editor.Start();
 
     while(!editor.Quit())

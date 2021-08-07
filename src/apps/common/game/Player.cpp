@@ -50,12 +50,12 @@ void AppGame::Player::Update()
         auto slopeScale = slopeTransform.scale;
         auto maxHeight = slopeHeight + (slopeScale - transform.scale / 2);
         auto minHeight = slopeHeight - (slopeScale - transform.scale / 2);
-        transform.position.y = glm::max(glm::min(maxHeight, transform.position.y), transform.position.y);
+        transform.position.y = glm::min(maxHeight, transform.position.y);
     }
 
     auto pos = transform.position;
     std::cout << "Desired pos " << pos.x << " " << pos.y << " " << pos.z << "\n";
-    if(gravity)
+    if(gravity && (!wasOnSlope || !isOnSlope))
     {
         transform.position += glm::vec3{0.0f, gravitySpeed, 0.0f};
     }

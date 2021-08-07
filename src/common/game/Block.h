@@ -24,11 +24,15 @@ namespace Game
         SLOPE
     };
 
-    struct Block
+    class Block
     {
+    public:
+
         Math::Transform transform;
         BlockType type;
         Display display;
         std::string name;
     };
+
+    bool operator==(Block a, Block b);
 }
