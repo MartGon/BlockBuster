@@ -157,7 +157,7 @@ namespace BlockBuster
                 PAINT_BLOCK
             };
             Tool tool = PLACE_BLOCK;
-            int actionIndex = 0;
+            unsigned int actionIndex = 0;
             std::vector<std::unique_ptr<BlockBuster::Editor::ToolAction>> actionHistory;
 
             // Tool - Place

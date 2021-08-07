@@ -218,7 +218,7 @@ Game::Block* BlockBuster::Editor::Editor::GetBlock(glm::vec3 pos)
 {   
     Game::Block* block = nullptr;
     for(auto& b : blocks)
-        if(b.transform.position == pos)
+        if((glm::ivec3)b.transform.position == (glm::ivec3)pos)
             block = &b;
 
     return block;
@@ -757,7 +757,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         else if(axis == RotationAxis::Z)
                             rot.z = ((rot.z + mod) % 270);
 
-                        DoToolAction(std::make_unique<RotateAction>(&block, rot));
+                        DoToolAction(std::make_unique<RotateAction>(&block, rot, &blocks));
                     }
                 }
                 if(actionType == ActionType::HOVER)
@@ -789,7 +789,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 if(actionType == ActionType::LEFT_BUTTON)
                 {
                     auto display = GetBlockDisplay();
-                    DoToolAction(std::make_unique<PaintAction>(&block, display));
+                    DoToolAction(std::make_unique<PaintAction>(&block, display, &blocks));
                 }
                 if(actionType == ActionType::RIGHT_BUTTON)
                 {
@@ -797,7 +797,6 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 }
                 if(actionType == ActionType::HOVER)
                 {
-                    std::cout << "Hovering over block " << index << "\n";
                     preColorBlockIndex = index;
                 }
             }
