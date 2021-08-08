@@ -1083,7 +1083,7 @@ std::string BlockBuster::Editor::Editor::GetConfigOption(const std::string& key,
     return ret;
 }
 
-// #### GUI #### \\
+// #### GUI - PopUps #### \\
 
 void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& params)
 {
@@ -1406,6 +1406,8 @@ void BlockBuster::Editor::Editor::ClosePopUp(bool accept)
     ImGui::CloseCurrentPopup();
 }
 
+// #### GUI #### \\
+
 void BlockBuster::Editor::Editor::MenuBar()
 {
     // Pop Ups
@@ -1488,6 +1490,8 @@ void BlockBuster::Editor::Editor::MenuBar()
     }
 }
 
+// #### GUI - File Menu #### \\
+
 void BlockBuster::Editor::Editor::MenuNewMap()
 {
     if(unsaved)
@@ -1522,6 +1526,8 @@ void BlockBuster::Editor::Editor::MenuSaveAs()
 {
     OpenPopUp(PopUpState::SAVE_AS);
 }
+
+// #### GUI - Base #### \\
 
 void BlockBuster::Editor::Editor::GUI()
 {
