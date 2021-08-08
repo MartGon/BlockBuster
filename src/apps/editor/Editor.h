@@ -42,6 +42,7 @@ namespace BlockBuster
                 LOAD_TEXTURE,
                 UNSAVED_WARNING,
                 VIDEO_SETTINGS,
+                GO_TO_BLOCK
             };
 
             enum TabState
@@ -83,7 +84,7 @@ namespace BlockBuster
             void DoToolAction();
             void UndoToolAction();
             void ClearActionHistory();
-            
+
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
             Game::Display GetBlockDisplay();
@@ -102,12 +103,7 @@ namespace BlockBuster
             std::string GetConfigOption(const std::string& key, std::string defaultValue = "");
 
             // GUI - PopUps
-            void OpenMapPopUp();
-            void SaveAsPopUp();
-            void LoadTexturePopUp();
-            void VideoOptionsPopUp();
-            void UnsavedWarningPopUp();
-            struct BasicPopUpParams
+            struct EditTextPopUpParams
             {
                 PopUpState popUpState;
                 std::string name;
@@ -120,7 +116,24 @@ namespace BlockBuster
                 bool& onError;
                 std::string& errorText;
             };
-            void EditTextPopUp(const BasicPopUpParams& params);
+            struct BasicPopUpParams
+            {
+                PopUpState state;
+                std::string name;
+                std::function<void()> inPopUp;
+                std::function<void()> onOpen = []{};
+                std::function<void()> onClose = []{};
+            };
+
+            void EditTextPopUp(const EditTextPopUpParams& params);
+            void BasicPopUp(const BasicPopUpParams& params);
+
+            void OpenMapPopUp();
+            void SaveAsPopUp();
+            void LoadTexturePopUp();
+            void VideoOptionsPopUp();
+            void UnsavedWarningPopUp();
+            void GoToBlockPopUp();
 
             // GUI
             void MenuBar();
@@ -149,6 +162,7 @@ namespace BlockBuster
             bool quit = false;
             bool unsaved = true;
             std::function<void()> onWarningExit;
+            glm::ivec3 goToPos;
 
             // Tools
             enum Tool

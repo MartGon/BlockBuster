@@ -35,7 +35,7 @@ void BlockBuster::Editor::Editor::Start()
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
 
-    // Camera pos
+    // Camera
     int width, height;
     SDL_GetWindowSize(window_, &width, &height);
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
@@ -861,7 +861,13 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
     {
         auto sym = key.keysym.sym;
         if(sym == SDLK_ESCAPE)
-            Exit();
+        {
+            // TODO: Error when closing pop up without calling OnClose code. Could use a PopUp class for this
+            // if(ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+            //     state = PopUpState::NONE;
+            // else
+                Exit();
+        }
 
         if(sym == SDLK_f)
         {
@@ -880,6 +886,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
             }
         }
 
+        // File Menu
         if(sym == SDLK_n && io.KeyCtrl)
             MenuNewMap();
 
@@ -892,12 +899,19 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         if(sym == SDLK_o && io.KeyCtrl)
             MenuOpenMap();
 
+        // Edit
         if(sym == SDLK_z && io.KeyCtrl && !io.KeyShift)
             UndoToolAction();
 
         if(sym == SDLK_z && io.KeyCtrl && io.KeyShift)
             DoToolAction();
 
+        if(sym == SDLK_g && io.KeyCtrl)
+        {
+            state = PopUpState::GO_TO_BLOCK;
+        }
+
+        // Editor navigation
         if(sym >= SDLK_1 &&  sym <= SDLK_3 && io.KeyCtrl)
             tool = static_cast<Tool>(sym - SDLK_1);
 
@@ -911,7 +925,6 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
 
         if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && io.KeyAlt)
             tabState = static_cast<TabState>(sym - SDLK_1)        ;
-        
     }
 }
 
@@ -1070,34 +1083,7 @@ std::string BlockBuster::Editor::Editor::GetConfigOption(const std::string& key,
 
 // #### GUI #### \\
 
-void BlockBuster::Editor::Editor::OpenMapPopUp()
-{
-    std::string errorPrefix = "Could not open map ";
-    auto onAccept = std::bind(&BlockBuster::Editor::Editor::OpenMap, this);
-    auto onCancel = [](){};
-    BasicPopUpParams params{PopUpState::OPEN_MAP, "Open Map", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
-    EditTextPopUp(params);
-}
-
-void BlockBuster::Editor::Editor::SaveAsPopUp()
-{
-    std::string errorPrefix = "Could not save map ";
-    auto onAccept = [this](){this->SaveMap(); return true;};
-    auto onCancel = [](){};
-    BasicPopUpParams params{PopUpState::SAVE_AS, "Save As", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
-    EditTextPopUp(params);
-}
-
-void BlockBuster::Editor::Editor::LoadTexturePopUp()
-{
-    std::string errorPrefix = "Could not open texture ";
-    auto onAccept = std::bind(&BlockBuster::Editor::Editor::LoadTexture, this);
-    auto onCancel = [](){};
-    BasicPopUpParams params{PopUpState::LOAD_TEXTURE, "Load Texture", textureFilename, 32, onAccept, onCancel, errorPrefix, onError, errorText};
-    EditTextPopUp(params);
-}
-
-void BlockBuster::Editor::Editor::EditTextPopUp(const BasicPopUpParams& params)
+void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& params)
 {
     if(state == params.popUpState)
         ImGui::OpenPopup(params.name.c_str());
@@ -1140,6 +1126,55 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const BasicPopUpParams& params)
 
         ImGui::EndPopup();
     }
+}
+
+void BlockBuster::Editor::Editor::BasicPopUp(const BasicPopUpParams& params)
+{
+    if(this->state == params.state && !ImGui::IsPopupOpen(params.name.c_str()))
+    {
+        params.onOpen();
+        ImGui::OpenPopup(params.name.c_str());
+    }
+
+    bool onPopUp = this->state == params.state;
+    if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        params.inPopUp();
+
+        ImGui::EndPopup();
+    }
+    else if(this->state == params.state)
+    {
+        params.onClose();
+        this->state = PopUpState::NONE;
+    }
+}
+
+void BlockBuster::Editor::Editor::OpenMapPopUp()
+{
+    std::string errorPrefix = "Could not open map ";
+    auto onAccept = std::bind(&BlockBuster::Editor::Editor::OpenMap, this);
+    auto onCancel = [](){};
+    EditTextPopUpParams params{PopUpState::OPEN_MAP, "Open Map", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
+    EditTextPopUp(params);
+}
+
+void BlockBuster::Editor::Editor::SaveAsPopUp()
+{
+    std::string errorPrefix = "Could not save map ";
+    auto onAccept = [this](){this->SaveMap(); return true;};
+    auto onCancel = [](){};
+    EditTextPopUpParams params{PopUpState::SAVE_AS, "Save As", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
+    EditTextPopUp(params);
+}
+
+void BlockBuster::Editor::Editor::LoadTexturePopUp()
+{
+    std::string errorPrefix = "Could not open texture ";
+    auto onAccept = std::bind(&BlockBuster::Editor::Editor::LoadTexture, this);
+    auto onCancel = [](){};
+    EditTextPopUpParams params{PopUpState::LOAD_TEXTURE, "Load Texture", textureFilename, 32, onAccept, onCancel, errorPrefix, onError, errorText};
+    EditTextPopUp(params);
 }
 
 std::vector<SDL_DisplayMode> GetDisplayModes()
@@ -1211,11 +1246,11 @@ void BlockBuster::Editor::Editor::VideoOptionsPopUp()
 
         ImGui::Checkbox("Vsync", &preConfig.vsync);
 
-        int fov = glm::degrees(camera.GetParam(Rendering::Camera::Param::FOV));
-
+        int fov = glm::degrees(preConfig.fov);
         if(ImGui::SliderInt("FOV", &fov, 45, 90))
         {
             preConfig.fov = glm::radians((float)fov);
+            std::cout << "Preconfig fov is " << preConfig.fov << "\n";
         }
 
         if(ImGui::Button("Accept"))
@@ -1298,12 +1333,39 @@ void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
     }
 }
 
+void BlockBuster::Editor::Editor::GoToBlockPopUp()
+{
+    auto inPopUp = [this](){
+        
+        ImGui::InputInt3("Position", &goToPos.x);
+
+        if(ImGui::Button("Accept"))
+        {
+            glm::vec3 cameraPos = (glm::vec3)this->goToPos * this->blockScale;
+            this->camera.SetPos(cameraPos);
+            this->state = PopUpState::NONE;
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Cancel"))
+        {
+            this->state = PopUpState::NONE;
+        }
+    };
+    auto onOpen = [this]()
+    {
+        this->goToPos = this->camera.GetPos() / this->blockScale;
+    };
+    BasicPopUp({PopUpState::GO_TO_BLOCK, "Go to block", inPopUp, onOpen});
+}
+
 void BlockBuster::Editor::Editor::MenuBar()
 {
     // Pop Ups
     OpenMapPopUp();
     SaveAsPopUp();
     VideoOptionsPopUp();
+    GoToBlockPopUp();
 
     if(ImGui::BeginMenuBar())
     {
@@ -1354,6 +1416,7 @@ void BlockBuster::Editor::Editor::MenuBar()
 
             if(ImGui::MenuItem("Go to Block", "Ctrl + G"))
             {
+                state = PopUpState::GO_TO_BLOCK;
                 std::cout << "Going to block\n";
             }
 
