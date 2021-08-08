@@ -21,6 +21,7 @@ namespace AppGame
         Math::Transform transform;
 
         float speed = 0.1f;
+        float height = 2.0f;
         float gravitySpeed = -0.4f;
 
     private:

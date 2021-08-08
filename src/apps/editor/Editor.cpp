@@ -1011,7 +1011,7 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
     player.HandleCollisions(blocks);
     auto playerPos = player.transform.position;
 
-    auto cameraPos = playerPos + glm::vec3{0.0f, 2.f, 0.0f};
+    auto cameraPos = playerPos + glm::vec3{0.0f, player.height, 0.0f};
     camera.SetPos(cameraPos);
 }
 
@@ -1656,16 +1656,24 @@ void BlockBuster::Editor::Editor::GUI()
                 if(ImGui::IsItemActive())
                     tabState = TabState::OPTIONS_TAB;
 
+                ImGui::Text("Editor");
+                ImGui::Separator();
+
                 if(ImGui::SliderFloat("Block Scale", &blockScale, 1, 5))
                 {
                     ResizeBlocks();
                 }
 
+                ImGui::Text("Player Mode");
+                ImGui::Separator();
+
                 if(ImGui::SliderFloat("Player speed", &player.speed, 0.01, 1))
                 {
                 }
 
-                if(ImGui::SliderFloat("Player height", &player.transform.position.y, -100, 100))
+                ImGui::SliderFloat("Player gravity", &player.gravitySpeed, -0.05, -1);
+
+                if(ImGui::SliderFloat("Player height", &player.height, 0.25, 5))
                 {
 
                 }
