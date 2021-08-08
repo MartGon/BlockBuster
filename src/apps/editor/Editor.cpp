@@ -56,6 +56,9 @@ void BlockBuster::Editor::Editor::Start()
 
     // Cursor
     cursor.show = GetConfigOption("showCursor", "1") == "1";
+
+    // GUI
+    InitPopUps();
 }
 
 void BlockBuster::Editor::Editor::Update()
@@ -863,11 +866,14 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         if(sym == SDLK_ESCAPE)
         {
             // TODO: Error when closing pop up without calling OnClose code. Could use a PopUp class for this
-            // if(ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
-            //     state = PopUpState::NONE;
-            // else
+            if(state != PopUpState::NONE)
+                ClosePopUp();
+            else
                 Exit();
         }
+
+        if(state != PopUpState::NONE)
+            return;
 
         if(sym == SDLK_f)
         {
@@ -908,7 +914,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
 
         if(sym == SDLK_g && io.KeyCtrl)
         {
-            state = PopUpState::GO_TO_BLOCK;
+            OpenPopUp(PopUpState::GO_TO_BLOCK);
         }
 
         // Editor navigation
@@ -958,20 +964,16 @@ void BlockBuster::Editor::Editor::SetUnsaved(bool unsaved)
         RenameMainWindow(fileName);
 }
 
-void BlockBuster::Editor::Editor::OpenWarningPopUp(std::function<void()> onExit)
-{
-    state = PopUpState::UNSAVED_WARNING;
-    onWarningExit = onExit;
-}
-
 void BlockBuster::Editor::Editor::Exit()
 {
     if(unsaved)
     {
         if(playerMode)
             playerMode = false;
+
         OpenWarningPopUp(std::bind(&BlockBuster::Editor::Editor::Exit, this));
-        SetCameraMode(CameraMode::EDITOR);
+        if(cameraMode != CameraMode::EDITOR)
+            SetCameraMode(CameraMode::EDITOR);
     }
     else
         quit = true;
@@ -1085,12 +1087,10 @@ std::string BlockBuster::Editor::Editor::GetConfigOption(const std::string& key,
 
 void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& params)
 {
-    if(state == params.popUpState)
-        ImGui::OpenPopup(params.name.c_str());
-
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-    if(ImGui::BeginPopupModal(params.name.c_str(), nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    bool onPopUp = state == params.popUpState;
+    if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
         bool accept = ImGui::InputText("File name", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         bool ok = true;
@@ -1102,8 +1102,7 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
             {
                 params.onError = false;
                 
-                ImGui::CloseCurrentPopup();
-                state = PopUpState::NONE;
+                ClosePopUp();
             }
             else
             {
@@ -1117,8 +1116,7 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
         {
             params.onCancel();
 
-            ImGui::CloseCurrentPopup();
-            state = PopUpState::NONE;
+            ClosePopUp();
         }
 
         if(params.onError)
@@ -1130,12 +1128,6 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
 
 void BlockBuster::Editor::Editor::BasicPopUp(const BasicPopUpParams& params)
 {
-    if(this->state == params.state && !ImGui::IsPopupOpen(params.name.c_str()))
-    {
-        params.onOpen();
-        ImGui::OpenPopup(params.name.c_str());
-    }
-
     bool onPopUp = this->state == params.state;
     if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {
@@ -1145,8 +1137,7 @@ void BlockBuster::Editor::Editor::BasicPopUp(const BasicPopUpParams& params)
     }
     else if(this->state == params.state)
     {
-        params.onClose();
-        this->state = PopUpState::NONE;
+        ClosePopUp();
     }
 }
 
@@ -1212,9 +1203,6 @@ std::string DisplayModeToString(SDL_DisplayMode mode)
 
 void BlockBuster::Editor::Editor::VideoOptionsPopUp()
 {
-    if(state == PopUpState::VIDEO_SETTINGS)
-        ImGui::OpenPopup("Video");
-
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
@@ -1257,9 +1245,8 @@ void BlockBuster::Editor::Editor::VideoOptionsPopUp()
         {
             ApplyVideoOptions(preConfig);
             config.window = preConfig;
-            state = PopUpState::NONE;
 
-            ImGui::CloseCurrentPopup();
+            ClosePopUp(true);
         }
 
         ImGui::SameLine();
@@ -1271,11 +1258,7 @@ void BlockBuster::Editor::Editor::VideoOptionsPopUp()
         ImGui::SameLine();
         if(ImGui::Button("Cancel"))
         {
-            ApplyVideoOptions(config.window);
-            preConfig = config.window;
-            state = PopUpState::NONE;
-            
-            ImGui::CloseCurrentPopup();
+            ClosePopUp(false);
         }
 
         ImGui::EndPopup();
@@ -1283,29 +1266,24 @@ void BlockBuster::Editor::Editor::VideoOptionsPopUp()
     // Triggered when X button is pressed, same effect as cancel
     else if(state == PopUpState::VIDEO_SETTINGS)
     {
-        ApplyVideoOptions(config.window);
-        preConfig = config.window;
-        state = PopUpState::NONE;
+        ClosePopUp(false);
     }
 }
 
 void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
 {
-    if(state == PopUpState::UNSAVED_WARNING)
-        ImGui::OpenPopup("Unsaved content");
-
     auto displaySize = io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
     bool onPopUp = state == PopUpState::UNSAVED_WARNING;
-    if(ImGui::BeginPopupModal("Unsaved content", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
+    if(ImGui::BeginPopupModal(popUps[UNSAVED_WARNING].name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("There's unsaved content.\nWhat would you like to do?");
 
         if(ImGui::Button("Save"))
         {
             SaveMap();
-            state = PopUpState::NONE;
+            ClosePopUp();
             onWarningExit();
         }
         ImGui::SameLine();
@@ -1313,7 +1291,7 @@ void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
         if(ImGui::Button("Don't Save"))
         {
             unsaved = false;
-            state = PopUpState::NONE;
+            ClosePopUp();
 
             onWarningExit();
         }
@@ -1321,15 +1299,14 @@ void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
 
         if(ImGui::Button("Cancel"))
         {
-            state = PopUpState::NONE;
-            ImGui::CloseCurrentPopup();
+            ClosePopUp();
         }
 
         ImGui::EndPopup();
     }
     else if(state == PopUpState::UNSAVED_WARNING)
     {
-        state = PopUpState::NONE;
+        ClosePopUp();
     }
 }
 
@@ -1343,29 +1320,96 @@ void BlockBuster::Editor::Editor::GoToBlockPopUp()
         {
             glm::vec3 cameraPos = (glm::vec3)this->goToPos * this->blockScale;
             this->camera.SetPos(cameraPos);
-            this->state = PopUpState::NONE;
+            ClosePopUp();
         }
 
         ImGui::SameLine();
         if(ImGui::Button("Cancel"))
         {
-            this->state = PopUpState::NONE;
+            ClosePopUp();
         }
     };
-    auto onOpen = [this]()
-    {
+    BasicPopUp({PopUpState::GO_TO_BLOCK, "Go to block", inPopUp});
+}
+
+void BlockBuster::Editor::Editor::OpenWarningPopUp(std::function<void()> onExit)
+{
+    OpenPopUp(PopUpState::UNSAVED_WARNING);
+    onWarningExit = onExit;
+}
+
+void BlockBuster::Editor::Editor::InitPopUps()
+{
+    popUps[NONE].update = []{};
+
+    popUps[SAVE_AS].name = "Save As";
+    popUps[SAVE_AS].update = std::bind(&BlockBuster::Editor::Editor::SaveAsPopUp, this);
+
+    popUps[OPEN_MAP].name = "Open Map";
+    popUps[OPEN_MAP].update = std::bind(&BlockBuster::Editor::Editor::OpenMapPopUp, this);
+
+    popUps[LOAD_TEXTURE].name = "Load Texture";
+    popUps[LOAD_TEXTURE].update = std::bind(&BlockBuster::Editor::Editor::LoadTexturePopUp, this);
+
+    popUps[UNSAVED_WARNING].name = "Unsaved content";
+    popUps[UNSAVED_WARNING].update = std::bind(&BlockBuster::Editor::Editor::UnsavedWarningPopUp, this);
+
+    popUps[VIDEO_SETTINGS].name = "Video";
+    popUps[VIDEO_SETTINGS].update = std::bind(&BlockBuster::Editor::Editor::VideoOptionsPopUp, this);
+    popUps[VIDEO_SETTINGS].onOpen = [this](){
+        std::cout << "Loading config\n";
+        preConfig = config.window;
+    };
+    popUps[VIDEO_SETTINGS].onClose = [this](bool accept){
+        if(!accept)
+        {
+            ApplyVideoOptions(config.window);
+            preConfig = config.window;
+        }
+    };
+
+    popUps[GO_TO_BLOCK].name = "Go to block";
+    popUps[GO_TO_BLOCK].onOpen = [this](){
         this->goToPos = this->camera.GetPos() / this->blockScale;
     };
-    BasicPopUp({PopUpState::GO_TO_BLOCK, "Go to block", inPopUp, onOpen});
+    popUps[GO_TO_BLOCK].update = std::bind(&BlockBuster::Editor::Editor::GoToBlockPopUp, this);
+}
+
+void BlockBuster::Editor::Editor::OpenPopUp(PopUpState puState)
+{
+    if(state == PopUpState::NONE)
+        this->state = puState;
+}
+
+void BlockBuster::Editor::Editor::UpdatePopUp()
+{
+    // Open if not open yet
+    auto name = popUps[state].name.c_str();
+    bool isOpen = ImGui::IsPopupOpen(name);
+    if(this->state != PopUpState::NONE && !isOpen)
+    {
+        popUps[state].onOpen();
+        ImGui::OpenPopup(name);
+    }
+
+    // Render each popup data
+    for(int s = NONE; s < MAX; s++)
+    {
+        popUps[s].update();
+    }
+}
+
+void BlockBuster::Editor::Editor::ClosePopUp(bool accept)
+{
+    popUps[state].onClose(accept);
+    this->state = NONE;
+    ImGui::CloseCurrentPopup();
 }
 
 void BlockBuster::Editor::Editor::MenuBar()
 {
     // Pop Ups
-    OpenMapPopUp();
-    SaveAsPopUp();
-    VideoOptionsPopUp();
-    GoToBlockPopUp();
+    UpdatePopUp();
 
     if(ImGui::BeginMenuBar())
     {
@@ -1416,7 +1460,7 @@ void BlockBuster::Editor::Editor::MenuBar()
 
             if(ImGui::MenuItem("Go to Block", "Ctrl + G"))
             {
-                state = PopUpState::GO_TO_BLOCK;
+                OpenPopUp(PopUpState::GO_TO_BLOCK);
                 std::cout << "Going to block\n";
             }
 
@@ -1427,8 +1471,7 @@ void BlockBuster::Editor::Editor::MenuBar()
         {
             if(ImGui::MenuItem("Video", "Ctrl + Shift + G"))
             {
-                state = PopUpState::VIDEO_SETTINGS;
-                preConfig = config.window;
+                OpenPopUp(PopUpState::VIDEO_SETTINGS);
             }
 
             if(ImGui::MenuItem("Language"))
@@ -1449,7 +1492,6 @@ void BlockBuster::Editor::Editor::MenuNewMap()
 {
     if(unsaved)
     {
-        state = PopUpState::UNSAVED_WARNING;
         auto onExit = std::bind(&BlockBuster::Editor::Editor::NewMap, this);
         OpenWarningPopUp(onExit);
     }
@@ -1461,25 +1503,24 @@ void BlockBuster::Editor::Editor::MenuOpenMap()
 {
     if(unsaved)
     {
-        state = PopUpState::UNSAVED_WARNING;
-        auto onExit = [this](){this->state = PopUpState::OPEN_MAP;};
+        auto onExit = [this](){OpenPopUp(PopUpState::OPEN_MAP);};
         OpenWarningPopUp(onExit);
     }
     else
-        state = PopUpState::OPEN_MAP;
+        OpenPopUp(PopUpState::OPEN_MAP);
 }
 
 void BlockBuster::Editor::Editor::MenuSave()
 {
     if(newMap)
-        state = PopUpState::SAVE_AS;
+        OpenPopUp(PopUpState::SAVE_AS);
     else
         SaveMap();
 }
 
 void BlockBuster::Editor::Editor::MenuSaveAs()
 {
-    state = PopUpState::SAVE_AS;
+    OpenPopUp(PopUpState::SAVE_AS);
 }
 
 void BlockBuster::Editor::Editor::GUI()
@@ -1496,7 +1537,6 @@ void BlockBuster::Editor::Editor::GUI()
     auto windowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar;
     if(ImGui::Begin("Editor", &open, windowFlags))
     {
-        UnsavedWarningPopUp();
         MenuBar();
 
         if(ImGui::BeginTabBar("Tabs"))
@@ -1581,14 +1621,6 @@ void BlockBuster::Editor::Editor::GUI()
 
                         ImGui::RadioButton("Color", &displayType, Game::DisplayType::COLOR);
 
-                        if(displayType == Game::DisplayType::COLOR)
-                        {
-                            
-                        }
-                        else if(displayType == Game::DisplayType::TEXTURE)
-                        {
-                            LoadTexturePopUp();
-                        }
 
                         ImGui::Text("Palette");
 
@@ -1697,7 +1729,7 @@ void BlockBuster::Editor::Editor::GUI()
                         {
                             if(ImGui::Button("Add Texture"))
                             {
-                                state = PopUpState::LOAD_TEXTURE;
+                                OpenPopUp(PopUpState::LOAD_TEXTURE);
                             }
                         }
                     }

@@ -34,7 +34,7 @@ namespace BlockBuster
         private:
 
             // Enums
-            enum class PopUpState
+            enum PopUpState
             {
                 NONE,
                 SAVE_AS,
@@ -42,7 +42,8 @@ namespace BlockBuster
                 LOAD_TEXTURE,
                 UNSAVED_WARNING,
                 VIDEO_SETTINGS,
-                GO_TO_BLOCK
+                GO_TO_BLOCK,
+                MAX
             };
 
             enum TabState
@@ -91,7 +92,6 @@ namespace BlockBuster
             void SetBlockDisplay(Game::Display display);
 
             void SetUnsaved(bool unsaved);
-            void OpenWarningPopUp(std::function<void()> onExit);
             void Exit();
 
             // Test Mode
@@ -103,6 +103,13 @@ namespace BlockBuster
             std::string GetConfigOption(const std::string& key, std::string defaultValue = "");
 
             // GUI - PopUps
+            struct PopUp
+            {
+                std::string name;
+                std::function<void()> update;
+                std::function<void()> onOpen = []{};
+                std::function<void(bool)> onClose = [](bool){};
+            }; 
             struct EditTextPopUpParams
             {
                 PopUpState popUpState;
@@ -121,8 +128,6 @@ namespace BlockBuster
                 PopUpState state;
                 std::string name;
                 std::function<void()> inPopUp;
-                std::function<void()> onOpen = []{};
-                std::function<void()> onClose = []{};
             };
 
             void EditTextPopUp(const EditTextPopUpParams& params);
@@ -134,6 +139,13 @@ namespace BlockBuster
             void VideoOptionsPopUp();
             void UnsavedWarningPopUp();
             void GoToBlockPopUp();
+
+            void OpenWarningPopUp(std::function<void()> onExit);
+
+            void InitPopUps();
+            void OpenPopUp(PopUpState puState);
+            void UpdatePopUp();
+            void ClosePopUp(bool accept = false);
 
             // GUI
             void MenuBar();
@@ -222,6 +234,7 @@ namespace BlockBuster
             TabState tabState = TabState::TOOLS_TAB;
             bool onError = false;
             std::string errorText;
+            PopUp popUps[PopUpState::MAX];
 
             // File
             std::filesystem::path mapsFolder = ".";

@@ -15,4 +15,4 @@
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
     Undo and Redo - Done
     Info tab (Coordinates - Position and orientation)
-    Go to pos
+    Go to pos - Done
