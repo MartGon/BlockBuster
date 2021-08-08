@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
 
+#include <glm/glm.hpp>
+
 #include <string>
 #include <filesystem>
 #include <unordered_map>
@@ -25,6 +27,7 @@ namespace App
             WindowMode mode;
             bool vsync = true;
             int refreshRate;
+            float fov;
         };
 
         struct OpenGLConfig

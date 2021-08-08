@@ -21,6 +21,7 @@ namespace Rendering
         void SetRotation(float pitch, float yaw);
         void SetTarget(glm::vec3 target);
 
+        float GetParam(Param param) const;
         glm::vec3 GetPos() const;
         glm::vec2 GetRotation() const;
         glm::vec3 GetFront() const;

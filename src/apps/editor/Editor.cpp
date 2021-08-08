@@ -39,7 +39,7 @@ void BlockBuster::Editor::Editor::Start()
     int width, height;
     SDL_GetWindowSize(window_, &width, &height);
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
-    camera.SetParam(Rendering::Camera::Param::FOV, glm::radians(75.0f));
+    camera.SetParam(Rendering::Camera::Param::FOV, config.window.fov);
     
     // World
     mapsFolder = GetConfigOption("MapsFolder", ".");
@@ -1049,6 +1049,7 @@ void BlockBuster::Editor::Editor::ApplyVideoOptions(::App::Configuration::Window
     SDL_GetWindowSize(window_, &width, &height);
     glViewport(0, 0, width, height);
     camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
+    camera.SetParam(Rendering::Camera::Param::FOV, winConfig.fov);
     SDL_GL_SetSwapInterval(winConfig.vsync);
 
     SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
@@ -1209,6 +1210,13 @@ void BlockBuster::Editor::Editor::VideoOptionsPopUp()
         ImGui::RadioButton("Borderless", &preConfig.mode, ::App::Configuration::WindowMode::BORDERLESS);
 
         ImGui::Checkbox("Vsync", &preConfig.vsync);
+
+        int fov = glm::degrees(camera.GetParam(Rendering::Camera::Param::FOV));
+
+        if(ImGui::SliderInt("FOV", &fov, 45, 90))
+        {
+            preConfig.fov = glm::radians((float)fov);
+        }
 
         if(ImGui::Button("Accept"))
         {
@@ -1499,8 +1507,6 @@ void BlockBuster::Editor::Editor::GUI()
                         ImGui::RadioButton("Block", &blockType, Game::BlockType::BLOCK);
                         ImGui::SameLine();
                         ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
-
-                        ImGui::Checkbox("Show cursor", &cursor.show);
                     }
 
                     if(pbSelected || paintSelected)
@@ -1641,7 +1647,6 @@ void BlockBuster::Editor::Editor::GUI()
                         ImGui::RadioButton("Y", &axis, RotationAxis::Y);
                         ImGui::SameLine();
                         ImGui::RadioButton("Z", &axis, RotationAxis::Z);
-                        ImGui::Checkbox("Show cursor", &cursor.show);
                     }
 
                     ImGui::EndTable();
@@ -1663,6 +1668,8 @@ void BlockBuster::Editor::Editor::GUI()
                 {
                     ResizeBlocks();
                 }
+
+                ImGui::Checkbox("Show cursor", &cursor.show);
 
                 ImGui::Text("Player Mode");
                 ImGui::Separator();

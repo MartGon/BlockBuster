@@ -45,7 +45,10 @@ int main()
             WINDOW_HEIGHT,
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
-
+            App::Configuration::WindowMode::WINDOW,
+            true,
+            60,
+            glm::radians(60.0f)
         },
         App::Configuration::OpenGLConfig{
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE
@@ -60,6 +63,7 @@ int main()
     catch(const std::out_of_range& e)
     {
         std::cerr << "Configuration file is corrupted:" << e.what() << '\n';
+        std::cerr << "Either fix or remove it to generate the default one\n";
         std::exit(-1);
     }
     catch(const std::exception& e)

@@ -83,6 +83,7 @@ namespace BlockBuster
             void DoToolAction();
             void UndoToolAction();
             void ClearActionHistory();
+            
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
             Game::Display GetBlockDisplay();

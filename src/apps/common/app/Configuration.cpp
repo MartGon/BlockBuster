@@ -33,6 +33,7 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
     file << "yPos=" << config.window.yPos << '\n';
     file << "mode=" << config.window.mode << '\n';
     file << "vsync=" << config.window.vsync << '\n';
+    file << "fov=" << config.window.fov << '\n';
     file << '\n'; 
 
     file << "### Open GL Options ###" << '\n';
@@ -100,6 +101,7 @@ App::Configuration App::LoadConfig(std::filesystem::path filePath)
     config.window.yPos = ExtractInt(config.options, "yPos");
     config.window.mode = ExtractInt<App::Configuration::WindowMode>(config.options, "mode");
     config.window.vsync = ExtractInt(config.options, "vsync");
+    config.window.fov = ExtractInt(config.options, "fov");
 
     config.openGL.majorVersion = ExtractInt(config.options, "majorVersion");
     config.openGL.minorVersion = ExtractInt(config.options, "minorVersion");

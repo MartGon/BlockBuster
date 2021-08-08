@@ -34,6 +34,11 @@ void Rendering::Camera::SetTarget(glm::vec3 target)
     viewMat_ = glm::lookAt(pos_, target, UP);
 }
 
+float Rendering::Camera::GetParam(Rendering::Camera::Param param) const
+{
+    return params_[param];
+}
+
 glm::vec3 Rendering::Camera::GetPos() const
 {
     return pos_;
