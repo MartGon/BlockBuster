@@ -511,17 +511,30 @@ void BlockBuster::Editor::Editor::UpdateEditor()
         UpdateFPSCameraPosition();
 
     // Draw Cursor
-    if(cursor.enabled && cursor.show)
-    {
-        auto cursorTransform = cursor.transform;
-        cursorTransform.scale = blockScale;
-        auto model = cursorTransform.GetTransformMat();
-        auto transform = camera.GetProjViewMat() * model;
-        shader.SetUniformMat4("transform", transform);
-        shader.SetUniformInt("hasBorder", false);
-        auto& mesh = GetMesh(cursor.type);
-        mesh.Draw(shader, cursor.color, GL_LINE);
+    glDisable(GL_DEPTH_TEST);
+    if(cursor.enabled && (cursor.show || tool == SELECT_BLOCKS))
+    {   
+        CursorDraw(cursor.pos);
+
+        glm::ivec3 cursorBasePos = cursor.pos / blockScale;
+        if(tool == SELECT_BLOCKS)
+        {
+            for(int x = 0; x < cursor.scale.x; x++)
+            {
+                for(int y = 0; y < cursor.scale.y; y++)
+                {
+                    for(int z = 0; z < cursor.scale.z; z++)
+                    {
+                        auto pos = cursorBasePos + glm::ivec3{x, y, z};
+                        auto cursorPos = (glm::vec3)pos * blockScale;
+
+                        CursorDraw(cursorPos);
+                    }
+                }
+            }
+        }
     }
+    glEnable(GL_DEPTH_TEST);
 
     // Create GUI
     GUI();
@@ -707,8 +720,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         else if(actionType == ActionType::HOVER)
                         {
                             cursor.enabled = true;
-                            cursor.transform.position = newBlockPos;
-                            cursor.transform.rotation = newBlockRot;
+                            cursor.pos = newBlockPos;
                             cursor.color = yellow;
                             cursor.type = blockType;
                             if(block.display.type == Game::DisplayType::COLOR)
@@ -768,7 +780,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     if(block.type == Game::BlockType::SLOPE)
                     {
                         cursor.enabled = true;
-                        cursor.transform.position = block.transform.position;
+                        cursor.pos = block.transform.position;
                         cursor.type = Game::BlockType::BLOCK;
                         if(block.display.type == Game::DisplayType::COLOR)
                         {
@@ -801,6 +813,20 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 if(actionType == ActionType::HOVER)
                 {
                     preColorBlockIndex = index;
+                }
+            }
+            break;
+        }
+        case SELECT_BLOCKS:
+        {
+            if(index != -1)
+            {
+                if(actionType == ActionType::LEFT_BUTTON)
+                {
+                    auto& block = blocks[index];
+                    cursor.enabled = true;
+                    auto newBlockPos = block.transform.position + intersection.normal * blockScale;
+                    cursor.pos = newBlockPos;
                 }
             }
             break;
@@ -855,6 +881,19 @@ void BlockBuster::Editor::Editor::ClearActionHistory()
 {
     actionIndex = 0;
     actionHistory.clear();
+}
+
+void BlockBuster::Editor::Editor::CursorDraw(glm::vec3 pos)
+{
+    Math::Transform cursorTransform{pos, glm::vec3{0.0f}, blockScale};
+
+    // Draw cursor
+    auto model = cursorTransform.GetTransformMat();
+    auto transform = camera.GetProjViewMat() * model;
+    shader.SetUniformMat4("transform", transform);
+    shader.SetUniformInt("hasBorder", false);
+    auto& mesh = GetMesh(cursor.type);
+    mesh.Draw(shader, cursor.color, GL_LINE);
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
@@ -918,7 +957,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         }
 
         // Editor navigation
-        if(sym >= SDLK_1 &&  sym <= SDLK_3 && io.KeyCtrl)
+        if(sym >= SDLK_1 &&  sym <= SDLK_4 && io.KeyCtrl)
             tool = static_cast<Tool>(sym - SDLK_1);
 
         if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && !io.KeyAlt)
@@ -1553,6 +1592,7 @@ void BlockBuster::Editor::Editor::GUI()
                 bool pbSelected = tool == PLACE_BLOCK;
                 bool rotbSelected = tool == ROTATE_BLOCK;
                 bool paintSelected = tool == PAINT_BLOCK;
+                bool selectSelected = tool == SELECT_BLOCKS;
 
                 ImGui::SetCursorPosX(0);
                 auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit;
@@ -1597,6 +1637,10 @@ void BlockBuster::Editor::Editor::GUI()
                         {
                             tool = PAINT_BLOCK;
                         }
+
+                        ImGui::TableNextColumn();
+                        if(ImGui::Selectable("Select", selectSelected, 0, ImVec2{0, 0}))
+                            tool = SELECT_BLOCKS;
 
                         ImGui::PopStyleVar();
 
@@ -1736,7 +1780,7 @@ void BlockBuster::Editor::Editor::GUI()
                             }
                         }
                     }
-
+                    
                     if(rotbSelected)            
                     {
                         ImGui::Text("Axis");
@@ -1745,6 +1789,43 @@ void BlockBuster::Editor::Editor::GUI()
                         ImGui::RadioButton("Y", &axis, RotationAxis::Y);
                         ImGui::SameLine();
                         ImGui::RadioButton("Z", &axis, RotationAxis::Z);
+                    }
+
+                    if(selectSelected)
+                    {
+                        ImGui::Text("Scale");
+                        ImGui::Separator();
+                        if(ImGui::BeginTable("##Select Scale", 3))
+                        {
+                            ImGui::TableNextColumn();
+                            
+                            ImGui::InputInt("X", &cursor.scale.x, 1);
+                            ImGui::TableNextColumn();
+                            ImGui::InputInt("Y", &cursor.scale.y, 1);
+                            ImGui::TableNextColumn();
+                            ImGui::InputInt("Z", &cursor.scale.z, 1);
+                            ImGui::TableNextColumn();
+
+                            ImGui::EndTable();
+                        }
+
+                        ImGui::Text("Cursor Pos");
+                        ImGui::Separator();
+                        glm::ivec3 pos = cursor.pos / blockScale;
+                        if(ImGui::BeginTable("##Select Pos", 3))
+                        {
+                            ImGui::TableNextColumn();
+                            
+                            ImGui::InputInt("X", &pos.x, 1);
+                            ImGui::TableNextColumn();
+                            ImGui::InputInt("Y", &pos.y, 1);
+                            ImGui::TableNextColumn();
+                            ImGui::InputInt("Z", &pos.z, 1);
+                            ImGui::TableNextColumn();
+
+                            ImGui::EndTable();
+                        }
+                        cursor.pos = (glm::vec3)pos * blockScale;
                     }
 
                     ImGui::EndTable();

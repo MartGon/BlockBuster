@@ -86,6 +86,8 @@ namespace BlockBuster
             void UndoToolAction();
             void ClearActionHistory();
 
+            void CursorDraw(glm::vec3 pos);
+
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
             Game::Display GetBlockDisplay();
@@ -181,7 +183,8 @@ namespace BlockBuster
             {
                 PLACE_BLOCK,
                 ROTATE_BLOCK,
-                PAINT_BLOCK
+                PAINT_BLOCK,
+                SELECT_BLOCKS
             };
             Tool tool = PLACE_BLOCK;
             unsigned int actionIndex = 0;
@@ -223,9 +226,11 @@ namespace BlockBuster
             struct Cursor{
                 bool show = true;
                 bool enabled = false;
-                Math::Transform transform;
+                glm::vec3 pos;
                 glm::vec4 color;
                 Game::BlockType type;
+
+                glm::ivec3 scale{1};
             };
             Cursor cursor;
 
