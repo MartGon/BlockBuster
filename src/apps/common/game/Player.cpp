@@ -48,8 +48,8 @@ void AppGame::Player::Update()
     {
         auto slopeHeight = slopeTransform.position.y;
         auto slopeScale = slopeTransform.scale;
-        auto maxHeight = slopeHeight + (slopeScale - transform.scale / 2);
-        auto minHeight = slopeHeight - (slopeScale - transform.scale / 2);
+        auto maxHeight = slopeHeight + (slopeScale - transform.scale / 2.0f).y;
+        auto minHeight = slopeHeight - (slopeScale - transform.scale / 2.0f).y;
         transform.position.y = glm::min(maxHeight, transform.position.y);
     }
 

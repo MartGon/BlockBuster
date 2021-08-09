@@ -233,7 +233,7 @@ void BlockBuster::Editor::Editor::ResizeBlocks()
     {
         block.transform.position = block.transform.position / block.transform.scale;
         block.transform.position *= blockScale;
-        block.transform.scale = blockScale;
+        block.transform.SetUniformScale(blockScale);
     }
 }
 
@@ -252,7 +252,7 @@ void BlockBuster::Editor::Editor::NewMap()
     // Set first block
     blocks = {
         {
-            Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, blockScale}, 
+            Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{blockScale}}, 
             Game::BLOCK, Game::Display{Game::DisplayType::COLOR, 2}
         },
     };
@@ -400,7 +400,7 @@ bool BlockBuster::Editor::Editor::OpenMap()
         Game::Block block;
         block.type = ReadFromFile<Game::BlockType>(file);
         block.transform.position = ReadVec3(file);
-        block.transform.scale = blockScale;
+        block.transform.scale = glm::vec3{blockScale};
         if(block.type == Game::BlockType::SLOPE)
             block.transform.rotation = ReadVec3(file);
 
@@ -512,28 +512,16 @@ void BlockBuster::Editor::Editor::UpdateEditor()
 
     // Draw Cursor
     glDisable(GL_DEPTH_TEST);
-    if(cursor.enabled && (cursor.show || tool == SELECT_BLOCKS))
+    if(cursor.enabled && cursor.show && tool != SELECT_BLOCKS)
     {   
-        CursorDraw(cursor.pos);
-
-        glm::ivec3 cursorBasePos = cursor.pos / blockScale;
-        if(tool == SELECT_BLOCKS)
-        {
-            for(int x = 0; x < cursor.scale.x; x++)
-            {
-                for(int y = 0; y < cursor.scale.y; y++)
-                {
-                    for(int z = 0; z < cursor.scale.z; z++)
-                    {
-                        auto pos = cursorBasePos + glm::ivec3{x, y, z};
-                        auto cursorPos = (glm::vec3)pos * blockScale;
-
-                        CursorDraw(cursorPos);
-                    }
-                }
-            }
-        }
+        Math::Transform t{cursor.pos, glm::vec3{0.0f}, glm::vec3{blockScale}};
+        DrawCursor(t);
     }
+    else if(tool == SELECT_BLOCKS)
+    {
+        DrawSelectCursor(cursor.pos);
+    }
+
     glEnable(GL_DEPTH_TEST);
 
     // Create GUI
@@ -883,17 +871,48 @@ void BlockBuster::Editor::Editor::ClearActionHistory()
     actionHistory.clear();
 }
 
-void BlockBuster::Editor::Editor::CursorDraw(glm::vec3 pos)
+void BlockBuster::Editor::Editor::DrawCursor(Math::Transform t)
 {
-    Math::Transform cursorTransform{pos, glm::vec3{0.0f}, blockScale};
-
     // Draw cursor
-    auto model = cursorTransform.GetTransformMat();
+    auto model = t.GetTransformMat();
     auto transform = camera.GetProjViewMat() * model;
     shader.SetUniformMat4("transform", transform);
     shader.SetUniformInt("hasBorder", false);
     auto& mesh = GetMesh(cursor.type);
     mesh.Draw(shader, cursor.color, GL_LINE);
+}
+
+void BlockBuster::Editor::Editor::DrawSelectCursor(glm::vec3 pos)
+{
+    if(cursor.mode == CursorMode::BLOCKS)
+    {
+        auto scale = glm::vec3{blockScale};
+        Math::Transform t{pos, glm::vec3{0.0f}, scale};
+
+        glm::ivec3 cursorBasePos = pos / blockScale;
+        for(int x = 0; x < cursor.scale.x; x++)
+        {
+            for(int y = 0; y < cursor.scale.y; y++)
+            {
+                for(int z = 0; z < cursor.scale.z; z++)
+                {
+                    auto ipos = cursorBasePos + glm::ivec3{x, y, z};
+                    auto cursorPos = (glm::vec3)ipos * blockScale;
+                    t.position = cursorPos;
+
+                    DrawCursor(t);
+                }
+            }
+        }
+    }
+    else if(cursor.mode == CursorMode::SCALED) 
+    {
+        auto scale = (glm::vec3)cursor.scale * blockScale;
+        auto tPos = pos + scale / 2.0f - glm::vec3{blockScale / 2};
+        Math::Transform t{tPos, glm::vec3{0.0f}, scale};
+
+        DrawCursor(t);
+    }
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
@@ -1793,6 +1812,12 @@ void BlockBuster::Editor::Editor::GUI()
 
                     if(selectSelected)
                     {
+                        ImGui::Text("Cursor Display");
+                        ImGui::SameLine();
+                        ImGui::RadioButton("Single Block", &cursor.mode, CursorMode::SCALED);
+                        ImGui::SameLine();
+                        ImGui::RadioButton("Multiple Blocks", &cursor.mode, CursorMode::BLOCKS);
+
                         ImGui::Text("Scale");
                         ImGui::Separator();
                         if(ImGui::BeginTable("##Select Scale", 3))

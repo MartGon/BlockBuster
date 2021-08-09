@@ -29,23 +29,23 @@ void BlockBuster::Client::Start()
     glEnable(GL_DEPTH_TEST);
 
     // Player
-    player.transform.scale = playerScale;
+    player.transform.SetUniformScale(playerScale);
 
     // World
     blocks = {
-        {Math::Transform{glm::vec3{1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::BLOCK}, 
-        {Math::Transform{glm::vec3{1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::BLOCK},
-        {Math::Transform{glm::vec3{-1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::BLOCK}, 
-        {Math::Transform{glm::vec3{-1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::BLOCK}, 
-        {Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::BLOCK},
-        {Math::Transform{glm::vec3{-1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::BLOCK}, 
-        {Math::Transform{glm::vec3{0.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::BLOCK},
-        {Math::Transform{glm::vec3{1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::BLOCK},
+        {Math::Transform{glm::vec3{1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK}, 
+        {Math::Transform{glm::vec3{1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK},
+        {Math::Transform{glm::vec3{-1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK}, 
+        {Math::Transform{glm::vec3{-1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK}, 
+        {Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK},
+        {Math::Transform{glm::vec3{-1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK}, 
+        {Math::Transform{glm::vec3{0.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK},
+        {Math::Transform{glm::vec3{1.0f, -1.0f, -1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK},
         
-        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, scale}, Game::SLOPE},
-        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{90.0f, 90.0f, 90.0f}, scale}, Game::SLOPE},   
-        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, scale}, Game::SLOPE},
-        {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, scale}, Game::SLOPE},
+        {Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::SLOPE},
+        {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{90.0f, 90.0f, 90.0f}, glm::vec3{scale}}, Game::SLOPE},   
+        {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, glm::vec3{scale}}, Game::SLOPE},
+        {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, glm::vec3{scale}}, Game::SLOPE},
     };
 }
 
@@ -145,7 +145,7 @@ void BlockBuster::Client::Update()
                 auto newBlockType = Game::BLOCK;
                 auto newBlockRot = glm::vec3{0.0f};
 
-                blocks.push_back({Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType});
+                blocks.push_back({Math::Transform{newBlockPos, newBlockRot, glm::vec3{scale}}, newBlockType});
 
                 PrintVec(pos, "Pos");
                 PrintVec(newBlockPos, "NewBlockPos");

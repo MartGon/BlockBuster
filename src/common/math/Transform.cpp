@@ -2,6 +2,23 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#ifdef _DEBUG
+    #define NDEBUG 1
+#endif
+#include <cassert>
+
+void Math::Transform::SetUniformScale(float scale)
+{
+    this->scale = glm::vec3{scale};
+}
+
+float Math::Transform::GetUniformScale() const
+{
+    assert(("Scale is uniform", scale.x == scale.y && scale.x == scale.z));
+
+    return scale.x;
+}
+
 glm::mat4 Math::Transform::GetTranslationMat() const
 {
     return glm::translate(glm::mat4{1.0f}, position);

@@ -58,6 +58,11 @@ namespace BlockBuster
                 FPS
             };
 
+            enum class CursorMode{
+                BLOCKS,
+                SCALED
+            };
+
             // Rendering
             Rendering::Mesh& GetMesh(Game::BlockType type);
             glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
@@ -86,7 +91,8 @@ namespace BlockBuster
             void UndoToolAction();
             void ClearActionHistory();
 
-            void CursorDraw(glm::vec3 pos);
+            void DrawCursor(Math::Transform t);
+            void DrawSelectCursor(glm::vec3 pos);
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
@@ -226,9 +232,10 @@ namespace BlockBuster
             struct Cursor{
                 bool show = true;
                 bool enabled = false;
-                glm::vec3 pos;
-                glm::vec4 color;
-                Game::BlockType type;
+                glm::vec3 pos = glm::vec3{0.0f};
+                glm::vec4 color = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
+                Game::BlockType type = Game::BlockType::BLOCK;
+                CursorMode mode = CursorMode::BLOCKS;
 
                 glm::ivec3 scale{1};
             };
