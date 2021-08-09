@@ -1476,12 +1476,9 @@ void BlockBuster::Editor::Editor::MenuBar()
                 OpenPopUp(PopUpState::VIDEO_SETTINGS);
             }
 
-            if(ImGui::MenuItem("Language"))
-            {
-
-            }
-
+            #ifdef _DEBUG
             ImGui::Checkbox("Show demo window", &showDemo);
+            #endif
 
             ImGui::EndMenu();
         }
