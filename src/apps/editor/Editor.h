@@ -58,7 +58,8 @@ namespace BlockBuster
                 FPS
             };
 
-            enum class CursorMode{
+            enum class CursorMode
+            {
                 BLOCKS,
                 SCALED
             };
@@ -70,7 +71,8 @@ namespace BlockBuster
             bool IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName);
 
             // World
-            Game::Block* GetBlock(glm::vec3 pos);
+            Game::Block* GetBlockRealPos(glm::vec3 realPos);
+            Game::Block* GetBlock(glm::ivec3 blockPos);
             void ResizeBlocks();
             void NewMap();
             void SaveMap();
@@ -93,6 +95,11 @@ namespace BlockBuster
 
             void DrawCursor(Math::Transform t);
             void DrawSelectCursor(glm::vec3 pos);
+            void SelectBlocks();
+            void ClearSelection();
+            bool CanMoveSelection(glm::vec3 offset);
+            void MoveSelection(glm::vec3 offset);
+            void UpdateSelection();
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
@@ -166,6 +173,9 @@ namespace BlockBuster
 
             void GUI();
 
+            // Debug
+            void PrintVector(glm::vec3 vector, std::string name);
+
             // Rendering
             GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
             Rendering::Mesh cube;
@@ -233,13 +243,17 @@ namespace BlockBuster
                 bool show = true;
                 bool enabled = false;
                 glm::vec3 pos = glm::vec3{0.0f};
+                glm::ivec3 scale{1};
                 glm::vec4 color = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
                 Game::BlockType type = Game::BlockType::BLOCK;
                 CursorMode mode = CursorMode::BLOCKS;
-
-                glm::ivec3 scale{1};
             };
             Cursor cursor;
+
+            // Tools - Select
+            std::vector<glm::ivec3> selection;
+            glm::vec3 prevPos;
+            bool movingSelection = false;
 
             // GUI
             PopUpState state = PopUpState::NONE;
