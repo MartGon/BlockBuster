@@ -21,7 +21,7 @@ void GL::Texture::Load(bool flipVertically)
     {
         int channels;
         stbi_set_flip_vertically_on_load(flipVertically);
-        auto data = stbi_load(path_.c_str(), &dimensions_.x, &dimensions_.y, &channels, 0);
+        auto data = stbi_load(path_.string().c_str(), &dimensions_.x, &dimensions_.y, &channels, 0);
         if(data)
         {
             glGenTextures(1, &handle_);

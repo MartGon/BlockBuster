@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 GL::Shader GL::Shader::FromFolder(const std::filesystem::path& folder, const std::string& vertexName, const std::string& fragmentName)
 {
@@ -85,7 +86,7 @@ unsigned int GL::Shader::LoadShader(const std::filesystem::path& shader, unsigne
         ref = glCreateShader(shaderType);
         glShaderSource(ref, 1, &codeStr, nullptr);
         glCompileShader(ref);
-        CheckCompileErrors(ref, shader);
+        CheckCompileErrors(ref, shader.string());
     }
 
     return ref;

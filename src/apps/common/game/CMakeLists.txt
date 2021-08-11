@@ -23,4 +23,5 @@ target_include_directories(AppsGame PUBLIC include
     ${GLAD_INCLUDE_DIR} 
     ${DEPS_FOLDER} 
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${SDL2_INCLUDE_DIRS}
 )

@@ -11,8 +11,9 @@ target_link_libraries(Editor
     imgui 
     GLAD 
     ${X11_LIBRARIES} 
-    ${OPENGL_LIBRARIES}
-    ${SDL2_LIBRARIES}
+    ${OPENGL_LIBRARIES} 
+    ${CMAKE_DL_LIBS} 
+    ${SDL2_LIBRARIES} 
     Threads::Threads 
     Collisions 
     GL 
@@ -31,4 +32,5 @@ target_include_directories(Editor PUBLIC
     ${DEPS_FOLDER}/imgui 
     ${COMMON_DIR} 
     ${APPS_COMMON_DIR}
+    ${SDL2_INCLUDE_DIRS}
 )

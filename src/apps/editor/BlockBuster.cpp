@@ -36,7 +36,7 @@
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
-int main()
+int main(int argc, char* args[])
 {
     App::Configuration config{
         App::Configuration::WindowConfig{
