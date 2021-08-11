@@ -2,10 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#ifdef _DEBUG
-    #define NDEBUG 1
-#endif
-#include <cassert>
+#include <debug/Debug.h>
 
 void Math::Transform::SetUniformScale(float scale)
 {
@@ -14,7 +11,7 @@ void Math::Transform::SetUniformScale(float scale)
 
 float Math::Transform::GetUniformScale() const
 {
-    assert(("Scale is uniform", scale.x == scale.y && scale.x == scale.z));
+    assertm(scale.x == scale.y && scale.x == scale.z, "Scale is uniform");
 
     return scale.x;
 }

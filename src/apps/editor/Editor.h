@@ -12,6 +12,7 @@
 
 #include <game/Player.h>
 #include <game/Block.h>
+#include <game/Map.h>
 
 #include <ToolAction.h>
 
@@ -173,9 +174,6 @@ namespace BlockBuster
 
             void GUI();
 
-            // Debug
-            void PrintVector(glm::vec3 vector, std::string name);
-
             // Rendering
             GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
             Rendering::Mesh cube;
@@ -187,6 +185,7 @@ namespace BlockBuster
 
             // World
             std::vector<Game::Block> blocks;
+            Game::Map map_;
             
             // Editor
             bool quit = false;

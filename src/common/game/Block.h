@@ -20,6 +20,7 @@ namespace Game
 
     enum BlockType
     {
+        NONE,
         BLOCK,
         SLOPE
     };
@@ -28,9 +29,13 @@ namespace Game
     {
     public:
 
+        // TODO: Remove
         Math::Transform transform;
+
         BlockType type;
         Display display;
+
+        // TODO: Remove
         std::string name;
     };
 

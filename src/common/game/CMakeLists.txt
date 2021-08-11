@@ -1,12 +1,14 @@
 SET(SOURCES
-
     Block.cpp
+    Map.cpp
 )
 
 
 add_library(Game ${SOURCES})
 target_link_libraries(Game 
     Math
+    
+    Debug
 )
 target_include_directories(Game PUBLIC include 
     ${DEPS_FOLDER} 

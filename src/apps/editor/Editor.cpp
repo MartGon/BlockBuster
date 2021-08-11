@@ -7,6 +7,8 @@
 
 #include <glm/gtc/constants.hpp>
 
+#include <debug/Debug.h>
+
 // #### Public Interface #### \\
 
 void BlockBuster::Editor::Editor::Start()
@@ -88,6 +90,29 @@ void BlockBuster::Editor::Editor::Update()
             auto borderColor = GetBorderColor(color);
             shader.SetUniformVec4("borderColor", borderColor);
             mesh.Draw(shader, color);
+        }
+    }
+
+    // Draw Map cubes
+    auto indices = map_.GetChunkIndices();
+    for(auto index : indices)
+    {
+        auto& chunk = map_.GetChunk(index);
+        auto half = Game::Map::Chunk::HALF_DIMENSIONS;
+        for(int x = -half.x; x < half.x; x++)
+        {
+            for(int y = -half.y; y < half.y; y++)
+            {
+                for(int z = -half.z; z < half.z; z++)
+                {
+                    glm::ivec3 pos = glm::ivec3{x, y, z} + Game::Map::Chunk::HALF_DIMENSIONS;
+                    if(auto block = chunk.GetBlock(pos); block->type != Game::BlockType::NONE)
+                    {
+                        std::cout << "Drawing block " << Debug::ToString(pos) << "\n";
+                        std::cout << "Block type is " << block->type << "\n";
+                    }
+                }
+            }
         }
     }
 
@@ -268,6 +293,12 @@ void BlockBuster::Editor::Editor::NewMap()
             Game::BLOCK, Game::Display{Game::DisplayType::COLOR, 2}
         },
     };
+
+    // Map block
+    map_.AddBlock(glm::ivec3{0}, Game::Block{
+        Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{blockScale}}, 
+        Game::BLOCK, Game::Display{Game::DisplayType::COLOR, 2}
+    });
 
     // Window
     RenameMainWindow("New Map");
@@ -976,15 +1007,15 @@ bool BlockBuster::Editor::Editor::CanMoveSelection(glm::vec3 offset)
 
 void BlockBuster::Editor::Editor::MoveSelection(glm::vec3 offset)
 {
-    PrintVector(offset, "Offset is");
+    Debug::PrintVector(offset, "Offset is");
     for(auto& pos : selection)
     {
-        PrintVector(pos, "Looked vec");
+        Debug::PrintVector(pos, "Looked vec");
         if(auto block = GetBlock(pos))
         {
             block->transform.position += offset;
             pos = block->transform.position / blockScale;
-            PrintVector(block->transform.position, "Moved block to");
+            Debug::PrintVector(block->transform.position, "Moved block to");
         }
     }
 
@@ -2002,11 +2033,4 @@ void BlockBuster::Editor::Editor::GUI()
     // Draw GUI
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-// #### DEBUG #### \\
-
-void BlockBuster::Editor::Editor::PrintVector(glm::vec3 vec, std::string name)
-{
-    std::cout << name << " is " << vec.x << " " << vec.y << " " << vec.z << "\n";
 }

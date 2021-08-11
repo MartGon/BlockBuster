@@ -20,6 +20,8 @@ target_link_libraries(Editor
     Game 
     App
     AppsGame
+    
+    Debug
 )
 target_include_directories(Editor PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
