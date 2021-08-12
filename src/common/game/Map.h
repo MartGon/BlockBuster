@@ -13,6 +13,32 @@ namespace Game
     {
     public:
 
+        Game::Block* GetBlock(glm::ivec3 pos);
+        void AddBlock(glm::ivec3 pos, Game::Block block);
+
+        class Iterator
+        {
+        friend class Map;
+        public:
+            std::pair<glm::ivec3, Game::Block*> GetNextBlock();
+            bool IsOver() const;
+        private:
+            Iterator(Map* map, std::vector<glm::ivec3> chunkIndices) : 
+                map_{map},chunkIndices_{chunkIndices}
+            {
+
+            }
+
+            Map* map_ = nullptr;
+            unsigned int chunkMetaIndex = 0;
+            glm::ivec3 blockOffset_{0};
+            std::vector<glm::ivec3> chunkIndices_;
+
+            bool end_ = false;
+        };
+
+        Iterator CreateIterator();
+
         class Chunk
         {
         public:
@@ -32,18 +58,14 @@ namespace Game
             Block blocks_[CHUNK_BLOCKS];
         };
 
-        Game::Block* GetBlock(glm::ivec3 pos);
-        void AddBlock(glm::ivec3 pos, Game::Block block);
+    private:
 
         std::vector<glm::ivec3> GetChunkIndices() const;
         Chunk& GetChunk(glm::ivec3 pos);
 
-    private:
-
         glm::ivec3 ToChunkIndex(glm::ivec3 blockPos);
         glm::ivec3 ToBlockChunkPos(glm::ivec3 blockPos);
 
-        glm::ivec3 dimensions_{1};
         std::unordered_map<glm::ivec3, Chunk> chunks_;
     };
 }

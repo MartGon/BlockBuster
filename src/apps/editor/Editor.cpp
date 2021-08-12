@@ -94,6 +94,8 @@ void BlockBuster::Editor::Editor::Update()
     }
 
     // Draw Map cubes
+    
+    /*
     auto indices = map_.GetChunkIndices();
     for(auto index : indices)
     {
@@ -115,6 +117,16 @@ void BlockBuster::Editor::Editor::Update()
             }
         }
     }
+    */
+    
+    auto iterator = map_.CreateIterator();
+    for(auto block = iterator.GetNextBlock(); !iterator.IsOver(); block = iterator.GetNextBlock())
+    {
+        std::cout << "Drawing block " << Debug::ToString(block.first) << "\n";
+        std::cout << "Block type is " << block.second->type << "\n";
+    }
+    std::cout << "List over\n";
+    
 
     if(playerMode)
         UpdatePlayerMode();

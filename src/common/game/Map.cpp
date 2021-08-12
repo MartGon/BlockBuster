@@ -27,6 +27,59 @@ void Game::Map::AddBlock(glm::ivec3 pos, Game::Block block)
     chunk.SetBlock(blockPos, block);
 }
 
+Game::Map::Iterator Game::Map::CreateIterator()
+{
+    return Iterator{this, GetChunkIndices()};
+}
+
+std::pair<glm::ivec3, Game::Block*> Game::Map::Iterator::GetNextBlock()
+{
+    Game::Block* b = nullptr;
+    glm::ivec3 pos;
+    int index = 0;
+    while(!end_ && (b == nullptr || b->type == Game::BlockType::NONE))
+    {
+        if(chunkMetaIndex < chunkIndices_.size())
+        {
+            auto chunkIndex = chunkIndices_[chunkMetaIndex];
+            auto& chunk = map_->chunks_[chunkIndex];
+            
+            index = blockOffset_.x * Chunk::CHUNK_WIDTH + blockOffset_.y * Chunk::CHUNK_HEIGHT + blockOffset_.z;
+            b = chunk.GetBlock(blockOffset_);
+            pos = chunkIndex * Chunk::DIMENSIONS + blockOffset_ - Chunk::HALF_DIMENSIONS;
+        }
+        else
+            end_ = true;
+
+        // Update index
+        if(blockOffset_.z < Chunk::CHUNK_DEPTH - 1)
+            blockOffset_.z++;
+        else if(blockOffset_.y < Chunk::CHUNK_HEIGHT - 1)
+        {
+            blockOffset_.z = 0;
+            blockOffset_.y++;
+        }
+        else if(blockOffset_.x < Chunk::CHUNK_WIDTH - 1)
+        {
+            blockOffset_.z = 0;
+            blockOffset_.y = 0;
+            blockOffset_.x++;
+        }
+        else
+        {
+            chunkMetaIndex++;
+            blockOffset_ = glm::ivec3{0};
+        }
+    }
+
+    return {pos, b};
+}
+
+bool Game::Map::Iterator::IsOver() const
+{
+    return chunkIndices_.empty() || end_;
+}
+
 std::vector<glm::ivec3> Game::Map::GetChunkIndices() const
 {
     std::vector<glm::ivec3> indices;
@@ -50,7 +103,7 @@ glm::ivec3 Game::Map::ToChunkIndex(glm::ivec3 blockPos)
 
 glm::ivec3 Game::Map::ToBlockChunkPos(glm::ivec3 blockPos)
 {
-    auto chunkPos = (blockPos + Chunk::HALF_DIMENSIONS) % dimensions_;
+    auto chunkPos = (blockPos + Chunk::HALF_DIMENSIONS) % Chunk::DIMENSIONS;
     return chunkPos;
 }
 
@@ -89,5 +142,5 @@ int Game::Map::Chunk::ToIndex(glm::ivec3 pos)
     bool valid = pos.x < DIMENSIONS.x && pos.y < DIMENSIONS.y && pos.z < DIMENSIONS.z &&
                 pos.x >= 0 && pos.y >= 0 && pos.z >= 0;
     assertm(valid, "Invalid chunk pos");
-    return pos.x * CHUNK_WIDTH + pos.y * CHUNK_HEIGHT + pos.z;
+    return pos.x + pos.y * CHUNK_WIDTH + pos.z * CHUNK_WIDTH * CHUNK_HEIGHT;
 }
