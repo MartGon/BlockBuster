@@ -1,5 +1,7 @@
 #include <Editor.h>
 
+#include <game/Game.h>
+
 #include <iostream>
 #include <algorithm>
 #include <fstream>
@@ -736,6 +738,14 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
             break;
         }
     }
+
+    auto mapBlocks = Game::CastRay(&map_, ray, blockScale);
+    std::sort(mapBlocks.begin(), mapBlocks.end(), [](Game::RayBlockIntersection a, Game::RayBlockIntersection b)
+    {
+        return a.intersection.ts.x < b.intersection.ts.x;
+    });
+    if(mapBlocks.size() > 0)
+        Debug::PrintVector(mapBlocks.front().pos, "Closest block");
     
     // Use appropiate Tool
     switch(tool)

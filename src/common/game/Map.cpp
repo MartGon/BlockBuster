@@ -2,6 +2,8 @@
 
 #include <debug/Debug.h>
 
+// #### Public Interface #### \\
+
 Game::Block* Game::Map::GetBlock(glm::ivec3 pos)
 {
     Game::Block* block = nullptr;
@@ -35,6 +37,13 @@ void Game::Map::RemoveBlock(glm::ivec3 pos)
     if(auto block = GetBlock(pos))
         block->type = Game::BlockType::NONE;
 }
+
+Game::Map::ChunkIterator Game::Map::CreateChunkIterator()
+{
+    return ChunkIterator{this, GetChunkIndices()};
+}
+
+// #### Iterator #### \\
 
 Game::Map::Iterator Game::Map::CreateIterator()
 {
@@ -86,8 +95,114 @@ std::pair<glm::ivec3, Game::Block*> Game::Map::Iterator::GetNextBlock()
 
 bool Game::Map::Iterator::IsOver() const
 {
-    return chunkIndices_.empty() || end_;
+    return end_;
 }
+
+// #### Chunk #### \\
+
+Game::Map::Chunk::Chunk()
+{
+    for(auto x = 0; x < CHUNK_WIDTH; x++)
+    {
+        for(auto y = 0; y < CHUNK_HEIGHT; y++)
+        {
+            for(auto z = 0; z < CHUNK_DEPTH; z++)
+            {
+                auto index = ToIndex(glm::ivec3{x, y, z});
+                blocks_[index] = Game::Block{
+                    Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}}, 
+                    Game::NONE, ROT_0, ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
+                };
+            }
+        }
+    }
+}
+
+Game::Map::Chunk::BlockIterator Game::Map::Chunk::CreateBlockIterator()
+{
+    return BlockIterator{this};
+}
+
+Game::Block* Game::Map::Chunk::GetBlock(glm::ivec3 pos)
+{
+    auto index = ToIndex(pos);
+    return &blocks_[index];
+}
+
+void Game::Map::Chunk::SetBlock(glm::ivec3 pos, Game::Block block)
+{
+    auto index = ToIndex(pos);
+    blocks_[index] = block;
+}
+
+int Game::Map::Chunk::ToIndex(glm::ivec3 pos)
+{
+    bool valid = pos.x < DIMENSIONS.x && pos.y < DIMENSIONS.y && pos.z < DIMENSIONS.z &&
+                pos.x >= 0 && pos.y >= 0 && pos.z >= 0;
+    assertm(valid, "Invalid chunk pos");
+    return pos.x + pos.y * CHUNK_WIDTH + pos.z * CHUNK_WIDTH * CHUNK_HEIGHT;
+}
+
+// #### BlockIterator #### \\
+
+std::pair<glm::ivec3, Game::Block*> Game::Map::Chunk::BlockIterator::GetNextBlock()
+{
+    Game::Block* block = nullptr;
+    auto pos = index_;
+    while(!end_ && (block == nullptr || block->type == Game::BlockType::NONE))
+    {
+        block = chunk_->GetBlock(index_);
+        pos = index_;
+
+        // Update index
+        if(index_.z < Chunk::CHUNK_DEPTH - 1)
+            index_.z++;
+        else if(index_.y < Chunk::CHUNK_HEIGHT - 1)
+        {
+            index_.z = 0;
+            index_.y++;
+        }
+        else if(index_.x < Chunk::CHUNK_WIDTH - 1)
+        {
+            index_.z = 0;
+            index_.y = 0;
+            index_.x++;
+        }
+        else
+            end_ = true;
+    }
+    auto blockPos = pos - Chunk::HALF_DIMENSIONS;
+    return {blockPos, block};
+}
+
+bool Game::Map::Chunk::BlockIterator::IsOver() const
+{
+    return end_;
+}
+
+// #### ChunkIterator #### \\
+
+std::pair<glm::ivec3, Game::Map::Chunk*> Game::Map::ChunkIterator::GetNextChunk()
+{
+    Game::Map::Chunk* chunk = nullptr;
+    glm::ivec3 pos;
+    if(metaIndex_ < chunkIndices_.size())
+    {
+        pos = chunkIndices_[metaIndex_++];
+        chunk = &map_->GetChunk(pos);
+    }
+    else
+        end_ = true;
+
+    return {pos, chunk};
+}
+
+bool Game::Map::ChunkIterator::IsOver() const
+{
+    return end_;
+}
+
+// #### Private Interface #### \\
 
 std::vector<glm::ivec3> Game::Map::GetChunkIndices() const
 {
@@ -114,42 +229,4 @@ glm::ivec3 Game::Map::ToBlockChunkPos(glm::ivec3 blockPos)
 {
     auto chunkPos = (blockPos + Chunk::HALF_DIMENSIONS) % Chunk::DIMENSIONS;
     return chunkPos;
-}
-
-Game::Map::Chunk::Chunk()
-{
-    for(auto x = 0; x < CHUNK_WIDTH; x++)
-    {
-        for(auto y = 0; y < CHUNK_HEIGHT; y++)
-        {
-            for(auto z = 0; z < CHUNK_DEPTH; z++)
-            {
-                auto index = ToIndex(glm::ivec3{x, y, z});
-                blocks_[index] = Game::Block{
-                    Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}}, 
-                    Game::NONE, ROT_0, ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
-                };
-            }
-        }
-    }
-}
-
-Game::Block* Game::Map::Chunk::GetBlock(glm::ivec3 pos)
-{
-    auto index = ToIndex(pos);
-    return &blocks_[index];
-}
-
-void Game::Map::Chunk::SetBlock(glm::ivec3 pos, Game::Block block)
-{
-    auto index = ToIndex(pos);
-    blocks_[index] = block;
-}
-
-int Game::Map::Chunk::ToIndex(glm::ivec3 pos)
-{
-    bool valid = pos.x < DIMENSIONS.x && pos.y < DIMENSIONS.y && pos.z < DIMENSIONS.z &&
-                pos.x >= 0 && pos.y >= 0 && pos.z >= 0;
-    assertm(valid, "Invalid chunk pos");
-    return pos.x + pos.y * CHUNK_WIDTH + pos.z * CHUNK_WIDTH * CHUNK_HEIGHT;
 }
