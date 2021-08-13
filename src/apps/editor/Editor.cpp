@@ -70,62 +70,61 @@ void BlockBuster::Editor::Editor::Update()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw cubes/slopes
-    for(int i = 0; i < blocks.size(); i++)
+    if(!newMapSys)
     {
-        auto block = blocks[i];
-        auto model = block.transform.GetTransformMat();
-        auto type = block.type;
-        auto transform = camera.GetProjViewMat() * model;
-
-        shader.SetUniformInt("isPlayer", 0);
-        shader.SetUniformInt("hasBorder", true);
-        shader.SetUniformMat4("transform", transform);
-        auto& mesh = GetMesh(block.type);
-        auto display = tool == PAINT_BLOCK && preColorBlockIndex == i ? GetBlockDisplay() : block.display;
-        if(display.type == Game::DisplayType::TEXTURE)
-            mesh.Draw(shader, &textures[display.id]);
-        else if(display.type == Game::DisplayType::COLOR)
+        for(int i = 0; i < blocks.size(); i++)
         {
-            auto color = colors[display.id];
-            auto borderColor = GetBorderColor(color);
-            shader.SetUniformVec4("borderColor", borderColor);
-            mesh.Draw(shader, color);
-        }
-    }
+            auto block = blocks[i];
+            auto model = block.transform.GetTransformMat();
+            auto transform = camera.GetProjViewMat() * model;
 
-    // Draw Map cubes
-    
-    /*
-    auto indices = map_.GetChunkIndices();
-    for(auto index : indices)
-    {
-        auto& chunk = map_.GetChunk(index);
-        auto half = Game::Map::Chunk::HALF_DIMENSIONS;
-        for(int x = -half.x; x < half.x; x++)
-        {
-            for(int y = -half.y; y < half.y; y++)
+            shader.SetUniformInt("isPlayer", 0);
+            shader.SetUniformInt("hasBorder", true);
+            shader.SetUniformMat4("transform", transform);
+            auto& mesh = GetMesh(block.type);
+            auto display = tool == PAINT_BLOCK && preColorBlockIndex == i ? GetBlockDisplay() : block.display;
+            if(display.type == Game::DisplayType::TEXTURE)
+                mesh.Draw(shader, &textures[display.id]);
+            else if(display.type == Game::DisplayType::COLOR)
             {
-                for(int z = -half.z; z < half.z; z++)
-                {
-                    glm::ivec3 pos = glm::ivec3{x, y, z} + Game::Map::Chunk::HALF_DIMENSIONS;
-                    if(auto block = chunk.GetBlock(pos); block->type != Game::BlockType::NONE)
-                    {
-                        std::cout << "Drawing block " << Debug::ToString(pos) << "\n";
-                        std::cout << "Block type is " << block->type << "\n";
-                    }
-                }
+                auto color = colors[display.id];
+                auto borderColor = GetBorderColor(color);
+                shader.SetUniformVec4("borderColor", borderColor);
+                mesh.Draw(shader, color);
             }
         }
     }
-    */
-    
-    auto iterator = map_.CreateIterator();
-    for(auto block = iterator.GetNextBlock(); !iterator.IsOver(); block = iterator.GetNextBlock())
+    else
     {
-        std::cout << "Drawing block " << Debug::ToString(block.first) << "\n";
-        std::cout << "Block type is " << block.second->type << "\n";
+        // Draw new Map System Cubes
+        auto iterator = map_.CreateIterator();
+        for(auto b = iterator.GetNextBlock(); !iterator.IsOver(); b = iterator.GetNextBlock())
+        {
+            auto block = b.second;
+            auto pos = b.first;
+            auto rot = glm::vec3{0.0f, block->rot.y * 90.0f, block->rot.z * 90.0f};
+
+            glm::vec3 realPos = (glm::vec3)pos * blockScale;
+            Math::Transform t{realPos, rot, glm::vec3{blockScale}};
+            auto mMat = t.GetTransformMat();
+            auto tMat = camera.GetProjViewMat() * mMat;
+
+            shader.SetUniformInt("isPlayer", 0);
+            shader.SetUniformInt("hasBorder", true);
+            shader.SetUniformMat4("transform", tMat);
+            auto& mesh = GetMesh(block->type);
+            auto display = tool == PAINT_BLOCK && preColorBlockPos == pos ? GetBlockDisplay() : block->display;
+            if(display.type == Game::DisplayType::TEXTURE)
+                mesh.Draw(shader, &textures[display.id]);
+            else if(display.type == Game::DisplayType::COLOR)
+            {
+                auto color = colors[display.id];
+                auto borderColor = GetBorderColor(color);
+                shader.SetUniformVec4("borderColor", borderColor);
+                mesh.Draw(shader, color);
+            }
+        }
     }
-    std::cout << "List over\n";
     
 
     if(playerMode)
@@ -302,14 +301,14 @@ void BlockBuster::Editor::Editor::NewMap()
     blocks = {
         {
             Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{blockScale}}, 
-            Game::BLOCK, Game::Display{Game::DisplayType::COLOR, 2}
+            Game::BLOCK, Game::RotType::ROT_0, Game::RotType::ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
         },
     };
 
     // Map block
     map_.AddBlock(glm::ivec3{0}, Game::Block{
         Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f} * blockScale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{blockScale}}, 
-        Game::BLOCK, Game::Display{Game::DisplayType::COLOR, 2}
+        Game::BLOCK, Game::ROT_0, Game::ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
     });
 
     // Window
@@ -761,8 +760,10 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         {
                             auto display = GetBlockDisplay();                            
                             auto newBlockType = blockType;
-                            auto block = Game::Block{Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, display};
-                            auto action = std::make_unique<PlaceBlockAction>(block, &blocks);
+                            auto iNewPos = glm::round(newBlockPos / scale);
+                            auto block = Game::Block{Math::Transform{newBlockPos, newBlockRot, scale}, newBlockType, Game::ROT_0, Game::ROT_0, display};
+                            auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &blocks, &map_);
+                            Debug::PrintVector(iNewPos, "iNewPos");
                             DoToolAction(std::move(action));
                         }
                         else if(actionType == ActionType::HOVER)
@@ -789,7 +790,8 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     {
                         auto blockIt = blocks.begin() + index;
                         auto block = *blockIt;
-                        auto action = std::make_unique<RemoveAction>(block, &blocks);
+                        auto iPos = glm::round(block.transform.position / blockScale);
+                        auto action = std::make_unique<RemoveAction>(iPos, block, &blocks, &map_);
                         DoToolAction(std::move(action));
                     }
 
@@ -810,17 +812,28 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::RIGHT_BUTTON)
                 {
                     int mod = actionType == ActionType::RIGHT_BUTTON ? -90 : 90;
+                    int sign = actionType == ActionType::RIGHT_BUTTON ? -1 : 1;
                     if(block.type == Game::BlockType::SLOPE)
                     {
                         glm::ivec3 rot = block.transform.rotation;
+
+                        auto iPos = glm::round(block.transform.position / blockScale);
+                        Game::BlockRot blockRot = map_.GetBlock(iPos)->rot;
                         if(axis == RotationAxis::X)
                             rot.x += mod;
                         else if(axis == RotationAxis::Y)
+                        {
                             rot.y += mod;
+                            blockRot.y = static_cast<Game::RotType>((blockRot.y + sign) % 4);
+                        }
                         else if(axis == RotationAxis::Z)
+                        {
                             rot.z = ((rot.z + mod) % 270);
+                            blockRot.z = static_cast<Game::RotType>((blockRot.z + sign) % 3);
+                        }
 
-                        DoToolAction(std::make_unique<RotateAction>(&block, rot, &blocks));
+                        
+                        DoToolAction(std::make_unique<RotateAction>(iPos, &block, rot, &blocks, &map_, blockRot));
                     }
                 }
                 if(actionType == ActionType::HOVER)
@@ -849,10 +862,11 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
             if(index != -1)
             {
                 auto& block = blocks[index];
+                auto iPos = glm::round(block.transform.position / blockScale);
                 if(actionType == ActionType::LEFT_BUTTON)
                 {
                     auto display = GetBlockDisplay();
-                    DoToolAction(std::make_unique<PaintAction>(&block, display, &blocks));
+                    DoToolAction(std::make_unique<PaintAction>(iPos, &block, display, &blocks, &map_));
                 }
                 if(actionType == ActionType::RIGHT_BUTTON)
                 {
@@ -861,6 +875,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 if(actionType == ActionType::HOVER)
                 {
                     preColorBlockIndex = index;
+                    preColorBlockPos = iPos;
                 }
             }
             break;
@@ -2032,6 +2047,22 @@ void BlockBuster::Editor::Editor::GUI()
 
                 ImGui::EndTabItem();
             }
+            
+            #ifdef _DEBUG
+                flags = tabState == TabState::DEBUG_TAB ? ImGuiTabItemFlags_SetSelected : 0;
+                if(ImGui::BeginTabItem("Debug", nullptr, flags))
+                {
+                    if(ImGui::IsItemActive())
+                        tabState = TabState::DEBUG_TAB;
+
+                    ImGui::Text("Debug");
+                    ImGui::Separator();
+
+                    ImGui::Checkbox("New map system", &newMapSys);
+
+                    ImGui::EndTabItem();
+                }
+            #endif
 
             ImGui::EndTabBar();
         }

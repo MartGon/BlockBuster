@@ -50,7 +50,9 @@ namespace BlockBuster
             enum TabState
             {
                 TOOLS_TAB,
-                OPTIONS_TAB
+                OPTIONS_TAB,
+
+                DEBUG_TAB
             };
 
             enum class CameraMode
@@ -236,6 +238,7 @@ namespace BlockBuster
             const glm::vec4 darkBlue = glm::vec4{20.f / 255.f, 0.0f, 0.5f, 1.0f};
 
             int preColorBlockIndex = 0;
+            glm::ivec3 preColorBlockPos;
 
             // Tools - Cursor
             struct Cursor{
@@ -274,7 +277,10 @@ namespace BlockBuster
             float blockScale = 2.0f;
 
             // Debug
-            bool showDemo = false;
+            #ifdef _DEBUG
+                bool showDemo = false;
+                bool newMapSys = false;
+            #endif
 
             // Test
             bool playerMode = false;

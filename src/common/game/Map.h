@@ -15,6 +15,7 @@ namespace Game
 
         Game::Block* GetBlock(glm::ivec3 pos);
         void AddBlock(glm::ivec3 pos, Game::Block block);
+        void RemoveBlock(glm::ivec3 pos);
 
         class Iterator
         {

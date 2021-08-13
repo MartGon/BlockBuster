@@ -20,11 +20,20 @@ void Game::Map::AddBlock(glm::ivec3 pos, Game::Block block)
 {
     auto index = ToChunkIndex(pos);
     if(chunks_.find(index) == chunks_.end())
+    {
         chunks_[index] = Chunk{};
+        Debug::PrintVector(index, "New Chunk Pos");
+    }
     
     auto& chunk = chunks_[index];
     auto blockPos = ToBlockChunkPos(pos);
     chunk.SetBlock(blockPos, block);
+}
+
+void Game::Map::RemoveBlock(glm::ivec3 pos)
+{
+    if(auto block = GetBlock(pos))
+        block->type = Game::BlockType::NONE;
 }
 
 Game::Map::Iterator Game::Map::CreateIterator()
@@ -118,7 +127,7 @@ Game::Map::Chunk::Chunk()
                 auto index = ToIndex(glm::ivec3{x, y, z});
                 blocks_[index] = Game::Block{
                     Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}}, 
-                    Game::NONE, Game::Display{Game::DisplayType::COLOR, 2}
+                    Game::NONE, ROT_0, ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
                 };
             }
         }

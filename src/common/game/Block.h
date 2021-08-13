@@ -25,6 +25,20 @@ namespace Game
         SLOPE
     };
 
+    enum RotType
+    {
+        ROT_0,
+        ROT_90,
+        ROT_180,
+        ROT_270
+    };
+
+    struct BlockRot
+    {
+        RotType y = ROT_0;
+        RotType z = ROT_0;
+    };
+
     class Block
     {
     public:
@@ -33,6 +47,7 @@ namespace Game
         Math::Transform transform;
 
         BlockType type;
+        BlockRot rot;
         Display display;
 
         // TODO: Remove
