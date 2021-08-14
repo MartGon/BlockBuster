@@ -738,14 +738,27 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
             break;
         }
     }
-
+    /*
     auto mapBlocks = Game::CastRay(&map_, ray, blockScale);
     std::sort(mapBlocks.begin(), mapBlocks.end(), [](Game::RayBlockIntersection a, Game::RayBlockIntersection b)
     {
         return a.intersection.ts.x < b.intersection.ts.x;
     });
     if(mapBlocks.size() > 0)
+    {
         Debug::PrintVector(mapBlocks.front().pos, "Closest block");
+        Debug::PrintVector(map_.ToChunkIndex(mapBlocks.front().pos), "Chunk index");
+        Debug::PrintVector(map_.ToBlockChunkPos(mapBlocks.front().pos), "Block chunk pos");
+    }
+    */
+    auto intersect = Game::CastRayFirst(&map_, ray, blockScale);
+    if(intersect.intersection.intersects)
+    {
+        Debug::PrintVector(intersect.pos, "Closest block");
+        Debug::PrintVector(map_.ToChunkIndex(intersect.pos), "Chunk index");
+        Debug::PrintVector(map_.ToBlockChunkPos(intersect.pos), "Block chunk pos");
+    }
+
     
     // Use appropiate Tool
     switch(tool)

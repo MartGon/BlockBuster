@@ -52,6 +52,8 @@ namespace Game
 
         // TODO: Remove
         std::string name;
+
+        glm::vec3 GetRotation() const;
     };
 
     bool operator==(Block a, Block b);

@@ -187,7 +187,7 @@ namespace BlockBuster
 
             // World
             std::vector<Game::Block> blocks;
-            Game::Map map_;
+            Game::Map::Map map_;
             
             // Editor
             bool quit = false;

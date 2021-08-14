@@ -4,7 +4,7 @@
 
 // #### Public Interface #### \\
 
-Game::Block* Game::Map::GetBlock(glm::ivec3 pos)
+Game::Block* Game::Map::Map::GetBlock(glm::ivec3 pos)
 {
     Game::Block* block = nullptr;
     auto index = ToChunkIndex(pos);
@@ -18,7 +18,7 @@ Game::Block* Game::Map::GetBlock(glm::ivec3 pos)
     return block;
 }
 
-void Game::Map::AddBlock(glm::ivec3 pos, Game::Block block)
+void Game::Map::Map::AddBlock(glm::ivec3 pos, Game::Block block)
 {
     Debug::PrintVector(pos, "globalPos");
 
@@ -35,13 +35,13 @@ void Game::Map::AddBlock(glm::ivec3 pos, Game::Block block)
     chunk.SetBlock(blockPos, block);
 }
 
-void Game::Map::RemoveBlock(glm::ivec3 pos)
+void Game::Map::Map::RemoveBlock(glm::ivec3 pos)
 {
     if(auto block = GetBlock(pos))
         block->type = Game::BlockType::NONE;
 }
 
-glm::ivec3 Game::Map::ToChunkIndex(glm::ivec3 blockPos)
+glm::ivec3 Game::Map::Map::ToChunkIndex(glm::ivec3 blockPos)
 {
     auto cPos = blockPos + Chunk::HALF_DIMENSIONS;
     glm::ivec3 sign = glm::lessThan(cPos, glm::ivec3{0});
@@ -49,7 +49,7 @@ glm::ivec3 Game::Map::ToChunkIndex(glm::ivec3 blockPos)
     return chunkIndex;
 }
 
-glm::ivec3 Game::Map::ToBlockChunkPos(glm::ivec3 blockPos)
+glm::ivec3 Game::Map::Map::ToBlockChunkPos(glm::ivec3 blockPos)
 {   
     auto cPos = blockPos + Chunk::HALF_DIMENSIONS;
     auto mod = cPos % (Chunk::DIMENSIONS);
@@ -59,19 +59,34 @@ glm::ivec3 Game::Map::ToBlockChunkPos(glm::ivec3 blockPos)
     return blockChunkPos;
 }
 
-Game::Map::ChunkIterator Game::Map::CreateChunkIterator()
+std::vector<glm::ivec3> Game::Map::Map::GetChunkIndices() const
+{
+    std::vector<glm::ivec3> indices;
+    indices.reserve(chunks_.size());
+    for(const auto& pair : chunks_) 
+        indices.push_back(pair.first);
+
+    return indices;
+}
+
+Game::Map::Map::Chunk& Game::Map::Map::GetChunk(glm::ivec3 pos) 
+{
+    return chunks_.at(pos);
+}
+
+Game::Map::Map::ChunkIterator Game::Map::Map::CreateChunkIterator()
 {
     return ChunkIterator{this, GetChunkIndices()};
 }
 
 // #### Iterator #### \\
 
-Game::Map::Iterator Game::Map::CreateIterator()
+Game::Map::Map::Iterator Game::Map::Map::CreateIterator()
 {
     return Iterator{this, GetChunkIndices()};
 }
 
-std::pair<glm::ivec3, Game::Block*> Game::Map::Iterator::GetNextBlock()
+std::pair<glm::ivec3, Game::Block*> Game::Map::Map::Iterator::GetNextBlock()
 {
     Game::Block* b = nullptr;
     glm::ivec3 pos;
@@ -114,14 +129,14 @@ std::pair<glm::ivec3, Game::Block*> Game::Map::Iterator::GetNextBlock()
     return {pos, b};
 }
 
-bool Game::Map::Iterator::IsOver() const
+bool Game::Map::Map::Iterator::IsOver() const
 {
     return end_;
 }
 
 // #### Chunk #### \\
 
-Game::Map::Chunk::Chunk()
+Game::Map::Map::Chunk::Chunk()
 {
     for(auto x = 0; x < CHUNK_WIDTH; x++)
     {
@@ -139,24 +154,24 @@ Game::Map::Chunk::Chunk()
     }
 }
 
-Game::Map::Chunk::BlockIterator Game::Map::Chunk::CreateBlockIterator()
+Game::Map::Map::Chunk::BlockIterator Game::Map::Map::Chunk::CreateBlockIterator()
 {
     return BlockIterator{this};
 }
 
-Game::Block* Game::Map::Chunk::GetBlock(glm::ivec3 pos)
+Game::Block* Game::Map::Map::Chunk::GetBlock(glm::ivec3 pos)
 {
     auto index = ToIndex(pos);
     return &blocks_[index];
 }
 
-void Game::Map::Chunk::SetBlock(glm::ivec3 pos, Game::Block block)
+void Game::Map::Map::Chunk::SetBlock(glm::ivec3 pos, Game::Block block)
 {
     auto index = ToIndex(pos);
     blocks_[index] = block;
 }
 
-int Game::Map::Chunk::ToIndex(glm::ivec3 pos)
+int Game::Map::Map::Chunk::ToIndex(glm::ivec3 pos)
 {
     bool valid = pos.x < DIMENSIONS.x && pos.y < DIMENSIONS.y && pos.z < DIMENSIONS.z &&
                 pos.x >= 0 && pos.y >= 0 && pos.z >= 0;
@@ -166,7 +181,7 @@ int Game::Map::Chunk::ToIndex(glm::ivec3 pos)
 
 // #### BlockIterator #### \\
 
-std::pair<glm::ivec3, Game::Block*> Game::Map::Chunk::BlockIterator::GetNextBlock()
+std::pair<glm::ivec3, Game::Block*> Game::Map::Map::Chunk::BlockIterator::GetNextBlock()
 {
     Game::Block* block = nullptr;
     auto pos = index_;
@@ -196,16 +211,16 @@ std::pair<glm::ivec3, Game::Block*> Game::Map::Chunk::BlockIterator::GetNextBloc
     return {blockPos, block};
 }
 
-bool Game::Map::Chunk::BlockIterator::IsOver() const
+bool Game::Map::Map::Chunk::BlockIterator::IsOver() const
 {
     return end_;
 }
 
 // #### ChunkIterator #### \\
 
-std::pair<glm::ivec3, Game::Map::Chunk*> Game::Map::ChunkIterator::GetNextChunk()
+std::pair<glm::ivec3, Game::Map::Map::Chunk*> Game::Map::Map::ChunkIterator::GetNextChunk()
 {
-    Game::Map::Chunk* chunk = nullptr;
+    Game::Map::Map::Chunk* chunk = nullptr;
     glm::ivec3 pos;
     if(metaIndex_ < chunkIndices_.size())
     {
@@ -218,24 +233,22 @@ std::pair<glm::ivec3, Game::Map::Chunk*> Game::Map::ChunkIterator::GetNextChunk(
     return {pos, chunk};
 }
 
-bool Game::Map::ChunkIterator::IsOver() const
+bool Game::Map::Map::ChunkIterator::IsOver() const
 {
     return end_;
 }
 
 // #### Private Interface #### \\
 
-std::vector<glm::ivec3> Game::Map::GetChunkIndices() const
-{
-    std::vector<glm::ivec3> indices;
-    indices.reserve(chunks_.size());
-    for(const auto& pair : chunks_) 
-        indices.push_back(pair.first);
 
-    return indices;
+// #### Map Namespace #### \\
+
+glm::vec3 Game::Map::ToGlobalChunkPos(glm::ivec3 chunkIndex)
+{
+    return chunkIndex * Game::Map::Map::Chunk::DIMENSIONS;
 }
 
-Game::Map::Chunk& Game::Map::GetChunk(glm::ivec3 pos) 
+glm::ivec3 Game::Map::ToGlobalBlockPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex)
 {
-    return chunks_.at(pos);
+    return ToGlobalChunkPos(chunkIndex) + glm::vec3{blockIndex};
 }

@@ -12,5 +12,6 @@ namespace Game
         Collisions::RayIntersection intersection;
     };
 
-    std::vector<RayBlockIntersection> CastRay(Game::Map* map, Collisions::Ray ray, float blockScale);
+    std::vector<RayBlockIntersection> CastRay(Game::Map::Map* map, Collisions::Ray ray, float blockScale);
+    RayBlockIntersection CastRayFirst(Game::Map::Map* map, Collisions::Ray ray, float blockScale);
 }
