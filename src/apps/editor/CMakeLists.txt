@@ -1,7 +1,8 @@
 SET(SOURCES
 
-    Editor.cpp
     BlockBuster.cpp
+    Editor.cpp
+    Project.cpp
     ToolAction.cpp
 )
 

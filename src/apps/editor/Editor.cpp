@@ -323,6 +323,8 @@ void BlockBuster::Editor::Editor::NewMap()
     // Filename
     std::strcpy(fileName, "NewMap.bbm");
 
+    project = Project{};
+
     ClearActionHistory();
 }
 
@@ -385,6 +387,12 @@ void BlockBuster::Editor::Editor::SaveMap()
     // Update flag
     newMap = false;
     unsaved = false;
+    
+    // Write project file
+    project.cameraPos = camera.GetPos();
+    project.cameraRot = camera.GetRotation();
+    mapPath += ".p";
+    ::BlockBuster::Editor::WriteProjectToFile(project, mapPath);
 }
 
 bool BlockBuster::Editor::Editor::OpenMap()
@@ -484,6 +492,9 @@ bool BlockBuster::Editor::Editor::OpenMap()
 
     // Clear history
     ClearActionHistory();
+
+    mapPath += ".p";
+    project = ::BlockBuster::Editor::ReadProjectFromFile(mapPath);
 
     return true;
 }
@@ -738,25 +749,13 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
             break;
         }
     }
-    /*
-    auto mapBlocks = Game::CastRay(&map_, ray, blockScale);
-    std::sort(mapBlocks.begin(), mapBlocks.end(), [](Game::RayBlockIntersection a, Game::RayBlockIntersection b)
-    {
-        return a.intersection.ts.x < b.intersection.ts.x;
-    });
-    if(mapBlocks.size() > 0)
-    {
-        Debug::PrintVector(mapBlocks.front().pos, "Closest block");
-        Debug::PrintVector(map_.ToChunkIndex(mapBlocks.front().pos), "Chunk index");
-        Debug::PrintVector(map_.ToBlockChunkPos(mapBlocks.front().pos), "Block chunk pos");
-    }
-    */
+
     auto intersect = Game::CastRayFirst(&map_, ray, blockScale);
     if(intersect.intersection.intersects)
     {
-        Debug::PrintVector(intersect.pos, "Closest block");
-        Debug::PrintVector(map_.ToChunkIndex(intersect.pos), "Chunk index");
-        Debug::PrintVector(map_.ToBlockChunkPos(intersect.pos), "Block chunk pos");
+        // Debug::PrintVector(intersect.pos, "Closest block");
+        // Debug::PrintVector(map_.ToChunkIndex(intersect.pos), "Chunk index");
+        // Debug::PrintVector(map_.ToBlockChunkPos(intersect.pos), "Block chunk pos");
     }
 
     

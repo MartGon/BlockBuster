@@ -6,7 +6,7 @@
 
 namespace Game
 {
-    enum DisplayType
+    enum DisplayType : uint8_t
     {
         TEXTURE,
         COLOR
@@ -18,14 +18,14 @@ namespace Game
         int id;
     };
 
-    enum BlockType
+    enum BlockType : uint8_t
     {
         NONE,
         BLOCK,
         SLOPE
     };
 
-    enum RotType
+    enum RotType : uint8_t
     {
         ROT_0,
         ROT_90,
@@ -33,7 +33,7 @@ namespace Game
         ROT_270
     };
 
-    struct BlockRot
+    struct BlockRot 
     {
         RotType y = ROT_0;
         RotType z = ROT_0;

@@ -14,6 +14,8 @@
 #include <game/Block.h>
 #include <game/Map.h>
 
+#include <Project.h>
+
 #include <ToolAction.h>
 
 #include <functional>
@@ -186,8 +188,10 @@ namespace BlockBuster
             const float CAMERA_ROT_SPEED = glm::radians(1.0f);
 
             // World
+            Project project;
             std::vector<Game::Block> blocks;
-            Game::Map::Map map_;
+
+            Game::Map::Map& map_ = project.map;
             
             // Editor
             bool quit = false;
@@ -228,8 +232,8 @@ namespace BlockBuster
             char textureFilename[32] = "texture.png";
 
             const int MAX_TEXTURES = 32;
-            std::vector<GL::Texture> textures;
-            std::vector<glm::vec4> colors;
+            std::vector<GL::Texture>& textures = project.textures;
+            std::vector<glm::vec4>& colors = project.colors;
 
             bool pickingColor = false;
             glm::vec4 colorPick;
@@ -274,12 +278,12 @@ namespace BlockBuster
             ::App::Configuration::WindowConfig preConfig;
 
             // Options
-            float blockScale = 2.0f;
+            float& blockScale = project.blockScale;
 
             // Debug
             #ifdef _DEBUG
                 bool showDemo = false;
-                bool newMapSys = false;
+                bool newMapSys = true;
             #endif
 
             // Test

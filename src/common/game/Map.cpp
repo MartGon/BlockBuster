@@ -74,6 +74,11 @@ Game::Map::Map::Chunk& Game::Map::Map::GetChunk(glm::ivec3 pos)
     return chunks_.at(pos);
 }
 
+void Game::Map::Map::Clear()
+{
+    chunks_.clear();
+}
+
 Game::Map::Map::ChunkIterator Game::Map::Map::CreateChunkIterator()
 {
     return ChunkIterator{this, GetChunkIndices()};
@@ -169,6 +174,16 @@ void Game::Map::Map::Chunk::SetBlock(glm::ivec3 pos, Game::Block block)
 {
     auto index = ToIndex(pos);
     blocks_[index] = block;
+}
+
+unsigned int Game::Map::Map::Chunk::GetBlockCount() const
+{
+    unsigned int blockCount = 0;
+    for(int i = 0; i < Chunk::CHUNK_BLOCKS; i++)
+        if(blocks_[i].type != Game::BlockType::NONE)
+            blockCount++;
+
+    return blockCount;
 }
 
 int Game::Map::Map::Chunk::ToIndex(glm::ivec3 pos)

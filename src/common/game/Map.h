@@ -16,6 +16,14 @@ namespace Game
         public:
             class Chunk;
 
+            Map() = default;
+
+            Map(Map& other) = delete;
+            Map& operator=(const Map& other) = delete;
+
+            Map(Map&&) = default;
+            Map& operator=(Map&&) = default;
+
             Game::Block* GetBlock(glm::ivec3 pos);
             void AddBlock(glm::ivec3 pos, Game::Block block);
             void RemoveBlock(glm::ivec3 pos);
@@ -25,6 +33,7 @@ namespace Game
 
             std::vector<glm::ivec3> GetChunkIndices() const;
             Chunk& GetChunk(glm::ivec3 pos);
+            void Clear();
 
             class Iterator
             {
@@ -56,6 +65,8 @@ namespace Game
                 Chunk();
                 Game::Block* GetBlock(glm::ivec3 pos);
                 void SetBlock(glm::ivec3 pos, Game::Block block);
+
+                unsigned int GetBlockCount() const;
 
                 class BlockIterator
                 {
