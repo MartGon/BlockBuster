@@ -17,6 +17,9 @@ namespace Game
         void AddBlock(glm::ivec3 pos, Game::Block block);
         void RemoveBlock(glm::ivec3 pos);
 
+        glm::ivec3 ToChunkIndex(glm::ivec3 blockPos);
+        glm::ivec3 ToBlockChunkPos(glm::ivec3 blockPos);
+
         class Iterator
         {
         friend class Map;
@@ -106,9 +109,6 @@ namespace Game
 
         std::vector<glm::ivec3> GetChunkIndices() const;
         Chunk& GetChunk(glm::ivec3 pos);
-
-        glm::ivec3 ToChunkIndex(glm::ivec3 blockPos);
-        glm::ivec3 ToBlockChunkPos(glm::ivec3 blockPos);
 
         std::unordered_map<glm::ivec3, Chunk> chunks_;
     };
