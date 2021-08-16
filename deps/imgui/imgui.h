@@ -490,11 +490,22 @@ namespace ImGui
     IMGUI_API bool          RadioButton(const char* label, bool active);                    // use with e.g. if (RadioButton("one", my_value==1)) { my_value = 1; }
     IMGUI_API bool          RadioButton(const char* label, int* v, int v_button);           // shortcut to handle the above pattern when value is an integer
     template<typename T>
-    IMGUI_API bool RadioButton(const char* name, T* var, T expected)
+    IMGUI_API bool RadioButtonInt(const char* name, T* var, T expected)
     {
         int* varI = reinterpret_cast<int*>(var);
         int expectedI = static_cast<int>(expected);
         return ImGui::RadioButton(name, varI, expectedI);
+    }
+    template <typename T>
+    IMGUI_API bool RadioButton(const char* name, T* var, T expected)
+    {
+        bool isClicked = ImGui::RadioButton(name, *var == expected);
+        if(isClicked)
+        {
+            *var = expected;
+        }
+
+        return isClicked;
     }
     IMGUI_API void          ProgressBar(float fraction, const ImVec2& size_arg = ImVec2(-FLT_MIN, 0), const char* overlay = NULL);
     IMGUI_API void          Bullet();                                                       // draw a small circle + keep the cursor on the same line. advance cursor x position by GetTreeNodeToLabelSpacing(), same distance that TreeNode() uses
