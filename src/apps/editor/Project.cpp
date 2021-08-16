@@ -18,7 +18,6 @@ BlockBuster::Editor::Project::Project()
 template<typename T>
 static void WriteToFile(std::fstream& file, T val)
 {
-    std::cout << "Written " << sizeof(T) << "bytes\n";
     file.write(reinterpret_cast<char*>(&val), sizeof(T));
 }
 

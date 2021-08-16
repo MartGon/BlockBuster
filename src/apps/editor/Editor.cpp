@@ -77,10 +77,7 @@ void BlockBuster::Editor::Editor::Update()
     {
         auto block = b.second;
         auto pos = b.first;
-        auto rot = glm::vec3{0.0f, block->rot.y * 90.0f, block->rot.z * 90.0f};
-
-        glm::vec3 realPos = (glm::vec3)pos * blockScale;
-        Math::Transform t{realPos, rot, glm::vec3{blockScale}};
+        Math::Transform t = Game::GetBlockTransform(*block, pos, blockScale);
         auto mMat = t.GetTransformMat();
         auto tMat = camera.GetProjViewMat() * mMat;
 
@@ -333,7 +330,8 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     glDisable(GL_DEPTH_TEST);
     if(cursor.enabled && cursor.show && tool != SELECT_BLOCKS)
     {   
-        Math::Transform t{cursor.pos, glm::vec3{0.0f}, glm::vec3{blockScale}};
+        auto block = *map_.GetBlock(cursor.pos);
+        auto t = Game::GetBlockTransform(block, cursor.pos, blockScale);
         DrawCursor(t);
     }
     else if(tool == SELECT_BLOCKS)
@@ -470,12 +468,6 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
 
     // Check intersection
     auto intersect = Game::CastRayFirst(&map_, ray, blockScale);
-    if(intersect.intersection.intersects)
-    {
-        // Debug::PrintVector(intersect.pos, "Closest block");
-        // Debug::PrintVector(map_.ToChunkIndex(intersect.pos), "Chunk index");
-        // Debug::PrintVector(map_.ToBlockChunkPos(intersect.pos), "Block chunk pos");
-    }
     auto intersection = intersect.intersection;
 
     // Use appropiate Tool
@@ -511,7 +503,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     else if(actionType == ActionType::HOVER)
                     {
                         cursor.enabled = true;
-                        cursor.pos = newBlockPos;
+                        cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
                         cursor.color = yellow;
                         cursor.type = blockType;
                         if(block.display.type == Game::DisplayType::COLOR)
@@ -569,7 +561,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
 
                         cursor.enabled = true;
-                        cursor.pos = blockTransform.position;
+                        cursor.pos = intersect.pos;
                         cursor.type = Game::BlockType::BLOCK;
                         if(block.display.type == Game::DisplayType::COLOR)
                         {
@@ -616,7 +608,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     auto& block = *intersect.block;
                     auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
                     cursor.enabled = true;
-                    cursor.pos = blockTransform.position + intersection.normal * blockScale;
+                    cursor.pos = intersect.pos;
                 }
             }
             break;
@@ -685,24 +677,20 @@ void BlockBuster::Editor::Editor::DrawCursor(Math::Transform t)
     mesh.Draw(shader, cursor.color, GL_LINE);
 }
 
-void BlockBuster::Editor::Editor::DrawSelectCursor(glm::vec3 pos)
+void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
 {
     if(cursor.mode == CursorMode::BLOCKS)
     {
-        auto scale = glm::vec3{blockScale};
-        Math::Transform t{pos, glm::vec3{0.0f}, scale};
-
-        glm::ivec3 cursorBasePos = pos / blockScale;
+        auto block = *map_.GetBlock(pos);
         for(int x = 0; x < cursor.scale.x; x++)
         {
             for(int y = 0; y < cursor.scale.y; y++)
             {
                 for(int z = 0; z < cursor.scale.z; z++)
                 {
-                    auto ipos = cursorBasePos + glm::ivec3{x, y, z};
-                    auto cursorPos = (glm::vec3)ipos * blockScale;
-                    t.position = cursorPos;
-
+                    auto ipos = pos + glm::ivec3{x, y, z};
+                    auto t = Game::GetBlockTransform(block, ipos, blockScale);
+                    
                     DrawCursor(t);
                 }
             }
@@ -711,7 +699,7 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::vec3 pos)
     else if(cursor.mode == CursorMode::SCALED) 
     {
         auto scale = (glm::vec3)cursor.scale * blockScale;
-        auto tPos = pos + scale / 2.0f - glm::vec3{blockScale / 2};
+        auto tPos = glm::vec3{pos} * blockScale + (scale / 2.0f) - glm::vec3{blockScale / 2};
         Math::Transform t{tPos, glm::vec3{0.0f}, scale};
 
         DrawCursor(t);
@@ -720,10 +708,8 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::vec3 pos)
 
 void BlockBuster::Editor::Editor::SelectBlocks()
 {
-    /*
     auto scale = glm::vec3{blockScale};
-
-    glm::ivec3 cursorBasePos = cursor.pos / blockScale;
+    glm::ivec3 cursorBasePos = cursor.pos;
     for(unsigned int x = 0; x < cursor.scale.x; x++)
     {
         for(unsigned int y = 0; y < cursor.scale.y; y++)
@@ -731,15 +717,12 @@ void BlockBuster::Editor::Editor::SelectBlocks()
             for(unsigned int z = 0; z < cursor.scale.z; z++)
             {
                 auto ipos = cursorBasePos + glm::ivec3{x, y, z};                
-
-                if(auto blockPtr = GetBlock(ipos))
-                    selection.push_back(ipos);
+                selection.push_back({ipos, *map_.GetBlock(ipos)});
             }
         }
     }
 
-    std::cout << selection.size() << " blocks selected\n";
-    */
+    std::cout << "Selected " << selection.size() << " blocks\n";
 }
 
 void BlockBuster::Editor::Editor::ClearSelection()
@@ -747,49 +730,69 @@ void BlockBuster::Editor::Editor::ClearSelection()
     selection.clear();
 }
 
-bool BlockBuster::Editor::Editor::CanMoveSelection(glm::vec3 offset)
+bool BlockBuster::Editor::Editor::CanMoveSelection(glm::ivec3 offset)
 {   
-    /*
-    glm::ivec3 iOffset = offset / blockScale;
-    for(const auto& pos : selection)
+    for(const auto& pair : selection)
     {
-        auto newPos = pos + iOffset;
-        if(GetBlock(newPos) && std::find(selection.begin(), selection.end(), newPos) == selection.end())
-        {
-            std::cout << "Could not move selection\n";
+        auto pos = pair.first + offset;
+        if(auto block = map_.GetBlock(pos); block && block->type != Game::BlockType::NONE && !IsBlockInSelection(pos))
             return false;
-        }
     }
 
     return true;
-    */
-   return false;
+
 }
 
-void BlockBuster::Editor::Editor::MoveSelection(glm::vec3 offset)
+bool BlockBuster::Editor::Editor::IsBlockInSelection(glm::ivec3 pos)
 {
-    /*
+    for(const auto& pair : selection)
+        if(pair.first == pos)
+            return true;
+
+    return false;
+}
+
+void BlockBuster::Editor::Editor::MoveSelection(glm::ivec3 offset)
+{
     Debug::PrintVector(offset, "Offset is");
-    for(auto& pos : selection)
+    for(auto& pair : selection)
     {
-        Debug::PrintVector(pos, "Looked vec");
-        if(auto block = GetBlock(pos))
+        // Set new block
+        auto pos = pair.first;
+        auto newPos = pos + offset;
+        map_.AddBlock(newPos, pair.second);
+
+        // Remove prev
+        auto behind = pos - offset;
+        if(!IsBlockInSelection(behind))
         {
-            block->transform.position += offset;
-            pos = block->transform.position / blockScale;
-            Debug::PrintVector(block->transform.position, "Moved block to");
+            Debug::PrintVector(pos, "Removed pos");
+            map_.RemoveBlock(pos);
         }
+        else
+            Debug::PrintVector(behind, "In selection");
+    }
+
+    // Update new position
+    for(auto & pair : selection)
+    {
+        pair.first += offset;
     }
 
     std::cout << "Moving selection\n";
-    */
 }
 
 void BlockBuster::Editor::Editor::UpdateSelection()
 {
-    auto offset = cursor.pos - prevPos;
-    if(movingSelection && glm::length(offset) > 0 && CanMoveSelection(offset))
-        MoveSelection(offset);
+    glm::ivec3 offset = cursor.pos - prevPos;
+    bool hasMoved = offset != glm::ivec3{0};
+    if(movingSelection && hasMoved)
+    {
+        if(CanMoveSelection(offset))
+            MoveSelection(offset);
+        else
+            cursor.pos = prevPos;
+    }
     prevPos = cursor.pos;
 }
 
@@ -1715,7 +1718,6 @@ void BlockBuster::Editor::Editor::GUI()
                             ImGui::EndTable();
                         }
 
-                        glm::ivec3 pos = cursor.pos / blockScale;
                         if(ImGui::BeginTable("##Select Pos", 4))
                         {
                             ImGui::TableSetupColumn("##Title", ImGuiTableColumnFlags_WidthFixed, 60);
@@ -1724,16 +1726,15 @@ void BlockBuster::Editor::Editor::GUI()
                             ImGui::Text("Position");
                             ImGui::TableNextColumn();
                             
-                            ImGui::InputInt("X", &pos.x, 1);
+                            ImGui::InputInt("X", &cursor.pos.x, 1);
                             ImGui::TableNextColumn();
-                            ImGui::InputInt("Y", &pos.y, 1);
+                            ImGui::InputInt("Y", &cursor.pos.y, 1);
                             ImGui::TableNextColumn();
-                            ImGui::InputInt("Z", &pos.z, 1);
+                            ImGui::InputInt("Z", &cursor.pos.z, 1);
                             ImGui::TableNextColumn();
 
                             ImGui::EndTable();
                         }
-                        cursor.pos = (glm::vec3)pos * blockScale;
 
                         if(ImGui::Checkbox("Moving selection", &movingSelection))
                         {

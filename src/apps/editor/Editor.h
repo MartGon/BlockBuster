@@ -96,11 +96,12 @@ namespace BlockBuster
             void ClearActionHistory();
 
             void DrawCursor(Math::Transform t);
-            void DrawSelectCursor(glm::vec3 pos);
+            void DrawSelectCursor(glm::ivec3 pos);
             void SelectBlocks();
             void ClearSelection();
-            bool CanMoveSelection(glm::vec3 offset);
-            void MoveSelection(glm::vec3 offset);
+            bool CanMoveSelection(glm::ivec3 offset);
+            bool IsBlockInSelection(glm::ivec3 pos);
+            void MoveSelection(glm::ivec3 offset);
             void UpdateSelection();
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
@@ -243,7 +244,7 @@ namespace BlockBuster
             struct Cursor{
                 bool show = true;
                 bool enabled = false;
-                glm::vec3 pos = glm::vec3{0.0f};
+                glm::ivec3 pos = glm::ivec3{0};
                 glm::ivec3 scale{1};
                 glm::vec4 color = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
                 Game::BlockType type = Game::BlockType::BLOCK;
@@ -252,8 +253,8 @@ namespace BlockBuster
             Cursor cursor;
 
             // Tools - Select
-            std::vector<glm::ivec3> selection;
-            glm::vec3 prevPos;
+            std::vector<std::pair<glm::ivec3, Game::Block>> selection;
+            glm::ivec3 prevPos;
             bool movingSelection = false;
 
             // GUI
