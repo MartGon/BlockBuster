@@ -608,7 +608,8 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     auto& block = *intersect.block;
                     auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
                     cursor.enabled = true;
-                    cursor.pos = intersect.pos;
+                    auto offset = movingSelection ? glm::ivec3{intersection.normal} : glm::ivec3{0};
+                    cursor.pos = intersect.pos + offset;
                 }
             }
             break;

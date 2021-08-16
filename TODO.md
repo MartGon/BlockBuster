@@ -1,6 +1,5 @@
 
-## TODO
-
+## DONE
     Middle Mouse Button FPS camera - Done
     Limit rotations - Done
     Player isOnSlope - Done
@@ -10,9 +9,23 @@
 
     Exit before save prompt - Done
     Maps folder - Done
-    SemiSlope mesh and collisions
-
-    Compress map data (Reduce rotations, position to uint16, colors to uint8)
+    
     Undo and Redo - Done
-    Info tab (Coordinates - Position and orientation)
     Go to pos - Done
+
+## TODO
+    Release first version
+    Compress map data (Reduce rotations, position to uint16, colors to uint8)
+    Info tab (Coordinates - Position and orientation)
+    SemiSlope mesh and collisions
+    Select Tool
+        Ctrl to select individual blocks
+        Shift to scale selector
+        Key shortcuts for scaling/movement/startmoving
+        Copy/Cut Paste
+        Paint Selection
+        Hide Selection
+        Rotate Selection
+        Block icons to move
+        Asset list with other bbms
+    Optimize Player/Map collisions
