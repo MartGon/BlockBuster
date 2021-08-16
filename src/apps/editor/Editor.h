@@ -76,12 +76,9 @@ namespace BlockBuster
             bool IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName);
 
             // World
-            Game::Block* GetBlockRealPos(glm::vec3 realPos);
-            Game::Block* GetBlock(glm::ivec3 blockPos);
-            void ResizeBlocks();
-            void NewMap();
-            void SaveMap();
-            bool OpenMap();
+            void NewProject();
+            void SaveProject();
+            bool OpenProject();
 
             // Editor
             void UpdateEditor();
@@ -189,8 +186,6 @@ namespace BlockBuster
 
             // World
             Project project;
-            std::vector<Game::Block> blocks;
-
             Game::Map::Map& map_ = project.map;
             
             // Editor

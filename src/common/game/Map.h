@@ -35,6 +35,8 @@ namespace Game
             Chunk& GetChunk(glm::ivec3 pos);
             void Clear();
 
+            unsigned int GetBlockCount() const;
+
             class Iterator
             {
             friend class Map;

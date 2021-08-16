@@ -9,8 +9,3 @@ Math::Transform Game::GetBlockTransform(const Block& block, glm::ivec3 pos, floa
 {
     return Math::Transform{glm::vec3{pos} * blockScale, block.GetRotation(), glm::vec3{blockScale}};
 }
-
-bool Game::operator==(Game::Block a, Game::Block b)
-{
-    return (glm::ivec3)a.transform.position == (glm::ivec3)b.transform.position;
-}

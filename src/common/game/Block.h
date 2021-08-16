@@ -43,20 +43,12 @@ namespace Game
     {
     public:
 
-        // TODO: Remove
-        Math::Transform transform;
-
         BlockType type;
         BlockRot rot;
         Display display;
-
-        // TODO: Remove
-        std::string name;
 
         glm::vec3 GetRotation() const;
     };
 
     Math::Transform GetBlockTransform(const Block& block, glm::ivec3 pos, float blockScale);
-
-    bool operator==(Block a, Block b);
 }

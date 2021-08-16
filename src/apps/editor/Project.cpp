@@ -10,8 +10,7 @@ BlockBuster::Editor::Project::Project()
     blockScale = 2.0f;
     colors = {glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f}};
 
-    map.AddBlock(glm::ivec3{0}, Game::Block{
-        Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{blockScale}}, 
+    map.AddBlock(glm::ivec3{0}, Game::Block{ 
         Game::BLOCK, Game::ROT_0, Game::ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
     });
 }
@@ -135,6 +134,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     if(!file.is_open())
     {
         std::cout << "Could not open file " << filepath << '\n';
+        p.isOk = false;
         return p;
     }
 
@@ -142,6 +142,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     if(magic != magicNumber)
     {
         std::cout << "Wrong file format for file " << filepath << "\n";
+        p.isOk = false;
         return p;
     }
 
@@ -164,7 +165,6 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
             block.display = ReadFromFile<Game::Display>(file);
 
             p.map.AddBlock(globalPos, block);
-            Debug::PrintVector(globalPos, "Block added");
         }
     }
 
@@ -192,7 +192,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
         {
             std::cout << "Could not load texture file " << texturePath << "\n";
         }
-        //p.textures.push_back(std::move(texture));
+        p.textures.push_back(std::move(texture));
     }
 
     // Color Table

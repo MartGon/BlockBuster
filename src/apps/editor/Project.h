@@ -18,6 +18,7 @@ namespace BlockBuster::Editor
 
         glm::vec3 cameraPos;
         glm::vec2 cameraRot;
+        bool isOk = true;
     };
 
     Project NewProject();

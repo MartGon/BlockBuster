@@ -33,6 +33,7 @@ void BlockBuster::Client::Start()
 
     // World
     blocks = {
+        /*
         {Math::Transform{glm::vec3{1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK}, 
         {Math::Transform{glm::vec3{1.0f, -1.0f, 1.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK},
         {Math::Transform{glm::vec3{-1.0f, -1.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{scale}}, Game::BLOCK}, 
@@ -46,6 +47,7 @@ void BlockBuster::Client::Start()
         {Math::Transform{glm::vec3{-1.0f, 0.0f, 0.0f} * scale, glm::vec3{90.0f, 90.0f, 90.0f}, glm::vec3{scale}}, Game::SLOPE},   
         {Math::Transform{glm::vec3{1.0f, 0.0f, 0.0f} * scale, glm::vec3{0.0f, 0.0f, 90.0f}, glm::vec3{scale}}, Game::SLOPE},
         {Math::Transform{glm::vec3{0.0f, 0.0f, -1.0f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, glm::vec3{scale}}, Game::SLOPE},
+        */
     };
 }
 
@@ -56,6 +58,7 @@ void PrintVec(glm::vec3 vec, std::string name)
 
 void BlockBuster::Client::Update()
 {
+    /*
     bool clicked = false;
     SDL_Event e;
     while(SDL_PollEvent(&e) != 0)
@@ -107,7 +110,7 @@ void BlockBuster::Client::Update()
 
     // Move Player
     player.Update();
-    player.HandleCollisions(blocks);
+    //player.HandleCollisions(blocks);
 
     // Ray intersection
     if(clicked)
@@ -194,6 +197,7 @@ void BlockBuster::Client::Update()
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     SDL_GL_SwapWindow(window_);
+    */
 }
 
 bool BlockBuster::Client::Quit()

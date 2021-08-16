@@ -20,10 +20,7 @@ Game::Block* Game::Map::Map::GetBlock(glm::ivec3 pos)
 
 void Game::Map::Map::AddBlock(glm::ivec3 pos, Game::Block block)
 {
-    Debug::PrintVector(pos, "globalPos");
-
     auto index = ToChunkIndex(pos);
-    Debug::PrintVector(index, "ChunkIndex");
     if(chunks_.find(index) == chunks_.end())
     {
         chunks_[index] = Chunk{};
@@ -31,7 +28,6 @@ void Game::Map::Map::AddBlock(glm::ivec3 pos, Game::Block block)
     
     auto& chunk = chunks_[index];
     auto blockPos = ToBlockChunkPos(pos);
-    Debug::PrintVector(blockPos, "ChunkBlockPos");
     chunk.SetBlock(blockPos, block);
 }
 
@@ -77,6 +73,15 @@ Game::Map::Map::Chunk& Game::Map::Map::GetChunk(glm::ivec3 pos)
 void Game::Map::Map::Clear()
 {
     chunks_.clear();
+}
+
+unsigned int Game::Map::Map::GetBlockCount() const
+{
+    unsigned int blockCount = 0;
+    for(auto chunk : chunks_)
+        blockCount += chunk.second.GetBlockCount();
+
+    return blockCount;
 }
 
 Game::Map::Map::ChunkIterator Game::Map::Map::CreateChunkIterator()
@@ -150,8 +155,7 @@ Game::Map::Map::Chunk::Chunk()
             for(auto z = 0; z < CHUNK_DEPTH; z++)
             {
                 auto index = ToIndex(glm::ivec3{x, y, z});
-                blocks_[index] = Game::Block{
-                    Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}}, 
+                blocks_[index] = Game::Block{ 
                     Game::NONE, ROT_0, ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
                 };
             }

@@ -17,7 +17,6 @@ namespace AppGame
 
         void Update();
         void HandleSDLEvent(const SDL_Event& event);
-        void HandleCollisions(const std::vector<Game::Block>& blocks);
         void HandleCollisions(Game::Map::Map* map, float blockScale);
         void HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks);
         
