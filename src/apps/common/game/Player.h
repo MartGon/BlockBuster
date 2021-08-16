@@ -5,6 +5,7 @@
 #include <math/Transform.h>
 
 #include <game/Block.h>
+#include <game/Map.h>
 
 #include <vector>
 
@@ -17,6 +18,8 @@ namespace AppGame
         void Update();
         void HandleSDLEvent(const SDL_Event& event);
         void HandleCollisions(const std::vector<Game::Block>& blocks);
+        void HandleCollisions(Game::Map::Map* map, float blockScale);
+        void HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks);
         
         Math::Transform transform;
 

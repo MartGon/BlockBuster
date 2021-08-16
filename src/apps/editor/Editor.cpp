@@ -1245,7 +1245,10 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
     player.transform.rotation = glm::vec3{0.0f, glm::degrees(camera.GetRotation().y) - 90.0f, 0.0f};
 
     player.Update();
-    player.HandleCollisions(blocks);
+    if(newMapSys)
+        player.HandleCollisions(&map_, blockScale);
+    else
+        player.HandleCollisions(blocks);
     auto playerPos = player.transform.position;
 
     auto cameraPos = playerPos + glm::vec3{0.0f, player.height, 0.0f};

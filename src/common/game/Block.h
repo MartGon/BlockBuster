@@ -56,5 +56,7 @@ namespace Game
         glm::vec3 GetRotation() const;
     };
 
+    Math::Transform GetBlockTransform(const Block& block, glm::ivec3 pos, float blockScale);
+
     bool operator==(Block a, Block b);
 }

@@ -16,6 +16,7 @@ target_link_libraries(AppsGame
     Rendering
     Collisions 
     Math
+    Game
 )
 target_include_directories(AppsGame PUBLIC include 
     ${OPENGL_INCLUDE_DIR}  
