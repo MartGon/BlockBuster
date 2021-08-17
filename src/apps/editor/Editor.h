@@ -69,6 +69,14 @@ namespace BlockBuster
                 SCALED
             };
 
+            enum Tool
+            {
+                PLACE_BLOCK,
+                ROTATE_BLOCK,
+                PAINT_BLOCK,
+                SELECT_BLOCKS
+            };
+
             // Rendering
             Rendering::Mesh& GetMesh(Game::BlockType type);
             glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
@@ -88,6 +96,7 @@ namespace BlockBuster
             void UpdateFPSCameraRotation(SDL_MouseMotionEvent motion);
             void SetCameraMode(CameraMode cameraMode);
 
+            void SelectTool(Tool tool);
             void UseTool(glm::vec<2, int> mousePos, ActionType actionType = ActionType::LEFT_BUTTON);
             void QueueAction(std::unique_ptr<ToolAction> action);
             void DoToolAction(std::unique_ptr<ToolAction> action);
@@ -196,13 +205,6 @@ namespace BlockBuster
             glm::ivec3 goToPos;
 
             // Tools
-            enum Tool
-            {
-                PLACE_BLOCK,
-                ROTATE_BLOCK,
-                PAINT_BLOCK,
-                SELECT_BLOCKS
-            };
             Tool tool = PLACE_BLOCK;
             unsigned int actionIndex = 0;
             std::vector<std::unique_ptr<BlockBuster::Editor::ToolAction>> actionHistory;
@@ -248,13 +250,14 @@ namespace BlockBuster
                 glm::ivec3 scale{1};
                 glm::vec4 color = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
                 Game::BlockType type = Game::BlockType::BLOCK;
-                CursorMode mode = CursorMode::BLOCKS;
+                CursorMode mode = CursorMode::SCALED;
             };
             Cursor cursor;
 
             // Tools - Select
             std::vector<std::pair<glm::ivec3, Game::Block>> selection;
             bool movingSelection = false;
+            glm::ivec3 savedPos{0};
 
             // GUI
             PopUpState state = PopUpState::NONE;

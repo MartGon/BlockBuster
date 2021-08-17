@@ -18,7 +18,12 @@
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
     Info tab (Coordinates - Position and orientation)
     SemiSlope mesh and collisions
-    Select Tool
+    ImGui::Selectable template function
+    Tool Class heirarchy
+        OnSelectTool
+        OnDeselectTool
+        Use
+    Selection Tool
         Ctrl to select individual blocks
         Shift to scale selector
         Key shortcuts for scaling/movement/startmoving

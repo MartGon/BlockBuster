@@ -63,8 +63,6 @@ void BlockBuster::Editor::Editor::Start()
 
     // GUI
     InitPopUps();
-
-    std::cout << "Current folder " << std::filesystem::absolute(".") << "\n";
 }
 
 void BlockBuster::Editor::Editor::Update()
@@ -454,6 +452,35 @@ void BlockBuster::Editor::Editor::SetCameraMode(CameraMode mode)
     }
 }
 
+void BlockBuster::Editor::Editor::SelectTool(Tool newTool)
+{
+    // OnDeselect
+    switch (tool)
+    {
+    case Tool::SELECT_BLOCKS:
+        movingSelection = false;
+        savedPos = cursor.pos;
+        break;
+    
+    default:
+        break;
+    }
+
+    // Change selected tool
+    tool = newTool;
+
+    // On select
+    switch (newTool)
+    {
+    case Tool::SELECT_BLOCKS:
+        cursor.pos = savedPos;
+        break;
+    
+    default:
+        break;
+    }
+}
+
 void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
 {
     // Window to eye
@@ -755,12 +782,6 @@ void BlockBuster::Editor::Editor::MoveSelection(glm::ivec3 offset)
 {
     DoToolAction(std::make_unique<BlockBuster::Editor::MoveSelectionAction>(&map_, selection, offset, &cursor.pos));
 
-    // Update new position
-    for(auto & pair : selection)
-    {
-        pair.first += offset;
-    }
-
     std::cout << "Moving selection\n";
 }
 
@@ -840,7 +861,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
 
         // Editor navigation
         if(sym >= SDLK_1 &&  sym <= SDLK_4 && io.KeyCtrl)
-            tool = static_cast<Tool>(sym - SDLK_1);
+            SelectTool(static_cast<Tool>(sym - SDLK_1));
 
         if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && !io.KeyAlt)
         {
@@ -1504,25 +1525,27 @@ void BlockBuster::Editor::Editor::GUI()
                         ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
                         if(ImGui::Selectable("Place", &pbSelected, 0, ImVec2{0, 0}))
                         {
-                            tool = PLACE_BLOCK;
+                            SelectTool(PLACE_BLOCK);
                         }
 
                         ImGui::TableNextColumn();
                         if(ImGui::Selectable("Rotate", &rotbSelected, 0, ImVec2{0, 0}))
                         {
-                            tool = ROTATE_BLOCK;
+                            SelectTool(ROTATE_BLOCK);
                         }
 
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
                         if(ImGui::Selectable("Paint", &paintSelected, 0, ImVec2{0, 0}))
                         {
-                            tool = PAINT_BLOCK;
+                            SelectTool(PAINT_BLOCK);
                         }
 
                         ImGui::TableNextColumn();
                         if(ImGui::Selectable("Select", selectSelected, 0, ImVec2{0, 0}))
-                            tool = SELECT_BLOCKS;
+                        {
+                            SelectTool(SELECT_BLOCKS);
+                        }
 
                         ImGui::PopStyleVar();
 
