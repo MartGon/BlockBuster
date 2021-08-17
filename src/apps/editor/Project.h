@@ -18,6 +18,10 @@ namespace BlockBuster::Editor
 
         glm::vec3 cameraPos;
         glm::vec2 cameraRot;
+
+        std::filesystem::path textureFolder;
+
+        // Control flag
         bool isOk = true;
     };
 

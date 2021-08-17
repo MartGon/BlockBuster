@@ -27,6 +27,13 @@ static void WriteToFile(std::fstream& file, T* val)
     file.write(reinterpret_cast<char*>(val), sizeof(T)*S);
 }
 
+static void WriteToFile(std::fstream& file, std::string str)
+{
+    for(auto c : str)
+        WriteToFile(file, c);
+    WriteToFile(file, '\0');
+}
+
 template <typename T>
 static T ReadFromFile(std::fstream& file)
 {
@@ -35,27 +42,18 @@ static T ReadFromFile(std::fstream& file)
     return val;
 }
 
-static glm::vec2 ReadVec2(std::fstream& file)
+template <>
+std::string ReadFromFile(std::fstream& file)
 {
-    glm::vec2 vec;
-    vec.x = ReadFromFile<float>(file);
-    vec.y = ReadFromFile<float>(file);
+    std::string str;
+    char c = ReadFromFile<char>(file);
+    while(c != '\0' && !file.eof())
+    {   
+        str.push_back(c);
+        c = ReadFromFile<char>(file);
+    }
 
-    return vec;
-}
-static glm::vec3 ReadVec3(std::fstream& file)
-{
-    auto vec2 = ReadVec2(file);
-    float z = ReadFromFile<float>(file);
-
-    return glm::vec3{vec2, z};
-}
-
-static glm::vec4 ReadVec4(std::fstream& file)
-{
-    glm::vec3 vec3 = ReadVec3(file);
-    float w = ReadFromFile<float>(file);
-    return glm::vec4{vec3, w};
+    return str;
 }
 
 static const int magicNumber = 0xB010F0;
@@ -104,13 +102,14 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     WriteToFile(file, p.blockScale);
 
     // Write textures
+    WriteToFile(file, p.textureFolder.string());
+
     WriteToFile(file, p.textures.size());
     for(auto i = 0; i < p.textures.size(); i++)
     {
-        auto texturePath =  p.textures[i].GetPath().string();
-        for(auto c : texturePath)
-            WriteToFile(file, c);
-        WriteToFile(file, '\0');
+        auto texturePath =  p.textures[i].GetPath();
+        auto textureName = texturePath.filename().string();
+        WriteToFile(file, textureName);
     }
 
     // Colors table
@@ -171,18 +170,14 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     p.blockScale = ReadFromFile<float>(file);
 
     // Load textures
+    p.textureFolder = ReadFromFile<std::string>(file);
+
     auto textureSize = ReadFromFile<std::size_t>(file);
+    p.textures.clear();
     p.textures.reserve(textureSize);
     for(auto i = 0; i < textureSize; i++)
     {
-        std::string texturePath;
-        char c = ReadFromFile<char>(file);
-        while(c != '\0' && !file.eof())
-        {   
-            texturePath.push_back(c);
-            c = ReadFromFile<char>(file);
-        }
-
+        auto texturePath = p.textureFolder / ReadFromFile<std::string>(file);
         GL::Texture texture{texturePath};
         try{
             texture.Load();
@@ -195,12 +190,13 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     }
 
     // Color Table
+    p.colors.clear();
     auto colorsSize = ReadFromFile<std::size_t>(file);
     p.colors.reserve(colorsSize);
     for(auto i = 0; i < colorsSize; i++)
     {
         auto color = ReadFromFile<glm::vec4>(file);
-        //p.colors.push_back(color);
+        p.colors.push_back(color);
     }
 
     // Camera Pos/Rot

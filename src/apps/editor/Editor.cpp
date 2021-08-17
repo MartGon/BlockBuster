@@ -23,18 +23,19 @@ void BlockBuster::Editor::Editor::Start()
     slope = Rendering::Primitive::GenerateSlope();
 
     // Textures
+    textures.reserve(MAX_TEXTURES);
+
     textureFolder = GetConfigOption("TextureFolder", TEXTURES_DIR);
     GL::Texture texture = GL::Texture::FromFolder(textureFolder, "SmoothStone.png");
     try
     {
         texture.Load();
+        textures.push_back(std::move(texture));
     }
     catch(const GL::Texture::LoadError& e)
     {
         std::cout << "Error when loading texture " + e.path_.string() + ": " +  e.what() << '\n';
     }
-    textures.reserve(MAX_TEXTURES);
-    textures.push_back(std::move(texture));
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
@@ -87,7 +88,10 @@ void BlockBuster::Editor::Editor::Update()
         auto& mesh = GetMesh(block->type);
         auto display = tool == PAINT_BLOCK && preColorBlockPos == pos ? GetBlockDisplay() : block->display;
         if(display.type == Game::DisplayType::TEXTURE)
-            mesh.Draw(shader, &textures[display.id]);
+        {
+            if(display.id < textures.size())
+                mesh.Draw(shader, &textures[display.id]);
+        }
         else if(display.type == Game::DisplayType::COLOR)
         {
             auto color = colors[display.id];
@@ -206,6 +210,7 @@ void BlockBuster::Editor::Editor::SaveProject()
     // Write project file
     project.cameraPos = camera.GetPos();
     project.cameraRot = camera.GetRotation();
+    project.textureFolder = textureFolder;
     ::BlockBuster::Editor::WriteProjectToFile(project, mapPath);
 
     RenameMainWindow(fileName);
