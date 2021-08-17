@@ -1827,8 +1827,10 @@ void BlockBuster::Editor::Editor::GUI()
 
     ImGui::End();
 
+    #ifdef _DEBUG
     if(showDemo)
         ImGui::ShowDemoWindow(&showDemo);
+    #endif
 
     // Draw GUI
     ImGui::Render();
