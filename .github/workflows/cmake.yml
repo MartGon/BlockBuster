@@ -16,12 +16,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      
+      - name: Update apt
+        run: sudo apt-get update
 
       - name: Install OpenGL Libs
         run: sudo apt-get install libgl1-mesa-dev
-
-      - name: Update apt
-        run: sudo apt-get update
 
       - name: Install SDL2 libs
         run: sudo apt-get install libsdl2-dev
