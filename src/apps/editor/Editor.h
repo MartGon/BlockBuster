@@ -102,7 +102,7 @@ namespace BlockBuster
             bool CanMoveSelection(glm::ivec3 offset);
             bool IsBlockInSelection(glm::ivec3 pos);
             void MoveSelection(glm::ivec3 offset);
-            void UpdateSelection();
+            void MoveSelectionCursor(glm::ivec3 nextPos);
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
@@ -254,7 +254,6 @@ namespace BlockBuster
 
             // Tools - Select
             std::vector<std::pair<glm::ivec3, Game::Block>> selection;
-            glm::ivec3 prevPos;
             bool movingSelection = false;
 
             // GUI

@@ -1,5 +1,7 @@
 #include <ToolAction.h>
 
+#include <debug/Debug.h>
+
 #include <algorithm>
 #include <iostream>
 
@@ -45,4 +47,53 @@ void BlockBuster::Editor::RotateAction::Undo()
 {   
     if(auto block = map_->GetBlock(pos_))
         block->rot = prevRot_;
+}
+
+void BlockBuster::Editor::MoveSelectionAction::Do()
+{
+    auto offset = offset_;
+    MoveSelection(offset);
+    *cursorPos_ = *cursorPos_ + offset;
+}
+
+void BlockBuster::Editor::MoveSelectionAction::Undo()
+{
+    Debug::PrintVector(*cursorPos_, "Old Cursor pos");
+    auto offset = -offset_;
+    MoveSelection(offset);
+    *cursorPos_ = *cursorPos_ + offset;
+    Debug::PrintVector(*cursorPos_, "Cursor pos");
+}
+
+void BlockBuster::Editor::MoveSelectionAction::MoveSelection(glm::ivec3 offset)
+{
+    for(auto& pair : selection_)
+    {
+        // Set new block
+        auto pos = pair.first;
+        auto newPos = pos + offset;
+        map_->AddBlock(newPos, pair.second);
+
+        // Remove prev
+        auto behind = pos - offset;
+        if(!IsBlockInSelection(behind))
+        {
+            map_->RemoveBlock(pos);
+        }
+    }
+
+    // Update new position
+    for(auto & pair : selection_)
+    {
+        pair.first += offset;
+    }
+}
+
+bool BlockBuster::Editor::MoveSelectionAction::IsBlockInSelection(glm::ivec3 pos)
+{
+    for(const auto& pair : selection_)
+        if(pair.first == pos)
+            return true;
+
+    return false;
 }

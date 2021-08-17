@@ -93,5 +93,24 @@ namespace BlockBuster
             Game::BlockRot rot_;
             Game::BlockRot prevRot_;
         };
+
+        class MoveSelectionAction : public ToolAction
+        {
+        public:
+            MoveSelectionAction(Game::Map::Map* map, std::vector<std::pair<glm::ivec3, Game::Block>> selection, glm::ivec3 offset, glm::ivec3* cursorPos) :
+                map_{map}, selection_{selection}, offset_{offset}, cursorPos_{cursorPos} {}
+        
+            void Do() override;
+            void Undo() override;
+
+        private:
+            bool IsBlockInSelection(glm::ivec3 pos);
+            void MoveSelection(glm::ivec3 offset);
+
+            Game::Map::Map* map_;
+            std::vector<std::pair<glm::ivec3, Game::Block>> selection_;
+            glm::ivec3 offset_;
+            glm::ivec3* cursorPos_;
+        };
     }
 }

@@ -63,6 +63,8 @@ void BlockBuster::Editor::Editor::Start()
 
     // GUI
     InitPopUps();
+
+    std::cout << "Current folder " << std::filesystem::absolute(".") << "\n";
 }
 
 void BlockBuster::Editor::Editor::Update()
@@ -321,17 +323,11 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     else if(cameraMode == CameraMode::FPS)
         UpdateFPSCameraPosition();
 
-
-    // Update tools
-    if(tool == SELECT_BLOCKS)
-        UpdateSelection();
-
     // Draw Cursor
     glDisable(GL_DEPTH_TEST);
     if(cursor.enabled && cursor.show && tool != SELECT_BLOCKS)
     {   
-        auto block = *map_.GetBlock(cursor.pos);
-        auto t = Game::GetBlockTransform(block, cursor.pos, blockScale);
+        auto t = Game::GetBlockTransform(cursor.pos, blockScale);
         DrawCursor(t);
     }
     else if(tool == SELECT_BLOCKS)
@@ -609,7 +605,8 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
                     cursor.enabled = true;
                     auto offset = movingSelection ? glm::ivec3{intersection.normal} : glm::ivec3{0};
-                    cursor.pos = intersect.pos + offset;
+                    auto nextPos = intersect.pos + offset;
+                    MoveSelectionCursor(nextPos);
                 }
             }
             break;
@@ -682,7 +679,6 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
 {
     if(cursor.mode == CursorMode::BLOCKS)
     {
-        auto block = *map_.GetBlock(pos);
         for(int x = 0; x < cursor.scale.x; x++)
         {
             for(int y = 0; y < cursor.scale.y; y++)
@@ -690,7 +686,7 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
                 for(int z = 0; z < cursor.scale.z; z++)
                 {
                     auto ipos = pos + glm::ivec3{x, y, z};
-                    auto t = Game::GetBlockTransform(block, ipos, blockScale);
+                    auto t = Game::GetBlockTransform(ipos, blockScale);
                     
                     DrawCursor(t);
                 }
@@ -709,6 +705,8 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
 
 void BlockBuster::Editor::Editor::SelectBlocks()
 {
+    ClearSelection();
+
     auto scale = glm::vec3{blockScale};
     glm::ivec3 cursorBasePos = cursor.pos;
     for(unsigned int x = 0; x < cursor.scale.x; x++)
@@ -755,24 +753,7 @@ bool BlockBuster::Editor::Editor::IsBlockInSelection(glm::ivec3 pos)
 
 void BlockBuster::Editor::Editor::MoveSelection(glm::ivec3 offset)
 {
-    Debug::PrintVector(offset, "Offset is");
-    for(auto& pair : selection)
-    {
-        // Set new block
-        auto pos = pair.first;
-        auto newPos = pos + offset;
-        map_.AddBlock(newPos, pair.second);
-
-        // Remove prev
-        auto behind = pos - offset;
-        if(!IsBlockInSelection(behind))
-        {
-            Debug::PrintVector(pos, "Removed pos");
-            map_.RemoveBlock(pos);
-        }
-        else
-            Debug::PrintVector(behind, "In selection");
-    }
+    DoToolAction(std::make_unique<BlockBuster::Editor::MoveSelectionAction>(&map_, selection, offset, &cursor.pos));
 
     // Update new position
     for(auto & pair : selection)
@@ -783,18 +764,18 @@ void BlockBuster::Editor::Editor::MoveSelection(glm::ivec3 offset)
     std::cout << "Moving selection\n";
 }
 
-void BlockBuster::Editor::Editor::UpdateSelection()
+void BlockBuster::Editor::Editor::MoveSelectionCursor(glm::ivec3 nextPos)
 {
-    glm::ivec3 offset = cursor.pos - prevPos;
-    bool hasMoved = offset != glm::ivec3{0};
-    if(movingSelection && hasMoved)
+    if(movingSelection)
     {
+        SelectBlocks();
+
+        glm::ivec3 offset = nextPos - cursor.pos;
         if(CanMoveSelection(offset))
             MoveSelection(offset);
-        else
-            cursor.pos = prevPos;
     }
-    prevPos = cursor.pos;
+    else
+        cursor.pos = nextPos;
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
@@ -1726,13 +1707,17 @@ void BlockBuster::Editor::Editor::GUI()
 
                             ImGui::Text("Position");
                             ImGui::TableNextColumn();
-                            
-                            ImGui::InputInt("X", &cursor.pos.x, 1);
+
+                            auto nextPos = cursor.pos;
+                            bool hasSelectionMoved = false;
+                            hasSelectionMoved |= ImGui::InputInt("X", &nextPos.x, 1);
                             ImGui::TableNextColumn();
-                            ImGui::InputInt("Y", &cursor.pos.y, 1);
+                            hasSelectionMoved |= ImGui::InputInt("Y", &nextPos.y, 1);
                             ImGui::TableNextColumn();
-                            ImGui::InputInt("Z", &cursor.pos.z, 1);
+                            hasSelectionMoved |= ImGui::InputInt("Z", &nextPos.z, 1);
                             ImGui::TableNextColumn();
+                            if(hasSelectionMoved)
+                                MoveSelectionCursor(nextPos);
 
                             ImGui::EndTable();
                         }
@@ -1744,6 +1729,15 @@ void BlockBuster::Editor::Editor::GUI()
                             else
                                 ClearSelection();
                         }
+
+                        #ifdef _DEBUG
+                        ImGui::Text("Selected blocks");
+                        for(auto pair : selection)
+                        {
+                            std::string str = "Block pos: " + Debug::ToString(pair.first);
+                            ImGui::Text("%s", str.c_str());
+                        }
+                        #endif
                         
                     }
 

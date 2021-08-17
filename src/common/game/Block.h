@@ -51,4 +51,5 @@ namespace Game
     };
 
     Math::Transform GetBlockTransform(const Block& block, glm::ivec3 pos, float blockScale);
+    Math::Transform GetBlockTransform(glm::ivec3 pos, float blockScale);
 }
