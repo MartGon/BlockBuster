@@ -46,6 +46,7 @@ App::App::App(Configuration config) : config{config}
         SDL_SetWindowSize(window_, width, height);
     }
     SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    SDL_GL_SetSwapInterval(config.window.vsync);
 
     glViewport(0, 0, width, height);
 
