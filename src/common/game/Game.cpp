@@ -1,5 +1,7 @@
 #include <Game.h>
 
+#include <algorithm>
+
 std::vector<Game::RayBlockIntersection> Game::CastRay(Game::Map::Map* map, Collisions::Ray ray, float blockScale)
 {
     std::vector<Game::RayBlockIntersection> intersections;
