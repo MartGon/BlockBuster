@@ -186,7 +186,7 @@ namespace BlockBuster
             void GUI();
 
             // Rendering
-            GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
+            GL::Shader shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
             Rendering::Mesh cube;
             Rendering::Mesh slope;
             Rendering::Camera camera;

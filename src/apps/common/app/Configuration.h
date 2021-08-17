@@ -35,6 +35,7 @@ namespace App
             int majorVersion;
             int minorVersion;
             int profileMask;
+            std::filesystem::path shadersFolder;
         };
 
         WindowConfig window;

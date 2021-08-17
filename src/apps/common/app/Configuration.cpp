@@ -40,6 +40,7 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
     file << "majorVersion=" << config.openGL.majorVersion << '\n';
     file << "minorVersion=" << config.openGL.minorVersion << '\n';
     file << "profileMask=" << config.openGL.profileMask << '\n';
+    file << "shadersFolder=" << config.openGL.shadersFolder.string() << '\n';
     file << '\n';
 
     file << "### " << config.window.name << " Options ###" << '\n';
@@ -113,6 +114,7 @@ App::Configuration App::LoadConfig(std::filesystem::path filePath)
     config.openGL.majorVersion = ExtractInt(config.options, "majorVersion");
     config.openGL.minorVersion = ExtractInt(config.options, "minorVersion");
     config.openGL.minorVersion = ExtractInt(config.options, "profileMask");
+    config.openGL.shadersFolder = ExtractString(config.options, "shadersFolder");
 
     return config;
 }

@@ -51,7 +51,7 @@ int main(int argc, char* args[])
             glm::radians(60.0f)
         },
         App::Configuration::OpenGLConfig{
-            4, 6, SDL_GL_CONTEXT_PROFILE_CORE
+            4, 6, SDL_GL_CONTEXT_PROFILE_CORE, SHADERS_DIR
         }
     };
 
