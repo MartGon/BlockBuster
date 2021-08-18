@@ -17,7 +17,7 @@ namespace Collisions
 
     struct RayIntersection
     {
-        bool intersects;
+        bool intersects = false;
         glm::vec2 ts;
         glm::vec3 normal;
     };

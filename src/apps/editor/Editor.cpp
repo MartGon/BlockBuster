@@ -497,8 +497,22 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
         ray = Collisions::Ray{camera.GetPos(), camera.GetPos() + camera.GetFront()};
 
     // Check intersection
-    auto intersect = Game::CastRayFirst(&map_, ray, blockScale);
+    Game::RayBlockIntersection intersect;
+
+    if (optimizeIntersection)
+    {
+        intersect = Game::CastRayFirst(&map_, ray, blockScale);
+    }
+    else
+    {
+        auto intersections = Game::CastRay(&map_, ray, blockScale);
+        if (!intersections.empty())
+            intersect = intersections.front();
+    }
+
+
     auto intersection = intersect.intersection;
+    intersecting = intersect.intersection.intersects;
 
     // Use appropiate Tool
     switch(tool)
@@ -542,8 +556,8 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                                 cursor.color = GetBorderColor(colors[block.display.id], darkBlue, yellow);
                             }
                         }
-                        else
-                            cursor.enabled = false;
+                        //else
+                        //    cursor.enabled = false;
                     }
                 }
                 else if(actionType == ActionType::RIGHT_BUTTON)
@@ -1837,11 +1851,15 @@ void BlockBuster::Editor::Editor::GUI()
                 ImGui::InputInt3("Chunk", &cursorChunk.x, ImGuiInputTextFlags_ReadOnly);
                 auto cursorBlock = cursor.pos;
                 ImGui::InputInt3("Block", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
+
+                auto hittingBlock = intersecting;
+                ImGui::Checkbox("Intersecting", &hittingBlock);
                 
                 #ifdef _DEBUG
                 ImGui::Text("Debug Options");
                 ImGui::Separator();
                 ImGui::Checkbox("New map system", &newMapSys);
+                ImGui::Checkbox("Intersection Optimization", &optimizeIntersection);
                 #endif
 
                 ImGui::EndTabItem();
