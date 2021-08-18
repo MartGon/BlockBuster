@@ -11,3 +11,8 @@ void Debug::PrintVector(glm::vec3 vec, std::string name)
 {
     std::cout << name << " is " <<  ToString(vec) << "\n";
 }
+
+void Debug::PrintVector(std::string name, glm::vec3 vec)
+{
+    std::cout << name << " is " <<  ToString(vec) << "\n";
+}

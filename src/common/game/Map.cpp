@@ -262,12 +262,23 @@ bool Game::Map::Map::ChunkIterator::IsOver() const
 
 // #### Map Namespace #### \\
 
-glm::vec3 Game::Map::ToGlobalChunkPos(glm::ivec3 chunkIndex)
+glm::vec3 Game::Map::ToGlobalChunkPos(glm::ivec3 chunkIndex, float blockScale)
 {
-    return chunkIndex * Game::Map::Map::Chunk::DIMENSIONS;
+    return glm::vec3{chunkIndex} * glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale;
 }
 
 glm::ivec3 Game::Map::ToGlobalBlockPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex)
 {
-    return ToGlobalChunkPos(chunkIndex) + glm::vec3{blockIndex};
+    return glm::vec3{chunkIndex} * glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} + glm::vec3{blockIndex};
+}
+
+glm::ivec3 Game::Map::ToChunkPos(glm::vec3 globalPos, float blockScale)
+{
+    glm::vec3 pos = ToBlockPos(globalPos, blockScale) + Game::Map::Map::Chunk::HALF_DIMENSIONS;
+    return glm::floor(pos / glm::vec3{Game::Map::Map::Chunk::DIMENSIONS});
+}
+
+glm::ivec3 Game::Map::ToBlockPos(glm::vec3 globalPos, float blockScale)
+{
+    return glm::round(globalPos / blockScale);
 }

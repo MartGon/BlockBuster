@@ -520,22 +520,30 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     {
                         auto display = GetBlockDisplay();                            
                         auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                        auto block = Game::Block{blockType, rot, display};
-                        auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &map_);
+                        if(auto found = map_.GetBlock(iNewPos); !found || found->type == Game::BlockType::NONE)
+                        {
+                            auto block = Game::Block{blockType, rot, display};
+                            auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &map_);
 
-                        DoToolAction(std::move(action));
+                            DoToolAction(std::move(action));
+                        }
                     }
                     else if(actionType == ActionType::HOVER)
                     {
-                        cursor.enabled = true;
                         cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                        cursor.color = yellow;
-                        cursor.type = blockType;
-                        cursor.rot = rot;
-                        if(block.display.type == Game::DisplayType::COLOR)
+                        if(auto found = map_.GetBlock(cursor.pos); !found || found->type == Game::BlockType::NONE)
                         {
-                            cursor.color = GetBorderColor(colors[block.display.id], darkBlue, yellow);
+                            cursor.enabled = true;
+                            cursor.color = yellow;
+                            cursor.type = blockType;
+                            cursor.rot = rot;
+                            if(block.display.type == Game::DisplayType::COLOR)
+                            {
+                                cursor.color = GetBorderColor(colors[block.display.id], darkBlue, yellow);
+                            }
                         }
+                        else
+                            cursor.enabled = false;
                     }
                 }
                 else if(actionType == ActionType::RIGHT_BUTTON)
@@ -1803,22 +1811,41 @@ void BlockBuster::Editor::Editor::GUI()
 
                 ImGui::EndTabItem();
             }
-            
-            #ifdef _DEBUG
-                flags = tabState == TabState::DEBUG_TAB ? ImGuiTabItemFlags_SetSelected : 0;
-                if(ImGui::BeginTabItem("Debug", nullptr, flags))
-                {
-                    if(ImGui::IsItemActive())
-                        tabState = TabState::DEBUG_TAB;
+               
+            flags = tabState == TabState::DEBUG_TAB ? ImGuiTabItemFlags_SetSelected : 0;
+            if(ImGui::BeginTabItem("Debug", nullptr, flags))
+            {
+                if(ImGui::IsItemActive())
+                    tabState = TabState::DEBUG_TAB;
 
-                    ImGui::Text("Debug");
-                    ImGui::Separator();
+                ImGui::Text("Camera info");
+                ImGui::Separator();
 
-                    ImGui::Checkbox("New map system", &newMapSys);
+                auto cameraRot = camera.GetRotation();                
+                ImGui::SliderFloat2("Rotation", &cameraRot.x, 0.0f, glm::two_pi<float>(), "%.3f", ImGuiSliderFlags_NoInput);
+                auto cameraPos = camera.GetPos();
+                ImGui::InputFloat3("Global Position", &cameraPos.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
+                auto chunkPos = Game::Map::ToChunkPos(cameraPos, blockScale);
+                ImGui::InputInt3("Chunk", &chunkPos.x, ImGuiInputTextFlags_ReadOnly);
+                auto blockPos = Game::Map::ToBlockPos(cameraPos, blockScale);
+                ImGui::InputInt3("Block", &blockPos.x, ImGuiInputTextFlags_ReadOnly);
 
-                    ImGui::EndTabItem();
-                }
-            #endif
+                ImGui::Text("Cursor Info");
+                ImGui::Separator();
+
+                auto cursorChunk = Game::Map::ToChunkPos(cursor.pos, blockScale);
+                ImGui::InputInt3("Chunk", &cursorChunk.x, ImGuiInputTextFlags_ReadOnly);
+                auto cursorBlock = Game::Map::ToBlockPos(cursor.pos, blockScale);
+                ImGui::InputInt3("Block", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
+                
+                #ifdef _DEBUG
+                ImGui::Text("Debug Options");
+                ImGui::Separator();
+                ImGui::Checkbox("New map system", &newMapSys);
+                #endif
+
+                ImGui::EndTabItem();
+            }
 
             ImGui::EndTabBar();
         }

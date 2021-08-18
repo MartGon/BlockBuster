@@ -51,17 +51,18 @@ Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::R
     // Sort chunks by distance to origin in global coordinates
     auto chunkIndices = map->GetChunkIndices();
     auto rayOrigin = ray.origin;
-    std::sort(chunkIndices.begin(), chunkIndices.end(), [rayOrigin](glm::ivec3 a, glm::ivec3 b)
+    std::sort(chunkIndices.begin(), chunkIndices.end(), [rayOrigin, blockScale](glm::ivec3 a, glm::ivec3 b)
     {
-        auto aDist = glm::length(Game::Map::ToGlobalChunkPos(a) - rayOrigin);
-        auto bDist = glm::length(Game::Map::ToGlobalChunkPos(b) - rayOrigin);
+        auto aDist = glm::length(glm::vec3{a - Game::Map::ToChunkPos(rayOrigin, blockScale)});
+        auto bDist = glm::length(glm::vec3{b - Game::Map::ToChunkPos(rayOrigin, blockScale)});
         return aDist < bDist;
     });
 
     for(const auto& chunkIndex : chunkIndices)
     {
-        glm::vec3 pos = Game::Map::ToGlobalChunkPos(chunkIndex) * blockScale;
-        Math::Transform t{pos, glm::vec3{0.0f}, glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale};
+        glm::vec3 pos = Game::Map::ToGlobalChunkPos(chunkIndex, blockScale);
+        glm::vec3 size = glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale;
+        Math::Transform t{pos, glm::vec3{0.0f}, size};
         auto model = t.GetTransformMat();
         auto rayInt = Collisions::RayAABBIntersection(ray, model);
         if(rayInt.intersects)
@@ -73,13 +74,16 @@ Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::R
             auto& chunk = map->GetChunk(chunkIndex);
             auto chunkIt = chunk.CreateBlockIterator();
             for(auto bData = chunkIt.GetNextBlock(); !chunkIt.IsOver(); bData = chunkIt.GetNextBlock())
-                blocksData.push_back({Game::Map::ToGlobalBlockPos(chunkIndex, bData.first), bData.second});
+            {
+                auto blockPos = Game::Map::ToGlobalBlockPos(chunkIndex, bData.first);
+                blocksData.push_back({blockPos, bData.second});
+            }
 
             // Sort them by distance in global coordinates to ray origin
-            std::sort(blocksData.begin(), blocksData.end(), [rayOrigin](BlockData a, BlockData b)
+            std::sort(blocksData.begin(), blocksData.end(), [rayOrigin, blockScale](BlockData a, BlockData b)
             {
-                auto distA = glm::length(glm::vec3{a.first} - rayOrigin);
-                auto distB = glm::length(glm::vec3{b.first} - rayOrigin);
+                auto distA = glm::length(glm::vec3{a.first} * blockScale - rayOrigin);
+                auto distB = glm::length(glm::vec3{b.first} * blockScale - rayOrigin);
                 return distA < distB;
             });
 
@@ -89,9 +93,7 @@ Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::R
                 glm::ivec3 globalPos = bData.first;
                 Game::Block* block = bData.second;
 
-                glm::vec3 realPos = glm::vec3{globalPos} * blockScale;
-                glm::vec3 rot = block->GetRotation();
-                Math::Transform bt{realPos, rot, glm::vec3{blockScale}};
+                Math::Transform bt = GetBlockTransform(globalPos, block->rot, blockScale);
                 auto model = bt.GetTransformMat();
 
                 Collisions::RayIntersection blockInt;

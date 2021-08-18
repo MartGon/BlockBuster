@@ -132,9 +132,15 @@ namespace Game
         };
 
         // Returns centered chunk pos
-        glm::vec3 ToGlobalChunkPos(glm::ivec3 chunkIndex);
+        glm::vec3 ToGlobalChunkPos(glm::ivec3 chunkIndex, float blockScale = 1.0f);
 
-        // Returns global block pos
+        // Returns global block pos. Ignores scale
         glm::ivec3 ToGlobalBlockPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex);
+
+        // Returns the chunk corresponding to a given global pos
+        glm::ivec3 ToChunkPos(glm::vec3 globalPos, float blockScale = 1.0f);
+
+        // Returns the block corresponding to a global pos;
+        glm::ivec3 ToBlockPos(glm::vec3 globalPos, float blockScale = 1.0f);
     }
 }

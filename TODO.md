@@ -16,7 +16,7 @@
 ## TODO
     Release first version
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
-    Info tab (Coordinates - Position and orientation)
+    Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
     SemiSlope mesh and collisions
     ImGui::Selectable template function
     Tool Class heirarchy
