@@ -1,7 +1,7 @@
 #include <Editor.h>
 
 #include <game/Game.h>
-#include <math/Math.h>
+#include <math/BBMath.h>
 
 #include <iostream>
 #include <algorithm>
