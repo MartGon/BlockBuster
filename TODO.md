@@ -13,10 +13,11 @@
     Undo and Redo - Done
     Go to pos - Done
 
+    Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
+
 ## TODO
     Release first version
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
-    Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
     SemiSlope mesh and collisions
     ImGui::Selectable template function
     Tool Class heirarchy
@@ -28,6 +29,7 @@
         Shift to scale selector
         Key shortcuts for scaling/movement/startmoving
         Copy/Cut Paste
+        Mirror selection
         Paint Selection
         Hide Selection
         Rotate Selection
