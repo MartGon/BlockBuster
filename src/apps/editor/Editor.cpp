@@ -1,6 +1,7 @@
 #include <Editor.h>
 
 #include <game/Game.h>
+#include <math/Math.h>
 
 #include <iostream>
 #include <algorithm>
@@ -330,7 +331,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     glDisable(GL_DEPTH_TEST);
     if(cursor.enabled && cursor.show && tool != SELECT_BLOCKS)
     {   
-        auto t = Game::GetBlockTransform(cursor.pos, blockScale);
+        auto t = Game::GetBlockTransform(cursor.pos, cursor.rot, blockScale);
         DrawCursor(t);
     }
     else if(tool == SELECT_BLOCKS)
@@ -365,7 +366,7 @@ void BlockBuster::Editor::Editor::UpdateEditorCamera()
         yaw += -CAMERA_ROT_SPEED;
     
     cameraRot.x = glm::max(glm::min(cameraRot.x + pitch, glm::pi<float>() - CAMERA_ROT_SPEED), CAMERA_ROT_SPEED);
-    cameraRot.y = cameraRot.y + yaw;
+    cameraRot.y = Math::OverflowSumFloat(cameraRot.y, yaw, 0.0f, glm::two_pi<float>());
     camera.SetRotation(cameraRot.x, cameraRot.y);
     
     // Position
@@ -479,6 +480,7 @@ void BlockBuster::Editor::Editor::SelectTool(Tool newTool)
     {
     case Tool::SELECT_BLOCKS:
         cursor.pos = savedPos;
+        cursor.type = Game::BlockType::BLOCK;
         break;
     
     default:
@@ -509,23 +511,18 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
 
                 if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::HOVER)
                 {
-                   
                     auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
-                    auto pos = blockTransform.position;
-                    auto scale = blockTransform.scale;
-
-                    auto newBlockPos = pos + intersection.normal * scale;
-                    auto yaw = blockType == Game::BlockType::SLOPE ? (std::round(glm::degrees(camera.GetRotation().y) / 90.0f) * 90.0f) - 90.0f : 0.0f;
-                    auto newBlockRot = glm::vec3{0.0f, yaw, 0.0f};
+                    Game::BlockRot rot{Game::RotType::ROT_0, Game::RotType::ROT_0};
+                    if(blockType == Game::BlockType::SLOPE)
+                        rot.y = static_cast<Game::RotType>(glm::round(camera.GetRotation().y / glm::half_pi<float>()) - 1);
 
                     if(actionType == ActionType::LEFT_BUTTON)
                     {
                         auto display = GetBlockDisplay();                            
-                        auto newBlockType = blockType;
-                        auto iNewPos = glm::round(newBlockPos / scale);
-                        auto block = Game::Block{newBlockType, Game::ROT_0, Game::ROT_0, display};
+                        auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
+                        auto block = Game::Block{blockType, rot, display};
                         auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &map_);
-                        Debug::PrintVector(iNewPos, "iNewPos");
+
                         DoToolAction(std::move(action));
                     }
                     else if(actionType == ActionType::HOVER)
@@ -534,6 +531,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
                         cursor.color = yellow;
                         cursor.type = blockType;
+                        cursor.rot = rot;
                         if(block.display.type == Game::DisplayType::COLOR)
                         {
                             cursor.color = GetBorderColor(colors[block.display.id], darkBlue, yellow);
@@ -550,7 +548,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
 
                     break;
                 }
-            
+            }
             else
             {
                 cursor.enabled = false;
@@ -564,19 +562,19 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 auto block = *intersect.block;
                 if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::RIGHT_BUTTON)
                 {
-                    int mod = actionType == ActionType::RIGHT_BUTTON ? -90 : 90;
-                    int sign = actionType == ActionType::RIGHT_BUTTON ? -1 : 1;
+                    int8_t sign = actionType == ActionType::RIGHT_BUTTON ? -1 : 1;
                     if(block.type == Game::BlockType::SLOPE)
                     {
-                        
                         Game::BlockRot blockRot = map_.GetBlock(intersect.pos)->rot;
                         if(axis == RotationAxis::Y)
                         {
-                            blockRot.y = static_cast<Game::RotType>((blockRot.y + sign) % 4);
+                            int8_t rot = Math::OverflowSumInt<int8_t>(blockRot.y, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
+                            blockRot.y = static_cast<Game::RotType>(rot);
                         }
                         else if(axis == RotationAxis::Z)
                         {
-                            blockRot.z = static_cast<Game::RotType>((blockRot.z + sign) % 3);
+                            int8_t rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_180);
+                            blockRot.z = static_cast<Game::RotType>(rot);
                         }
 
                         DoToolAction(std::make_unique<RotateAction>(intersect.pos, &block, &map_, blockRot));
@@ -644,7 +642,6 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
             break;
         }
     }
-}
 }
 
 void BlockBuster::Editor::Editor::QueueAction(std::unique_ptr<ToolAction> action)
@@ -871,9 +868,11 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && !io.KeyAlt)
         {
             if(tool == Tool::PLACE_BLOCK)
-                blockType = static_cast<Game::BlockType>(sym - SDLK_1);
+                blockType = static_cast<Game::BlockType>(sym - SDLK_0);
             if(tool == Tool::ROTATE_BLOCK)
                 axis = static_cast<RotationAxis>(sym - SDLK_0);
+            if(tool == Tool::PAINT_BLOCK)
+                displayType = static_cast<Game::DisplayType>(sym - SDLK_1);
         }
 
         if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && io.KeyAlt)

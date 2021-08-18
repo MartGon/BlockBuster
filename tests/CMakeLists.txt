@@ -3,6 +3,9 @@ SET(SOURCES
 )
 
 add_executable(BlockBusterTests ${SOURCES})
-target_include_directories(BlockBusterTests PUBLIC ${CMAKE_SOURCE_DIR}/deps)
+target_include_directories(BlockBusterTests PUBLIC 
+    ${CMAKE_SOURCE_DIR}/deps
+    ${CMAKE_SOURCE_DIR}/src/common/
+)
 
 add_test(NAME RunTests COMMAND BlockBusterTests)

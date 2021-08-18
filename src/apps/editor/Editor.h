@@ -247,6 +247,7 @@ namespace BlockBuster
                 bool show = true;
                 bool enabled = false;
                 glm::ivec3 pos = glm::ivec3{0};
+                Game::BlockRot rot {Game::RotType::ROT_0, Game::RotType::ROT_0};
                 glm::ivec3 scale{1};
                 glm::vec4 color = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
                 Game::BlockType type = Game::BlockType::BLOCK;

@@ -25,7 +25,7 @@ namespace Game
         SLOPE
     };
 
-    enum RotType : uint8_t
+    enum RotType : int8_t
     {
         ROT_0,
         ROT_90,
@@ -50,6 +50,8 @@ namespace Game
         glm::vec3 GetRotation() const;
     };
 
+    glm::vec3 BlockRotToVec3(BlockRot rot);
     Math::Transform GetBlockTransform(const Block& block, glm::ivec3 pos, float blockScale);
     Math::Transform GetBlockTransform(glm::ivec3 pos, float blockScale);
+    Math::Transform GetBlockTransform(glm::ivec3 pos, Game::BlockRot rot, float blockScale);
 }
