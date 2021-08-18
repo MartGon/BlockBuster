@@ -37,21 +37,21 @@ void Game::Map::Map::RemoveBlock(glm::ivec3 pos)
         block->type = Game::BlockType::NONE;
 }
 
-glm::ivec3 Game::Map::Map::ToChunkIndex(glm::ivec3 blockPos)
+glm::ivec3 Game::Map::ToChunkIndex(glm::ivec3 blockPos)
 {
-    auto cPos = blockPos + Chunk::HALF_DIMENSIONS;
+    auto cPos = blockPos + Map::Chunk::HALF_DIMENSIONS;
     glm::ivec3 sign = glm::lessThan(cPos, glm::ivec3{0});
-    glm::ivec3 chunkIndex = (cPos + sign) / Chunk::DIMENSIONS + sign * glm::ivec3{-1};
+    glm::ivec3 chunkIndex = (cPos + sign) / Map::Chunk::DIMENSIONS + sign * glm::ivec3{-1};
     return chunkIndex;
 }
 
-glm::ivec3 Game::Map::Map::ToBlockChunkPos(glm::ivec3 blockPos)
+glm::ivec3 Game::Map::ToBlockChunkPos(glm::ivec3 blockPos)
 {   
-    auto cPos = blockPos + Chunk::HALF_DIMENSIONS;
-    auto mod = cPos % (Chunk::DIMENSIONS);
+    auto centeredPos = blockPos + Map::Chunk::HALF_DIMENSIONS;
+    auto mod = centeredPos % (Map::Chunk::DIMENSIONS);
     glm::ivec3 modSign = glm::lessThan(mod, glm::ivec3{0});
 
-    auto blockChunkPos = mod + Chunk::DIMENSIONS * modSign;
+    auto blockChunkPos = mod + Map::Chunk::DIMENSIONS * modSign;
     return blockChunkPos;
 }
 

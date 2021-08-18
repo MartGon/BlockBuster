@@ -28,9 +28,6 @@ namespace Game
             void AddBlock(glm::ivec3 pos, Game::Block block);
             void RemoveBlock(glm::ivec3 pos);
 
-            glm::ivec3 ToChunkIndex(glm::ivec3 blockPos);
-            glm::ivec3 ToBlockChunkPos(glm::ivec3 blockPos);
-
             std::vector<glm::ivec3> GetChunkIndices() const;
             Chunk& GetChunk(glm::ivec3 pos);
             void Clear();
@@ -131,6 +128,8 @@ namespace Game
             std::unordered_map<glm::ivec3, Chunk> chunks_;
         };
 
+        // Position transforms
+
         // Returns centered chunk pos
         glm::vec3 ToGlobalChunkPos(glm::ivec3 chunkIndex, float blockScale = 1.0f);
 
@@ -142,5 +141,11 @@ namespace Game
 
         // Returns the block corresponding to a global pos;
         glm::ivec3 ToBlockPos(glm::vec3 globalPos, float blockScale = 1.0f);
+
+        // Global pos to corresponding chunk
+        glm::ivec3 ToChunkIndex(glm::ivec3 blockPos);
+
+        // Global pos to position within a chunk
+        glm::ivec3 ToBlockChunkPos(glm::ivec3 blockPos);
     }
 }

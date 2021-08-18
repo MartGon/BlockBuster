@@ -1833,9 +1833,9 @@ void BlockBuster::Editor::Editor::GUI()
                 ImGui::Text("Cursor Info");
                 ImGui::Separator();
 
-                auto cursorChunk = Game::Map::ToChunkPos(cursor.pos, blockScale);
+                auto cursorChunk = Game::Map::ToChunkIndex(cursor.pos);
                 ImGui::InputInt3("Chunk", &cursorChunk.x, ImGuiInputTextFlags_ReadOnly);
-                auto cursorBlock = Game::Map::ToBlockPos(cursor.pos, blockScale);
+                auto cursorBlock = cursor.pos;
                 ImGui::InputInt3("Block", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
                 
                 #ifdef _DEBUG
