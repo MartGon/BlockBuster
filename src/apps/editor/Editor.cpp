@@ -341,6 +341,25 @@ void BlockBuster::Editor::Editor::UpdateEditor()
 
     glEnable(GL_DEPTH_TEST);
 
+    // Draw chunk borders
+    if(drawChunkBorders)
+    {
+        auto chunkIt = map_.CreateChunkIterator();
+        for(auto chunk = chunkIt.GetNextChunk(); !chunkIt.IsOver(); chunk = chunkIt.GetNextChunk())
+        {
+            auto pos = Game::Map::ToRealChunkPos(chunk.first, blockScale);
+            auto size = glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale;
+            Math::Transform ct{pos, glm::vec3{0.0f}, size};
+            auto model = ct.GetTransformMat();
+
+            auto transform = camera.GetProjViewMat() * model;
+            shader.SetUniformMat4("transform", transform);
+            shader.SetUniformInt("hasBorder", false);
+            auto& mesh = GetMesh(cursor.type);
+            mesh.Draw(shader, cursor.color, GL_LINE);
+        }
+    }
+
     // Create GUI
     GUI();
 }
@@ -1849,9 +1868,9 @@ void BlockBuster::Editor::Editor::GUI()
                 ImGui::SliderFloat2("Rotation", &cameraRot.x, 0.0f, glm::two_pi<float>(), "%.3f", ImGuiSliderFlags_NoInput);
                 auto cameraPos = camera.GetPos();
                 ImGui::InputFloat3("Global Position", &cameraPos.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
-                auto chunkPos = Game::Map::ToChunkPos(cameraPos, blockScale);
+                auto chunkPos = Game::Map::ToChunkIndex(cameraPos, blockScale);
                 ImGui::InputInt3("Chunk", &chunkPos.x, ImGuiInputTextFlags_ReadOnly);
-                auto blockPos = Game::Map::ToBlockPos(cameraPos, blockScale);
+                auto blockPos = Game::Map::ToGlobalPos(cameraPos, blockScale);
                 ImGui::InputInt3("Block", &blockPos.x, ImGuiInputTextFlags_ReadOnly);
 
                 ImGui::Text("Cursor Info");
@@ -1874,7 +1893,10 @@ void BlockBuster::Editor::Editor::GUI()
                 ImGui::Text("Debug Options");
                 ImGui::Separator();
                 ImGui::Checkbox("New map system", &newMapSys);
+                ImGui::SameLine();
                 ImGui::Checkbox("Intersection Optimization", &optimizeIntersection);
+                ImGui::SameLine();
+                ImGui::Checkbox("Draw Chunk borders", &drawChunkBorders);
                 #endif
 
                 ImGui::EndTabItem();

@@ -154,7 +154,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
         for(auto b = 0; b < blockCount; b++)
         {
             auto chunkBlockPos = ReadFromFile<glm::lowp_i8vec3>(file);
-            auto globalPos = Game::Map::ToGlobalBlockPos(chunkIndex, chunkBlockPos);
+            auto globalPos = Game::Map::ToGlobalPos(chunkIndex, chunkBlockPos);
             
             Game::Block block;
             block.type = ReadFromFile<Game::BlockType>(file);

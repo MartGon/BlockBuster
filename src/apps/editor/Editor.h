@@ -285,6 +285,7 @@ namespace BlockBuster
             #ifdef _DEBUG
                 bool showDemo = false;
                 bool newMapSys = true;
+                bool drawChunkBorders = false;
             #endif
 
             // Test

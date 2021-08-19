@@ -130,22 +130,35 @@ namespace Game
 
         // Position transforms
 
-        // Returns centered chunk pos
-        glm::vec3 ToGlobalChunkPos(glm::ivec3 chunkIndex, float blockScale = 1.0f);
+        // #### Blocks #### \\
+        // GlobalPos: ivec3 coordinates of a block in the map
+        // ChunkPos: ivec3 coordinates of a block relative to a chunk
+        // RealPos: vec3 position of a block/chunk taking block scale into account
 
-        // Returns global block pos. Ignores scale
-        glm::ivec3 ToGlobalBlockPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex);
+        // Returns real block pos from global block pos
+        glm::vec3 ToRealPos(glm::ivec3 globalPos, float blockScale = 1.0f);
 
-        // Returns the chunk corresponding to a given global pos
-        glm::ivec3 ToChunkPos(glm::vec3 globalPos, float blockScale = 1.0f);
+        // Returns real block pos from chunk index and block index within that chunk.
+        glm::vec3 ToRealPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex, float blockScale = 1.0f);
 
-        // Returns the block corresponding to a global pos;
-        glm::ivec3 ToBlockPos(glm::vec3 globalPos, float blockScale = 1.0f);
+        // Returns the block corresponding to a real pos;
+        glm::ivec3 ToGlobalPos(glm::vec3 globalPos, float blockScale = 1.0f);
 
-        // Global pos to corresponding chunk
-        glm::ivec3 ToChunkIndex(glm::ivec3 blockPos);
+        // Returns global block pos from chunk index and block index within that chunk. Ignores scale
+        glm::ivec3 ToGlobalPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex);
 
         // Global pos to position within a chunk
         glm::ivec3 ToBlockChunkPos(glm::ivec3 blockPos);
+
+        // #### Chunks #### \\
+
+        // Returns centered chunk pos
+        glm::vec3 ToRealChunkPos(glm::ivec3 chunkIndex, float blockScale = 1.0f);
+
+        // Returns the chunk index corresponding to a given real pos
+        glm::ivec3 ToChunkIndex(glm::vec3 realPos, float blockScale = 1.0f);
+
+        // Global pos to corresponding chunk index
+        glm::ivec3 ToChunkIndex(glm::ivec3 globalBlockpos);
     }
 }
