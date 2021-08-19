@@ -253,7 +253,7 @@ namespace BlockBuster
                 Game::BlockType type = Game::BlockType::BLOCK;
                 CursorMode mode = CursorMode::SCALED;
             };
-            bool optimizeIntersection = false;
+            bool optimizeIntersection = true;
             bool intersecting = false;
             Cursor cursor;
 

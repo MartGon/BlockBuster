@@ -506,13 +506,23 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
     else
     {
         auto intersections = Game::CastRay(&map_, ray, blockScale);
+        auto scale = blockScale;
+        std::sort(intersections.begin(), intersections.end(), [ray, scale](Game::RayBlockIntersection a, Game::RayBlockIntersection b)
+        {
+            auto distA = glm::length(glm::vec3{a.pos} * scale - ray.origin);
+            auto distB = glm::length(glm::vec3{b.pos} * scale - ray.origin);
+            return distA < distB;
+        });
         if (!intersections.empty())
             intersect = intersections.front();
     }
 
-
     auto intersection = intersect.intersection;
     intersecting = intersect.intersection.intersects;
+    if(intersecting)
+        preColorBlockPos = intersect.pos;
+    else
+        preColorBlockPos = glm::ivec3{0};
 
     // Use appropiate Tool
     switch(tool)
@@ -1848,9 +1858,14 @@ void BlockBuster::Editor::Editor::GUI()
                 ImGui::Separator();
 
                 auto cursorChunk = Game::Map::ToChunkIndex(cursor.pos);
-                ImGui::InputInt3("Chunk", &cursorChunk.x, ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputInt3("Cursor Chunk Location", &cursorChunk.x, ImGuiInputTextFlags_ReadOnly);
                 auto cursorBlock = cursor.pos;
-                ImGui::InputInt3("Block", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputInt3("Cursor Block Location", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
+
+                auto pointedChunk = Game::Map::ToChunkIndex(preColorBlockPos);
+                ImGui::InputInt3("Pointed Chunk Location", &pointedChunk.x, ImGuiInputTextFlags_ReadOnly);
+                auto pointedBlock = preColorBlockPos;
+                ImGui::InputInt3("Pointed Block Location", &pointedBlock.x, ImGuiInputTextFlags_ReadOnly);
 
                 auto hittingBlock = intersecting;
                 ImGui::Checkbox("Intersecting", &hittingBlock);

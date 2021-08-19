@@ -1,7 +1,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#include <math/Math.h>
+#include <math/BBMath.h>
 #include <game/Map.h>
 
 TEST_CASE("Math tests")

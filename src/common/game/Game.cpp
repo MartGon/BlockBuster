@@ -8,22 +8,19 @@ std::vector<Game::RayBlockIntersection> Game::CastRay(Game::Map::Map* map, Colli
     auto chunkIt = map->CreateChunkIterator();
     for(auto c = chunkIt.GetNextChunk(); !chunkIt.IsOver(); c = chunkIt.GetNextChunk())
     {
-        glm::vec3 pos = Game::Map::ToGlobalChunkPos(c.first) * blockScale;
-        auto chunk = c.second;
-        Math::Transform t{pos, glm::vec3{0.0f}, glm::vec3{chunk->DIMENSIONS} * blockScale};
+        glm::vec3 pos = Game::Map::ToGlobalChunkPos(c.first, blockScale);
+        Math::Transform t{pos, glm::vec3{0.0f}, glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale};
         auto model = t.GetTransformMat();
         auto rayInt = Collisions::RayAABBIntersection(ray, model);
 
         if(rayInt.intersects)
         {
-            auto blockIt = chunk->CreateBlockIterator();
+            auto blockIt = c.second->CreateBlockIterator();
             for(auto b = blockIt.GetNextBlock(); !blockIt.IsOver(); b = blockIt.GetNextBlock())
             {   
                 auto block = b.second;
                 auto globalPos = Map::ToGlobalBlockPos(c.first, b.first);
-                auto realPos = glm::vec3{globalPos} * blockScale;
-                auto rot = block->GetRotation();
-                Math::Transform bt{realPos, rot, glm::vec3{blockScale}};
+                Math::Transform bt = Game::GetBlockTransform(globalPos, block->rot, blockScale);
                 auto model = bt.GetTransformMat();
 
                 Collisions::RayIntersection blockInt;
