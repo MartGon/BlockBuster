@@ -48,7 +48,7 @@ Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::R
     // Sort chunks by distance to origin in global coordinates
     auto chunkIndices = map->GetChunkIndices();
     auto rayOrigin = ray.origin;
-    std::sort(chunkIndices.begin(), chunkIndices.end(), [rayOrigin, blockScale](glm::ivec3 a, glm::ivec3 b)
+    std::sort(chunkIndices.begin(), chunkIndices.end(), [rayOrigin, blockScale](const auto& a, const auto& b)
     {
         auto aDist = glm::length(glm::vec3{a - Game::Map::ToChunkIndex(rayOrigin, blockScale)});
         auto bDist = glm::length(glm::vec3{b - Game::Map::ToChunkIndex(rayOrigin, blockScale)});

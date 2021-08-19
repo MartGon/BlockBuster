@@ -165,7 +165,7 @@ void AppGame::Player::HandleCollisions(const std::vector<std::pair<Math::Transfo
         }
 
         auto playerPos = transform.position;
-        std::sort(intersections.begin(), intersections.end(), [playerPos](Intersection a, Intersection b){
+        std::sort(intersections.begin(), intersections.end(), [playerPos](const auto& a, const auto& b){
             auto distToA = glm::length(a.blockTransform.position - playerPos);
             auto distToB = glm::length(b.blockTransform.position - playerPos);
             return distToA < distToB;

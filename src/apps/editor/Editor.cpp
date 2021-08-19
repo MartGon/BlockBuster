@@ -526,7 +526,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
     {
         auto intersections = Game::CastRay(&map_, ray, blockScale);
         auto scale = blockScale;
-        std::sort(intersections.begin(), intersections.end(), [ray, scale](Game::RayBlockIntersection a, Game::RayBlockIntersection b)
+        std::sort(intersections.begin(), intersections.end(), [ray, scale](const auto& a, const auto& b)
         {
             auto distA = glm::length(glm::vec3{a.pos} * scale - ray.origin);
             auto distB = glm::length(glm::vec3{b.pos} * scale - ray.origin);
