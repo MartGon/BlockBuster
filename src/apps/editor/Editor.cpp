@@ -772,7 +772,7 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
     else if(cursor.mode == CursorMode::SCALED) 
     {
         auto scale = (glm::vec3)cursor.scale * blockScale;
-        auto tPos = glm::vec3{pos} * blockScale + (scale / 2.0f) - glm::vec3{blockScale / 2};
+        auto tPos = Game::Map::ToRealPos(pos, blockScale) + (scale / 2.0f) - glm::vec3{blockScale / 2};
         Math::Transform t{tPos, glm::vec3{0.0f}, scale};
 
         DrawCursor(t);
