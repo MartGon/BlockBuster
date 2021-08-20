@@ -11,6 +11,8 @@ namespace BlockBuster::Editor
     public:
         Project();
 
+        void Init();
+
         Game::Map::Map map;
         float blockScale;
         std::vector<GL::Texture> textures;
@@ -25,7 +27,6 @@ namespace BlockBuster::Editor
         bool isOk = true;
     };
 
-    Project NewProject();
     void WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath);
     Project ReadProjectFromFile(std::filesystem::path filepath);
 }

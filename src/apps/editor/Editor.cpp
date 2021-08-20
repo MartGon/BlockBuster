@@ -174,20 +174,13 @@ bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folde
 
 void BlockBuster::Editor::Editor::NewProject()
 {
-    // Texture pallete
-    textures.clear();
-
-    // Color palette
-    colors = {glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f}};
+    // Init project
+    project = Project{};
+    project.Init();
 
     // Camera
     camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
     camera.SetTarget(glm::vec3{0.0f});
-
-    // Map block
-    map_.AddBlock(glm::ivec3{0}, Game::Block{
-        Game::BLOCK, Game::ROT_0, Game::ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
-    });
 
     // Window
     RenameMainWindow("New Map");
@@ -198,8 +191,6 @@ void BlockBuster::Editor::Editor::NewProject()
 
     // Filename
     std::strcpy(fileName, "NewMap.bbm");
-
-    project = Project{};
 
     ClearActionHistory();
 }
@@ -224,10 +215,13 @@ void BlockBuster::Editor::Editor::SaveProject()
 bool BlockBuster::Editor::Editor::OpenProject()
 {
     std::filesystem::path mapPath = mapsFolder / fileName;
-    project = ::BlockBuster::Editor::ReadProjectFromFile(mapPath);
-
-    if(project.isOk)
+    Project temp = ::BlockBuster::Editor::ReadProjectFromFile(mapPath);
+    bool isOk = temp.isOk;
+    if(isOk)
     {
+        // Move to main project if it's ok
+        project = std::move(temp);
+
         // Window
         RenameMainWindow(fileName);
 
@@ -246,7 +240,7 @@ bool BlockBuster::Editor::Editor::OpenProject()
         camera.SetRotation(project.cameraRot.x, project.cameraRot.y);
     }
 
-    return project.isOk;
+    return isOk;
 }
 
 // #### Editor #### \\

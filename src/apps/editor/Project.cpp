@@ -7,6 +7,11 @@
 
 BlockBuster::Editor::Project::Project()
 {    
+
+}
+
+void BlockBuster::Editor::Project::Init()
+{
     blockScale = 2.0f;
     colors = {glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f}};
 
@@ -145,7 +150,6 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     }
 
     // Load map
-    p.map.Clear();
     auto chunkIndicesCount = ReadFromFile<std::size_t>(file);
     for(auto i = 0; i < chunkIndicesCount; i++)
     {
