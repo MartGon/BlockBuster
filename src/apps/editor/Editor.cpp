@@ -87,7 +87,7 @@ void BlockBuster::Editor::Editor::Update()
         shader.SetUniformInt("hasBorder", true);
         shader.SetUniformMat4("transform", tMat);
         auto& mesh = GetMesh(block->type);
-        auto display = tool == PAINT_BLOCK && preColorBlockPos == pos ? GetBlockDisplay() : block->display;
+        auto display = tool == PAINT_BLOCK && intersecting && pointedBlockPos == pos ? GetBlockDisplay() : block->display;
         if(display.type == Game::DisplayType::TEXTURE)
         {
             if(display.id < textures.size())
@@ -308,9 +308,6 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     // Hover
     if(!io.WantCaptureMouse)
     {
-        // Reset previewColor
-        preColorBlockIndex = -1;
-
         auto mousePos = GetMousePos();
         UseTool(mousePos, ActionType::HOVER);
     }
@@ -350,7 +347,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
             shader.SetUniformMat4("transform", transform);
             shader.SetUniformInt("hasBorder", false);
             auto& mesh = GetMesh(cursor.type);
-            mesh.Draw(shader, cursor.color, GL_LINE);
+            mesh.Draw(shader, yellow, GL_LINE);
         }
     }
 
@@ -512,9 +509,12 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
     // Check intersection
     Game::RayBlockIntersection intersect;
 
+#ifdef _DEBUG
     if (optimizeIntersection)
     {
+#endif
         intersect = Game::CastRayFirst(&map_, ray, blockScale);
+#ifdef _DEBUG
     }
     else
     {
@@ -529,13 +529,14 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
         if (!intersections.empty())
             intersect = intersections.front();
     }
+#endif
 
     auto intersection = intersect.intersection;
     intersecting = intersect.intersection.intersects;
     if(intersecting)
-        preColorBlockPos = intersect.pos;
+        pointedBlockPos = intersect.pos;
     else
-        preColorBlockPos = glm::ivec3{0};
+        pointedBlockPos = glm::ivec3{0};
 
     // Use appropiate Tool
     switch(tool)
@@ -571,16 +572,17 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         if(auto found = map_.GetBlock(cursor.pos); !found || found->type == Game::BlockType::NONE)
                         {
                             cursor.enabled = true;
-                            cursor.color = yellow;
                             cursor.type = blockType;
                             cursor.rot = rot;
                             if(block.display.type == Game::DisplayType::COLOR)
                             {
                                 cursor.color = GetBorderColor(colors[block.display.id], darkBlue, yellow);
                             }
+                            else
+                                cursor.color = yellow;
                         }
-                        //else
-                        //    cursor.enabled = false;
+                        else
+                            cursor.enabled = false;
                     }
                 }
                 else if(actionType == ActionType::RIGHT_BUTTON)
@@ -665,7 +667,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 }
                 if(actionType == ActionType::HOVER)
                 {
-                    preColorBlockPos = iPos;
+                    pointedBlockPos = iPos;
                 }
             }
             break;
@@ -1875,23 +1877,25 @@ void BlockBuster::Editor::Editor::GUI()
                 auto cursorBlock = cursor.pos;
                 ImGui::InputInt3("Cursor Block Location", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
 
-                auto pointedChunk = Game::Map::ToChunkIndex(preColorBlockPos);
+                auto pointedChunk = Game::Map::ToChunkIndex(pointedBlockPos);
                 ImGui::InputInt3("Pointed Chunk Location", &pointedChunk.x, ImGuiInputTextFlags_ReadOnly);
-                auto pointedBlock = preColorBlockPos;
+                auto pointedBlock = pointedBlockPos;
                 ImGui::InputInt3("Pointed Block Location", &pointedBlock.x, ImGuiInputTextFlags_ReadOnly);
 
                 auto hittingBlock = intersecting;
                 ImGui::Checkbox("Intersecting", &hittingBlock);
                 
-                #ifdef _DEBUG
+                
                 ImGui::Text("Debug Options");
+#ifdef _DEBUG
                 ImGui::Separator();
                 ImGui::Checkbox("New map system", &newMapSys);
                 ImGui::SameLine();
                 ImGui::Checkbox("Intersection Optimization", &optimizeIntersection);
                 ImGui::SameLine();
+#endif
                 ImGui::Checkbox("Draw Chunk borders", &drawChunkBorders);
-                #endif
+
 
                 ImGui::EndTabItem();
             }

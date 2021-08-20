@@ -239,8 +239,7 @@ namespace BlockBuster
             const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
             const glm::vec4 darkBlue = glm::vec4{20.f / 255.f, 0.0f, 0.5f, 1.0f};
 
-            int preColorBlockIndex = 0;
-            glm::ivec3 preColorBlockPos;
+            glm::ivec3 pointedBlockPos;
 
             // Tools - Cursor
             struct Cursor{
@@ -253,7 +252,6 @@ namespace BlockBuster
                 Game::BlockType type = Game::BlockType::BLOCK;
                 CursorMode mode = CursorMode::SCALED;
             };
-            bool optimizeIntersection = true;
             bool intersecting = false;
             Cursor cursor;
 
@@ -285,8 +283,9 @@ namespace BlockBuster
             #ifdef _DEBUG
                 bool showDemo = false;
                 bool newMapSys = true;
-                bool drawChunkBorders = false;
+                bool optimizeIntersection = true;
             #endif
+            bool drawChunkBorders = false;
 
             // Test
             bool playerMode = false;
