@@ -37,6 +37,12 @@ void Game::Map::Map::RemoveBlock(glm::ivec3 pos)
         block->type = Game::BlockType::NONE;
 }
 
+bool Game::Map::Map::IsBlockNull(glm::ivec3 pos)
+{
+    auto block = GetBlock(pos);
+    return !block || block->type == Game::BlockType::NONE;
+}
+
 std::vector<glm::ivec3> Game::Map::Map::GetChunkIndices() const
 {
     std::vector<glm::ivec3> indices;

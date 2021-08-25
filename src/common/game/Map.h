@@ -27,6 +27,7 @@ namespace Game
             Game::Block* GetBlock(glm::ivec3 pos);
             void AddBlock(glm::ivec3 pos, Game::Block block);
             void RemoveBlock(glm::ivec3 pos);
+            bool IsBlockNull(glm::ivec3 pos);
 
             std::vector<glm::ivec3> GetChunkIndices() const;
             Chunk& GetChunk(glm::ivec3 pos);

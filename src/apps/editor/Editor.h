@@ -24,6 +24,8 @@ namespace BlockBuster
 {
     namespace Editor
     {
+        using BlockData = std::pair<glm::ivec3, Game::Block>;
+
         class Editor : public App::App
         {
         public:
@@ -106,12 +108,17 @@ namespace BlockBuster
 
             void DrawCursor(Math::Transform t);
             void DrawSelectCursor(glm::ivec3 pos);
+            std::vector<BlockData> GetBlocksInSelection(bool globalPos = true);
             void SelectBlocks();
             void ClearSelection();
             bool CanMoveSelection(glm::ivec3 offset);
             bool IsBlockInSelection(glm::ivec3 pos);
             void MoveSelection(glm::ivec3 offset);
             void MoveSelectionCursor(glm::ivec3 nextPos);
+
+            void CopySelection();
+            void CutSelection();
+            void PasteSelection();
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
@@ -256,9 +263,12 @@ namespace BlockBuster
             Cursor cursor;
 
             // Tools - Select
-            std::vector<std::pair<glm::ivec3, Game::Block>> selection;
+            std::vector<BlockData> selection;
             bool movingSelection = false;
             glm::ivec3 savedPos{0};
+
+            // Tools - Copy/Cut
+            std::vector<BlockData> clipboard;
 
             // GUI
             PopUpState state = PopUpState::NONE;

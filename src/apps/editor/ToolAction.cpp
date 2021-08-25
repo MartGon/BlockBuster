@@ -97,3 +97,20 @@ bool BlockBuster::Editor::MoveSelectionAction::IsBlockInSelection(glm::ivec3 pos
 
     return false;
 }
+
+void BlockBuster::Editor::BatchedAction::Do()
+{
+    for(auto& action : actions_)
+        action->Do();
+}
+
+void BlockBuster::Editor::BatchedAction::Undo()
+{
+    for(auto it = actions_.rbegin(); it != actions_.rend(); it++)
+        (*it)->Undo();
+}
+
+void BlockBuster::Editor::BatchedAction::AddAction(std::unique_ptr<ToolAction>&& action)
+{
+    actions_.push_back(std::move(action));
+}

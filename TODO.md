@@ -28,7 +28,7 @@
         Ctrl to select individual blocks
         Shift to scale selector
         Key shortcuts for scaling/movement/startmoving
-        Copy/Cut Paste
+        Copy/Cut Paste - Done
         Mirror selection
         Paint Selection
         Hide Selection

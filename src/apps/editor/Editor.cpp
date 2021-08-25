@@ -779,9 +779,9 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
     }
 }
 
-void BlockBuster::Editor::Editor::SelectBlocks()
+std::vector<BlockBuster::Editor::BlockData> BlockBuster::Editor::Editor::GetBlocksInSelection(bool globalPos)
 {
-    ClearSelection();
+    std::vector<BlockBuster::Editor::BlockData> selection;
 
     auto scale = glm::vec3{blockScale};
     glm::ivec3 cursorBasePos = cursor.pos;
@@ -791,11 +791,22 @@ void BlockBuster::Editor::Editor::SelectBlocks()
         {
             for(unsigned int z = 0; z < cursor.scale.z; z++)
             {
-                auto ipos = cursorBasePos + glm::ivec3{x, y, z};                
-                selection.push_back({ipos, *map_.GetBlock(ipos)});
+                auto offset = glm::ivec3{x, y, z};
+                auto ipos = cursorBasePos + offset;
+                if(globalPos)
+                    selection.push_back({ipos, *map_.GetBlock(ipos)});
+                else
+                    selection.push_back({offset, *map_.GetBlock(ipos)});
             }
         }
     }
+
+    return selection;
+}
+
+void BlockBuster::Editor::Editor::SelectBlocks()
+{
+    selection = GetBlocksInSelection();
 
     std::cout << "Selected " << selection.size() << " blocks\n";
 }
@@ -846,6 +857,43 @@ void BlockBuster::Editor::Editor::MoveSelectionCursor(glm::ivec3 nextPos)
     }
     else
         cursor.pos = nextPos;
+}
+
+void BlockBuster::Editor::Editor::CopySelection()
+{
+    clipboard = GetBlocksInSelection(false);
+
+    std::cout << clipboard.size() << " copied to clipboard\n";
+}
+
+void BlockBuster::Editor::Editor::CutSelection()
+{
+    CopySelection();
+
+    auto blockData = GetBlocksInSelection();
+    auto batchRemove = std::make_unique<BatchedAction>();
+    for(auto& bData : blockData)
+    {
+        auto removeAction = std::make_unique<RemoveAction>(bData.first, bData.second, &map_);
+        batchRemove->AddAction(std::move(removeAction));
+    }
+    DoToolAction(std::move(batchRemove));
+}
+
+void BlockBuster::Editor::Editor::PasteSelection()
+{
+    auto batchPlace = std::make_unique<BatchedAction>();
+    for(auto& bData : clipboard)
+    {
+        auto pos = cursor.pos + bData.first;
+        if(map_.IsBlockNull(pos))
+        {
+            std::cout << "Block is null\n";
+            auto placeAction = std::make_unique<PlaceBlockAction>(pos, bData.second, &map_);
+            batchPlace->AddAction(std::move(placeAction));
+        }
+    }
+    DoToolAction(std::move(batchPlace));
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
@@ -1796,6 +1844,23 @@ void BlockBuster::Editor::Editor::GUI()
                             ImGui::EndTable();
                         }
 
+                        if(ImGui::Button("Copy"))
+                        {
+                            CopySelection();
+                        }
+                        ImGui::SameLine();
+
+                        if(ImGui::Button("Cut"))
+                        {
+                            CutSelection();
+                        }
+                        ImGui::SameLine();
+
+                        if(ImGui::Button("Paste"))
+                        {
+                            PasteSelection();
+                        }
+
                         if(ImGui::Checkbox("Moving selection", &movingSelection))
                         {
                             if(movingSelection)
@@ -1805,11 +1870,17 @@ void BlockBuster::Editor::Editor::GUI()
                         }
 
                         #ifdef _DEBUG
-                        ImGui::Text("Selected blocks");
-                        for(auto pair : selection)
+                        ImGui::Text("Selected %zu blocks", selection.size());
+                        ImVec2 size {0, 40};
+                        if(ImGui::BeginTable("Selection", 1, ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY, size))
                         {
-                            std::string str = "Block pos: " + Debug::ToString(pair.first);
-                            ImGui::Text("%s", str.c_str());
+                            for(auto pair : selection)
+                            {
+                                ImGui::TableNextColumn();
+                                std::string str = "Block pos: " + Debug::ToString(pair.first);
+                                ImGui::Text("%s", str.c_str());
+                            }
+                            ImGui::EndTable();
                         }
                         #endif
                         

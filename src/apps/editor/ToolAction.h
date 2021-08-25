@@ -4,6 +4,7 @@
 #include <game/Map.h>
 
 #include <vector>
+#include <memory>
 
 namespace BlockBuster
 {
@@ -111,6 +112,19 @@ namespace BlockBuster
             std::vector<std::pair<glm::ivec3, Game::Block>> selection_;
             glm::ivec3 offset_;
             glm::ivec3* cursorPos_;
+        };
+
+        class BatchedAction : public ToolAction
+        {
+        public:
+            BatchedAction(){}
+            
+            void Do() override;
+            void Undo() override;
+
+            void AddAction(std::unique_ptr<ToolAction>&& action);
+        private:
+            std::vector<std::unique_ptr<ToolAction>> actions_;
         };
     }
 }
