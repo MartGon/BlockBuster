@@ -79,6 +79,13 @@ namespace BlockBuster
                 SELECT_BLOCKS
             };
 
+            enum class RotationAxis
+            {
+                X,
+                Y,
+                Z
+            };
+
             // Rendering
             Rendering::Mesh& GetMesh(Game::BlockType type);
             glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
@@ -119,6 +126,7 @@ namespace BlockBuster
             void CopySelection();
             void CutSelection();
             void PasteSelection();
+            void RotateSelection90Deg(RotationAxis axis, bool sign = true);
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
@@ -220,12 +228,6 @@ namespace BlockBuster
             Game::BlockType blockType = Game::BlockType::BLOCK;
 
             // Tool - Rotate
-            enum class RotationAxis
-            {
-                X,
-                Y,
-                Z
-            };
             RotationAxis axis = RotationAxis::Y;
 
             // Tool - Paint

@@ -896,6 +896,29 @@ void BlockBuster::Editor::Editor::PasteSelection()
     DoToolAction(std::move(batchPlace));
 }
 
+void BlockBuster::Editor::Editor::RotateSelection90Deg(BlockBuster::Editor::Editor::RotationAxis axis, bool sign)
+{
+    std::vector<BlockBuster::Editor::BlockData> rotatedSelection;
+    rotatedSelection.reserve(selection.size());
+    auto center = cursor.pos + cursor.scale / 2;
+    for(auto bData : selection)
+    {
+        auto relPos = bData.first - center;
+        auto rotatedPos = axis == RotationAxis::Y ? glm::ivec3{-relPos.z, relPos.y, relPos.x} : glm::ivec3{relPos.x, relPos.z, -relPos.y};
+        rotatedSelection.push_back({rotatedPos, bData.second});
+
+        map_.RemoveBlock(bData.first);
+    }
+
+    selection.clear();
+    for(auto bData : rotatedSelection)
+    {
+        auto absPos = bData.first + center;
+        selection.push_back({absPos, bData.second});
+        map_.AddBlock(absPos, bData.second);
+    }
+}
+
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
 {
     auto& io = ImGui::GetIO();
@@ -1874,6 +1897,10 @@ void BlockBuster::Editor::Editor::GUI()
                                 ClearSelection();
                         }
                         ImGui::PopStyleColor();
+
+                        ImGui::SameLine();
+                        if(ImGui::Button("Rotate"))
+                            RotateSelection90Deg(RotationAxis::Y, true);
 
                         #ifdef _DEBUG
                         ImGui::Text("Selected %zu blocks", selection.size());
