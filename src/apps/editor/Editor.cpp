@@ -1860,14 +1860,20 @@ void BlockBuster::Editor::Editor::GUI()
                         {
                             PasteSelection();
                         }
+                        ImGui::SameLine();
 
-                        if(ImGui::Checkbox("Moving selection", &movingSelection))
+                        const char* label = movingSelection ? "Stop Moving" : "Start Moving";
+                        ImVec4 color = movingSelection ? ImVec4{1.0f, 0.0f, 0.0f, 1.0f} : ImVec4{0.0f, 1.0f, 0.0f, 1.0f};
+                        ImGui::PushStyleColor(ImGuiCol_Button, color);
+                        if(ImGui::Button(label))
                         {
+                            movingSelection = !movingSelection;
                             if(movingSelection)
                                 SelectBlocks();
                             else
                                 ClearSelection();
                         }
+                        ImGui::PopStyleColor();
 
                         #ifdef _DEBUG
                         ImGui::Text("Selected %zu blocks", selection.size());
