@@ -914,14 +914,18 @@ void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::R
     std::vector<std::pair<glm::vec3, Game::Block>> rotSelection;
     rotSelection.reserve(lselection.size());
 
-    int maxScale = glm::max(cursor.scale.x, glm::max(cursor.scale.y, cursor.scale.z));
-    auto s = glm::ivec3{maxScale};
-    auto diffScale = s - cursor.scale;
-
+    // Calculate rot matrix
     glm::vec3 rotAxis = axis == RotationAxis::Y ? glm::ivec3{0, 1, 0} : glm::ivec3{0, 0, 1};
     glm::mat3 rotMat = glm::rotate(glm::mat4{1}, glm::radians(angle), rotAxis);
-    auto centerOffset = glm::vec3{s - 1} / 2.0f;
-    glm::vec3 center = glm::vec3{cursor.pos} + centerOffset - glm::vec3{diffScale / 2};
+
+    // Convert to square mat
+    int maxScale = glm::max(cursor.scale.x, glm::max(cursor.scale.y, cursor.scale.z));
+    auto s = glm::ivec3{maxScale};
+    glm::vec3 centerOffset = glm::vec3{s - 1} / 2.0f;
+    glm::vec3 adjustedOffset = glm::vec3{(s - cursor.scale) / 2};
+    glm::vec3 center = glm::vec3{cursor.pos} + centerOffset - adjustedOffset;
+    Debug::PrintVector("Center", center);
+
     for(auto bData : lselection)
     {
         glm::vec3 offset = glm::vec3{bData.first} - center;
@@ -931,18 +935,24 @@ void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::R
         map_.RemoveBlock(bData.first);
     }
 
-    cursor.pos = glm::ivec3{std::numeric_limits<int>::max()};
     for(auto bData : rotSelection)
     {
         glm::ivec3 absPos = glm::round(center + bData.first);
         map_.AddBlock(absPos, bData.second);
-
-        cursor.pos = glm::min(cursor.pos, absPos);
     }
 
     // Rotate scale
     auto cs = cursor.scale;
     cursor.scale = axis == RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
+
+    // Change cursor pos
+    auto cursorOffset = glm::vec3{cursor.pos} - center;
+    auto rotCursorOffset = rotMat * cursorOffset;
+
+    if(axis == RotationAxis::Y && rotCursorOffset.z >= 1 && rotCursorOffset.x < 0.0005f)
+        rotCursorOffset.z = -rotCursorOffset.z;
+
+    cursor.pos = glm::round(center + rotCursorOffset);
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
