@@ -902,7 +902,12 @@ void BlockBuster::Editor::Editor::PasteSelection()
 // NOTE: Could do either of two things
 // a. Forbid rotation unless the scale x,y,z are all equal. i.e. it is a cube
 // b. Internally, rescale cursor to make a cube, offset cursor pos according to the scaling done, don't remove block outside original selection, and return cursor to previous values
-void BlockBuster::Editor::Editor::RotateSelection90Deg(BlockBuster::Editor::Editor::RotationAxis axis, bool sign)
+// TODO:
+// Rotate slopes
+// OPTIONAL:
+// Save a rotation center for consecutive rotations. it is reset once the cursor is moved/scaled
+// More efficient method to calculate cursor.pos after rotation
+void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, float angle)
 {
     auto lselection = GetBlocksInSelection();
 
@@ -914,7 +919,7 @@ void BlockBuster::Editor::Editor::RotateSelection90Deg(BlockBuster::Editor::Edit
     auto diffScale = s - cursor.scale;
 
     glm::vec3 rotAxis = axis == RotationAxis::Y ? glm::ivec3{0, 1, 0} : glm::ivec3{0, 0, 1};
-    glm::mat3 rotMat = glm::rotate(glm::mat4{1}, glm::radians(90.0f), rotAxis);
+    glm::mat3 rotMat = glm::rotate(glm::mat4{1}, glm::radians(angle), rotAxis);
     auto centerOffset = glm::vec3{s - 1} / 2.0f;
     glm::vec3 center = glm::vec3{cursor.pos} + centerOffset - glm::vec3{diffScale / 2};
     for(auto bData : lselection)
@@ -926,16 +931,18 @@ void BlockBuster::Editor::Editor::RotateSelection90Deg(BlockBuster::Editor::Edit
         map_.RemoveBlock(bData.first);
     }
 
+    cursor.pos = glm::ivec3{std::numeric_limits<int>::max()};
     for(auto bData : rotSelection)
     {
         glm::ivec3 absPos = glm::round(center + bData.first);
         map_.AddBlock(absPos, bData.second);
+
+        cursor.pos = glm::min(cursor.pos, absPos);
     }
 
     // Rotate scale
     auto cs = cursor.scale;
     cursor.scale = axis == RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
-    cursor.pos = glm::round(center - glm::vec3{cursor.scale - 1} / 2.0f);
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
@@ -1919,7 +1926,7 @@ void BlockBuster::Editor::Editor::GUI()
 
                         ImGui::SameLine();
                         if(ImGui::Button("Rotate"))
-                            RotateSelection90Deg(RotationAxis::Y, true);
+                            RotateSelection(RotationAxis::Y);
 
                         #ifdef _DEBUG
                         ImGui::Text("Selected %zu blocks", selection.size());

@@ -126,7 +126,7 @@ namespace BlockBuster
             void CopySelection();
             void CutSelection();
             void PasteSelection();
-            void RotateSelection90Deg(RotationAxis axis, bool sign = true);
+            void RotateSelection(RotationAxis axis, float angle = 90.0f);
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
