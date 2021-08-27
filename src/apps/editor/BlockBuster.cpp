@@ -64,7 +64,7 @@ int main(int argc, char* args[])
     {
         std::cerr << "Configuration file is corrupted:" << e.what() << '\n';
         std::cerr << "Either fix or remove it to generate the default one\n";
-        //std::exit(-1);
+        std::exit(-1);
     }
     catch(const std::exception& e)
     {

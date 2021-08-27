@@ -896,27 +896,39 @@ void BlockBuster::Editor::Editor::PasteSelection()
     DoToolAction(std::move(batchPlace));
 }
 
+// NOTE: Could do either of two things
+// a. Forbid rotation unless the scale x,y,z are all equal. i.e. it is a cube
+// b. Internally, rescale cursor to make a cube, offset cursor pos according to the scaling done, don't remove block outside original selection, and return cursor to previous values
 void BlockBuster::Editor::Editor::RotateSelection90Deg(BlockBuster::Editor::Editor::RotationAxis axis, bool sign)
 {
-    std::vector<BlockBuster::Editor::BlockData> rotatedSelection;
-    rotatedSelection.reserve(selection.size());
-    auto center = cursor.pos + cursor.scale / 2;
-    for(auto bData : selection)
+    auto lselection = GetBlocksInSelection();
+
+    std::vector<std::pair<glm::vec3, Game::Block>> rotSelection;
+    rotSelection.reserve(lselection.size());
+
+    glm::vec3 rotAxis = axis == RotationAxis::Y ? glm::ivec3{0, 1, 0} : glm::ivec3{0, 0, 1};
+    glm::mat3 rotMat = glm::rotate(glm::mat4{1}, glm::radians(90.0f), rotAxis);
+    auto centerOffset = glm::vec3{cursor.scale - 1} / 2.0f;
+    glm::vec3 center = glm::vec3{cursor.pos} + centerOffset;
+    for(auto bData : lselection)
     {
-        auto relPos = bData.first - center;
-        auto rotatedPos = axis == RotationAxis::Y ? glm::ivec3{-relPos.z, relPos.y, relPos.x} : glm::ivec3{relPos.x, relPos.z, -relPos.y};
-        rotatedSelection.push_back({rotatedPos, bData.second});
+        glm::vec3 offset = glm::vec3{bData.first} - center;
+        glm::vec3 rotOffset = rotMat * offset;
+        rotSelection.push_back({rotOffset, bData.second});
 
         map_.RemoveBlock(bData.first);
     }
 
-    selection.clear();
-    for(auto bData : rotatedSelection)
+    for(auto bData : rotSelection)
     {
-        auto absPos = bData.first + center;
-        selection.push_back({absPos, bData.second});
+        glm::ivec3 absPos = glm::round(center + bData.first);
         map_.AddBlock(absPos, bData.second);
     }
+
+    // Rotate scale
+    auto s = cursor.scale;
+    cursor.scale = axis == RotationAxis::Y ? glm::ivec3{s.z, s.y, s.x} : glm::ivec3{s.y, s.x, s.z};
+    cursor.pos = glm::round(center - centerOffset);
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
