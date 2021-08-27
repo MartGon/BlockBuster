@@ -793,10 +793,13 @@ std::vector<BlockBuster::Editor::BlockData> BlockBuster::Editor::Editor::GetBloc
             {
                 auto offset = glm::ivec3{x, y, z};
                 auto ipos = cursorBasePos + offset;
-                if(globalPos)
-                    selection.push_back({ipos, *map_.GetBlock(ipos)});
-                else
-                    selection.push_back({offset, *map_.GetBlock(ipos)});
+                if(!map_.IsBlockNull(ipos))
+                {
+                    if(globalPos)
+                        selection.push_back({ipos, *map_.GetBlock(ipos)});
+                    else
+                        selection.push_back({offset, *map_.GetBlock(ipos)});
+                }
             }
         }
     }
@@ -906,10 +909,14 @@ void BlockBuster::Editor::Editor::RotateSelection90Deg(BlockBuster::Editor::Edit
     std::vector<std::pair<glm::vec3, Game::Block>> rotSelection;
     rotSelection.reserve(lselection.size());
 
+    int maxScale = glm::max(cursor.scale.x, glm::max(cursor.scale.y, cursor.scale.z));
+    auto s = glm::ivec3{maxScale};
+    auto diffScale = s - cursor.scale;
+
     glm::vec3 rotAxis = axis == RotationAxis::Y ? glm::ivec3{0, 1, 0} : glm::ivec3{0, 0, 1};
     glm::mat3 rotMat = glm::rotate(glm::mat4{1}, glm::radians(90.0f), rotAxis);
-    auto centerOffset = glm::vec3{cursor.scale - 1} / 2.0f;
-    glm::vec3 center = glm::vec3{cursor.pos} + centerOffset;
+    auto centerOffset = glm::vec3{s - 1} / 2.0f;
+    glm::vec3 center = glm::vec3{cursor.pos} + centerOffset - glm::vec3{diffScale / 2};
     for(auto bData : lselection)
     {
         glm::vec3 offset = glm::vec3{bData.first} - center;
@@ -926,9 +933,9 @@ void BlockBuster::Editor::Editor::RotateSelection90Deg(BlockBuster::Editor::Edit
     }
 
     // Rotate scale
-    auto s = cursor.scale;
-    cursor.scale = axis == RotationAxis::Y ? glm::ivec3{s.z, s.y, s.x} : glm::ivec3{s.y, s.x, s.z};
-    cursor.pos = glm::round(center - centerOffset);
+    auto cs = cursor.scale;
+    cursor.scale = axis == RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
+    cursor.pos = glm::round(center - glm::vec3{cursor.scale - 1} / 2.0f);
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
