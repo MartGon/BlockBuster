@@ -901,15 +901,16 @@ void BlockBuster::Editor::Editor::PasteSelection()
 
 // NOTE: Could do either of two things
 // a. Forbid rotation unless the scale x,y,z are all equal. i.e. it is a cube
-// b. Internally, rescale cursor to make a cube, offset cursor pos according to the scaling done, don't remove block outside original selection, and return cursor to previous values
+// DONE - b. Internally, rescale cursor to make a cube, offset cursor pos according to the scaling done, don't remove block outside original selection, and return cursor to previous values
 // TODO:
 // Rotate slopes
 // OPTIONAL:
 // Save a rotation center for consecutive rotations. it is reset once the cursor is moved/scaled
-// More efficient method to calculate cursor.pos after rotation
-void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, float angle)
+// DONE - More efficient method to calculate cursor.pos after rotation
+void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, Game::RotType rotType)
 {
     auto lselection = GetBlocksInSelection();
+    float angle = rotType == Game::RotType::ROT_90 ? 90.0f : 180.0f;
 
     std::vector<std::pair<glm::vec3, Game::Block>> rotSelection;
     rotSelection.reserve(lselection.size());
@@ -941,18 +942,23 @@ void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::R
         map_.AddBlock(absPos, bData.second);
     }
 
-    // Rotate scale
-    auto cs = cursor.scale;
-    cursor.scale = axis == RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
+    if(rotType == Game::ROT_90)
+    {
+        // Rotate scale
+         auto cs = cursor.scale;
+        cursor.scale = axis == RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
 
-    // Change cursor pos
-    auto cursorOffset = glm::vec3{cursor.pos} - center;
-    auto rotCursorOffset = rotMat * cursorOffset;
+        // Change cursor pos
+        auto cursorOffset = glm::vec3{cursor.pos} - center;
+        auto rotCursorOffset = rotMat * cursorOffset;
 
-    if(axis == RotationAxis::Y && rotCursorOffset.z >= 1 && rotCursorOffset.x < 0.0005f)
-        rotCursorOffset.z = -rotCursorOffset.z;
+        Debug::PrintVector("Rcoffs", rotCursorOffset);
 
-    cursor.pos = glm::round(center + rotCursorOffset);
+        if(axis == RotationAxis::Y && rotCursorOffset.z >= 1 && rotCursorOffset.x < 0.0005f)
+            rotCursorOffset.z = -rotCursorOffset.z;
+
+        cursor.pos = glm::round(center + rotCursorOffset);
+    }
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
@@ -1902,57 +1908,128 @@ void BlockBuster::Editor::Editor::GUI()
 
                             ImGui::EndTable();
                         }
-
-                        if(ImGui::Button("Copy"))
+                        
+                        if(ImGui::BeginTable("###Select tools", 2))
                         {
-                            CopySelection();
-                        }
-                        ImGui::SameLine();
+                            ImGui::TableSetupColumn("##Sub-Tools", ImGuiTableColumnFlags_WidthFixed);
+                            ImGui::TableSetupColumn("##Tool Options", 0);
 
-                        if(ImGui::Button("Cut"))
-                        {
-                            CutSelection();
-                        }
-                        ImGui::SameLine();
+                            ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::TableHeader("##Sub-Tools");
+                            ImGui::SameLine();
+                            ImGui::Text("Sub-Tools");
 
-                        if(ImGui::Button("Paste"))
-                        {
-                            PasteSelection();
-                        }
-                        ImGui::SameLine();
+                            ImGui::TableSetColumnIndex(1);
+                            ImGui::TableHeader("##Tool Options");
+                            ImGui::SameLine();
+                            ImGui::Text("Tools Options");
 
-                        const char* label = movingSelection ? "Stop Moving" : "Start Moving";
-                        ImVec4 color = movingSelection ? ImVec4{1.0f, 0.0f, 0.0f, 1.0f} : ImVec4{0.0f, 1.0f, 0.0f, 1.0f};
-                        ImGui::PushStyleColor(ImGuiCol_Button, color);
-                        if(ImGui::Button(label))
-                        {
-                            movingSelection = !movingSelection;
-                            if(movingSelection)
-                                SelectBlocks();
-                            else
-                                ClearSelection();
-                        }
-                        ImGui::PopStyleColor();
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
 
-                        ImGui::SameLine();
-                        if(ImGui::Button("Rotate"))
-                            RotateSelection(RotationAxis::Y);
-
-                        #ifdef _DEBUG
-                        ImGui::Text("Selected %zu blocks", selection.size());
-                        ImVec2 size {0, 40};
-                        if(ImGui::BeginTable("Selection", 1, ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY, size))
-                        {
-                            for(auto pair : selection)
+                            auto cursorX = ImGui::GetCursorPosX();
+                            ImGui::SetCursorPosX(cursorX + 4);
+                            if(ImGui::BeginTable("###Select Tools Pad", 2, 0, ImVec2{100, 0}))
                             {
                                 ImGui::TableNextColumn();
-                                std::string str = "Block pos: " + Debug::ToString(pair.first);
-                                ImGui::Text("%s", str.c_str());
+                                ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
+                                ImGui::Selectable("Move", &selectTool, SelectSubTool::MOVE);
+
+                                ImGui::TableNextColumn();
+                                ImGui::Selectable("Edit", &selectTool, SelectSubTool::EDIT);
+
+                                ImGui::TableNextColumn();
+                                ImGui::Selectable("Rotate", &selectTool, SelectSubTool::ROTATE);
+                                ImGui::PopStyleVar();
+
+                                ImGui::EndTable();
                             }
+
+                            ImGui::TableNextColumn();
+                            switch (selectTool)
+                            {
+                                case SelectSubTool::MOVE:
+                                {
+                                    const char* label = movingSelection ? "Stop Moving" : "Start Moving";
+                                    ImVec4 color = movingSelection ? ImVec4{1.0f, 0.0f, 0.0f, 1.0f} : ImVec4{0.0f, 1.0f, 0.0f, 1.0f};
+                                    ImGui::PushStyleColor(ImGuiCol_Button, color);
+                                    if(ImGui::Button(label))
+                                    {
+                                        movingSelection = !movingSelection;
+                                        if(movingSelection)
+                                            SelectBlocks();
+                                        else
+                                            ClearSelection();
+                                    }
+                                    ImGui::PopStyleColor();
+
+                                    #ifdef _DEBUG
+                                    ImGui::Text("Selected %zu blocks", selection.size());
+                                    ImVec2 size {0, 40};
+                                    if(ImGui::BeginTable("Selection", 1, ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY, size))
+                                    {
+                                        for(auto pair : selection)
+                                        {
+                                            ImGui::TableNextColumn();
+                                            std::string str = "Block pos: " + Debug::ToString(pair.first);
+                                            ImGui::Text("%s", str.c_str());
+                                        }
+                                        ImGui::EndTable();
+                                    }
+                                    #endif
+                                }
+                                    break;
+                                
+                                case SelectSubTool::EDIT:
+                                {
+                                    if(ImGui::Button("Copy"))
+                                    {
+                                        CopySelection();
+                                    }
+                                    ImGui::SameLine();
+
+                                    if(ImGui::Button("Cut"))
+                                    {
+                                        CutSelection();
+                                    }
+                                    ImGui::SameLine();
+
+                                    if(ImGui::Button("Paste"))
+                                    {
+                                        PasteSelection();
+                                    }
+                                    ImGui::SameLine();
+                                    break;
+                                }
+
+                                case SelectSubTool::ROTATE:
+                                {
+                                    ImGui::Text("Axis");
+
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("Y", &selectRotAxis, RotationAxis::Y);
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("Z", &selectRotAxis, RotationAxis::Z);
+
+                                    ImGui::Text("Rotation angle (deg)");
+
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("90", &selectRotType, Game::RotType::ROT_90);
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("180", &selectRotType, Game::RotType::ROT_180);
+
+                                    if(ImGui::Button("Rotate"))
+                                        RotateSelection(selectRotAxis, selectRotType);
+                                }
+
+                                default:
+                                    break;
+                            }
+
+
                             ImGui::EndTable();
                         }
-                        #endif
-                        
                     }
 
                     ImGui::EndTable();
