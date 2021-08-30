@@ -901,14 +901,15 @@ void BlockBuster::Editor::Editor::PasteSelection()
 
 // NOTE: Could do either of two things
 // a. Forbid rotation unless the scale x,y,z are all equal. i.e. it is a cube
-// DONE - b. Internally, rescale cursor to make a cube, offset cursor pos according to the scaling done, don't remove block outside original selection, and return cursor to previous values
+// REJECTED - b. Internally, rescale cursor to make a cube, offset cursor pos according to the scaling done, don't remove block outside original selection, and return cursor to previous values
 // TODO:
 // Rotate slopes
 // OPTIONAL:
 // Save a rotation center for consecutive rotations. it is reset once the cursor is moved/scaled
-// DONE - More efficient method to calculate cursor.pos after rotation
 void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, Game::RotType rotType)
 {
+    // TODO: Check cursor is a squared in the involved axis;
+
     auto lselection = GetBlocksInSelection();
     float angle = rotType == Game::RotType::ROT_90 ? 90.0f : 180.0f;
 
@@ -916,16 +917,16 @@ void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::R
     rotSelection.reserve(lselection.size());
 
     // Calculate rot matrix
-    glm::vec3 rotAxis = axis == RotationAxis::Y ? glm::ivec3{0, 1, 0} : glm::ivec3{0, 0, 1};
-    glm::mat3 rotMat = glm::rotate(glm::mat4{1}, glm::radians(angle), rotAxis);
+    glm::ivec3 rotAxis = glm::vec3{0, 1, 0};
+    if(axis == RotationAxis::X)
+        rotAxis = glm::vec3{1, 0, 0};
+    else if(axis == RotationAxis::Z)
+        rotAxis = glm::vec3{0, 0, 1};
+    glm::mat3 rotMat = glm::rotate(glm::mat4{1}, glm::radians(angle), glm::vec3{rotAxis});
 
     // Convert to square mat
-    int maxScale = glm::max(cursor.scale.x, glm::max(cursor.scale.y, cursor.scale.z));
-    auto s = glm::ivec3{maxScale};
-    glm::vec3 centerOffset = glm::vec3{s - 1} / 2.0f;
-    glm::vec3 adjustedOffset = glm::vec3{(s - cursor.scale) / 2};
-    glm::vec3 center = glm::vec3{cursor.pos} + centerOffset - adjustedOffset;
-    Debug::PrintVector("Center", center);
+    glm::vec3 adjustedOffset = glm::vec3(cursor.scale - 1) / 2.0f;
+    glm::vec3 center = glm::vec3{cursor.pos} + adjustedOffset;
 
     for(auto bData : lselection)
     {
@@ -945,19 +946,8 @@ void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::R
     if(rotType == Game::ROT_90)
     {
         // Rotate scale
-         auto cs = cursor.scale;
+        auto cs = cursor.scale;
         cursor.scale = axis == RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
-
-        // Change cursor pos
-        auto cursorOffset = glm::vec3{cursor.pos} - center;
-        auto rotCursorOffset = rotMat * cursorOffset;
-
-        Debug::PrintVector("Rcoffs", rotCursorOffset);
-
-        if(axis == RotationAxis::Y && rotCursorOffset.z >= 1 && rotCursorOffset.x < 0.0005f)
-            rotCursorOffset.z = -rotCursorOffset.z;
-
-        cursor.pos = glm::round(center + rotCursorOffset);
     }
 }
 
@@ -2007,6 +1997,8 @@ void BlockBuster::Editor::Editor::GUI()
                                 {
                                     ImGui::Text("Axis");
 
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("X", &selectRotAxis, RotationAxis::X);
                                     ImGui::SameLine();
                                     ImGui::RadioButton("Y", &selectRotAxis, RotationAxis::Y);
                                     ImGui::SameLine();

@@ -33,6 +33,7 @@
         Paint Selection
         Hide Selection
         Rotate Selection
+        Fill Selection
         Block icons to move
         Asset list with other bbms
     Optimize Player/Map collisions
