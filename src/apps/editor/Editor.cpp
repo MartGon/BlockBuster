@@ -899,16 +899,25 @@ void BlockBuster::Editor::Editor::PasteSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-// NOTE: Could do either of two things
-// a. Forbid rotation unless the scale x,y,z are all equal. i.e. it is a cube
-// REJECTED - b. Internally, rescale cursor to make a cube, offset cursor pos according to the scaling done, don't remove block outside original selection, and return cursor to previous values
-// TODO:
-// Rotate slopes
-// OPTIONAL:
-// Save a rotation center for consecutive rotations. it is reset once the cursor is moved/scaled
-void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, Game::RotType rotType)
+BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, Game::RotType rotType)
 {
-    // TODO: Check cursor is a squared in the involved axis;
+    Result res;
+
+    //Check cursor is a square in the involved axis;
+    if(rotType == Game::RotType::ROT_90)
+    {
+        bool canRotateX = axis == RotationAxis::X && cursor.scale.y == cursor.scale.z;
+        bool canRotateY = axis == RotationAxis::Y && cursor.scale.x == cursor.scale.z;
+        bool canRotateZ = axis == RotationAxis::Z && cursor.scale.x == cursor.scale.y;
+        bool canRotate = canRotateX || canRotateY || canRotateZ;
+
+        if(!canRotate)
+        {
+            res.isOk = false;
+            res.info = "Can not rotate 90 deg with a non-squared selection";
+            return res;
+        }
+    }
 
     auto lselection = GetBlocksInSelection();
     float angle = rotType == Game::RotType::ROT_90 ? 90.0f : 180.0f;
@@ -949,6 +958,8 @@ void BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::R
         auto cs = cursor.scale;
         cursor.scale = axis == RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
     }
+
+    return res;
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
@@ -2012,7 +2023,15 @@ void BlockBuster::Editor::Editor::GUI()
                                     ImGui::RadioButton("180", &selectRotType, Game::RotType::ROT_180);
 
                                     if(ImGui::Button("Rotate"))
-                                        RotateSelection(selectRotAxis, selectRotType);
+                                    {
+                                        auto res = RotateSelection(selectRotAxis, selectRotType);
+                                        selectRotErrorText = res.info;
+                                    }
+
+                                    ImVec4 red{1.0f, 0.0f, 0.0f, 1.0f};
+                                    ImGui::PushStyleColor(ImGuiCol_Text, red);
+                                    ImGui::Text("%s", selectRotErrorText.c_str());
+                                    ImGui::PopStyleColor();
                                 }
 
                                 default:
@@ -2124,3 +2143,4 @@ void BlockBuster::Editor::Editor::GUI()
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
+

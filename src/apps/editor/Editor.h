@@ -93,6 +93,12 @@ namespace BlockBuster
                 ROTATE
             };
 
+            struct Result
+            {
+                bool isOk = true;
+                std::string info;
+            };
+
             // Rendering
             Rendering::Mesh& GetMesh(Game::BlockType type);
             glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
@@ -133,7 +139,7 @@ namespace BlockBuster
             void CopySelection();
             void CutSelection();
             void PasteSelection();
-            void RotateSelection(RotationAxis axis, Game::RotType rotType);
+            Result RotateSelection(RotationAxis axis, Game::RotType rotType);
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
@@ -283,6 +289,7 @@ namespace BlockBuster
             // Tools - Select - Rotate
             RotationAxis selectRotAxis = RotationAxis::Y;
             Game::RotType selectRotType = Game::RotType::ROT_90;
+            std::string selectRotErrorText;
 
             // GUI
             PopUpState state = PopUpState::NONE;
