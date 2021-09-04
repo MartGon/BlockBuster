@@ -1992,6 +1992,8 @@ void BlockBuster::Editor::Editor::GUI()
                             ImGui::InputInt("Z", &cursor.scale.z, 1, 1, flag);
                             ImGui::TableNextColumn();
 
+                            cursor.scale = glm::max(cursor.scale, glm::ivec3{1, 1, 1});
+
                             ImGui::EndTable();
                         }
 
