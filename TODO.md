@@ -29,11 +29,12 @@
         Shift to scale selector
         Key shortcuts for scaling/movement/startmoving
         Copy/Cut Paste - Done
-        Mirror selection
+        Mirror selection - Done
         Paint Selection
         Hide Selection
-        Rotate Selection
+        Rotate Selection - Done
         Fill Selection
+        Remove Selection 
         Block icons to move
         Asset list with other bbms
     Optimize Player/Map collisions

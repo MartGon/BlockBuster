@@ -899,6 +899,7 @@ void BlockBuster::Editor::Editor::PasteSelection()
     DoToolAction(std::move(batchPlace));
 }
 
+// TODO: Issue when rotating slopes on X/Z axis
 BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, Game::RotType rotType)
 {
     Result res;
@@ -937,19 +938,30 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
     glm::vec3 adjustedOffset = glm::vec3(cursor.scale - 1) / 2.0f;
     glm::vec3 center = glm::vec3{cursor.pos} + adjustedOffset;
 
+    // Batched action
+    auto batch = std::make_unique<BlockBuster::Editor::BatchedAction>();
+
     for(auto bData : lselection)
     {
         glm::vec3 offset = glm::vec3{bData.first} - center;
         glm::vec3 rotOffset = rotMat * offset;
         rotSelection.push_back({rotOffset, bData.second});
 
-        map_.RemoveBlock(bData.first);
+        //map_.RemoveBlock(bData.first);
+        batch->AddAction(std::make_unique<BlockBuster::Editor::RemoveAction>(bData.first, bData.second, &map_));
     }
 
     for(auto bData : rotSelection)
     {
         glm::ivec3 absPos = glm::round(center + bData.first);
-        map_.AddBlock(absPos, bData.second);
+        if(bData.second.type == Game::BlockType::SLOPE)
+        {
+            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+            if(rotType == Game::RotType::ROT_180)
+                bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+        }
+
+        batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(absPos, bData.second, &map_));
     }
 
     if(rotType == Game::ROT_90)
@@ -959,7 +971,84 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
         cursor.scale = axis == RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
     }
 
+    DoToolAction(std::move(batch));
+
     return res;
+}
+
+static glm::ivec3 GetRefBlock(BlockBuster::Editor::MirrorPlane plane, glm::ivec3 blockPos, glm::ivec3 cursorPos, glm::ivec3 cursorScale)
+{
+    glm::ivec3 refBlock;
+    switch (plane)
+    {
+    case BlockBuster::Editor::MirrorPlane::XY:
+        refBlock = glm::ivec3{blockPos.x, blockPos.y, cursorPos.z - 1};
+        break;
+    
+    case BlockBuster::Editor::MirrorPlane::XZ:
+        refBlock = glm::ivec3{blockPos.x, cursorPos.y - 1, blockPos.z};
+        break;
+    
+    case BlockBuster::Editor::MirrorPlane::YZ:
+        refBlock = glm::ivec3{cursorPos.x - 1, blockPos.y, blockPos.z};
+        break;
+
+    case BlockBuster::Editor::MirrorPlane::NOT_XY:
+        refBlock = glm::ivec3{blockPos.x, blockPos.y, cursorPos.z + cursorScale.z};
+        break;
+    
+    case BlockBuster::Editor::MirrorPlane::NOT_XZ:
+        refBlock = glm::ivec3{blockPos.x, cursorPos.y + cursorScale.y, blockPos.z};
+        break;
+    
+    case BlockBuster::Editor::MirrorPlane::NOT_YZ:
+        refBlock = glm::ivec3{cursorPos.x + cursorScale.x, blockPos.y , blockPos.z};
+        break;
+    
+    default:
+        break;
+    }
+
+    return refBlock;
+}
+
+BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection(MirrorPlane plane)
+{
+    Result res;
+
+    auto lselection = GetBlocksInSelection();
+    auto batch = std::make_unique<BlockBuster::Editor::BatchedAction>();
+
+    for(auto bData : lselection)
+    {
+        glm::ivec3 refBlock = GetRefBlock(plane, bData.first, cursor.pos, cursor.scale);
+        glm::ivec3 offset = bData.first - refBlock;
+        glm::ivec3 mirrorPos = refBlock - offset;
+        
+        if(bData.second.type == Game::BlockType::SLOPE)
+        {
+            if(plane != MirrorPlane::YZ && plane != MirrorPlane::NOT_YZ)
+            {
+                auto axis = plane == MirrorPlane::XY  || plane == MirrorPlane::NOT_XY ? RotationAxis::Y : RotationAxis::Z;
+                auto rot = GetNextValidRotation(bData.second.rot, axis, true);
+                rot = GetNextValidRotation(rot, axis, true);
+                bData.second.rot = rot;
+            }
+
+        }
+        batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(mirrorPos, bData.second, &map_));
+    }
+
+    DoToolAction(std::move(batch));
+
+    return res;
+}
+
+void BlockBuster::Editor::Editor::OnChooseSelectSubTool(SelectSubTool subTool)
+{
+    // Always stop moving selection
+    movingSelection = false;
+    ClearSelection();
 }
 
 void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
@@ -1084,6 +1173,24 @@ void BlockBuster::Editor::Editor::Exit()
     }
     else
         quit = true;
+}
+
+Game::BlockRot BlockBuster::Editor::Editor::GetNextValidRotation(Game::BlockRot rot, RotationAxis axis, bool positive)
+{
+    Game::BlockRot blockRot = rot;
+    auto sign = positive ? 1 : -1;
+    if(axis == RotationAxis::Y)
+    {
+        int8_t rot = Math::OverflowSumInt<int8_t>(blockRot.y, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
+        blockRot.y = static_cast<Game::RotType>(rot);
+    }
+    else if(axis == RotationAxis::Z)
+    {
+        int8_t rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_180);
+        blockRot.z = static_cast<Game::RotType>(rot);
+    }
+
+    return blockRot;
 }
 
 // #### Test Mode #### \\
@@ -1910,7 +2017,7 @@ void BlockBuster::Editor::Editor::GUI()
                             ImGui::EndTable();
                         }
                         
-                        if(ImGui::BeginTable("###Select tools", 2))
+                        if(ImGui::BeginTable("###Select tools", 2, 0))
                         {
                             ImGui::TableSetupColumn("##Sub-Tools", ImGuiTableColumnFlags_WidthFixed);
                             ImGui::TableSetupColumn("##Tool Options", 0);
@@ -1935,14 +2042,20 @@ void BlockBuster::Editor::Editor::GUI()
                             {
                                 ImGui::TableNextColumn();
                                 ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
-                                ImGui::Selectable("Move", &selectTool, SelectSubTool::MOVE);
+                                if(ImGui::Selectable("Move", &selectTool, SelectSubTool::MOVE))
+                                    OnChooseSelectSubTool(selectTool);
 
                                 ImGui::TableNextColumn();
-                                ImGui::Selectable("Edit", &selectTool, SelectSubTool::EDIT);
+                                if(ImGui::Selectable("Edit", &selectTool, SelectSubTool::EDIT))
+                                    OnChooseSelectSubTool(selectTool);
 
                                 ImGui::TableNextColumn();
-                                ImGui::Selectable("Rotate", &selectTool, SelectSubTool::ROTATE);
+                                if(ImGui::Selectable("Rotate", &selectTool, SelectSubTool::ROTATE_OR_MIRROR))
+                                    OnChooseSelectSubTool(selectTool);
+
                                 ImGui::PopStyleVar();
+
+                                
 
                                 ImGui::EndTable();
                             }
@@ -1980,7 +2093,7 @@ void BlockBuster::Editor::Editor::GUI()
                                     }
                                     #endif
                                 }
-                                    break;
+                                break;
                                 
                                 case SelectSubTool::EDIT:
                                 {
@@ -2004,8 +2117,11 @@ void BlockBuster::Editor::Editor::GUI()
                                     break;
                                 }
 
-                                case SelectSubTool::ROTATE:
+                                case SelectSubTool::ROTATE_OR_MIRROR:
                                 {
+                                    ImGui::Text("Rotate");
+                                    ImGui::Separator();
+
                                     ImGui::Text("Axis");
 
                                     ImGui::SameLine();
@@ -2028,6 +2144,32 @@ void BlockBuster::Editor::Editor::GUI()
                                         selectRotErrorText = res.info;
                                     }
 
+                                    ImGui::Text("Mirror");
+                                    ImGui::Separator();
+
+                                    ImGui::Text("Plane");
+
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("XY", &selectMirrorPlane, MirrorPlane::XY);
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("XZ", &selectMirrorPlane, MirrorPlane::XZ);
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("YZ", &selectMirrorPlane, MirrorPlane::YZ);
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("-XY", &selectMirrorPlane, MirrorPlane::NOT_XY);
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("-XZ", &selectMirrorPlane, MirrorPlane::NOT_XZ);
+                                    ImGui::SameLine();
+                                    ImGui::RadioButton("-YZ", &selectMirrorPlane, MirrorPlane::NOT_YZ);
+
+
+                                    if(ImGui::Button("Mirror"))
+                                    {
+                                        auto res = MirrorSelection(selectMirrorPlane);
+                                        selectRotErrorText = res.info;
+                                    }
+
+                                    // Error text
                                     ImVec4 red{1.0f, 0.0f, 0.0f, 1.0f};
                                     ImGui::PushStyleColor(ImGuiCol_Text, red);
                                     ImGui::Text("%s", selectRotErrorText.c_str());

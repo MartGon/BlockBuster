@@ -26,6 +26,16 @@ namespace BlockBuster
     {
         using BlockData = std::pair<glm::ivec3, Game::Block>;
 
+        enum class MirrorPlane
+        {
+            XY,
+            XZ,
+            YZ,
+            NOT_XY,
+            NOT_XZ,
+            NOT_YZ
+        };
+
         class Editor : public App::App
         {
         public:
@@ -90,7 +100,7 @@ namespace BlockBuster
             {
                 MOVE,
                 EDIT,
-                ROTATE
+                ROTATE_OR_MIRROR,
             };
 
             struct Result
@@ -140,6 +150,8 @@ namespace BlockBuster
             void CutSelection();
             void PasteSelection();
             Result RotateSelection(RotationAxis axis, Game::RotType rotType);
+            Result MirrorSelection(MirrorPlane plane);
+            void OnChooseSelectSubTool(SelectSubTool subTool);
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
@@ -148,6 +160,8 @@ namespace BlockBuster
 
             void SetUnsaved(bool unsaved);
             void Exit();
+
+            Game::BlockRot GetNextValidRotation(Game::BlockRot baseRot, RotationAxis axis, bool positive);
 
             // Test Mode
             void UpdatePlayerMode();
@@ -286,8 +300,9 @@ namespace BlockBuster
             // Tools - Copy/Cut
             std::vector<BlockData> clipboard;
 
-            // Tools - Select - Rotate
+            // Tools - Select - Rotate or Mirror
             RotationAxis selectRotAxis = RotationAxis::Y;
+            MirrorPlane selectMirrorPlane = MirrorPlane::XY;
             Game::RotType selectRotType = Game::RotType::ROT_90;
             std::string selectRotErrorText;
 
