@@ -610,20 +610,9 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 auto block = *intersect.block;
                 if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::RIGHT_BUTTON)
                 {
-                    int8_t sign = actionType == ActionType::RIGHT_BUTTON ? -1 : 1;
                     if(block.type == Game::BlockType::SLOPE)
                     {
-                        Game::BlockRot blockRot = map_.GetBlock(intersect.pos)->rot;
-                        if(axis == RotationAxis::Y)
-                        {
-                            int8_t rot = Math::OverflowSumInt<int8_t>(blockRot.y, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
-                            blockRot.y = static_cast<Game::RotType>(rot);
-                        }
-                        else if(axis == RotationAxis::Z)
-                        {
-                            int8_t rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_180);
-                            blockRot.z = static_cast<Game::RotType>(rot);
-                        }
+                        Game::BlockRot blockRot = GetNextValidRotation(block.rot, axis, actionType == ActionType::LEFT_BUTTON);
 
                         DoToolAction(std::make_unique<RotateAction>(intersect.pos, &block, &map_, blockRot));
                     }
@@ -904,7 +893,8 @@ void BlockBuster::Editor::Editor::PasteSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-// TODO: Issue when rotating slopes on X/Z axis
+// TODO: Fix rotation in X
+// TODO: Fix 180 rotations in Z
 BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, Game::RotType rotType)
 {
     Result res;
@@ -952,7 +942,6 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
         glm::vec3 rotOffset = rotMat * offset;
         rotSelection.push_back({rotOffset, bData.second});
 
-        //map_.RemoveBlock(bData.first);
         batch->AddAction(std::make_unique<BlockBuster::Editor::RemoveAction>(bData.first, bData.second, &map_));
     }
 
@@ -961,9 +950,47 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
         glm::ivec3 absPos = glm::round(center + bData.first);
         if(bData.second.type == Game::BlockType::SLOPE)
         {
-            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-            if(rotType == Game::RotType::ROT_180)
+            if(axis == RotationAxis::Y)
+            {
                 bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                if(rotType == Game::RotType::ROT_180)
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+            }
+            else if(axis == RotationAxis::Z)
+            {
+                auto bRot = bData.second.rot;
+                if(bRot.y == Game::RotType::ROT_0)
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                else if(bRot.y == Game::RotType::ROT_90)
+                {
+                    if(bRot.z == Game::RotType::ROT_180)
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                    }
+                    else
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                    }
+                }
+                else if(bRot.y == Game::RotType::ROT_180)
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, false);
+                else if(bRot.y == Game::RotType::ROT_270)
+                {
+                    if(bRot.z == Game::RotType::ROT_180)
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                    }
+                    else
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                    }
+                    
+                }
+            }
         }
 
         batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(absPos, bData.second, &map_));
@@ -1017,6 +1044,7 @@ static glm::ivec3 GetRefBlock(BlockBuster::Editor::MirrorPlane plane, glm::ivec3
     return refBlock;
 }
 
+// TODO: Fix slope rotations
 BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection(MirrorPlane plane)
 {
     Result res;
@@ -1186,13 +1214,13 @@ Game::BlockRot BlockBuster::Editor::Editor::GetNextValidRotation(Game::BlockRot 
     auto sign = positive ? 1 : -1;
     if(axis == RotationAxis::Y)
     {
-        int8_t rot = Math::OverflowSumInt<int8_t>(blockRot.y, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
-        blockRot.y = static_cast<Game::RotType>(rot);
+        int8_t i8rot = Math::OverflowSumInt<int8_t>(blockRot.y, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
+        blockRot.y = static_cast<Game::RotType>(i8rot);
     }
     else if(axis == RotationAxis::Z)
     {
-        int8_t rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_180);
-        blockRot.z = static_cast<Game::RotType>(rot);
+        int8_t i8rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
+        blockRot.z = static_cast<Game::RotType>(i8rot);
     }
 
     return blockRot;

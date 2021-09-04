@@ -34,7 +34,7 @@
         Hide Selection
         Rotate Selection - Done
         Fill Selection
-        Remove Selection 
+        Remove Selection - Done
         Block icons to move
         Asset list with other bbms
     Optimize Player/Map collisions
