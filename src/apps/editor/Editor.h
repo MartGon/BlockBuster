@@ -147,6 +147,7 @@ namespace BlockBuster
             void MoveSelectionCursor(glm::ivec3 nextPos);
 
             void CopySelection();
+            void RemoveSelection();
             void CutSelection();
             void PasteSelection();
             Result RotateSelection(RotationAxis axis, Game::RotType rotType);

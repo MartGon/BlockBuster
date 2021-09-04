@@ -869,10 +869,8 @@ void BlockBuster::Editor::Editor::CopySelection()
     std::cout << clipboard.size() << " copied to clipboard\n";
 }
 
-void BlockBuster::Editor::Editor::CutSelection()
+void BlockBuster::Editor::Editor::RemoveSelection()
 {
-    CopySelection();
-
     auto blockData = GetBlocksInSelection();
     auto batchRemove = std::make_unique<BatchedAction>();
     for(auto& bData : blockData)
@@ -881,6 +879,12 @@ void BlockBuster::Editor::Editor::CutSelection()
         batchRemove->AddAction(std::move(removeAction));
     }
     DoToolAction(std::move(batchRemove));
+}
+
+void BlockBuster::Editor::Editor::CutSelection()
+{
+    CopySelection();
+    RemoveSelection();
 }
 
 void BlockBuster::Editor::Editor::PasteSelection()
@@ -2114,6 +2118,12 @@ void BlockBuster::Editor::Editor::GUI()
                                     if(ImGui::Button("Paste"))
                                     {
                                         PasteSelection();
+                                    }
+                                    ImGui::SameLine();
+
+                                    if(ImGui::Button("Remove"))
+                                    {
+                                        RemoveSelection();
                                     }
                                     ImGui::SameLine();
                                     break;

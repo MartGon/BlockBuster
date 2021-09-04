@@ -19,7 +19,7 @@
     Release first version
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
     SemiSlope mesh and collisions
-    ImGui::Selectable template function
+    ImGui::Selectable template function - Done
     Tool Class heirarchy
         OnSelectTool
         OnDeselectTool
