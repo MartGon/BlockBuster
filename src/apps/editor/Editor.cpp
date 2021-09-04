@@ -40,6 +40,7 @@ void BlockBuster::Editor::Editor::Start()
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
     // Camera
     int width, height;
