@@ -23,6 +23,9 @@ namespace BlockBuster::Editor
 
         std::filesystem::path textureFolder;
 
+        glm::ivec3 cursorPos;
+        glm::ivec3 cursorScale;
+
         // Control flag
         bool isOk = true;
     };

@@ -201,9 +201,16 @@ void BlockBuster::Editor::Editor::SaveProject()
     std::filesystem::path mapPath = mapsFolder / fileName;
 
     // Write project file
+    // Camera
     project.cameraPos = camera.GetPos();
     project.cameraRot = camera.GetRotation();
+
+    // Texture folder
     project.textureFolder = textureFolder;
+
+    // Cursor Pos
+    project.cursorPos = cursor.pos;
+    project.cursorScale = cursor.scale;
     ::BlockBuster::Editor::WriteProjectToFile(project, mapPath);
 
     RenameMainWindow(fileName);
@@ -239,6 +246,11 @@ bool BlockBuster::Editor::Editor::OpenProject()
         // Set camera pos
         camera.SetPos(project.cameraPos);
         camera.SetRotation(project.cameraRot.x, project.cameraRot.y);
+
+        // Set cursor
+        cursor.pos = project.cursorPos;
+        savedPos = project.cursorPos;
+        cursor.scale = project.cursorScale;
     }
 
     return isOk;
@@ -947,9 +959,10 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
 
     for(auto bData : rotSelection)
     {
-        glm::ivec3 absPos = glm::round(center + bData.first);
+        // Rotate slope
         if(bData.second.type == Game::BlockType::SLOPE)
         {
+            auto bRot = bData.second.rot;
             if(axis == RotationAxis::Y)
             {
                 bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
@@ -958,41 +971,149 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
             }
             else if(axis == RotationAxis::Z)
             {
-                auto bRot = bData.second.rot;
-                if(bRot.y == Game::RotType::ROT_0)
-                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                else if(bRot.y == Game::RotType::ROT_90)
+                if(rotType == Game::RotType::ROT_90)
                 {
-                    if(bRot.z == Game::RotType::ROT_180)
+                    if(bRot.y == Game::RotType::ROT_0)
                     {
                         bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
                     }
-                    else
+                    else if(bRot.y == Game::RotType::ROT_90)
+                    {
+                        if(bRot.z == Game::RotType::ROT_180)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                        }
+                        else if(bRot.z == Game::RotType::ROT_90)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, false);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, false);
+                        }
+                        else if(bRot.z == Game::RotType::ROT_270)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                        }   
+                        else
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                        }
+                    }
+                    else if(bRot.y == Game::RotType::ROT_180)
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, false);
+                    }
+                    else if(bRot.y == Game::RotType::ROT_270)
+                    {
+                        if(bRot.z == Game::RotType::ROT_180)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                        }
+                        else if(bRot.z == Game::RotType::ROT_90)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, false);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                        }
+                        else if(bRot.z == Game::RotType::ROT_270)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, false);
+                        }   
+                        else
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                        }
+                    }
+                }
+                else if(rotType == Game::RotType::ROT_180)
+                {
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
+
+                    if(bRot.y == Game::RotType::ROT_90 || bRot.y == Game::ROT_270)
                     {
                         bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
                         bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
                     }
                 }
-                else if(bRot.y == Game::RotType::ROT_180)
-                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, false);
-                else if(bRot.y == Game::RotType::ROT_270)
+            }
+            else if(axis == RotationAxis::X)
+            {
+                if(rotType == Game::RotType::ROT_90)
                 {
-                    if(bRot.z == Game::RotType::ROT_180)
+                    if(bRot.y == Game::RotType::ROT_0)
+                    {
+                        if(bRot.z == Game::RotType::ROT_90)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, false);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                        }
+                        else if(bRot.z == Game::RotType::ROT_180)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);    
+                        }
+                        else if(bRot.z == Game::RotType::ROT_270)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, false);
+                        }
+                        else
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                        }
+                    }
+                    else if(bRot.y == Game::RotType::ROT_90)
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                    }
+                    else if(bRot.y == Game::RotType::ROT_180)
+                    {
+                        if(bRot.z == Game::RotType::ROT_90)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, false);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, false);
+                        }
+                        else if(bRot.z == Game::RotType::ROT_180)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);    
+                        }
+                        else if(bRot.z == Game::RotType::ROT_270)
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                        }
+                        else
+                        {
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                            bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                        }
+                    }
+                    else if(bRot.y == Game::RotType::ROT_270)
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, false);
+                    }
+                }
+                else if(rotType == Game::RotType::ROT_180)
+                {
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+
+                    if(bRot.y == Game::RotType::ROT_0 || bRot.y == Game::ROT_180)
                     {
                         bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
                         bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
                     }
-                    else
-                    {
-                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                    }
-                    
                 }
             }
         }
 
+        glm::ivec3 absPos = glm::round(center + bData.first);
         batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(absPos, bData.second, &map_));
     }
 
@@ -1158,7 +1279,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
                 displayType = static_cast<Game::DisplayType>(sym - SDLK_1);
         }
 
-        if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && io.KeyAlt)
+        if(sym >= SDLK_1 && sym <= SDLK_3 && !io.KeyCtrl && io.KeyAlt)
             tabState = static_cast<TabState>(sym - SDLK_1)        ;
     }
 }
@@ -2290,11 +2411,22 @@ void BlockBuster::Editor::Editor::GUI()
 
                 auto pointedChunk = Game::Map::ToChunkIndex(pointedBlockPos);
                 ImGui::InputInt3("Pointed Chunk Location", &pointedChunk.x, ImGuiInputTextFlags_ReadOnly);
-                auto pointedBlock = pointedBlockPos;
-                ImGui::InputInt3("Pointed Block Location", &pointedBlock.x, ImGuiInputTextFlags_ReadOnly);
+                auto pointedBlockLoc = pointedBlockPos;
+                ImGui::InputInt3("Pointed Block Location", &pointedBlockLoc.x, ImGuiInputTextFlags_ReadOnly);
 
                 auto hittingBlock = intersecting;
                 ImGui::Checkbox("Intersecting", &hittingBlock);
+
+                glm::vec3 blockRot{0.0f};
+                int type = -1;
+                if(intersecting)
+                {
+                    auto pointedBlock = map_.GetBlock(pointedBlockPos);
+                    blockRot = pointedBlock->GetRotation();
+                    type = pointedBlock->type;
+                }
+                ImGui::InputInt("Block Type", &type, 1, 100, ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputFloat3("Block Rotation", &blockRot.x, "%.2f", ImGuiInputTextFlags_ReadOnly);
                 
                 
                 ImGui::Text("Debug Options");

@@ -127,6 +127,10 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     // Camera Pos/Rot
     WriteToFile(file, p.cameraPos);
     WriteToFile(file, p.cameraRot);
+
+    // Cursor scale/pos
+    WriteToFile(file, p.cursorPos);
+    WriteToFile(file, p.cursorScale);
 }
 
 BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::filesystem::path filepath)
@@ -205,7 +209,11 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
 
     // Camera Pos/Rot
     p.cameraPos = ReadFromFile<glm::vec3>(file);
-    p.cameraRot = ReadFromFile<glm::vec3>(file);
+    p.cameraRot = ReadFromFile<glm::vec2>(file);
+
+    // Cursor Pos/Scale
+    p.cursorPos = ReadFromFile<glm::ivec3>(file);
+    p.cursorScale = ReadFromFile<glm::ivec3>(file);
 
     return p;
 }

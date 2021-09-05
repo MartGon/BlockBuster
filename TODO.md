@@ -38,3 +38,4 @@
         Block icons to move
         Asset list with other bbms
     Optimize Player/Map collisions
+    PlaceOrUpdateBlock Tool action. To prevent removing an updated block on undo

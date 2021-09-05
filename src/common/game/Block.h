@@ -50,6 +50,7 @@ namespace Game
         glm::vec3 GetRotation() const;
     };
 
+    // TODO: 270 on z to 90 with Y rot
     glm::vec3 BlockRotToVec3(BlockRot rot);
     Math::Transform GetBlockTransform(const Block& block, glm::ivec3 pos, float blockScale);
     Math::Transform GetBlockTransform(glm::ivec3 pos, float blockScale);
