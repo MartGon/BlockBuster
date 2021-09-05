@@ -905,8 +905,6 @@ void BlockBuster::Editor::Editor::PasteSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-// TODO: Fix rotation in X
-// TODO: Fix 180 rotations in Z
 BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection(BlockBuster::Editor::Editor::RotationAxis axis, Game::RotType rotType)
 {
     Result res;
@@ -1181,12 +1179,61 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection
         
         if(bData.second.type == Game::BlockType::SLOPE)
         {
-            if(plane != MirrorPlane::YZ && plane != MirrorPlane::NOT_YZ)
+            auto bRot = bData.second.rot;
+
+            if(plane == MirrorPlane::XY || plane == MirrorPlane::NOT_XY)
             {
-                auto axis = plane == MirrorPlane::XY  || plane == MirrorPlane::NOT_XY ? RotationAxis::Y : RotationAxis::Z;
-                auto rot = GetNextValidRotation(bData.second.rot, axis, true);
-                rot = GetNextValidRotation(rot, axis, true);
-                bData.second.rot = rot;
+                if(bRot.z == Game::RotType::ROT_0 || bRot.z == Game::RotType::ROT_180)
+                {
+                    if(bRot.y == Game::RotType::ROT_0 || bRot.y == Game::RotType::ROT_180)
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                    }
+                }
+                else if(bRot.z == Game::RotType::ROT_270 || bRot.z == Game::RotType::ROT_90)
+                {
+                    bool sign = bRot.z == Game::RotType::ROT_90;
+                    if(bRot.y == Game::RotType::ROT_0)
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, !sign);
+                    else if(bRot.y == Game::RotType::ROT_90)
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, sign);
+                    else if(bRot.y == Game::RotType::ROT_180)
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, !sign);
+                    else if(bRot.y == Game::RotType::ROT_270)
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, sign);
+                }
+            }
+            else if(plane == MirrorPlane::XZ || plane == MirrorPlane::NOT_XZ)
+            {
+                if(bRot.z == Game::RotType::ROT_0 || bRot.z == Game::RotType::ROT_180)
+                {
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                    bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Z, true);
+                }
+            }
+            else if(plane == MirrorPlane::YZ || plane == MirrorPlane::NOT_YZ)
+            {
+                if(bRot.z == Game::RotType::ROT_0 || bRot.z == Game::RotType::ROT_180)
+                {
+                    if(bRot.y == Game::RotType::ROT_90 || bRot.y == Game::RotType::ROT_270)
+                    {
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, true);
+                    }
+                }
+                else if(bRot.z == Game::RotType::ROT_90 || bRot.z == Game::RotType::ROT_270)
+                {
+                    bool sign = bRot.z == Game::RotType::ROT_90;
+                    if(bRot.y == Game::RotType::ROT_0)
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, sign);
+                    else if(bRot.y == Game::RotType::ROT_90)
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, !sign);
+                    else if(bRot.y == Game::RotType::ROT_180)
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, sign);
+                    else if(bRot.y == Game::RotType::ROT_270)
+                        bData.second.rot = GetNextValidRotation(bData.second.rot, RotationAxis::Y, !sign);
+                }
             }
 
         }
