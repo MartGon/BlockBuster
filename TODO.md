@@ -16,6 +16,7 @@
     Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
 
 ## TODO
+    Chunk Meshes
     Release first version
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
     SemiSlope mesh and collisions
@@ -37,10 +38,12 @@
         Remove Selection - Done
         Block icons to move
         Asset list with other bbms
+        Show/Hide sub tools. Check demo
     Optimize Player/Map collisions
     PlaceOrUpdateBlock Tool action. To prevent removing an updated block on undo
+    Write Shortcut Cheatsheet in a popup window / tab
 
 ## Bugs
-Move selection moves new block that enter the cursor while moving has started. Should only move the blocks that were selected when the button was pressed
-After enabling Z_ROT_270, collision bugs may appear; Transform to Z_ROT_90 equivalent in Block::GetRotation
-Undoing a Mirror/Rotation selection, removes blocks that already existed on that spot. Create UpdateBlock ToolAction for when a block already exists in a given position
+    Move selection moves new blocks that enter the cursor after moving has started. Should only move the blocks that were selected when the button was pressed
+    After enabling Z_ROT_270, collision bugs may appear; Transform to Z_ROT_90 equivalent in Block::GetRotation
+    Undoing a Mirror/Rotation selection, removes blocks that already existed on that spot. Create UpdateBlock ToolAction for when a block already exists in a given position
