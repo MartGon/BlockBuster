@@ -33,6 +33,13 @@ namespace Game
         ROT_270
     };
 
+    enum class RotationAxis
+    {
+        X,
+        Y,
+        Z
+    };
+
     struct BlockRot 
     {
         RotType y = ROT_0;
@@ -51,6 +58,7 @@ namespace Game
     };
 
     // TODO: 270 on z to 90 with Y rot
+    Game::BlockRot GetNextValidRotation(Game::BlockRot baseRot, RotationAxis axis, bool positive);
     glm::vec3 BlockRotToVec3(BlockRot rot);
     Math::Transform GetBlockTransform(const Block& block, glm::ivec3 pos, float blockScale);
     Math::Transform GetBlockTransform(glm::ivec3 pos, float blockScale);

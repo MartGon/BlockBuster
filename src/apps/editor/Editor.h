@@ -89,13 +89,6 @@ namespace BlockBuster
                 SELECT_BLOCKS
             };
 
-            enum class RotationAxis
-            {
-                X,
-                Y,
-                Z
-            };
-
             enum class SelectSubTool
             {
                 MOVE,
@@ -150,7 +143,7 @@ namespace BlockBuster
             void RemoveSelection();
             void CutSelection();
             void PasteSelection();
-            Result RotateSelection(RotationAxis axis, Game::RotType rotType);
+            Result RotateSelection(Game::RotationAxis axis, Game::RotType rotType);
             Result MirrorSelection(MirrorPlane plane);
             void OnChooseSelectSubTool(SelectSubTool subTool);
 
@@ -161,8 +154,6 @@ namespace BlockBuster
 
             void SetUnsaved(bool unsaved);
             void Exit();
-
-            Game::BlockRot GetNextValidRotation(Game::BlockRot baseRot, RotationAxis axis, bool positive);
 
             // Test Mode
             void UpdatePlayerMode();
@@ -256,7 +247,7 @@ namespace BlockBuster
             Game::BlockType blockType = Game::BlockType::BLOCK;
 
             // Tool - Rotate
-            RotationAxis axis = RotationAxis::Y;
+            Game::RotationAxis axis = Game::RotationAxis::Y;
 
             // Tool - Paint
             Game::DisplayType displayType = Game::DisplayType::COLOR;
@@ -302,7 +293,7 @@ namespace BlockBuster
             std::vector<BlockData> clipboard;
 
             // Tools - Select - Rotate or Mirror
-            RotationAxis selectRotAxis = RotationAxis::Y;
+            Game::RotationAxis selectRotAxis = Game::RotationAxis::Y;
             MirrorPlane selectMirrorPlane = MirrorPlane::XY;
             Game::RotType selectRotType = Game::RotType::ROT_90;
             std::string selectRotErrorText;

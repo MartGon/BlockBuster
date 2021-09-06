@@ -45,5 +45,5 @@
 
 ## Bugs
     Move selection moves new blocks that enter the cursor after moving has started. Should only move the blocks that were selected when the button was pressed - DONE
-    After enabling Z_ROT_270, collision bugs may appear; Transform to Z_ROT_90 equivalent in Block::GetRotation
+    After enabling Z_ROT_270, collision bugs may appear; Transform to Z_ROT_90 equivalent in Block::GetRotation - DONE
     Undoing a Mirror/Rotation selection, removes blocks that already existed on that spot. Create UpdateBlock ToolAction for when a block already exists in a given position
