@@ -53,7 +53,6 @@ void BlockBuster::Editor::MoveSelectionAction::Do()
 {
     auto offset = offset_;
     MoveSelection(offset);
-    *cursorPos_ = *cursorPos_ + offset;
 }
 
 void BlockBuster::Editor::MoveSelectionAction::Undo()
@@ -61,7 +60,6 @@ void BlockBuster::Editor::MoveSelectionAction::Undo()
     Debug::PrintVector(*cursorPos_, "Old Cursor pos");
     auto offset = -offset_;
     MoveSelection(offset);
-    *cursorPos_ = *cursorPos_ + offset;
     Debug::PrintVector(*cursorPos_, "Cursor pos");
 }
 
@@ -83,10 +81,16 @@ void BlockBuster::Editor::MoveSelectionAction::MoveSelection(glm::ivec3 offset)
     }
 
     // Update new position
-    for(auto & pair : selection_)
+    for(auto& pair : selection_)
     {
         pair.first += offset;
     }
+
+    // Update cursor pos
+    *cursorPos_ = *cursorPos_ + offset;
+
+    // Update selection data
+    *selTarget_ = selection_;
 }
 
 bool BlockBuster::Editor::MoveSelectionAction::IsBlockInSelection(glm::ivec3 pos)

@@ -750,7 +750,8 @@ void BlockBuster::Editor::Editor::DrawCursor(Math::Transform t)
     shader.SetUniformMat4("transform", transform);
     shader.SetUniformInt("hasBorder", false);
     auto& mesh = GetMesh(cursor.type);
-    mesh.Draw(shader, cursor.color, GL_LINE);
+    //mesh.Draw(shader, cursor.color, GL_LINE);
+    mesh.Draw(shader, yellow, GL_LINE);
 }
 
 void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
@@ -845,17 +846,13 @@ bool BlockBuster::Editor::Editor::IsBlockInSelection(glm::ivec3 pos)
 
 void BlockBuster::Editor::Editor::MoveSelection(glm::ivec3 offset)
 {
-    DoToolAction(std::make_unique<BlockBuster::Editor::MoveSelectionAction>(&map_, selection, offset, &cursor.pos));
-
-    std::cout << "Moving selection\n";
+    DoToolAction(std::make_unique<BlockBuster::Editor::MoveSelectionAction>(&map_, selection, offset, &cursor.pos, &selection));
 }
 
 void BlockBuster::Editor::Editor::MoveSelectionCursor(glm::ivec3 nextPos)
 {
     if(movingSelection)
     {
-        SelectBlocks();
-
         glm::ivec3 offset = nextPos - cursor.pos;
         if(CanMoveSelection(offset))
             MoveSelection(offset);

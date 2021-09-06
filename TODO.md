@@ -16,6 +16,8 @@
     Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
 
 ## TODO
+    PlaceOrUpdateBlock Tool action. To prevent removing an updated block on undo
+    Write Shortcut Cheatsheet in a popup window / tab
     Chunk Meshes
     Release first version
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
@@ -40,10 +42,8 @@
         Asset list with other bbms
         Show/Hide sub tools. Check demo
     Optimize Player/Map collisions
-    PlaceOrUpdateBlock Tool action. To prevent removing an updated block on undo
-    Write Shortcut Cheatsheet in a popup window / tab
 
 ## Bugs
-    Move selection moves new blocks that enter the cursor after moving has started. Should only move the blocks that were selected when the button was pressed
+    Move selection moves new blocks that enter the cursor after moving has started. Should only move the blocks that were selected when the button was pressed - DONE
     After enabling Z_ROT_270, collision bugs may appear; Transform to Z_ROT_90 equivalent in Block::GetRotation
     Undoing a Mirror/Rotation selection, removes blocks that already existed on that spot. Create UpdateBlock ToolAction for when a block already exists in a given position

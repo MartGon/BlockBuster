@@ -10,6 +10,7 @@ namespace BlockBuster
 {
     namespace Editor
     {
+        using BlockData = std::pair<glm::ivec3, Game::Block>;
         enum class ActionType
         {
             LEFT_BUTTON,
@@ -98,8 +99,8 @@ namespace BlockBuster
         class MoveSelectionAction : public ToolAction
         {
         public:
-            MoveSelectionAction(Game::Map::Map* map, std::vector<std::pair<glm::ivec3, Game::Block>> selection, glm::ivec3 offset, glm::ivec3* cursorPos) :
-                map_{map}, selection_{selection}, offset_{offset}, cursorPos_{cursorPos} {}
+            MoveSelectionAction(Game::Map::Map* map, std::vector<BlockData> selection, glm::ivec3 offset, glm::ivec3* cursorPos, std::vector<BlockData>* selTarget) :
+                map_{map}, selection_{selection}, offset_{offset}, cursorPos_{cursorPos}, selTarget_{selTarget} {}
         
             void Do() override;
             void Undo() override;
@@ -111,7 +112,9 @@ namespace BlockBuster
             Game::Map::Map* map_;
             std::vector<std::pair<glm::ivec3, Game::Block>> selection_;
             glm::ivec3 offset_;
+
             glm::ivec3* cursorPos_;
+            std::vector<BlockData>* selTarget_;
         };
 
         class BatchedAction : public ToolAction
