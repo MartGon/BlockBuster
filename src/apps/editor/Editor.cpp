@@ -1259,7 +1259,6 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         auto sym = key.keysym.sym;
         if(sym == SDLK_ESCAPE)
         {
-            // TODO: Error when closing pop up without calling OnClose code. Could use a PopUp class for this
             if(state != PopUpState::NONE)
                 ClosePopUp();
             else
@@ -1269,12 +1268,49 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         if(state != PopUpState::NONE)
             return;
 
+        // Select tool
+        if(tool == Tool::SELECT_BLOCKS)
+        {
+            auto nextPos = cursor.pos;
+            auto scale = cursor.scale;
+
+            auto moveOrScale = [&nextPos, &scale, &sym, this](Sint32 key, glm::ivec3 offset)
+            {
+                if(sym == key)
+                {
+                    if(!this->io_->KeyCtrl)
+                        nextPos += offset;
+                    else if(!movingSelection)
+                        scale += offset;
+                }
+            };
+
+            // X axis
+            moveOrScale(SDLK_KP_4, glm::ivec3{-1, 0, 0});
+            moveOrScale(SDLK_KP_6, glm::ivec3{1, 0, 0});
+
+            // Y axis
+            moveOrScale(SDLK_KP_7, glm::ivec3{0, 1, 0});
+            moveOrScale(SDLK_KP_9, glm::ivec3{0, -1, 0});
+
+            // Z axis
+            moveOrScale(SDLK_KP_8, glm::ivec3{0, 0, -1});
+            moveOrScale(SDLK_KP_2, glm::ivec3{0, 0, 1});
+
+            bool hasMoved = nextPos != cursor.pos;
+            cursor.scale = glm::max(scale, glm::ivec3{1, 1, 1});
+            if(hasMoved)
+                MoveSelectionCursor(nextPos);
+        }
+
+        // Camera mode
         if(sym == SDLK_f)
         {
             auto mode = cameraMode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
             SetCameraMode(mode);
         }
         
+        // Editor/Player Mode toggle
         if(sym == SDLK_p)
         {
             playerMode = !playerMode;
@@ -1326,7 +1362,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         }
 
         if(sym >= SDLK_1 && sym <= SDLK_3 && !io.KeyCtrl && io.KeyAlt)
-            tabState = static_cast<TabState>(sym - SDLK_1)        ;
+            tabState = static_cast<TabState>(sym - SDLK_1);
     }
 }
 
