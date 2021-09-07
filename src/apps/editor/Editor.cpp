@@ -1160,7 +1160,6 @@ static glm::ivec3 GetRefBlock(BlockBuster::Editor::MirrorPlane plane, glm::ivec3
     return refBlock;
 }
 
-// TODO: Fix slope rotations
 BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection(MirrorPlane plane)
 {
     Result res;
@@ -1234,7 +1233,10 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection
             }
 
         }
-        batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(mirrorPos, bData.second, &map_));
+        if(map_.IsBlockNull(mirrorPos))
+            batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(mirrorPos, bData.second, &map_));
+        else
+            batch->AddAction(std::make_unique<BlockBuster::Editor::UpdateBlockAction>(mirrorPos, bData.second, &map_));
     }
 
     DoToolAction(std::move(batch));
@@ -2342,7 +2344,7 @@ void BlockBuster::Editor::Editor::GUI()
                                             ImGui::SameLine();
                                             ImGui::RadioButton("180", &selectRotType, Game::RotType::ROT_180);
 
-                                            if(ImGui::Button("Rotate"))
+                                            if(ImGui::Button("Rotate selection"))
                                             {
                                                 auto res = RotateSelection(selectRotAxis, selectRotType);
                                                 selectRotErrorText = res.info;
@@ -2364,7 +2366,7 @@ void BlockBuster::Editor::Editor::GUI()
                                             ImGui::RadioButton("-YZ", &selectMirrorPlane, MirrorPlane::NOT_YZ);
 
 
-                                            if(ImGui::Button("Mirror"))
+                                            if(ImGui::Button("Mirror selection"))
                                             {
                                                 auto res = MirrorSelection(selectMirrorPlane);
                                                 selectRotErrorText = res.info;

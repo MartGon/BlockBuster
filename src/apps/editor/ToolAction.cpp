@@ -15,6 +15,16 @@ void BlockBuster::Editor::PlaceBlockAction::Undo()
     map_->RemoveBlock(pos_);
 }
 
+void BlockBuster::Editor::UpdateBlockAction::Do()
+{
+    map_->AddBlock(pos_, update_);
+}
+
+void BlockBuster::Editor::UpdateBlockAction::Undo()
+{
+    map_->AddBlock(pos_, prev_);
+}
+
 void BlockBuster::Editor::RemoveAction::Do()
 {
     map_->RemoveBlock(pos_);

@@ -16,7 +16,7 @@
     Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
 
 ## TODO
-    PlaceOrUpdateBlock Tool action. To prevent removing an updated block on undo
+    UpdateBlock Tool action. To prevent removing an updated block on undo - Done
     Write Shortcut Cheatsheet in a popup window / tab
     Chunk Meshes
     Release first version
@@ -42,6 +42,9 @@
         Asset list with other bbms
         Show/Hide sub tools. Check demo
     Optimize Player/Map collisions
+
+    Replace MoveSelectionAction with a BatchedAction
+    Disable back face culling for cursor
 
 ## Bugs
     Move selection moves new blocks that enter the cursor after moving has started. Should only move the blocks that were selected when the button was pressed - DONE

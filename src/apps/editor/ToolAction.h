@@ -42,6 +42,23 @@ namespace BlockBuster
             Game::Map::Map* map_;
         };
 
+        class UpdateBlockAction : public ToolAction
+        {
+        public:
+            UpdateBlockAction(glm::ivec3 pos, Game::Block update, Game::Map::Map* map) :
+                pos_{pos}, update_{update}, map_{map}, prev_{*map_->GetBlock(pos)} {}
+
+            void Do() override;
+            void Undo() override;
+
+        private:
+            glm::ivec3 pos_;
+            Game::Block update_;
+            Game::Map::Map* map_;
+
+            Game::Block prev_;
+        };
+
         class RemoveAction : public ToolAction
         {
         public:
