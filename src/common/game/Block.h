@@ -11,11 +11,28 @@ namespace Game
         TEXTURE,
         COLOR
     };
+    
+    struct TextureOptions
+    {
+
+    };
+
+    struct ColorOptions
+    {
+        bool showBorder = false;
+    };
+
+    union DisplayOptions
+    {
+        TextureOptions texture;
+        ColorOptions color;
+    };
 
     struct Display
     {
         DisplayType type;
         int id;
+        //DisplayOptions options;
     };
 
     enum BlockType : uint8_t

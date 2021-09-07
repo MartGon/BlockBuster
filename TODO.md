@@ -17,8 +17,14 @@
 
 ## TODO
     UpdateBlock Tool action. To prevent removing an updated block on undo - Done
-    Write Shortcut Cheatsheet in a popup window / tab
+    Write Shortcut Cheatsheet in a popup window / tab. Use collapsing headers, cause why not.
     Chunk Meshes
+        Texture Array GL Wrapper
+        Color array uniform accesible from shader
+        Chunk Mesh rendering with cubes only
+        Chunk Mesh rendering with cubes and slopes
+
+    Create null texture
     Release first version
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
     SemiSlope mesh and collisions
@@ -28,9 +34,9 @@
         OnDeselectTool
         Use
     Selection Tool
-        Ctrl to select individual blocks
-        Shift to scale selector
-        Key shortcuts for scaling/movement/startmoving
+        Ctrl+click to select individual blocks
+        Shift+click to scale selector
+        Key shortcuts for scaling/movement/startmoving - Done
         Copy/Cut Paste - Done
         Mirror selection - Done
         Paint Selection
@@ -38,10 +44,11 @@
         Rotate Selection - Done
         Fill Selection
         Remove Selection - Done
-        Block icons to move
+        Block icons to move in 3D space
         Asset list with other bbms
-        Show/Hide sub tools. Check demo
-    Optimize Player/Map collisions
+        Show/Hide sub tools. Check demo - Done
+    Optimize Player-Map collisions
+    Block color - Border/NoBorder option
 
     Replace MoveSelectionAction with a BatchedAction
     Disable back face culling for cursor - Done
