@@ -751,7 +751,9 @@ void BlockBuster::Editor::Editor::DrawCursor(Math::Transform t)
     shader.SetUniformInt("hasBorder", false);
     auto& mesh = GetMesh(cursor.type);
     //mesh.Draw(shader, cursor.color, GL_LINE);
+    glDisable(GL_CULL_FACE);
     mesh.Draw(shader, yellow, GL_LINE);
+    glEnable(GL_CULL_FACE);
 }
 
 void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
@@ -2188,12 +2190,6 @@ void BlockBuster::Editor::Editor::GUI()
 
                     if(selectSelected)
                     {
-                        ImGui::Text("Cursor Display");
-                        ImGui::SameLine();
-                        ImGui::RadioButton("Single Block", &cursor.mode, CursorMode::SCALED);
-                        ImGui::SameLine();
-                        ImGui::RadioButton("Multiple Blocks", &cursor.mode, CursorMode::BLOCKS);
-
                         if(ImGui::BeginTable("##Select Scale", 4))
                         {
                             ImGui::TableSetupColumn("##Title", ImGuiTableColumnFlags_WidthFixed, 60);
@@ -2444,6 +2440,12 @@ void BlockBuster::Editor::Editor::GUI()
 
                 ImGui::SliderFloat("Block Scale", &blockScale, 1, 5);
 
+                ImGui::Text("Select Tool - Cursor Display");
+                ImGui::SameLine();
+                ImGui::RadioButton("Single Block", &cursor.mode, CursorMode::SCALED);
+                ImGui::SameLine();
+                ImGui::RadioButton("Multiple Blocks", &cursor.mode, CursorMode::BLOCKS);
+
                 ImGui::Checkbox("Show cursor", &cursor.show);
 
                 ImGui::Text("Player Mode");
@@ -2469,56 +2471,55 @@ void BlockBuster::Editor::Editor::GUI()
                 if(ImGui::IsItemActive())
                     tabState = TabState::DEBUG_TAB;
 
-                ImGui::Text("Camera info");
-                ImGui::Separator();
-
-                auto cameraRot = camera.GetRotation();                
-                ImGui::SliderFloat2("Rotation", &cameraRot.x, 0.0f, glm::two_pi<float>(), "%.3f", ImGuiSliderFlags_NoInput);
-                auto cameraPos = camera.GetPos();
-                ImGui::InputFloat3("Global Position", &cameraPos.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
-                auto chunkPos = Game::Map::ToChunkIndex(cameraPos, blockScale);
-                ImGui::InputInt3("Chunk", &chunkPos.x, ImGuiInputTextFlags_ReadOnly);
-                auto blockPos = Game::Map::ToGlobalPos(cameraPos, blockScale);
-                ImGui::InputInt3("Block", &blockPos.x, ImGuiInputTextFlags_ReadOnly);
-
-                ImGui::Text("Cursor Info");
-                ImGui::Separator();
-
-                auto cursorChunk = Game::Map::ToChunkIndex(cursor.pos);
-                ImGui::InputInt3("Cursor Chunk Location", &cursorChunk.x, ImGuiInputTextFlags_ReadOnly);
-                auto cursorBlock = cursor.pos;
-                ImGui::InputInt3("Cursor Block Location", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
-
-                auto pointedChunk = Game::Map::ToChunkIndex(pointedBlockPos);
-                ImGui::InputInt3("Pointed Chunk Location", &pointedChunk.x, ImGuiInputTextFlags_ReadOnly);
-                auto pointedBlockLoc = pointedBlockPos;
-                ImGui::InputInt3("Pointed Block Location", &pointedBlockLoc.x, ImGuiInputTextFlags_ReadOnly);
-
-                auto hittingBlock = intersecting;
-                ImGui::Checkbox("Intersecting", &hittingBlock);
-
-                glm::vec3 blockRot{0.0f};
-                int type = -1;
-                if(intersecting)
+                if(ImGui::CollapsingHeader("Camera info"))
                 {
-                    auto pointedBlock = map_.GetBlock(pointedBlockPos);
-                    blockRot = pointedBlock->GetRotation();
-                    type = pointedBlock->type;
+                    auto cameraRot = camera.GetRotation();                
+                    ImGui::SliderFloat2("Rotation", &cameraRot.x, 0.0f, glm::two_pi<float>(), "%.3f", ImGuiSliderFlags_NoInput);
+                    auto cameraPos = camera.GetPos();
+                    ImGui::InputFloat3("Global Position", &cameraPos.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
+                    auto chunkPos = Game::Map::ToChunkIndex(cameraPos, blockScale);
+                    ImGui::InputInt3("Chunk", &chunkPos.x, ImGuiInputTextFlags_ReadOnly);
+                    auto blockPos = Game::Map::ToGlobalPos(cameraPos, blockScale);
+                    ImGui::InputInt3("Block", &blockPos.x, ImGuiInputTextFlags_ReadOnly);
                 }
-                ImGui::InputInt("Block Type", &type, 1, 100, ImGuiInputTextFlags_ReadOnly);
-                ImGui::InputFloat3("Block Rotation", &blockRot.x, "%.2f", ImGuiInputTextFlags_ReadOnly);
-                
-                
-                ImGui::Text("Debug Options");
-#ifdef _DEBUG
-                ImGui::Separator();
-                ImGui::Checkbox("New map system", &newMapSys);
-                ImGui::SameLine();
-                ImGui::Checkbox("Intersection Optimization", &optimizeIntersection);
-                ImGui::SameLine();
-#endif
-                ImGui::Checkbox("Draw Chunk borders", &drawChunkBorders);
+                if(ImGui::CollapsingHeader("Cursor Info"))
+                {
+                    auto cursorChunk = Game::Map::ToChunkIndex(cursor.pos);
+                    ImGui::InputInt3("Cursor Chunk Location", &cursorChunk.x, ImGuiInputTextFlags_ReadOnly);
+                    auto cursorBlock = cursor.pos;
+                    ImGui::InputInt3("Cursor Block Location", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
 
+                    auto pointedChunk = Game::Map::ToChunkIndex(pointedBlockPos);
+                    ImGui::InputInt3("Pointed Chunk Location", &pointedChunk.x, ImGuiInputTextFlags_ReadOnly);
+                    auto pointedBlockLoc = pointedBlockPos;
+                    ImGui::InputInt3("Pointed Block Location", &pointedBlockLoc.x, ImGuiInputTextFlags_ReadOnly);
+
+                    auto hittingBlock = intersecting;
+                    ImGui::Checkbox("Intersecting", &hittingBlock);
+
+                    glm::vec3 blockRot{0.0f};
+                    int type = -1;
+                    if(intersecting)
+                    {
+                        auto pointedBlock = map_.GetBlock(pointedBlockPos);
+                        blockRot = pointedBlock->GetRotation();
+                        type = pointedBlock->type;
+                    }
+                    ImGui::InputInt("Block Type", &type, 1, 100, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::InputFloat3("Block Rotation", &blockRot.x, "%.2f", ImGuiInputTextFlags_ReadOnly);
+                
+                }
+                if(ImGui::CollapsingHeader("Debug Options"))
+                {
+                #ifdef _DEBUG
+                    ImGui::Separator();
+                    ImGui::Checkbox("New map system", &newMapSys);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Intersection Optimization", &optimizeIntersection);
+                    ImGui::SameLine();
+                #endif
+                    ImGui::Checkbox("Draw Chunk borders", &drawChunkBorders);
+                }
 
                 ImGui::EndTabItem();
             }

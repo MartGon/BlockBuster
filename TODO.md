@@ -44,7 +44,7 @@
     Optimize Player/Map collisions
 
     Replace MoveSelectionAction with a BatchedAction
-    Disable back face culling for cursor
+    Disable back face culling for cursor - Done
 
 ## Bugs
     Move selection moves new blocks that enter the cursor after moving has started. Should only move the blocks that were selected when the button was pressed - DONE
