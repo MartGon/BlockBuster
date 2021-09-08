@@ -28,6 +28,15 @@ void Rendering::Mesh::Draw(GL::Shader& shader, const GL::Texture* texture, int m
     glDrawElements(GL_TRIANGLES, vao_.GetIndicesCount(), GL_UNSIGNED_INT, 0);
 }
 
+void Rendering::Mesh::Draw(GL::Shader& shader, const GL::TextureArray* textureArray, GLuint textureId, int mode)
+{
+    Prepare(shader, mode);
+    shader.SetUniformInt("textureArray", 0);
+    shader.SetUniformInt("textureId", textureId);
+    textureArray->Bind(GL_TEXTURE0);
+    glDrawElements(GL_TRIANGLES, vao_.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+}
+
 void Rendering::Mesh::Draw(GL::Shader& shader, glm::vec4 color, int mode)
 {
     Prepare(shader, mode);

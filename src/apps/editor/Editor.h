@@ -221,6 +221,7 @@ namespace BlockBuster
 
             // Rendering
             GL::Shader shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
+            GL::Shader chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
             Rendering::Mesh cube;
             Rendering::Mesh slope;
             Rendering::Camera camera;
@@ -259,6 +260,7 @@ namespace BlockBuster
 
             const int MAX_TEXTURES = 32;
             std::vector<GL::Texture>& textures = project.textures;
+            GL::TextureArray textureArray{4, 160};
             std::vector<glm::vec4>& colors = project.colors;
 
             bool pickingColor = false;
@@ -322,6 +324,7 @@ namespace BlockBuster
                 bool showDemo = false;
                 bool newMapSys = true;
                 bool optimizeIntersection = true;
+                bool useTextureArray = true;
             #endif
             bool drawChunkBorders = false;
 

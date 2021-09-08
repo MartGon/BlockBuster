@@ -92,7 +92,25 @@ void BlockBuster::Editor::Editor::Update()
         if(display.type == Game::DisplayType::TEXTURE)
         {
             if(display.id < textures.size())
+            {   
+                #ifdef _DEBUG
+                    if(!useTextureArray)
+                    {
+                #endif
+                
                 mesh.Draw(shader, &textures[display.id]);
+
+                #ifdef _DEBUG    
+                    }
+                    else
+                    {
+                        std::cout << "Drawing with texture array on layer " << display.id << "\n";
+                        chunkShader.SetUniformMat4("transform", tMat);
+                        if(useTextureArray)
+                            mesh.Draw(chunkShader, &textureArray, display.id);
+                    }
+                #endif
+            }
         }
         else if(display.type == Game::DisplayType::COLOR)
         {
@@ -151,6 +169,7 @@ bool BlockBuster::Editor::Editor::LoadTexture()
     try
     {
         texture.Load();
+        textureArray.AddTexture(textureFolder, textureFilename, false);
     }
     catch(const GL::Texture::LoadError& e)
     {
@@ -2516,6 +2535,8 @@ void BlockBuster::Editor::Editor::GUI()
                     ImGui::Checkbox("New map system", &newMapSys);
                     ImGui::SameLine();
                     ImGui::Checkbox("Intersection Optimization", &optimizeIntersection);
+                    ImGui::SameLine();
+                    ImGui::Checkbox("Use Texture Array", &useTextureArray);
                     ImGui::SameLine();
                 #endif
                     ImGui::Checkbox("Draw Chunk borders", &drawChunkBorders);

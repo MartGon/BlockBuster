@@ -26,6 +26,11 @@ namespace GL
         void Load(bool flipVertically = false);
         void Bind(unsigned int activeTexture = GL_TEXTURE0) const;
 
+        bool IsLoaded() const
+        {
+            return loaded;
+        }
+
         unsigned int GetGLId() const
         {
             return handle_;
@@ -45,11 +50,15 @@ namespace GL
             const std::filesystem::path path_;
         };
 
+
+
     private:
 
         std::filesystem::path path_;
         unsigned int handle_ = 0;
         glm::ivec2 dimensions_{0, 0};
         int format_ = 0;
+
+        bool loaded = false;
     };
 }

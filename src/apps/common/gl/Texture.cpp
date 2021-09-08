@@ -12,21 +12,19 @@ GL::Texture GL::Texture::FromFolder(const std::filesystem::path& folderPath, con
 
 GL::Texture::Texture(const std::filesystem::path& imagePath) : path_{imagePath}
 {
-
+    glGenTextures(1, &handle_);
+    glBindTexture(GL_TEXTURE_2D, handle_);
 }
 
 void GL::Texture::Load(bool flipVertically)
 {
-    if(handle_ == 0)
+    if(!loaded)
     {
         int channels;
         stbi_set_flip_vertically_on_load(flipVertically);
         auto data = stbi_load(path_.string().c_str(), &dimensions_.x, &dimensions_.y, &channels, 0);
         if(data)
         {
-            glGenTextures(1, &handle_);
-            glBindTexture(GL_TEXTURE_2D, handle_);
-
             format_ = channels == 3 ? GL_RGB : GL_RGBA;
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dimensions_.x, dimensions_.y, 0, format_, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
@@ -40,6 +38,8 @@ void GL::Texture::Load(bool flipVertically)
 
             stbi_image_free(data);
             stbi_set_flip_vertically_on_load(false);
+
+            loaded = true;
         }
         else
             throw LoadError{path_, stbi_failure_reason()};
