@@ -3,6 +3,7 @@ SET(SOURCES
     Shader.cpp
     Texture.cpp
     VertexArray.cpp
+    TextureArray.cpp
 )
 
 
