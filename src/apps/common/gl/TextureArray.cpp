@@ -13,9 +13,8 @@ GL::TextureArray::TextureArray(GLsizei length, GLsizei textureSize) : length_{le
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    //glTexStorage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB, textureSize, textureSize, length);
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, textureSize, textureSize, length_, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    // TODO: Set this to RGBA and convert RGB images to RGBA
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGB8, textureSize, textureSize, length);
+    // TODO: Set this to RGBA8 and convert RGB images to RGBA
 }
 
 GL::TextureArray::~TextureArray()
@@ -36,12 +35,12 @@ GLuint GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVer
     int sizeX, sizeY;
 
     stbi_set_flip_vertically_on_load(flipVertically);
-    auto data = stbi_load(filepath.string().c_str(), &sizeX, &sizeY, &channels, 3);
+    auto data = stbi_load(filepath.string().c_str(), &sizeX, &sizeY, &channels, 0);
 
     if(data)
     {
         auto format_ = channels == 3 ? GL_RGB : GL_RGBA;
-        //glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, count_, texSize_, texSize_, length_, GL_RGB, GL_UNSIGNED_BYTE, data);
+        // Note: 1 instead of length (before GL_RGB) because it's the amount of images to be set on this call. It's always one.
         glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, count_, texSize_, texSize_, 1, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 

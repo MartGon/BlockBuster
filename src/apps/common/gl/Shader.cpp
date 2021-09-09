@@ -132,7 +132,7 @@ public:
 void GL::Shader::CheckLinkErrors(unsigned int program)
 {
     int success = true;
-    glGetShaderiv(program, GL_LINK_STATUS, &success);
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
     if(!success)
     {
         std::string error;

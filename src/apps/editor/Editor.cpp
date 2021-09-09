@@ -104,7 +104,6 @@ void BlockBuster::Editor::Editor::Update()
                     }
                     else
                     {
-                        std::cout << "Drawing with texture array on layer " << display.id << "\n";
                         chunkShader.SetUniformMat4("transform", tMat);
                         if(useTextureArray)
                             mesh.Draw(chunkShader, &textureArray, display.id);
@@ -2560,4 +2559,3 @@ void BlockBuster::Editor::Editor::GUI()
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
-

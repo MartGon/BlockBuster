@@ -2,6 +2,26 @@
 
 #include <string>
 
+#ifdef _DEBUG
+
+#include <iostream>
+
+void GLAPIENTRY ErrorCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const void* userParam)
+{
+    if(severity != GL_DEBUG_SEVERITY_NOTIFICATION)
+    {
+        std::cout << "GL Event\n";
+        std::cout << "Type: " << (type == GL_DEBUG_TYPE_ERROR ? "Error" : "Event") << "\n";
+        std::cout << "Type code: " << std::hex << type << "\n";
+        std::cout << "Id: " << std::hex << id << "\n";
+        std::cout << "Severity: " << std::hex << severity << "\n";
+        std::cout << "Message: " << msg << "\n";
+        std::cout << "\n";
+    }
+}
+
+#endif
+
 App::App::App(Configuration config) : config{config}
 {
     if(SDL_Init(0))
@@ -30,6 +50,11 @@ App::App::App(Configuration config) : config{config}
         std::string msg =  "gladLoadGLLoader failed \n";
         throw InitError(msg.c_str());
     }
+
+    #ifdef _DEBUG
+        glEnable(GL_DEBUG_OUTPUT);
+        glDebugMessageCallback(ErrorCallback, 0);
+    #endif
 
     // Get window size after enabling fullscreen
     int width, height;

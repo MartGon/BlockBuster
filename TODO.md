@@ -16,23 +16,11 @@
     Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
 
 ## TODO
+### Features
     UpdateBlock Tool action. To prevent removing an updated block on undo - Done
     Write Shortcut Cheatsheet in a popup window / tab. Use collapsing headers, cause why not.
-    Chunk Meshes
-        Texture Array GL Wrapper
-        Color array uniform accesible from shader
-        Chunk Mesh rendering with cubes only
-        Chunk Mesh rendering with cubes and slopes
-
-    Create null texture
     Release first version
-    Compress map data (Reduce rotations, position to uint16, colors to uint8)
     SemiSlope mesh and collisions
-    ImGui::Selectable template function - Done
-    Tool Class heirarchy
-        OnSelectTool
-        OnDeselectTool
-        Use
     Selection Tool
         Ctrl+click to select individual blocks
         Shift+click to scale selector
@@ -47,11 +35,27 @@
         Block icons to move in 3D space
         Asset list with other bbms
         Show/Hide sub tools. Check demo - Done
-    Optimize Player-Map collisions
+    
     Block color - Border/NoBorder option
+
+### Maintenance and performance
+    Chunk Meshes
+        Texture Array GL Wrapper - Done
+        Color array uniform accesible from shader
+        Chunk Mesh rendering with cubes only
+        Chunk Mesh rendering with cubes and slopes
+    Create null texture
+    Compress map data (Reduce rotations, position to uint16, colors to uint8)
+    ImGui::Selectable template function - Done
+    Tool Class heirarchy
+        OnSelectTool
+        OnDeselectTool
+        Use
+    Optimize Player-Map collisions
 
     Replace MoveSelectionAction with a BatchedAction
     Disable back face culling for cursor - Done
+
 
 ## Bugs
     Move selection moves new blocks that enter the cursor after moving has started. Should only move the blocks that were selected when the button was pressed - DONE
