@@ -22,10 +22,31 @@ GL::TextureArray::~TextureArray()
     glDeleteTextures(1, &handle_);
 }
 
+GL::TextureArray::TextureArray(TextureArray&& other)
+{
+    *this = std::move(other);
+}
+
+GL::TextureArray& GL::TextureArray::operator=(TextureArray&& other)
+{
+    glDeleteTextures(1, &handle_);
+    this->handle_ = other.handle_;
+    this->length_ = other.length_;
+    this->count_ = other.count_;
+    this->texSize_ = other.texSize_;
+    other.handle_ = 0;
+
+    return *this;
+}
+
 GLuint GL::TextureArray::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
 {
     return AddTexture(folder / filename, flipVertically);
 }
+
+#ifdef _DEBUG
+    #include <iostream>
+#endif
 
 GLuint GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVertically)
 {
@@ -48,6 +69,9 @@ GLuint GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVer
     }
     else
     {
+        #ifdef _DEBUG
+            std::cout << "Failed to load texture " << filepath << "\n";
+        #endif
         // TODO: User error image here
     }
 

@@ -259,8 +259,8 @@ namespace BlockBuster
             char textureFilename[32] = "texture.png";
 
             const int MAX_TEXTURES = 32;
-            std::vector<GL::Texture>& textures = project.textures;
-            GL::TextureArray textureArray{4, 160};
+            std::vector<TextureInfo>& texturesInfo = project.texturesInfo;
+            GL::TextureArray& textureArray = project.textureArray;
             std::vector<glm::vec4>& colors = project.colors;
 
             bool pickingColor = false;

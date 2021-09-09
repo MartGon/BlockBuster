@@ -109,10 +109,10 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     // Write textures
     WriteToFile(file, p.textureFolder.string());
 
-    WriteToFile(file, p.textures.size());
-    for(auto i = 0; i < p.textures.size(); i++)
+    WriteToFile(file, p.texturesInfo.size());
+    for(auto i = 0; i < p.texturesInfo.size(); i++)
     {
-        auto texturePath =  p.textures[i].GetPath();
+        auto texturePath =  p.texturesInfo[i].path;
         auto textureName = texturePath.filename().string();
         WriteToFile(file, textureName);
     }
@@ -181,20 +181,13 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     p.textureFolder = ReadFromFile<std::string>(file);
 
     auto textureSize = ReadFromFile<std::size_t>(file);
-    p.textures.clear();
-    p.textures.reserve(textureSize);
+    p.texturesInfo.reserve(textureSize);
     for(auto i = 0; i < textureSize; i++)
     {
-        auto texturePath = p.textureFolder / ReadFromFile<std::string>(file);
-        GL::Texture texture{texturePath};
-        try{
-            texture.Load();
-        }
-        catch(const GL::Texture::LoadError& e)
-        {
-            std::cout << "Could not load texture file " << texturePath << "\n";
-        }
-        p.textures.push_back(std::move(texture));
+        auto filename = ReadFromFile<std::string>(file);
+        auto texturePath = p.textureFolder / filename;
+        auto id = p.textureArray.AddTexture(p.textureFolder, filename);
+        p.texturesInfo.push_back({id, texturePath});
     }
 
     // Color Table

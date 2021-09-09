@@ -12,6 +12,8 @@
 
 #include <debug/Debug.h>
 
+#include <imgui/backends/imgui_impl_opengl3.h>
+
 // #### Public Interface #### \\
 
 void BlockBuster::Editor::Editor::Start()
@@ -22,21 +24,6 @@ void BlockBuster::Editor::Editor::Start()
     // Meshes
     cube = Rendering::Primitive::GenerateCube();
     slope = Rendering::Primitive::GenerateSlope();
-
-    // Textures
-    textures.reserve(MAX_TEXTURES);
-
-    textureFolder = GetConfigOption("TextureFolder", TEXTURES_DIR);
-    GL::Texture texture = GL::Texture::FromFolder(textureFolder, "SmoothStone.png");
-    try
-    {
-        texture.Load();
-        textures.push_back(std::move(texture));
-    }
-    catch(const GL::Texture::LoadError& e)
-    {
-        std::cout << "Error when loading texture " + e.path_.string() + ": " +  e.what() << '\n';
-    }
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
@@ -91,24 +78,10 @@ void BlockBuster::Editor::Editor::Update()
         auto display = tool == PAINT_BLOCK && intersecting && pointedBlockPos == pos ? GetBlockDisplay() : block->display;
         if(display.type == Game::DisplayType::TEXTURE)
         {
-            if(display.id < textures.size())
+            if(display.id < texturesInfo.size())
             {   
-                #ifdef _DEBUG
-                    if(!useTextureArray)
-                    {
-                #endif
-                
-                mesh.Draw(shader, &textures[display.id]);
-
-                #ifdef _DEBUG    
-                    }
-                    else
-                    {
-                        chunkShader.SetUniformMat4("transform", tMat);
-                        if(useTextureArray)
-                            mesh.Draw(chunkShader, &textureArray, display.id);
-                    }
-                #endif
+                chunkShader.SetUniformMat4("transform", tMat);
+                mesh.Draw(chunkShader, &textureArray, display.id);
             }
         }
         else if(display.type == Game::DisplayType::COLOR)
@@ -158,23 +131,14 @@ glm::vec4 BlockBuster::Editor::Editor::GetBorderColor(glm::vec4 basecolor, glm::
 
 bool BlockBuster::Editor::Editor::LoadTexture()
 {
-    if(textures.size() >= MAX_TEXTURES)
+    if(texturesInfo.size() >= MAX_TEXTURES)
         return false;
 
     if(IsTextureInPalette(textureFolder, textureFilename))
         return false;
 
-    auto texture = GL::Texture::FromFolder(textureFolder, textureFilename);
-    try
-    {
-        texture.Load();
-        textureArray.AddTexture(textureFolder, textureFilename, false);
-    }
-    catch(const GL::Texture::LoadError& e)
-    {
-        return false;
-    }
-    textures.push_back(std::move(texture));
+    auto id = textureArray.AddTexture(textureFolder, textureFilename, true);
+    texturesInfo.push_back({id, textureFolder / textureFilename});
 
     return true;
 }
@@ -182,8 +146,8 @@ bool BlockBuster::Editor::Editor::LoadTexture()
 bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName)
 {
     auto texturePath = folder / textureName;
-    for(const auto& texture : textures)
-        if(texture.GetPath() == texturePath)
+    for(const auto& texture : texturesInfo)
+        if(texture.path == texturePath)
             return true;
     
     return false;
@@ -2096,7 +2060,7 @@ void BlockBuster::Editor::Editor::GUI()
 
                         glm::vec2 region = ImGui::GetContentRegionAvail();
                         int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
-                        int entries = displayType == Game::DisplayType::TEXTURE ? textures.size() : colors.size();
+                        int entries = displayType == Game::DisplayType::TEXTURE ? texturesInfo.size() : colors.size();
                         int minRows = glm::max((int)glm::ceil((float)entries / (float)columns), 1);
                         int rows = glm::min(MAX_ROWS, minRows);
                         glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * rows};
@@ -2143,8 +2107,8 @@ void BlockBuster::Editor::Editor::GUI()
                                 
                                 if(displayType == Game::DisplayType::TEXTURE)
                                 {
-                                    GL::Texture* texture = &textures[i];
-                                    void* data = reinterpret_cast<void*>(texture->GetGLId());
+                                    auto textureInfo = texturesInfo[i];
+                                    void* data = reinterpret_cast<void*>(textureInfo.id);
                                     ImGui::Image(data, iconSize);
                                 }
                                 else if(displayType == Game::DisplayType::COLOR)

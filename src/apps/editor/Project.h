@@ -2,10 +2,16 @@
 
 #include <game/Map.h>
 
-#include <gl/Texture.h>
+#include <gl/TextureArray.h>
 
 namespace BlockBuster::Editor
 {
+    struct TextureInfo
+    {
+        GLuint id;
+        std::filesystem::path path;
+    };
+
     class Project
     {
     public:
@@ -15,7 +21,8 @@ namespace BlockBuster::Editor
 
         Game::Map::Map map;
         float blockScale;
-        std::vector<GL::Texture> textures;
+        GL::TextureArray textureArray{32, 160};
+        std::vector<TextureInfo> texturesInfo;
         std::vector<glm::vec4> colors;
 
         glm::vec3 cameraPos;
