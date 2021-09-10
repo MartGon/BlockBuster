@@ -85,3 +85,8 @@ void GL::TextureArray::Bind(GLuint activeTexture) const
     glActiveTexture(activeTexture);
     glBindTexture(GL_TEXTURE_2D_ARRAY, handle_);
 }
+
+GLuint GL::TextureArray::GetHandle() const
+{
+    return handle_;
+}

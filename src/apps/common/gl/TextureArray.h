@@ -31,6 +31,8 @@ namespace GL
 
         void Bind(GLuint activeTexture = GL_TEXTURE0) const;
 
+        GLuint GetHandle() const;
+
     private:
         GLsizei length_;
         GLsizei count_ = 0;
