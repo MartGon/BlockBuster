@@ -25,6 +25,40 @@
 #pragma once
 #include "imgui.h"      // IMGUI_IMPL_API
 
+// MOD
+
+namespace ImGui::Impl
+{
+    enum TextureType
+    {
+        SINGLE_TEXTURE,
+        TEXTURE_ARRAY
+    };
+
+    struct TextureArrayData
+    {
+        uint layer;
+    };
+
+    struct SingleTextureData
+    {
+
+    };
+
+    union ExtraData
+    {
+        SingleTextureData single;
+        TextureArrayData array;
+    };
+
+    struct Texture
+    {
+        uint handle;
+        TextureType type;
+        ExtraData extra;
+    };
+}
+
 // Backend API
 IMGUI_IMPL_API bool     ImGui_ImplOpenGL3_Init(const char* glsl_version = NULL);
 IMGUI_IMPL_API void     ImGui_ImplOpenGL3_Shutdown();

@@ -156,8 +156,13 @@ static GLuint       g_GlVersion = 0;                // Extracted at runtime usin
 static char         g_GlslVersionString[32] = "";   // Specified by user or detected based on compile time GL settings.
 static GLuint       g_FontTexture = 0;
 static GLuint       g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
+static GLuint       g_ShanderHandleArray = 0, g_VertHandleArray = 0, g_FragHandleArray = 0;
 static GLint        g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;                                // Uniforms location
 static GLuint       g_AttribLocationVtxPos = 0, g_AttribLocationVtxUV = 0, g_AttribLocationVtxColor = 0; // Vertex attributes location
+
+static GLint        g_AttribLocationArrayTexArray = 0, g_AttribLocationArrayProjMtx = 0;                                // Uniforms location
+static GLuint       g_AttribLocationArrayVtxPos = 0, g_AttribLocationArrayVtxUV = 0, g_AttribLocationArrayVtxColor = 0, g_AttribLocationArrayLayer = 0; // Vertex attributes location
+
 static unsigned int g_VboHandle = 0, g_ElementsHandle = 0;
 static bool         g_HasClipOrigin = false;
 
@@ -312,6 +317,11 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
         { 0.0f,         0.0f,        -1.0f,   0.0f },
         { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
     };
+
+    glUseProgram(g_ShanderHandleArray);
+    glUniform1i(g_AttribLocationArrayTexArray, 0);
+    glUniformMatrix4fv(g_AttribLocationArrayProjMtx, 1, GL_FALSE, &ortho_projection[0][0]);
+
     glUseProgram(g_ShaderHandle);
     glUniform1i(g_AttribLocationTex, 0);
     glUniformMatrix4fv(g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]);
@@ -429,7 +439,20 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
                     glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w), (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
 
                     // Bind texture, Draw
-                    glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->GetTexID());
+                    auto texture = reinterpret_cast<ImGui::Impl::Texture*>(pcmd->GetTexID());
+                    
+                    if(texture->type == ImGui::Impl::SINGLE_TEXTURE)
+                    {
+                        glUseProgram(g_ShaderHandle);
+                        glBindTexture(GL_TEXTURE_2D, texture->handle);
+                    }
+                    else if(texture->type == ImGui::Impl::TEXTURE_ARRAY)
+                    {
+                        glUseProgram(g_ShanderHandleArray);
+                        glUniform1f(g_AttribLocationArrayLayer, texture->extra.array.layer);
+                        glBindTexture(GL_TEXTURE_2D_ARRAY, texture->handle);
+                    }
+
 #ifdef IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
                     if (g_GlVersion >= 320)
                         glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (GLint)pcmd->VtxOffset);
@@ -497,7 +520,8 @@ bool ImGui_ImplOpenGL3_CreateFontsTexture()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Store our identifier
-    io.Fonts->SetTexID((ImTextureID)(intptr_t)g_FontTexture);
+    static ImGui::Impl::Texture fontTexture{g_FontTexture, ImGui::Impl::SINGLE_TEXTURE, {.single = {}}};
+    io.Fonts->SetTexID(&fontTexture);
 
     // Restore state
     glBindTexture(GL_TEXTURE_2D, last_texture);
@@ -646,6 +670,17 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
         "    Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n"
         "}\n";
 
+    const GLchar* fragment_shader_glsl_130_array =
+        "uniform sampler2DArray TextureArray;\n"
+        "uniform float Layer;\n"
+        "in vec2 Frag_UV;\n"
+        "in vec4 Frag_Color;\n"
+        "out vec4 Out_Color;\n"
+        "void main()\n"
+        "{\n"
+        "    Out_Color = Frag_Color * texture(TextureArray, vec3(Frag_UV.st, Layer));\n"
+        "}\n";
+
     const GLchar* fragment_shader_glsl_300_es =
         "precision mediump float;\n"
         "uniform sampler2D Texture;\n"
@@ -670,6 +705,7 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
     // Select shaders matching our GLSL versions
     const GLchar* vertex_shader = NULL;
     const GLchar* fragment_shader = NULL;
+    const GLchar* fragment_shader_array = NULL;
     if (glsl_version < 130)
     {
         vertex_shader = vertex_shader_glsl_120;
@@ -689,6 +725,7 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
     {
         vertex_shader = vertex_shader_glsl_130;
         fragment_shader = fragment_shader_glsl_130;
+        fragment_shader_array = fragment_shader_glsl_130_array;
     }
 
     // Create shaders
@@ -704,17 +741,36 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
     glCompileShader(g_FragHandle);
     CheckShader(g_FragHandle, "fragment shader");
 
+    const GLchar* fragment_shader_array_with_version[2] = { g_GlslVersionString, fragment_shader_array };
+    g_FragHandleArray = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(g_FragHandleArray, 2, fragment_shader_array_with_version, NULL);
+    glCompileShader(g_FragHandleArray);
+    CheckShader(g_FragHandleArray, "fragment shader array");
+
     g_ShaderHandle = glCreateProgram();
     glAttachShader(g_ShaderHandle, g_VertHandle);
     glAttachShader(g_ShaderHandle, g_FragHandle);
     glLinkProgram(g_ShaderHandle);
     CheckProgram(g_ShaderHandle, "shader program");
 
+    g_ShanderHandleArray = glCreateProgram();
+    glAttachShader(g_ShanderHandleArray, g_VertHandle);
+    glAttachShader(g_ShanderHandleArray, g_FragHandleArray);
+    glLinkProgram(g_ShanderHandleArray);
+    CheckProgram(g_ShanderHandleArray, "shader program array");
+
     g_AttribLocationTex = glGetUniformLocation(g_ShaderHandle, "Texture");
     g_AttribLocationProjMtx = glGetUniformLocation(g_ShaderHandle, "ProjMtx");
     g_AttribLocationVtxPos = (GLuint)glGetAttribLocation(g_ShaderHandle, "Position");
     g_AttribLocationVtxUV = (GLuint)glGetAttribLocation(g_ShaderHandle, "UV");
     g_AttribLocationVtxColor = (GLuint)glGetAttribLocation(g_ShaderHandle, "Color");
+
+    g_AttribLocationArrayTexArray = glGetUniformLocation(g_ShanderHandleArray, "TextureArray");
+    g_AttribLocationArrayLayer = glGetUniformLocation(g_ShanderHandleArray, "Layer");
+    g_AttribLocationArrayProjMtx = glGetUniformLocation(g_ShanderHandleArray, "ProjMtx");
+    g_AttribLocationArrayVtxPos = (GLuint)glGetAttribLocation(g_ShanderHandleArray, "Position");
+    g_AttribLocationArrayVtxUV = (GLuint)glGetAttribLocation(g_ShanderHandleArray, "UV");
+    g_AttribLocationArrayVtxColor = (GLuint)glGetAttribLocation(g_ShanderHandleArray, "Color");
 
     // Create buffers
     glGenBuffers(1, &g_VboHandle);

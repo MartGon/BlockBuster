@@ -14,11 +14,14 @@
 #include <game/Block.h>
 #include <game/Map.h>
 
+#include <imgui/backends/imgui_impl_opengl3.h>
+
 #include <Project.h>
 
 #include <ToolAction.h>
 
 #include <functional>
+
 
 namespace BlockBuster
 {
@@ -211,6 +214,9 @@ namespace BlockBuster
             // GUI
             void MenuBar();
 
+            // GUI - Misc
+            void SyncGUITextures();
+
             // Menu - File
             void MenuNewMap();
             void MenuOpenMap();
@@ -218,6 +224,9 @@ namespace BlockBuster
             void MenuSaveAs();
 
             void GUI();
+
+            // Project
+            Project project;
 
             // Rendering
             GL::Shader shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
@@ -228,10 +237,6 @@ namespace BlockBuster
             CameraMode cameraMode = CameraMode::EDITOR;
             const float CAMERA_MOVE_SPEED = 0.25f;
             const float CAMERA_ROT_SPEED = glm::radians(1.0f);
-
-            // World
-            Project project;
-            Game::Map::Map& map_ = project.map;
             
             // Editor
             bool quit = false;
@@ -259,9 +264,7 @@ namespace BlockBuster
             char textureFilename[32] = "texture.png";
 
             const int MAX_TEXTURES = 32;
-            std::vector<TextureInfo>& texturesInfo = project.texturesInfo;
-            GL::TextureArray& textureArray = project.textureArray;
-            std::vector<glm::vec4>& colors = project.colors;
+            std::vector<ImGui::Impl::Texture> guiTextures;
 
             bool pickingColor = false;
             glm::vec4 colorPick;

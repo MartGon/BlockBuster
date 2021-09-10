@@ -1,8 +1,7 @@
 #pragma once
 
 #include <game/Map.h>
-
-#include <gl/TextureArray.h>
+#include <rendering/TexturePalette.h>
 
 namespace BlockBuster::Editor
 {
@@ -20,10 +19,9 @@ namespace BlockBuster::Editor
         void Init();
 
         Game::Map::Map map;
-        float blockScale;
-        GL::TextureArray textureArray{32, 160};
-        std::vector<TextureInfo> texturesInfo;
+        Rendering::TexturePalette palette{16, 160};
         std::vector<glm::vec4> colors;
+        float blockScale;
 
         glm::vec3 cameraPos;
         glm::vec2 cameraRot;
