@@ -42,7 +42,7 @@
     Chunk Meshes
         Texture Array GL Wrapper - Done
         ImGui uses TextureArray - Done
-        Create null texture or Error when loading null texture (Throw on editor, use null texture when loading)
+        Create null texture or Error when loading null texture (Throw on editor, use null texture when loading) - Done
         Color array uniform accesible from shader
         Chunk Mesh rendering with cubes only
         Chunk Mesh rendering with cubes and slopes

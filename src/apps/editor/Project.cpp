@@ -113,7 +113,7 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     WriteToFile(file, texCount);
     for(auto i = 0; i < texCount; i++)
     {
-        auto texturePath =  p.palette.GetMember(i).filepath;
+        auto texturePath =  p.palette.GetMember(i).data.filepath;
         auto textureName = texturePath.filename().string();
         WriteToFile(file, textureName);
     }
@@ -186,7 +186,13 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     {
         auto filename = ReadFromFile<std::string>(file);
         auto texturePath = p.textureFolder / filename;
-        auto id = p.palette.AddTexture(p.textureFolder, filename);
+        auto res = p.palette.AddTexture(p.textureFolder, filename);
+        if(res.type == General::ResultType::ERROR)
+        {
+            std::cout << "Could not load texture " << texturePath << "\n";
+            std::cout << "Loading dummy texture instead\n";
+            p.palette.AddNullTexture(texturePath);
+        }
     }
 
     // Color Table

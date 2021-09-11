@@ -417,9 +417,9 @@ void BlockBuster::Editor::Editor::SyncGUITextures()
     guiTextures.reserve(tCount);
     for(unsigned int i = 0; i < tCount; i++)
     {
-        auto m = project.palette.GetMember(i);
+        auto res = project.palette.GetMember(i);
         auto handle = project.palette.GetTextureArray()->GetHandle();
-        auto texture = ImGui::Impl::Texture{handle, ImGui::Impl::TextureType::TEXTURE_ARRAY, {.array = m.id}};
+        auto texture = ImGui::Impl::Texture{handle, ImGui::Impl::TextureType::TEXTURE_ARRAY, ImGui::Impl::ExtraData{.array = res.data.id}};
         guiTextures.push_back(texture);
     }
 }

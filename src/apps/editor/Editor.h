@@ -153,6 +153,7 @@ namespace BlockBuster
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
 
             Game::Display GetBlockDisplay();
+            bool IsDisplayValid();
             void SetBlockDisplay(Game::Display display);
 
             void SetUnsaved(bool unsaved);

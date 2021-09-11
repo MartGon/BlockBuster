@@ -20,9 +20,10 @@ namespace Rendering
             std::filesystem::path filepath;
         };
 
-        Member AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically = true);
-        Member AddTexture(std::filesystem::path filepath, bool flipVertically = true);
-        Member GetMember(unsigned int index);
+        General::Result<Member> AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically = true);
+        General::Result<Member> AddTexture(std::filesystem::path filepath, bool flipVertically = true);
+        General::Result<Member> AddNullTexture(std::filesystem::path filepath = std::filesystem::path{});
+        General::Result<Member> GetMember(unsigned int index);
 
         size_t GetCount() const
         {
@@ -36,6 +37,9 @@ namespace Rendering
         
 
     private:
+
+        Member AddMember(unsigned int id, std::filesystem::path filepath);
+
         GL::TextureArray tArray_;
         std::vector<Member> members_;
     };

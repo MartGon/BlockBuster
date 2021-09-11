@@ -75,14 +75,15 @@ void BlockBuster::Editor::Editor::Update()
         shader.SetUniformInt("hasBorder", true);
         shader.SetUniformMat4("transform", tMat);
         auto& mesh = GetMesh(block->type);
-        auto display = tool == PAINT_BLOCK && intersecting && pointedBlockPos == pos ? GetBlockDisplay() : block->display;
+        auto preBlockDisplay =  GetBlockDisplay();
+
+        bool isPainted = tool == PAINT_BLOCK && intersecting && pointedBlockPos == pos;
+        auto display = isPainted && IsDisplayValid() ? preBlockDisplay : block->display;
+        
         if(display.type == Game::DisplayType::TEXTURE)
         {
-            if(display.id < project.palette.GetCount())
-            {   
-                chunkShader.SetUniformMat4("transform", tMat);
-                mesh.Draw(chunkShader, project.palette.GetTextureArray(), display.id);
-            }
+            chunkShader.SetUniformMat4("transform", tMat);
+            mesh.Draw(chunkShader, project.palette.GetTextureArray(), display.id);
         }
         else if(display.type == Game::DisplayType::COLOR)
         {
@@ -137,9 +138,13 @@ bool BlockBuster::Editor::Editor::LoadTexture()
     if(IsTextureInPalette(textureFolder, textureFilename))
         return false;
 
-    auto id = project.palette.AddTexture(textureFolder, textureFilename, true);
-    
-    SyncGUITextures();
+    auto res = project.palette.AddTexture(textureFolder, textureFilename, true);
+    if(res.type == General::ResultType::ERROR)
+    {
+        return false;
+    }
+    else
+        SyncGUITextures();
 
     return true;
 }
@@ -148,7 +153,7 @@ bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folde
 {
     auto texturePath = folder / textureName;
     for(int i = 0; i < project.palette.GetCount(); i++)
-        if(project.palette.GetMember(i).filepath == texturePath)
+        if(project.palette.GetMember(i).data.filepath == texturePath)
             return true;
     
     return false;
@@ -161,6 +166,7 @@ void BlockBuster::Editor::Editor::NewProject()
     // Init project
     project = Project{};
     project.Init();
+    SyncGUITextures();
 
     // Camera
     camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
@@ -554,14 +560,17 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
 
                     if(actionType == ActionType::LEFT_BUTTON)
                     {
-                        auto display = GetBlockDisplay();                            
-                        auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                        if(auto found = project.map.GetBlock(iNewPos); !found || found->type == Game::BlockType::NONE)
+                        if(IsDisplayValid())
                         {
-                            auto block = Game::Block{blockType, rot, display};
-                            auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &project.map);
+                            auto display = GetBlockDisplay();                            
+                            auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
+                            if(auto found = project.map.GetBlock(iNewPos); !found || found->type == Game::BlockType::NONE)
+                            {
+                                auto block = Game::Block{blockType, rot, display};
+                                auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &project.map);
 
-                            DoToolAction(std::move(action));
+                                DoToolAction(std::move(action));
+                            }
                         }
                     }
                     else if(actionType == ActionType::HOVER)
@@ -646,7 +655,8 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 if(actionType == ActionType::LEFT_BUTTON)
                 {
                     auto display = GetBlockDisplay();
-                    DoToolAction(std::make_unique<PaintAction>(iPos, &block, display, &project.map));
+                    if(IsDisplayValid())
+                        DoToolAction(std::make_unique<PaintAction>(iPos, &block, display, &project.map));
                 }
                 if(actionType == ActionType::RIGHT_BUTTON)
                 {
@@ -1363,6 +1373,15 @@ Game::Display BlockBuster::Editor::Editor::GetBlockDisplay()
         display.id = textureId;
 
     return display;
+}
+
+bool BlockBuster::Editor::Editor::IsDisplayValid()
+{
+    auto display = GetBlockDisplay();
+    auto texCount = project.palette.GetCount();
+    bool isValidTexture = display.type == Game::DisplayType::TEXTURE && display.id < texCount;
+    bool isColor = display.type == Game::DisplayType::COLOR;
+    return isColor || isValidTexture;
 }
 
 void BlockBuster::Editor::Editor::SetBlockDisplay(Game::Display display)

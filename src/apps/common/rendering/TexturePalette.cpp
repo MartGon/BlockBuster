@@ -1,23 +1,55 @@
 #include <rendering/TexturePalette.h>
 
-Rendering::TexturePalette::Member Rendering::TexturePalette::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
+#include <array>
+
+General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
 {
    auto filepath = folder / filename;
    return AddTexture(filepath, flipVertically);
 }
 
-Rendering::TexturePalette::Member Rendering::TexturePalette::AddTexture(std::filesystem::path filepath, bool flipVertically)
+General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddTexture(std::filesystem::path filepath, bool flipVertically)
 {
-    Member m;
-    m.filepath = filepath;
-    m.id = tArray_.AddTexture(m.filepath, flipVertically);
+    auto result = tArray_.AddTexture(filepath, flipVertically);
+    if(result.type == General::ResultType::SUCCESS)
+    {
+        auto m = AddMember(result.data, filepath);
+        return General::CreateSuccess(m);
+    }
+    else
+        return General::CreateError<Rendering::TexturePalette::Member>(result.err.info);
 
-    members_.push_back(m);
-
-    return m;
 }
 
-Rendering::TexturePalette::Member Rendering::TexturePalette::GetMember(unsigned int index)
+General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::GetMember(unsigned int index)
 {
-    return members_.at(index);
+    if(index < 0 && index >= members_.size())
+        return General::CreateError<Rendering::TexturePalette::Member>("Invalid index for texture palette");
+
+    return General::CreateSuccess(members_[index]);
+}
+
+General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddNullTexture(std::filesystem::path filepath)
+{
+    static constexpr auto nullTex{[]() constexpr{
+            constexpr const auto size = 160 * 160 * 3;
+            std::array<unsigned char, size> nullTex{};
+            for(int i = 0; i < size; i++)
+                nullTex[i] = (unsigned char)255;
+            return nullTex;
+        }()
+    };
+
+    auto ptr = reinterpret_cast<const void*>(nullTex.data());
+    auto result = tArray_.AddTexture(ptr);
+    auto m = AddMember(result.data, filepath);
+
+    return General::CreateSuccess(m);
+}
+
+Rendering::TexturePalette::Member Rendering::TexturePalette::AddMember(unsigned int id, std::filesystem::path path)
+{
+    auto m = Member{id, path};
+    members_.push_back(m);
+    return m;
 }

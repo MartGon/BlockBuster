@@ -39,16 +39,12 @@ GL::TextureArray& GL::TextureArray::operator=(TextureArray&& other)
     return *this;
 }
 
-GLuint GL::TextureArray::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
+General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
 {
     return AddTexture(folder / filename, flipVertically);
 }
 
-#ifdef _DEBUG
-    #include <iostream>
-#endif
-
-GLuint GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVertically)
+General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVertically)
 {
     Bind();
 
@@ -69,15 +65,20 @@ GLuint GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVer
     }
     else
     {
-        #ifdef _DEBUG
-            std::cout << "Failed to load texture " << filepath << "\n";
-        #endif
-        // TODO: User error image here
+        return General::CreateError<GLuint>("Failed to load error");
     }
 
     stbi_set_flip_vertically_on_load(false);
 
-    return count_++;
+    return General::CreateSuccess<GLuint>(count_++);
+}
+
+General::Result<GLuint> GL::TextureArray::AddTexture(const void* data)
+{
+    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, count_, texSize_, texSize_, 1, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+    return General::CreateSuccess<GLuint>(count_++);
 }
 
 void GL::TextureArray::Bind(GLuint activeTexture) const
