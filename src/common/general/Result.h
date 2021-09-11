@@ -32,12 +32,12 @@ namespace General
     template<typename T>
     Result<T> CreateError(std::string msg)
     {
-        return Result<T>{.type = ResultType::ERROR, .err = msg.c_str()};
+        return Result<T>{.type = ResultType::ERROR, .err = Error{msg.c_str()}};
     }
 
     template<typename T>
     Result<T> CreateError(const char * msg)
     {
-        return Result<T>{.type = ResultType::ERROR, .err = msg};
+        return Result<T>{.type = ResultType::ERROR, .err = Error{msg}};
     }
 }
