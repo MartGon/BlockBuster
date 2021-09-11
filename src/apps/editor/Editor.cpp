@@ -70,28 +70,17 @@ void BlockBuster::Editor::Editor::Update()
         Math::Transform t = Game::GetBlockTransform(*block, pos, blockScale);
         auto mMat = t.GetTransformMat();
         auto tMat = camera.GetProjViewMat() * mMat;
-
-        shader.SetUniformInt("isPlayer", 0);
-        shader.SetUniformInt("hasBorder", true);
-        shader.SetUniformMat4("transform", tMat);
         auto& mesh = GetMesh(block->type);
-        auto preBlockDisplay =  GetBlockDisplay();
 
+        auto preBlockDisplay =  GetBlockDisplay();
         bool isPainted = tool == PAINT_BLOCK && intersecting && pointedBlockPos == pos;
         auto display = isPainted && IsDisplayValid() ? preBlockDisplay : block->display;
         
-        if(display.type == Game::DisplayType::TEXTURE)
-        {
-            chunkShader.SetUniformMat4("transform", tMat);
-            mesh.Draw(chunkShader, project.palette.GetTextureArray(), display.id);
-        }
-        else if(display.type == Game::DisplayType::COLOR)
-        {
-            auto color = project.colors[display.id];
-            auto borderColor = GetBorderColor(color);
-            shader.SetUniformVec4("borderColor", borderColor);
-            mesh.Draw(shader, color);
-        }
+        chunkShader.SetUniformMat4("transform", tMat);
+        chunkShader.SetUniformInt("textureType", display.type);
+        project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
+        chunkShader.SetUniformInt("colorArray", 1);
+        mesh.Draw(chunkShader, project.tPalette.GetTextureArray(), display.id);
     }
     
     if(playerMode)
@@ -132,13 +121,13 @@ glm::vec4 BlockBuster::Editor::Editor::GetBorderColor(glm::vec4 basecolor, glm::
 
 bool BlockBuster::Editor::Editor::LoadTexture()
 {
-    if(project.palette.GetCount() >= MAX_TEXTURES)
+    if(project.tPalette.GetCount() >= MAX_TEXTURES)
         return false;
 
     if(IsTextureInPalette(textureFolder, textureFilename))
         return false;
 
-    auto res = project.palette.AddTexture(textureFolder, textureFilename, true);
+    auto res = project.tPalette.AddTexture(textureFolder, textureFilename, true);
     if(res.type == General::ResultType::ERROR)
     {
         return false;
@@ -152,8 +141,8 @@ bool BlockBuster::Editor::Editor::LoadTexture()
 bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName)
 {
     auto texturePath = folder / textureName;
-    for(int i = 0; i < project.palette.GetCount(); i++)
-        if(project.palette.GetMember(i).data.filepath == texturePath)
+    for(int i = 0; i < project.tPalette.GetCount(); i++)
+        if(project.tPalette.GetMember(i).data.filepath == texturePath)
             return true;
     
     return false;
@@ -227,7 +216,7 @@ bool BlockBuster::Editor::Editor::OpenProject()
         unsaved = false;
 
         // Color Palette
-        colorPick = project.colors[colorId];
+        colorPick = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(0).data.color);
 
         // Clear history
         ClearActionHistory();
@@ -581,12 +570,6 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                             cursor.enabled = true;
                             cursor.type = blockType;
                             cursor.rot = rot;
-                            if(block.display.type == Game::DisplayType::COLOR)
-                            {
-                                cursor.color = GetBorderColor(project.colors[block.display.id], darkBlue, yellow);
-                            }
-                            else
-                                cursor.color = yellow;
                         }
                         else
                             cursor.enabled = false;
@@ -632,10 +615,6 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         cursor.enabled = true;
                         cursor.pos = intersect.pos;
                         cursor.type = Game::BlockType::BLOCK;
-                        if(block.display.type == Game::DisplayType::COLOR)
-                        {
-                            cursor.color = GetBorderColor(project.colors[block.display.id], darkBlue, yellow);
-                        }
                     }
                     else
                         cursor.enabled = false;
@@ -1378,7 +1357,7 @@ Game::Display BlockBuster::Editor::Editor::GetBlockDisplay()
 bool BlockBuster::Editor::Editor::IsDisplayValid()
 {
     auto display = GetBlockDisplay();
-    auto texCount = project.palette.GetCount();
+    auto texCount = project.tPalette.GetCount();
     bool isValidTexture = display.type == Game::DisplayType::TEXTURE && display.id < texCount;
     bool isColor = display.type == Game::DisplayType::COLOR;
     return isColor || isValidTexture;

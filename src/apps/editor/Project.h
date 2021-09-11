@@ -2,6 +2,7 @@
 
 #include <game/Map.h>
 #include <rendering/TexturePalette.h>
+#include <rendering/ColorPalette.h>
 
 namespace BlockBuster::Editor
 {
@@ -19,8 +20,8 @@ namespace BlockBuster::Editor
         void Init();
 
         Game::Map::Map map;
-        Rendering::TexturePalette palette{16, 160};
-        std::vector<glm::vec4> colors;
+        Rendering::TexturePalette tPalette{16, 160};
+        Rendering::ColorPalette cPalette{32};
         float blockScale;
 
         glm::vec3 cameraPos;

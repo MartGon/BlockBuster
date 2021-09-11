@@ -5,6 +5,7 @@ SET(SOURCES
     Primitive.cpp
     Rendering.cpp
     TexturePalette.cpp
+    ColorPalette.cpp
 )
 
 

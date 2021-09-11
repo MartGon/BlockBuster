@@ -13,7 +13,14 @@ BlockBuster::Editor::Project::Project()
 void BlockBuster::Editor::Project::Init()
 {
     blockScale = 2.0f;
-    colors = {glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f, 0.0f, 0.0f, 1.0f}, glm::vec4{1.0f}};
+    const auto black = glm::u8vec4{0, 0, 0, 255};
+    const auto red = glm::u8vec4{255, 0, 0, 255};
+    const auto white = glm::u8vec4{255};
+    cPalette.AddColor(white);
+    cPalette.AddColor(black);
+    cPalette.AddColor(red);
+    
+    
 
     map.AddBlock(glm::ivec3{0}, Game::Block{ 
         Game::BLOCK, Game::ROT_0, Game::ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
@@ -109,20 +116,21 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     // Write textures
     WriteToFile(file, p.textureFolder.string());
 
-    auto texCount = p.palette.GetCount();
+    auto texCount = p.tPalette.GetCount();
     WriteToFile(file, texCount);
     for(auto i = 0; i < texCount; i++)
     {
-        auto texturePath =  p.palette.GetMember(i).data.filepath;
+        auto texturePath =  p.tPalette.GetMember(i).data.filepath;
         auto textureName = texturePath.filename().string();
         WriteToFile(file, textureName);
     }
 
     // Colors table
-    WriteToFile(file, p.colors.size());
-    for(auto i = 0; i < p.colors.size(); i++)
+    auto cCount = p.cPalette.GetCount();
+    WriteToFile(file, cCount);
+    for(auto i = 0; i < cCount; i++)
     {
-        WriteToFile(file, p.colors[i]);
+        WriteToFile(file, p.cPalette.GetMember(i).data.color);
     }
 
     // Camera Pos/Rot
@@ -186,23 +194,21 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     {
         auto filename = ReadFromFile<std::string>(file);
         auto texturePath = p.textureFolder / filename;
-        auto res = p.palette.AddTexture(p.textureFolder, filename);
+        auto res = p.tPalette.AddTexture(p.textureFolder, filename);
         if(res.type == General::ResultType::ERROR)
         {
             std::cout << "Could not load texture " << texturePath << "\n";
             std::cout << "Loading dummy texture instead\n";
-            p.palette.AddNullTexture(texturePath);
+            p.tPalette.AddNullTexture(texturePath);
         }
     }
 
     // Color Table
-    p.colors.clear();
     auto colorsSize = ReadFromFile<std::size_t>(file);
-    p.colors.reserve(colorsSize);
     for(auto i = 0; i < colorsSize; i++)
     {
-        auto color = ReadFromFile<glm::vec4>(file);
-        p.colors.push_back(color);
+        auto color = ReadFromFile<glm::u8vec4>(file);
+        p.cPalette.AddColor(color);
     }
 
     // Camera Pos/Rot

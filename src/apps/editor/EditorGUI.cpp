@@ -411,14 +411,14 @@ void BlockBuster::Editor::Editor::MenuBar()
 
 void BlockBuster::Editor::Editor::SyncGUITextures()
 {
-    auto tCount = project.palette.GetCount();
+    auto tCount = project.tPalette.GetCount();
 
     guiTextures.clear();
     guiTextures.reserve(tCount);
     for(unsigned int i = 0; i < tCount; i++)
     {
-        auto res = project.palette.GetMember(i);
-        auto handle = project.palette.GetTextureArray()->GetHandle();
+        auto res = project.tPalette.GetMember(i);
+        auto handle = project.tPalette.GetTextureArray()->GetHandle();
         ImGui::Impl::ExtraData ea;
         ea.array = ImGui::Impl::TextureArrayData{res.data.id};
         auto texture = ImGui::Impl::Texture{handle, ImGui::Impl::TextureType::TEXTURE_ARRAY, ea};
@@ -583,7 +583,7 @@ void BlockBuster::Editor::Editor::GUI()
 
                         glm::vec2 region = ImGui::GetContentRegionAvail();
                         int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
-                        int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : project.colors.size();
+                        int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : project.cPalette.GetCount();
                         int minRows = glm::max((int)glm::ceil((float)entries / (float)columns), 1);
                         int rows = glm::min(MAX_ROWS, minRows);
                         glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * rows};
@@ -630,13 +630,12 @@ void BlockBuster::Editor::Editor::GUI()
                                 
                                 if(displayType == Game::DisplayType::TEXTURE)
                                 {
-                                    // TODO: Save this in a vector which is the same size as texture array count. Pass a pointer to that
-                                    // This vector could be update each time a texture is added.
                                     ImGui::Image(&guiTextures[i], iconSize);
                                 }
                                 else if(displayType == Game::DisplayType::COLOR)
                                 {
-                                    ImGui::ColorButton("## color", project.colors[i]);
+                                    auto color = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(i).data.color);
+                                    ImGui::ColorButton("## color", color);
                                 }
                             }       
                             ImGui::TableNextRow();
@@ -646,8 +645,8 @@ void BlockBuster::Editor::Editor::GUI()
 
                         if(displayType == Game::DisplayType::COLOR)
                         {
-
-                            if(ImGui::ColorButton("Chosen Color", project.colors[colorId]))
+                            auto color = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(colorId).data.color);
+                            if(ImGui::ColorButton("Chosen Color", color))
                             {
                                 ImGui::OpenPopup("Color Picker");
                                 pickingColor = true;
@@ -665,11 +664,11 @@ void BlockBuster::Editor::Editor::GUI()
                                 pickingColor = false;
                                 if(displayType == Game::DisplayType::COLOR)
                                 {
-                                    auto color = colorPick;
-                                    if(std::find(project.colors.begin(), project.colors.end(), color) == project.colors.end())
+                                    auto color = Rendering::FloatColorToUint8(colorPick);
+                                    if(!project.cPalette.HasColor(color))
                                     {
-                                        project.colors.push_back(colorPick);
-                                        colorId = project.colors.size() - 1;
+                                        auto res = project.cPalette.AddColor(color);
+                                        colorId = res.data.id;
                                     }
                                 }
                             }

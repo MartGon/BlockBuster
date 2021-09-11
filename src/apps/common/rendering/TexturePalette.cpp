@@ -23,7 +23,7 @@ General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::Ad
 
 General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::GetMember(unsigned int index)
 {
-    if(index < 0 && index >= members_.size())
+    if(index < 0 || index >= members_.size())
         return General::CreateError<Rendering::TexturePalette::Member>("Invalid index for texture palette");
 
     return General::CreateSuccess(members_[index]);

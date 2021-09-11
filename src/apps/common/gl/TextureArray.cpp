@@ -2,7 +2,7 @@
 
 #include <stb/stb_image.h>
 
-GL::TextureArray::TextureArray(GLsizei length, GLsizei textureSize) : length_{length}, texSize_{textureSize}
+GL::TextureArray::TextureArray(GLsizei length, GLsizei textureSize, int channels) : length_{length}, texSize_{textureSize}, channels_{channels}
 {
     glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &handle_);
@@ -13,8 +13,8 @@ GL::TextureArray::TextureArray(GLsizei length, GLsizei textureSize) : length_{le
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGB8, textureSize, textureSize, length);
-    // TODO: Set this to RGBA8 and convert RGB images to RGBA
+    auto iFormat = channels == 3 ? GL_RGB8 : GL_RGBA8;
+    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iFormat, textureSize, textureSize, length);
 }
 
 GL::TextureArray::~TextureArray()
@@ -46,6 +46,9 @@ General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path folde
 
 General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVertically)
 {
+    if(count_ >= length_)
+        return General::CreateError<GLuint>("Texture Array reached maximum size");
+
     Bind();
 
     int channels;
@@ -56,9 +59,9 @@ General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filep
 
     if(data)
     {
-        auto format_ = channels == 3 ? GL_RGB : GL_RGBA;
         // Note: 1 instead of length (before GL_RGB) because it's the amount of images to be set on this call. It's always one.
-        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, count_, texSize_, texSize_, 1, GL_RGB, GL_UNSIGNED_BYTE, data);
+        auto format = channels_ == 3 ? GL_RGB : GL_RGBA;
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, count_, texSize_, texSize_, 1, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 
         stbi_image_free(data);
@@ -75,7 +78,10 @@ General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filep
 
 General::Result<GLuint> GL::TextureArray::AddTexture(const void* data)
 {
-    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, count_, texSize_, texSize_, 1, GL_RGB, GL_UNSIGNED_BYTE, data);
+    Bind();
+    
+    auto format = channels_ == 3 ? GL_RGB : GL_RGBA;
+    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, count_, texSize_, texSize_, 1, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 
     return General::CreateSuccess<GLuint>(count_++);

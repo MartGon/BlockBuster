@@ -10,7 +10,7 @@ namespace GL
     class TextureArray
     {
     public:
-        TextureArray(GLsizei length, GLsizei textureSize);
+        TextureArray(GLsizei length, GLsizei textureSize, GLsizei channels = 3);
         ~TextureArray();
 
         TextureArray(const TextureArray&) = delete;
@@ -31,6 +31,7 @@ namespace GL
         GLsizei length_;
         GLsizei count_ = 0;
 
+        GLsizei channels_;
         GLsizei texSize_;
 
         GLuint handle_;
