@@ -53,6 +53,17 @@ void BlockBuster::Editor::Editor::Start()
 
     // GUI
     InitPopUps();
+
+    Rendering::ChunkMesh::Builder builder;
+
+    builder.AddFace(Rendering::ChunkMesh::FaceType::FRONT, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
+    builder.AddFace(Rendering::ChunkMesh::FaceType::UP, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
+    builder.AddFace(Rendering::ChunkMesh::FaceType::DOWN, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
+    builder.AddFace(Rendering::ChunkMesh::FaceType::LEFT, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
+    builder.AddFace(Rendering::ChunkMesh::FaceType::RIGHT, glm::ivec3{0}, Game::DisplayType::COLOR, 1);    
+    builder.AddFace(Rendering::ChunkMesh::FaceType::BACK, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
+    
+    chunkMesh = builder.Build();
 }
 
 void BlockBuster::Editor::Editor::Update()
@@ -82,6 +93,19 @@ void BlockBuster::Editor::Editor::Update()
         chunkShader.SetUniformInt("colorArray", 1);
         mesh.Draw(chunkShader, project.tPalette.GetTextureArray(), display.id);
     }
+
+    auto chunkPos = Game::Map::ToRealChunkPos(glm::ivec3{0}, 2.0f);
+    glm::vec3 size = glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale;
+    Math::Transform t{chunkPos, glm::vec3{0.0f}, glm::vec3{1}};
+    auto mMat = t.GetTransformMat();
+    auto tMat = camera.GetProjViewMat() * mMat;
+    chunkShaderTest.SetUniformMat4("transform", tMat);
+    chunkMesh.Draw(chunkShaderTest);
+    
+    project.cPalette.GetTextureArray()->Bind(GL_TEXTURE0);
+    chunkShaderTest.SetUniformInt("textureArray", 1);
+    project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
+    chunkShaderTest.SetUniformInt("colorArray", 1);
     
     if(playerMode)
         UpdatePlayerMode();
@@ -340,7 +364,9 @@ void BlockBuster::Editor::Editor::UpdateEditor()
             shader.SetUniformMat4("transform", transform);
             shader.SetUniformInt("hasBorder", false);
             auto& mesh = GetMesh(cursor.type);
+            glDisable(GL_CULL_FACE);
             mesh.Draw(shader, yellow, GL_LINE);
+            glEnable(GL_CULL_FACE);
         }
     }
 

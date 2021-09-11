@@ -9,6 +9,7 @@
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
+#include <rendering/ChunkMesh.h>
 
 #include <game/Player.h>
 #include <game/Block.h>
@@ -232,8 +233,10 @@ namespace BlockBuster
             // Rendering
             GL::Shader shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
             GL::Shader chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
+            GL::Shader chunkShaderTest = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertexTest.glsl", "chunkFragTest.glsl");
             Rendering::Mesh cube;
             Rendering::Mesh slope;
+            Rendering::Mesh chunkMesh;
             Rendering::Camera camera;
             CameraMode cameraMode = CameraMode::EDITOR;
             const float CAMERA_MOVE_SPEED = 0.25f;

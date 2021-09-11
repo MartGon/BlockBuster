@@ -5,6 +5,8 @@
 
 #include <VertexBuffer.h>
 
+#include <glm/glm.hpp>
+
 namespace GL
 {   
     template<typename T>
@@ -17,7 +19,25 @@ namespace GL
     }
 
     template<>
+    constexpr inline unsigned int GetGLType<glm::vec3>()
+    {
+        return GL_FLOAT;
+    }
+
+    template<>
     constexpr inline unsigned int GetGLType<int>()
+    {
+        return GL_INT;
+    }
+
+    template<>
+    constexpr inline unsigned int GetGLType<glm::ivec3>()
+    {
+        return GL_INT;
+    }
+
+    template<>
+    constexpr inline unsigned int GetGLType<glm::ivec2>()
     {
         return GL_INT;
     }

@@ -18,6 +18,12 @@ void Rendering::Mesh::Prepare(GL::Shader& shader, int mode)
     vao_.Bind();
 }
 
+void Rendering::Mesh::Draw(GL::Shader& shader, int mode)
+{
+    Prepare(shader, mode);
+    glDrawElements(GL_TRIANGLES, vao_.GetIndicesCount(), GL_UNSIGNED_INT, 0);
+}
+
 void Rendering::Mesh::Draw(GL::Shader& shader, const GL::Texture* texture, int mode)
 {
     Prepare(shader, mode);
@@ -44,3 +50,4 @@ void Rendering::Mesh::Draw(GL::Shader& shader, glm::vec4 color, int mode)
     shader.SetUniformVec4("color", color);
     glDrawElements(GL_TRIANGLES, vao_.GetIndicesCount(), GL_UNSIGNED_INT, 0);
 }
+
