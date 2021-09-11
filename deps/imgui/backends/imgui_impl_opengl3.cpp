@@ -520,7 +520,7 @@ bool ImGui_ImplOpenGL3_CreateFontsTexture()
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     // Store our identifier
-    static ImGui::Impl::Texture fontTexture{g_FontTexture, ImGui::Impl::SINGLE_TEXTURE, {.single = {}}};
+    static ImGui::Impl::Texture fontTexture{ g_FontTexture, ImGui::Impl::SINGLE_TEXTURE, ImGui::Impl::ExtraData{ImGui::Impl::SingleTextureData{}} };
     io.Fonts->SetTexID(&fontTexture);
 
     // Restore state

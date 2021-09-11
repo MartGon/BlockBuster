@@ -37,7 +37,7 @@ namespace ImGui::Impl
 
     struct TextureArrayData
     {
-        uint layer;
+        unsigned int layer;
     };
 
     struct SingleTextureData
@@ -53,7 +53,7 @@ namespace ImGui::Impl
 
     struct Texture
     {
-        uint handle;
+        unsigned int handle;
         TextureType type;
         ExtraData extra;
     };

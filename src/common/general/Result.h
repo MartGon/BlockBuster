@@ -26,18 +26,18 @@ namespace General
     template<typename T>
     Result<T> CreateSuccess(T data)
     {
-        return Result<T>{.type = ResultType::SUCCESS, .data = data};
+        return Result<T>{ResultType::SUCCESS, data};
     }
 
     template<typename T>
     Result<T> CreateError(std::string msg)
     {
-        return Result<T>{.type = ResultType::ERROR, .err = Error{msg.c_str()}};
+        return Result<T>{ResultType::ERROR, T{}, Error{msg.c_str()}};
     }
 
     template<typename T>
     Result<T> CreateError(const char * msg)
     {
-        return Result<T>{.type = ResultType::ERROR, .err = Error{msg}};
+        return Result<T>{ResultType::ERROR, T{}, Error{ msg }};
     }
 }
