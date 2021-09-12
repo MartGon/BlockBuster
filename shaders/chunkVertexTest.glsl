@@ -1,7 +1,7 @@
 #version 330 core
 layout (location = 0) in vec3 pos;
-layout (location = 1) in int index;
-layout (location = 2) in ivec2 display;
+layout (location = 1) in ivec2 display;
+layout (location = 2) in int index;
 
 uniform mat4 transform;
 

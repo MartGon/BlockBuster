@@ -15,7 +15,7 @@ void ChunkMesh::Builder::Reset()
     lastIndex = 0;
 }
 
-void ChunkMesh::Builder::AddFace(FaceType face, glm::vec3 voxelPos, int displayType, int textureId)
+void ChunkMesh::Builder::AddFace(FaceType face, glm::vec3 voxelPos, int displayType, int textureId, float blockScale)
 {
     static const std::array<std::array<glm::vec3, 4>, 6> FACES = {
         std::array<glm::vec3, 4>{ glm::vec3{-1, 1, -1}, {-1, 1, 1}, {1, 1, -1}, {1, 1, 1} }, // TOP
@@ -32,12 +32,11 @@ void ChunkMesh::Builder::AddFace(FaceType face, glm::vec3 voxelPos, int displayT
     auto faceVerts = FACES[face];
     for(auto i = 0; i < 4; i++)
     {
-        auto vertex = faceVerts[i] + voxelPos;
+        auto vertex = faceVerts[i] + (voxelPos + glm::vec3{0.5f}) * blockScale * 2.0f;
         vertices.push_back(vertex);
 
-        // TODO: Push normals / Push face index. Get normal from shader
-        // TODO: Push tex coordinates / Push face index. Get texCoord from shader
-        // TEMP
+        // TODO: Push normals / Push face index and Get normal from shader
+        
         vertexIndices.push_back(i);
 
         displayInfo.push_back({displayType, textureId});
@@ -60,8 +59,8 @@ Mesh ChunkMesh::Builder::Build()
     auto& vao = mesh.GetVAO();
 
     vao.GenVBO(vertices, 3);
-    vao.GenVBO(vertexIndices, 1);
     vao.GenVBO(displayInfo, 2);
+    vao.GenVBO(vertexIndices, 1);
     vao.SetIndices(indices);
 
     return mesh;

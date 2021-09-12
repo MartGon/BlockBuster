@@ -25,9 +25,21 @@ namespace GL
     }
 
     template<>
+    constexpr inline unsigned int GetGLType<glm::vec2>()
+    {
+        return GL_FLOAT;
+    }
+
+    template<>
     constexpr inline unsigned int GetGLType<int>()
     {
         return GL_INT;
+    }
+
+    template<>
+    constexpr inline unsigned int GetGLType<unsigned int>()
+    {
+        return GL_UNSIGNED_INT;
     }
 
     template<>
@@ -40,6 +52,11 @@ namespace GL
     constexpr inline unsigned int GetGLType<glm::ivec2>()
     {
         return GL_INT;
+    }
+
+    inline bool IsInt(unsigned int gltype)
+    {
+        return gltype == GL_INT || gltype == GL_UNSIGNED_INT;
     }
 
     class VertexArray final
@@ -75,7 +92,10 @@ namespace GL
             auto& vbo = vbos_.emplace_back();
             vbo.Bind();
             vbo.SetData(data);
-            glVertexAttribPointer(index, mag, type, false, 0, nullptr);
+            if(IsInt(type))
+                glVertexAttribIPointer(index, mag, type, 0, NULL);
+            else
+                glVertexAttribPointer(index, mag, type, GL_FALSE, 0, NULL);
             glEnableVertexAttribArray(index);
         }
 

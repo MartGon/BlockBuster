@@ -55,13 +55,15 @@ void BlockBuster::Editor::Editor::Start()
     InitPopUps();
 
     Rendering::ChunkMesh::Builder builder;
-
-    builder.AddFace(Rendering::ChunkMesh::FaceType::FRONT, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
-    builder.AddFace(Rendering::ChunkMesh::FaceType::UP, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
-    builder.AddFace(Rendering::ChunkMesh::FaceType::DOWN, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
-    builder.AddFace(Rendering::ChunkMesh::FaceType::LEFT, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
-    builder.AddFace(Rendering::ChunkMesh::FaceType::RIGHT, glm::ivec3{0}, Game::DisplayType::COLOR, 1);    
-    builder.AddFace(Rendering::ChunkMesh::FaceType::BACK, glm::ivec3{0}, Game::DisplayType::COLOR, 1);
+    for(int i = 2; i < 3; i++)
+    {
+        builder.AddFace(Rendering::ChunkMesh::FaceType::FRONT, glm::ivec3{i, 0, 0}, 0, 0);
+        builder.AddFace(Rendering::ChunkMesh::FaceType::UP, glm::ivec3{i, 0, 0}, 1, 1);
+        builder.AddFace(Rendering::ChunkMesh::FaceType::DOWN, glm::ivec3{i, 0, 0}, 1, 2);
+        builder.AddFace(Rendering::ChunkMesh::FaceType::LEFT, glm::ivec3{i, 0, 0}, 1, 0);
+        builder.AddFace(Rendering::ChunkMesh::FaceType::RIGHT, glm::ivec3{i, 0, 0}, 1, 0);    
+        builder.AddFace(Rendering::ChunkMesh::FaceType::BACK, glm::ivec3{i, 0, 0}, 1, 2);    
+    }
     
     chunkMesh = builder.Build();
 }
@@ -94,18 +96,19 @@ void BlockBuster::Editor::Editor::Update()
         mesh.Draw(chunkShader, project.tPalette.GetTextureArray(), display.id);
     }
 
+    glDisable(GL_CULL_FACE);
     auto chunkPos = Game::Map::ToRealChunkPos(glm::ivec3{0}, 2.0f);
-    glm::vec3 size = glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale;
     Math::Transform t{chunkPos, glm::vec3{0.0f}, glm::vec3{1}};
     auto mMat = t.GetTransformMat();
     auto tMat = camera.GetProjViewMat() * mMat;
     chunkShaderTest.SetUniformMat4("transform", tMat);
     chunkMesh.Draw(chunkShaderTest);
     
-    project.cPalette.GetTextureArray()->Bind(GL_TEXTURE0);
-    chunkShaderTest.SetUniformInt("textureArray", 1);
+    project.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
+    chunkShaderTest.SetUniformInt("textureArray", 0);
     project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
     chunkShaderTest.SetUniformInt("colorArray", 1);
+    glEnable(GL_CULL_FACE);
     
     if(playerMode)
         UpdatePlayerMode();
