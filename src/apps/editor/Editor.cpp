@@ -53,61 +53,35 @@ void BlockBuster::Editor::Editor::Start()
 
     // GUI
     InitPopUps();
-
-    Rendering::ChunkMesh::Builder builder;
-    for(int i = 2; i < 3; i++)
-    {
-        builder.AddFace(Rendering::ChunkMesh::FaceType::FRONT, glm::ivec3{i, 0, 0}, 0, 0);
-        builder.AddFace(Rendering::ChunkMesh::FaceType::UP, glm::ivec3{i, 0, 0}, 1, 1);
-        builder.AddFace(Rendering::ChunkMesh::FaceType::DOWN, glm::ivec3{i, 0, 0}, 1, 2);
-        builder.AddFace(Rendering::ChunkMesh::FaceType::LEFT, glm::ivec3{i, 0, 0}, 1, 0);
-        builder.AddFace(Rendering::ChunkMesh::FaceType::RIGHT, glm::ivec3{i, 0, 0}, 1, 0);    
-        builder.AddFace(Rendering::ChunkMesh::FaceType::BACK, glm::ivec3{i, 0, 0}, 1, 2);    
-    }
-    
-    chunkMesh = builder.Build();
 }
 
 void BlockBuster::Editor::Editor::Update()
 {
+    chunkMeshMgr.Update();
+
     // Clear Buffer
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Draw new Map System Cubes
-    auto iterator = project.map.CreateIterator();
-    for(auto b = iterator.GetNextBlock(); !iterator.IsOver(); b = iterator.GetNextBlock())
-    {
-        auto block = b.second;
-        auto pos = b.first;
-        Math::Transform t = Game::GetBlockTransform(*block, pos, blockScale);
-        auto mMat = t.GetTransformMat();
-        auto tMat = camera.GetProjViewMat() * mMat;
-        auto& mesh = GetMesh(block->type);
-
-        auto preBlockDisplay =  GetBlockDisplay();
-        bool isPainted = tool == PAINT_BLOCK && intersecting && pointedBlockPos == pos;
-        auto display = isPainted && IsDisplayValid() ? preBlockDisplay : block->display;
-        
-        chunkShader.SetUniformMat4("transform", tMat);
-        chunkShader.SetUniformInt("textureType", display.type);
-        project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
-        chunkShader.SetUniformInt("colorArray", 1);
-        mesh.Draw(chunkShader, project.tPalette.GetTextureArray(), display.id);
-    }
-
     glDisable(GL_CULL_FACE);
-    auto chunkPos = Game::Map::ToRealChunkPos(glm::ivec3{0}, 2.0f);
-    Math::Transform t{chunkPos, glm::vec3{0.0f}, glm::vec3{1}};
-    auto mMat = t.GetTransformMat();
-    auto tMat = camera.GetProjViewMat() * mMat;
-    chunkShaderTest.SetUniformMat4("transform", tMat);
-    chunkMesh.Draw(chunkShaderTest);
-    
+
     project.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
     chunkShaderTest.SetUniformInt("textureArray", 0);
     project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
     chunkShaderTest.SetUniformInt("colorArray", 1);
+    for(auto& cmData : chunkMeshMgr.GetMeshes())
+    {
+        auto& chunkMesh = cmData.second;
+        auto realPos = Game::Map::ToRealChunkPos(cmData.first, 2.0f);
+        Math::Transform t{realPos, glm::vec3{0.0f}, glm::vec3{1}};
+        auto mMat = t.GetTransformMat();
+        auto tMat = camera.GetProjViewMat() * mMat;
+        chunkShaderTest.SetUniformMat4("transform", tMat);
+
+        chunkMesh.Draw(chunkShaderTest);
+    }
+
     glEnable(GL_CULL_FACE);
     
     if(playerMode)
@@ -199,6 +173,10 @@ void BlockBuster::Editor::Editor::NewProject()
     std::strcpy(fileName, "NewMap.bbm");
 
     ClearActionHistory();
+
+    // Chunk meshes
+    chunkMeshMgr.SetMap(&project.map);
+    chunkMeshMgr.Update();
 }
 
 void BlockBuster::Editor::Editor::SaveProject()
@@ -258,6 +236,10 @@ bool BlockBuster::Editor::Editor::OpenProject()
         cursor.scale = project.cursorScale;
 
         SyncGUITextures();
+
+        // Chunk meshes
+        chunkMeshMgr.SetMap(&project.map);
+        chunkMeshMgr.Update();
     }
 
     return isOk;
@@ -498,8 +480,11 @@ void BlockBuster::Editor::Editor::SelectTool(Tool newTool)
     case Tool::SELECT_BLOCKS:
         movingSelection = false;
         savedPos = cursor.pos;
+    case Tool::PLACE_BLOCK:
+    case Tool::ROTATE_BLOCK:
+        cursor.enabled = true;
         break;
-    
+
     default:
         break;
     }
@@ -513,6 +498,10 @@ void BlockBuster::Editor::Editor::SelectTool(Tool newTool)
     case Tool::SELECT_BLOCKS:
         cursor.pos = savedPos;
         cursor.type = Game::BlockType::BLOCK;
+        break;
+
+    case Tool::PAINT_BLOCK:
+        cursor.enabled = false;
         break;
     
     default:

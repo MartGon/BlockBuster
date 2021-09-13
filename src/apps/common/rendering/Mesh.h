@@ -21,13 +21,13 @@ namespace Rendering
 
         GL::VertexArray& GetVAO();
         
-        void Draw(GL::Shader& shader, int mode = GL_FILL);
+        void Draw(GL::Shader& shader, int mode = GL_FILL) const;
         void Draw(GL::Shader& shader, const GL::Texture* texture, int mode = GL_FILL);
         void Draw(GL::Shader& shader, const GL::TextureArray* textureArray, GLuint textureId, int mode = GL_FILL);
         void Draw(GL::Shader& shader, glm::vec4 color, int mode = GL_FILL);
     
     private:
-        void Prepare(GL::Shader& shader, int mode);
+        void Prepare(GL::Shader& shader, int mode) const;
 
         GL::VertexArray vao_;
     };

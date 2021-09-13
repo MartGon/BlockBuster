@@ -64,7 +64,7 @@ Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::R
         auto rayInt = Collisions::RayAABBIntersection(ray, model);
         if(rayInt.intersects)
         {
-            using BlockData = std::pair<glm::ivec3, Game::Block*>;
+            using BlockData = std::pair<glm::ivec3, Game::Block const*>;
 
             // Get blocks in chunk
             std::vector<BlockData> blocksData;
@@ -88,7 +88,7 @@ Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::R
             for(const auto& bData : blocksData)
             {
                 glm::ivec3 globalPos = bData.first;
-                Game::Block* block = bData.second;
+                Game::Block const* block = bData.second;
 
                 Math::Transform bt = GetBlockTransform(globalPos, block->rot, blockScale);
                 auto model = bt.GetTransformMat();

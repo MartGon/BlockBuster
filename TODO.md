@@ -44,8 +44,10 @@
         ImGui uses TextureArray - Done
         Create null texture or Error when loading null texture (Throw on editor, use null texture when loading) - Done
         Color array uniform accesible from shader - DONE
-        Chunk Mesh rendering with cubes only
+        Chunk Mesh rendering with cubes only - DONE
         Chunk Mesh rendering with cubes and slopes
+        Fix Paint Tool (No longer previews color in block)
+        Don't add faces if there's a neighbor in adjacent chunk
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
     ImGui::Selectable template function - Done
     Tool Class heirarchy

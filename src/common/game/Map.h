@@ -24,12 +24,17 @@ namespace Game
             Map(Map&&) = default;
             Map& operator=(Map&&) = default;
 
-            Game::Block* GetBlock(glm::ivec3 pos);
+            // Gets a block by its global position
+            Game::Block const* GetBlock(glm::ivec3 pos);
+            // Sets a block by its global position
             void AddBlock(glm::ivec3 pos, Game::Block block);
+            // Removes a block by its global position
             void RemoveBlock(glm::ivec3 pos);
+            // Checks a block by its global position
             bool IsBlockNull(glm::ivec3 pos);
 
             std::vector<glm::ivec3> GetChunkIndices() const;
+            // Gets a chunk by its chunk index
             Chunk& GetChunk(glm::ivec3 pos);
             void Clear();
 
@@ -40,7 +45,7 @@ namespace Game
             friend class Map;
             public:
                 // Returns global block pos
-                std::pair<glm::ivec3, Game::Block*> GetNextBlock();
+                std::pair<glm::ivec3, Game::Block const*> GetNextBlock();
                 bool IsOver() const;
             private:
                 Iterator(Map* map, std::vector<glm::ivec3> chunkIndices) : 
@@ -63,17 +68,37 @@ namespace Game
             {
             public:
                 Chunk();
-                Game::Block* GetBlock(glm::ivec3 pos);
+
+                Chunk(const Chunk&) = delete;
+                Chunk& operator=(const Chunk&) = delete;
+
+                Chunk(Chunk&&) = default;
+                Chunk& operator=(Chunk&&) = default;
+
+                // Gets a block by its internal index in the chunk [0, 15]
+                Game::Block const* GetBlockByIndex(glm::ivec3 pos);
+                // Sets a block by its internal index in the chunk [0, 15]
+                void SetBlockByIndex(glm::ivec3 pos, Game::Block block);
+
+                // Gets a block by its position within the chunk [-8, 7]
+                Game::Block const* GetBlock(glm::ivec3 pos);
+                // Sets a block by its position within the chunk [-8, 7]
                 void SetBlock(glm::ivec3 pos, Game::Block block);
 
+                bool HasChanged();
+                void CommitChanges();
+
                 unsigned int GetBlockCount() const;
+
+                static bool IsIndexValid(glm::ivec3 pos);
+                static bool IsPosValid(glm::ivec3 pos);
 
                 class BlockIterator
                 {
                 friend class Chunk;
                 public:
                     // Returns block pos in chunk [-8, 7]
-                    std::pair<glm::ivec3, Game::Block*> GetNextBlock();
+                    std::pair<glm::ivec3, Game::Block const*> GetNextBlock();
                     bool IsOver() const;
                 private:
                     BlockIterator(Chunk* chunk) : chunk_{chunk}
@@ -97,6 +122,7 @@ namespace Game
                 constexpr static const glm::ivec3 HALF_DIMENSIONS = (DIMENSIONS / 2);
             private:
                 int ToIndex(glm::ivec3 pos);
+                bool hasChanged_ = false;
 
                 Block blocks_[CHUNK_BLOCKS];
             };

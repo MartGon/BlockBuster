@@ -84,6 +84,9 @@ namespace BlockBuster
             void Undo() override;
 
         private:
+
+            void SetBlockDisplay(Game::Display d);
+
             glm::ivec3 pos_;
 
             Game::Block* block_;
@@ -104,6 +107,8 @@ namespace BlockBuster
             void Undo() override;
 
         private:
+
+            void SetBlockRot(Game::BlockRot rot);
             
             Game::Block* block_;
 

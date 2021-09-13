@@ -7,6 +7,7 @@ SET(SOURCES
     TexturePalette.cpp
     ColorPalette.cpp
     ChunkMesh.cpp
+    ChunkMeshMgr.cpp
 )
 
 

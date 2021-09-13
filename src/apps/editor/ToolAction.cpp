@@ -37,26 +37,42 @@ void BlockBuster::Editor::RemoveAction::Undo()
 
 void BlockBuster::Editor::PaintAction::Do()
 {
-    if(auto block = map_->GetBlock(pos_))
-        block->display = display_;
+    SetBlockDisplay(display_);
 }
 
 void BlockBuster::Editor::PaintAction::Undo()
 {
+    SetBlockDisplay(prevDisplay_);
+}
+
+void BlockBuster::Editor::PaintAction::SetBlockDisplay(Game::Display d)
+{
     if(auto block = map_->GetBlock(pos_))
-        block->display = prevDisplay_;
+    {
+        auto c = *block;
+        c.display = d;
+        map_->AddBlock(pos_, c);
+    }
 }
 
 void BlockBuster::Editor::RotateAction::Do()
 {
-    if(auto block = map_->GetBlock(pos_))
-        block->rot = rot_;
+    SetBlockRot(rot_);
 }
 
 void BlockBuster::Editor::RotateAction::Undo()
 {   
+    SetBlockRot(prevRot_);
+}
+
+void BlockBuster::Editor::RotateAction::SetBlockRot(Game::BlockRot rot)
+{
     if(auto block = map_->GetBlock(pos_))
-        block->rot = prevRot_;
+    {
+        auto c = *block;
+        c.rot = rot;
+        map_->AddBlock(pos_, c);
+    }
 }
 
 void BlockBuster::Editor::MoveSelectionAction::Do()

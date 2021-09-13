@@ -8,7 +8,7 @@ namespace Game
     struct RayBlockIntersection
     {
         glm::ivec3 pos;
-        Game::Block* block;
+        Game::Block const* block;
         Collisions::RayIntersection intersection;
     };
 

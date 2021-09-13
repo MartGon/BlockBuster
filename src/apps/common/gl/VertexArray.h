@@ -80,7 +80,7 @@ namespace GL
         VertexArray(VertexArray&&);
         VertexArray& operator=(VertexArray&&);
 
-        void Bind();
+        void Bind() const;
         
         template <typename T>
         void GenVBO(const std::vector<T>& data, int mag)
@@ -101,7 +101,7 @@ namespace GL
 
         void SetIndices(const std::vector<unsigned int>& indices);
 
-        inline unsigned int GetIndicesCount()
+        inline unsigned int GetIndicesCount() const
         {
             return eboSize_;
         }

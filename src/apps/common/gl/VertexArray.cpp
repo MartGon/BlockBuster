@@ -28,7 +28,7 @@ GL::VertexArray& GL::VertexArray::operator=(GL::VertexArray&& other)
     return *this;
 }
 
-void GL::VertexArray::Bind()
+void GL::VertexArray::Bind() const
 {
     glBindVertexArray(handle_);
 }

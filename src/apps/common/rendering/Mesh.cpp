@@ -11,14 +11,14 @@ enum TextureType
     COLOR = 2
 };
 
-void Rendering::Mesh::Prepare(GL::Shader& shader, int mode)
+void Rendering::Mesh::Prepare(GL::Shader& shader, int mode) const
 {
     glPolygonMode(GL_FRONT_AND_BACK, mode);
     shader.Use();
     vao_.Bind();
 }
 
-void Rendering::Mesh::Draw(GL::Shader& shader, int mode)
+void Rendering::Mesh::Draw(GL::Shader& shader, int mode) const
 {
     Prepare(shader, mode);
     glDrawElements(GL_TRIANGLES, vao_.GetIndicesCount(), GL_UNSIGNED_INT, 0);

@@ -4,15 +4,15 @@
 
 // #### Public Interface #### \\
 
-Game::Block* Game::Map::Map::GetBlock(glm::ivec3 pos)
+Game::Block const* Game::Map::Map::GetBlock(glm::ivec3 pos)
 {
-    Game::Block* block = nullptr;
+    Game::Block const* block = nullptr;
     auto index = ToChunkIndex(pos);
     if(chunks_.find(index) != chunks_.end())
     {
         auto& chunk = chunks_[index];
         auto blockPos = ToBlockChunkPos(pos);
-        block = chunk.GetBlock(blockPos);
+        block = chunk.GetBlockByIndex(blockPos);
     }
 
     return block;
@@ -23,18 +23,22 @@ void Game::Map::Map::AddBlock(glm::ivec3 pos, Game::Block block)
     auto index = ToChunkIndex(pos);
     if(chunks_.find(index) == chunks_.end())
     {
-        chunks_[index] = Chunk{};
+        chunks_[index] = std::move(Chunk{});
     }
     
     auto& chunk = chunks_[index];
     auto blockPos = ToBlockChunkPos(pos);
-    chunk.SetBlock(blockPos, block);
+    chunk.SetBlockByIndex(blockPos, block);
 }
 
 void Game::Map::Map::RemoveBlock(glm::ivec3 pos)
 {
     if(auto block = GetBlock(pos))
-        block->type = Game::BlockType::NONE;
+    {
+        auto r = *block;
+        r.type = Game::BlockType::NONE;
+        AddBlock(pos, r);
+    }
 }
 
 bool Game::Map::Map::IsBlockNull(glm::ivec3 pos)
@@ -66,7 +70,7 @@ void Game::Map::Map::Clear()
 unsigned int Game::Map::Map::GetBlockCount() const
 {
     unsigned int blockCount = 0;
-    for(auto chunk : chunks_)
+    for(auto& chunk : chunks_)
         blockCount += chunk.second.GetBlockCount();
 
     return blockCount;
@@ -84,9 +88,9 @@ Game::Map::Map::Iterator Game::Map::Map::CreateIterator()
     return Iterator{this, GetChunkIndices()};
 }
 
-std::pair<glm::ivec3, Game::Block*> Game::Map::Map::Iterator::GetNextBlock()
+std::pair<glm::ivec3, Game::Block const*> Game::Map::Map::Iterator::GetNextBlock()
 {
-    Game::Block* b = nullptr;
+    Game::Block const* b = nullptr;
     glm::ivec3 pos;
     int index = 0;
     while(!end_ && (b == nullptr || b->type == Game::BlockType::NONE))
@@ -97,7 +101,7 @@ std::pair<glm::ivec3, Game::Block*> Game::Map::Map::Iterator::GetNextBlock()
             auto& chunk = map_->chunks_[chunkIndex];
             
             index = blockOffset_.x * Chunk::CHUNK_WIDTH + blockOffset_.y * Chunk::CHUNK_HEIGHT + blockOffset_.z;
-            b = chunk.GetBlock(blockOffset_);
+            b = chunk.GetBlockByIndex(blockOffset_);
             pos = chunkIndex * Chunk::DIMENSIONS + blockOffset_ - Chunk::HALF_DIMENSIONS;
         }
         else
@@ -156,16 +160,40 @@ Game::Map::Map::Chunk::BlockIterator Game::Map::Map::Chunk::CreateBlockIterator(
     return BlockIterator{this};
 }
 
-Game::Block* Game::Map::Map::Chunk::GetBlock(glm::ivec3 pos)
+const Game::Block* Game::Map::Map::Chunk::GetBlockByIndex(glm::ivec3 pos)
 {
     auto index = ToIndex(pos);
     return &blocks_[index];
 }
 
-void Game::Map::Map::Chunk::SetBlock(glm::ivec3 pos, Game::Block block)
+void Game::Map::Map::Chunk::SetBlockByIndex(glm::ivec3 pos, Game::Block block)
 {
     auto index = ToIndex(pos);
     blocks_[index] = block;
+
+    hasChanged_ = true;
+}
+
+const Game::Block* Game::Map::Map::Chunk::GetBlock(glm::ivec3 pos)
+{
+    auto index = pos + HALF_DIMENSIONS;
+    return GetBlockByIndex(index);
+}
+
+void Game::Map::Map::Chunk::SetBlock(glm::ivec3 pos, Game::Block block)
+{
+    auto index = pos + HALF_DIMENSIONS;
+    SetBlockByIndex(index, block);
+}
+
+bool Game::Map::Map::Chunk::HasChanged()
+{
+    return hasChanged_;
+}
+
+void Game::Map::Map::Chunk::CommitChanges()
+{
+    hasChanged_ = false;
 }
 
 unsigned int Game::Map::Map::Chunk::GetBlockCount() const
@@ -178,23 +206,34 @@ unsigned int Game::Map::Map::Chunk::GetBlockCount() const
     return blockCount;
 }
 
+bool Game::Map::Map::Chunk::IsIndexValid(glm::ivec3 pos)
+{
+    return pos.x < DIMENSIONS.x && pos.y < DIMENSIONS.y && pos.z < DIMENSIONS.z &&
+                pos.x >= 0 && pos.y >= 0 && pos.z >= 0;
+}
+
+bool Game::Map::Map::Chunk::IsPosValid(glm::ivec3 pos)
+{
+    auto index = pos + HALF_DIMENSIONS;
+    return IsIndexValid(index);
+}
+
 int Game::Map::Map::Chunk::ToIndex(glm::ivec3 pos)
 {
-    bool valid = pos.x < DIMENSIONS.x && pos.y < DIMENSIONS.y && pos.z < DIMENSIONS.z &&
-                pos.x >= 0 && pos.y >= 0 && pos.z >= 0;
+    bool valid = IsIndexValid(pos);
     assertm(valid, "Invalid chunk pos");
     return pos.x + pos.y * CHUNK_WIDTH + pos.z * CHUNK_WIDTH * CHUNK_HEIGHT;
 }
 
 // #### BlockIterator #### \\
 
-std::pair<glm::ivec3, Game::Block*> Game::Map::Map::Chunk::BlockIterator::GetNextBlock()
+std::pair<glm::ivec3, Game::Block const*> Game::Map::Map::Chunk::BlockIterator::GetNextBlock()
 {
-    Game::Block* block = nullptr;
+    Game::Block const* block = nullptr;
     auto pos = index_;
     while(!end_)
     {
-        block = chunk_->GetBlock(index_);
+        block = chunk_->GetBlockByIndex(index_);
         pos = index_;
 
         // Update index
