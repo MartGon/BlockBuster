@@ -62,6 +62,11 @@ Game::Map::Map::Chunk& Game::Map::Map::GetChunk(glm::ivec3 pos)
     return chunks_.at(pos);
 }
 
+bool Game::Map::Map::HasChunk(glm::ivec3 index) const
+{
+    return chunks_.find(index) != chunks_.end();
+}
+
 void Game::Map::Map::Clear()
 {
     chunks_.clear();
@@ -174,16 +179,60 @@ void Game::Map::Map::Chunk::SetBlockByIndex(glm::ivec3 pos, Game::Block block)
     hasChanged_ = true;
 }
 
+Game::Block const* Game::Map::Map::Chunk::GetBlockBySmartIndex(glm::ivec3 smartIndex)
+{
+    auto index = SmartIndexToIndex(smartIndex);
+    return GetBlockByIndex(index);
+}
+
+void Game::Map::Map::Chunk::SetBlockBySmartIndex(glm::ivec3 smartIndex, Game::Block block)
+{
+    auto index = SmartIndexToIndex(smartIndex);
+    SetBlockByIndex(index, block);
+}
+
+glm::ivec3 Game::Map::Map::Chunk::SmartIndexToIndex(glm::ivec3 smartIndex)
+{
+    return smartIndex - (glm::ivec3{glm::lessThan(smartIndex, glm::ivec3{0})} * DIMENSIONS);
+}
+
 const Game::Block* Game::Map::Map::Chunk::GetBlock(glm::ivec3 pos)
 {
-    auto index = pos + HALF_DIMENSIONS;
+    auto index = PosToIndex(pos);
     return GetBlockByIndex(index);
 }
 
 void Game::Map::Map::Chunk::SetBlock(glm::ivec3 pos, Game::Block block)
 {
-    auto index = pos + HALF_DIMENSIONS;
+    auto index = PosToIndex(pos);
     SetBlockByIndex(index, block);
+}
+
+glm::ivec3 Game::Map::Map::Chunk::PosToIndex(glm::ivec3 pos)
+{
+    return pos + HALF_DIMENSIONS;
+}
+
+Game::Block const* Game::Map::Map::Chunk::GetBlockSmartPos(glm::ivec3 smartPos)
+{
+    auto index = SmartPosToIndex(smartPos);
+    return GetBlockByIndex(index);
+}
+
+void Game::Map::Map::Chunk::SetBlockSmartPos(glm::ivec3 smartPos, Game::Block block)
+{
+    auto index = SmartPosToIndex(smartPos);
+    SetBlockByIndex(index, block);
+}
+
+glm::ivec3 Game::Map::Map::Chunk::SmartPosToIndex(glm::ivec3 pos)
+{
+    auto index = pos % 8;
+    auto negOffset = (glm::ivec3{glm::lessThan(pos, glm::ivec3{-8})} * DIMENSIONS);
+    auto midOffset = (glm::ivec3{glm::lessThan(pos, glm::ivec3{8}) * glm::greaterThan(pos, glm::ivec3{-8})} * HALF_DIMENSIONS);
+    index = index + negOffset + midOffset;
+        
+    return index;
 }
 
 bool Game::Map::Map::Chunk::HasChanged()
@@ -305,9 +354,9 @@ glm::vec3 Game::Map::ToRealPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex, flo
     return glm::vec3{ToGlobalPos(chunkIndex, blockIndex)} * blockScale;
 }
 
-glm::ivec3 Game::Map::ToGlobalPos(glm::vec3 globalPos, float blockScale)
+glm::ivec3 Game::Map::ToGlobalPos(glm::vec3 realPos, float blockScale)
 {
-    return glm::round(globalPos / blockScale);
+    return glm::round(realPos / blockScale);
 }
 
 glm::ivec3 Game::Map::ToGlobalPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex)

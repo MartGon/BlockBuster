@@ -36,6 +36,7 @@ namespace Game
             std::vector<glm::ivec3> GetChunkIndices() const;
             // Gets a chunk by its chunk index
             Chunk& GetChunk(glm::ivec3 pos);
+            bool HasChunk(glm::ivec3 index) const;
             void Clear();
 
             unsigned int GetBlockCount() const;
@@ -75,15 +76,51 @@ namespace Game
                 Chunk(Chunk&&) = default;
                 Chunk& operator=(Chunk&&) = default;
 
+                // #### Index ##### \\
                 // Gets a block by its internal index in the chunk [0, 15]
                 Game::Block const* GetBlockByIndex(glm::ivec3 pos);
                 // Sets a block by its internal index in the chunk [0, 15]
                 void SetBlockByIndex(glm::ivec3 pos, Game::Block block);
 
+                // #### Smart Index ##### \\
+                // Get a block by smart index in the chunk [-16, 15]
+                Game::Block const* GetBlockBySmartIndex(glm::ivec3 smartIndex);
+                // Set block by smart index in the chunk [-16, 15];
+                void SetBlockBySmartIndex(glm::ivec3 smartIndex, Game::Block block);
+
+                /*
+                    It has the following mapping. Similar to python
+                    x: -16 -15 -14 -13 -12 -11 -10 -9 -8 -7 -6 -5 -4 -3 -2 -1 0 1  2 3  4  5   6  7  8 9 10 11 12 13 14 15
+                    y: 0     1  2   3   4    5  6   7  8  9  10 11 12 13 14 15 0 1 2 3  4  5   6  7  8 9 10 11 12 13 14 15
+                */
+                static glm::ivec3 SmartIndexToIndex(glm::ivec3 smartIndex);
+
+                // #### Pos ##### \\
                 // Gets a block by its position within the chunk [-8, 7]
                 Game::Block const* GetBlock(glm::ivec3 pos);
                 // Sets a block by its position within the chunk [-8, 7]
                 void SetBlock(glm::ivec3 pos, Game::Block block);
+
+                /*
+                    It has the following mapping. Zero is centered
+                    x: -8 -7 -6 -5 -4 -3 -2 -1 0 1  2 3  4  5   6  7
+                    y: 0  1  2  3   4  5  6  7 8 9  10 11 12 13 14 15
+                */
+                static glm::ivec3 PosToIndex(glm::ivec3 pos);
+                
+                // #### Smart Pos ##### \\
+                // Gets a block by its smart position within the chunk [-16, 15]
+                Game::Block const* GetBlockSmartPos(glm::ivec3 smartPos);
+
+                // Sets a block by its smart position within the chunk [-16, 15]
+                void SetBlockSmartPos(glm::ivec3 smartPos, Game::Block block);
+
+                /*
+                It has the following mapping. Useful when operating with neighbor chunks, as you can see
+                    x: -16 -15 -14 -13 -12 -11 -10 -9 -8 -7 -6 -5 -4 -3 -2 -1 0 1  2 3  4  5   6  7  8 9 10 11 12 13 14 15
+                    y: 8   9   10  11  12  13  14 15  0  1  2  3  4  5  6  7 8 9 10 11 12 13  14 15 0 1  2  3  4  5  6  7
+                */
+                static glm::ivec3 SmartPosToIndex(glm::ivec3 smartPos);
 
                 bool HasChanged();
                 void CommitChanges();
@@ -165,16 +202,16 @@ namespace Game
         // Returns real block pos from global block pos
         glm::vec3 ToRealPos(glm::ivec3 globalPos, float blockScale = 1.0f);
 
-        // Returns real block pos from chunk index and block index within that chunk.
+        // Returns real block pos from chunk index and block index [-8, 7] within that chunk.
         glm::vec3 ToRealPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex, float blockScale = 1.0f);
 
         // Returns the block corresponding to a real pos;
-        glm::ivec3 ToGlobalPos(glm::vec3 globalPos, float blockScale = 1.0f);
+        glm::ivec3 ToGlobalPos(glm::vec3 realPos, float blockScale = 1.0f);
 
-        // Returns global block pos from chunk index and block index within that chunk. Ignores scale
+        // Returns global block pos from chunk index and block index [-8, 7] within that chunk. Ignores scale
         glm::ivec3 ToGlobalPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex);
 
-        // Global pos to position within a chunk
+        // Global block pos to block position within a chunk
         glm::ivec3 ToBlockChunkPos(glm::ivec3 blockPos);
 
         // #### Chunks #### \\

@@ -12,10 +12,11 @@ const std::unordered_map<ChunkMesh::FaceType, glm::ivec3> offsets = {
 };
 
 // TODO: Should check the map instead of only within chunk neighbors
-Mesh ChunkMesh::GenerateChunkMesh(Game::Map::Map::Chunk& chunk)
+Mesh ChunkMesh::GenerateChunkMesh(Game::Map::Map* map, glm::ivec3 chunkIndex)
 {
     ChunkMesh::Builder builder;
 
+    auto& chunk = map->GetChunk(chunkIndex);
     auto bIt = chunk.CreateBlockIterator();
     for(auto bData = bIt.GetNextBlock(); !bIt.IsOver(); bData = bIt.GetNextBlock())
     {
@@ -25,18 +26,23 @@ Mesh ChunkMesh::GenerateChunkMesh(Game::Map::Map::Chunk& chunk)
         {
             auto offset = pair.second;
             auto adjacentPos = pos + offset;
-            if(chunk.IsPosValid(adjacentPos))
+            Game::Block const* nei = nullptr;
+            if(!chunk.IsPosValid(adjacentPos))
             {
-                auto nei = chunk.GetBlock(adjacentPos);
-                if(!nei || nei->type == Game::BlockType::NONE)
+                auto neiChunkIndex = chunkIndex + offset;
+                if(map->HasChunk(neiChunkIndex))
                 {
-                    // This block has no neighbor in this side, build face
-                    builder.AddFace(pair.first, pos, block->display.type, block->display.id);
+                    auto& neiChunk = map->GetChunk(neiChunkIndex);
+                    auto index = neiChunk.SmartPosToIndex(adjacentPos);
+                    nei = neiChunk.GetBlockByIndex(index);
                 }
             }
-            // This block is in the border, add face regardless
             else
+                nei = chunk.GetBlock(adjacentPos);
+
+            if(!nei || nei->type == Game::BlockType::NONE)
             {
+                // This block has no neighbor in this side, build face
                 builder.AddFace(pair.first, pos, block->display.type, block->display.id);
             }
         }
@@ -53,7 +59,8 @@ void ChunkMesh::Manager::Update()
         auto chunk = cData.second;
         if(chunk->HasChanged())
         {
-            meshes_[cData.first] = GenerateChunkMesh(*chunk);
+            auto chunkIndex = cData.first;
+            meshes_[chunkIndex] = GenerateChunkMesh(map_, chunkIndex);
             chunk->CommitChanges();
         }
     }

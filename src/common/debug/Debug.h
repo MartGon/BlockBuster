@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 
 #include <string>
+#include <iostream>
 
 #ifndef _DEBUG
     #define NDEBUG 1
