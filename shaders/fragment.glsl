@@ -4,15 +4,16 @@ out vec4 fragColor;
 in vec2 texCoords;
 
 uniform bool hasBorder;
-uniform int isPlayer;
-uniform int textureType;
-
-uniform vec4 color;
 uniform vec4 borderColor;
-uniform sampler2D uTexture;
 
-const int TEXTURE_TYPE = 1;
-const int COLOR_TYPE = 2;
+uniform int textureType;
+uniform int textureId;
+
+uniform sampler2DArray textureArray;
+uniform sampler2DArray colorArray;
+
+const int TEXTURE_TYPE = 0;
+const int COLOR_TYPE = 1;
 
 void main()
 {
@@ -25,8 +26,8 @@ void main()
             fragColor = borderColor;
         }
         else
-            fragColor = color;
+            fragColor = texture(colorArray, vec3(texCoords, textureId));
     }
     else
-        fragColor = texture(uTexture, texCoords);
+        fragColor = texture(textureArray, vec3(texCoords, textureId));
 }

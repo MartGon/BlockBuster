@@ -63,13 +63,43 @@ void BlockBuster::Editor::Editor::Update()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Draw new Map System Cubes
-    glDisable(GL_CULL_FACE);
-
+    // Setup texture arrays
     project.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
     chunkShader.SetUniformInt("textureArray", 0);
     project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
     chunkShader.SetUniformInt("colorArray", 1);
+
+    // Draw pre view painted block
+    bool isPainted = intersecting && tool == PAINT_BLOCK;
+    if(isPainted)
+    {
+        auto block = project.map.GetBlock(pointedBlockPos);
+        Math::Transform t = Game::GetBlockTransform(*block, pointedBlockPos, blockScale);
+
+        // HACK: To avoid z fighting.
+        // Option 2: Changing block display each time the block is pointed/unpointd. Create wrapper function to do it safely. 
+        //  Revert changes when saving project
+        t.scale *= 1.025f;
+        
+        auto mMat = t.GetTransformMat();
+        auto tMat = camera.GetProjViewMat() * mMat;
+        auto& mesh = GetMesh(block->type);
+
+        auto display =  GetBlockDisplay();
+    
+        shader.SetUniformMat4("transform", tMat);
+        shader.SetUniformInt("textureType", display.type);
+        shader.SetUniformInt("textureId", display.id);
+
+        shader.SetUniformInt("textureArray", 0);
+        shader.SetUniformInt("colorArray", 1);
+
+        mesh.Draw(shader, project.tPalette.GetTextureArray(), display.id);
+    }
+
+    // Draw new Map System Cubes
+    glDisable(GL_CULL_FACE);
+
     for(auto& cmData : chunkMeshMgr.GetMeshes())
     {
         auto& chunkMesh = cmData.second;
