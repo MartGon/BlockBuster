@@ -13,8 +13,12 @@ GL::TextureArray::TextureArray(GLsizei length, GLsizei textureSize, int channels
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    auto iFormat = channels == 3 ? GL_RGB8 : GL_RGBA8;
-    glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iFormat, textureSize, textureSize, length);
+    
+    // auto iFormat = channels == 3 ? GL_RGB8 : GL_RGBA8;
+    // glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iFormat, textureSize, textureSize, length); -- Only usable in OpenGL ^4.2
+    
+    auto iFormat = channels == 3 ? GL_RGB : GL_RGBA;
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iFormat, textureSize, textureSize, length, 0, iFormat,  GL_UNSIGNED_BYTE, NULL);
 }
 
 GL::TextureArray::~TextureArray()

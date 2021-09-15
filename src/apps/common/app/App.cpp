@@ -53,7 +53,7 @@ App::App::App(Configuration config) : config{config}
 
     #ifdef _DEBUG
         glEnable(GL_DEBUG_OUTPUT);
-        glDebugMessageCallback(ErrorCallback, 0);
+        //glDebugMessageCallback(ErrorCallback, 0); -- Only usable in OpenGL ^4.3
     #endif
 
     // Get window size after enabling fullscreen
