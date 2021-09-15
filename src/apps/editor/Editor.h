@@ -234,7 +234,6 @@ namespace BlockBuster
             // Rendering
             GL::Shader shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
             GL::Shader chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
-            GL::Shader chunkShaderTest = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertexTest.glsl", "chunkFragTest.glsl");
             Rendering::Mesh cube;
             Rendering::Mesh slope;
             Rendering::ChunkMesh::Manager chunkMeshMgr;

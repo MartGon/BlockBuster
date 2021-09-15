@@ -27,17 +27,7 @@ Mesh ChunkMesh::GenerateChunkMesh(Game::Map::Map* map, glm::ivec3 chunkIndex)
             auto offset = pair.second;
             auto adjacentPos = pos + offset;
             Game::Block const* nei = nullptr;
-            if(!chunk.IsPosValid(adjacentPos))
-            {
-                auto neiChunkIndex = chunkIndex + offset;
-                if(map->HasChunk(neiChunkIndex))
-                {
-                    auto& neiChunk = map->GetChunk(neiChunkIndex);
-                    auto index = neiChunk.SmartPosToIndex(adjacentPos);
-                    nei = neiChunk.GetBlockByIndex(index);
-                }
-            }
-            else
+            if(chunk.IsPosValid(adjacentPos))            
                 nei = chunk.GetBlock(adjacentPos);
 
             if(!nei || nei->type == Game::BlockType::NONE)

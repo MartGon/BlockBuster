@@ -228,8 +228,8 @@ void Game::Map::Map::Chunk::SetBlockSmartPos(glm::ivec3 smartPos, Game::Block bl
 glm::ivec3 Game::Map::Map::Chunk::SmartPosToIndex(glm::ivec3 pos)
 {
     auto index = pos % 8;
-    auto negOffset = (glm::ivec3{glm::lessThan(pos, glm::ivec3{-8})} * DIMENSIONS);
-    auto midOffset = (glm::ivec3{glm::lessThan(pos, glm::ivec3{8}) * glm::greaterThan(pos, glm::ivec3{-8})} * HALF_DIMENSIONS);
+    auto negOffset = (glm::ivec3{glm::lessThan(pos, -HALF_DIMENSIONS)} * DIMENSIONS);
+    auto midOffset = (glm::ivec3{glm::lessThan(pos, HALF_DIMENSIONS) * glm::greaterThan(pos, -HALF_DIMENSIONS)} * HALF_DIMENSIONS);
     index = index + negOffset + midOffset;
         
     return index;

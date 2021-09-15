@@ -67,9 +67,9 @@ void BlockBuster::Editor::Editor::Update()
     glDisable(GL_CULL_FACE);
 
     project.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
-    chunkShaderTest.SetUniformInt("textureArray", 0);
+    chunkShader.SetUniformInt("textureArray", 0);
     project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
-    chunkShaderTest.SetUniformInt("colorArray", 1);
+    chunkShader.SetUniformInt("colorArray", 1);
     for(auto& cmData : chunkMeshMgr.GetMeshes())
     {
         auto& chunkMesh = cmData.second;
@@ -77,9 +77,9 @@ void BlockBuster::Editor::Editor::Update()
         Math::Transform t{realPos, glm::vec3{0.0f}, glm::vec3{1}};
         auto mMat = t.GetTransformMat();
         auto tMat = camera.GetProjViewMat() * mMat;
-        chunkShaderTest.SetUniformMat4("transform", tMat);
+        chunkShader.SetUniformMat4("transform", tMat);
 
-        chunkMesh.Draw(chunkShaderTest);
+        chunkMesh.Draw(chunkShader);
     }
 
     glEnable(GL_CULL_FACE);
