@@ -79,7 +79,16 @@ void BlockBuster::Editor::Editor::Update()
         // HACK: To avoid z fighting.
         // Option 2: Changing block display each time the block is pointed/unpointd. Create wrapper function to do it safely. 
         //  Revert changes when saving project
-        t.scale *= 1.025f;
+        const auto factor = 1.025f;
+        t.scale *= factor;
+
+        if(block->type == Game::BlockType::SLOPE)
+        {
+            const glm::vec3 up{0.0f, 1.0f, 0.0f};
+            glm::vec3 rot = t.GetRotationMat() * glm::vec4{up, 1.0f};
+            auto offset = (factor - 1.f) / 2.0f;
+            t.position += (rot * offset);
+        }
         
         auto mMat = t.GetTransformMat();
         auto tMat = camera.GetProjViewMat() * mMat;

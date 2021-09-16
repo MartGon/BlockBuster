@@ -9,7 +9,6 @@
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
-#include <rendering/ChunkMesh.h>
 #include <rendering/ChunkMeshMgr.h>
 
 #include <game/Player.h>
