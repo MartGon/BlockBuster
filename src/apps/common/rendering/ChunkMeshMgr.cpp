@@ -94,6 +94,7 @@ Mesh ChunkMesh::GenerateChunkMesh(Game::Map::Map* map, glm::ivec3 chunkIndex)
         {
             // Slope face has to be always build. Can only be avoided if up, front, left and right are all covered.
             auto rotMat = GetInvRotationMat(block);
+            std::unordered_map<FaceType, bool> neiFound;
             for(auto pair : offsets)   
             {
                 auto offset = pair.second;
@@ -102,16 +103,38 @@ Mesh ChunkMesh::GenerateChunkMesh(Game::Map::Map* map, glm::ivec3 chunkIndex)
                 auto nei = GetNeiBlock(chunk, pos, offset);
                 if(!nei || nei->type == Game::BlockType::NONE)
                 {
-                    builder.AddSlopeFace(face, pos, block->rot, block->display.type, block->display.id);
+                    neiFound[face] = false;
                 }
                 else if(nei->type == Game::BlockType::BLOCK)
                 {
-                    if(face == FaceType::FRONT || face == FaceType::TOP)
-                    {
-                        builder.AddSlopeFace(face, pos, block->rot, block->display.type, block->display.id);
-                    }
+                    neiFound[face] = true;
+                }
+                else if(nei->type == Game::BlockType::SLOPE)
+                {
+                    auto rotMat = GetInvRotationMat(nei);
+                    auto neiFace = GetBorderFaceSlope(-offset, rotMat);
+                    neiFound[face] = neiFace == FaceType::BOTTOM || neiFace == FaceType::BACK;
                 }
             }
+
+            const std::array<FaceType, 4> facesToCheck = {FaceType::TOP, FaceType::FRONT, FaceType::LEFT, FaceType::RIGHT};
+            bool skipSlope = true;
+            for(auto face : facesToCheck)
+                skipSlope = skipSlope && neiFound[face];
+
+            const std::array<FaceType, 4> facesToDraw = {FaceType::RIGHT, FaceType::LEFT, FaceType::BOTTOM, FaceType::BACK};
+            for(auto face : facesToDraw)
+            {   
+                if(!neiFound[face])
+                    builder.AddSlopeFace(face, pos, block->rot, block->display.type, block->display.id);
+                else
+                    std::cout << "Nei not found at " << face << "\n";
+            }
+
+            if(!skipSlope)
+                builder.AddSlopeFace(FaceType::TOP, pos, block->rot, block->display.type, block->display.id);
+
+            std::cout << "SkipSlope " << skipSlope << "\n";
         }
     }
 
