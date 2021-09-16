@@ -6,12 +6,14 @@
 #include <gl/VertexArray.h>
 #include <gl/Shader.h>
 
+#include <game/Block.h>
+
 namespace Rendering::ChunkMesh
 {
     enum FaceType
     {
-        UP,
-        DOWN,
+        TOP,
+        BOTTOM,
         RIGHT,
         LEFT,
         FRONT,
@@ -24,6 +26,7 @@ namespace Rendering::ChunkMesh
 
         void Reset();
         void AddFace(FaceType face, glm::vec3 voxelPos, int displayType, int textureId, float blockScale = 1.0f);
+        void AddSlopeFace(FaceType face, glm::vec3 voxelPos, Game::BlockRot rot, int displayType, int textureId, float blockScale = 1.0f);
         Mesh Build();
     private:
         std::vector<glm::vec3> vertices;
