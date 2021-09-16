@@ -46,8 +46,9 @@
         Color array uniform accesible from shader - DONE
         Chunk Mesh rendering with cubes only - DONE
         Don't add faces if there's a neighbor in adjacent chunk. Couls use negative indices on chunk - Reverted.
-        Implement AddSlopeFace in ChunkMesh::Builder. Takes a rotation as extra param.
+        Implement AddSlopeFace in ChunkMesh::Builder. Takes a rotation as extra param. - Done
         Chunk Mesh rendering with cubes and slopes
+        Store chunk transforms in chunkmgr, they don't need to be calculated each frame.
 
     Check for supported GL features for calling glDebugMessageCallback/glTexStorage3D
     Compress map data (Reduce rotations, position to uint16, colors to uint8)

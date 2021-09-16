@@ -5,6 +5,7 @@ GL::VertexArray& Rendering::Mesh::GetVAO()
     return vao_;
 }
 
+// TODO: Check why are values hard coded
 enum TextureType
 {
     TEXTURE = 1,

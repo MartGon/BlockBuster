@@ -78,7 +78,7 @@ namespace Game
 
                 // #### Index ##### \\
                 // Gets a block by its internal index in the chunk [0, 15]
-                Game::Block const* GetBlockByIndex(glm::ivec3 pos);
+                Game::Block const* GetBlockByIndex(glm::ivec3 pos) const;
                 // Sets a block by its internal index in the chunk [0, 15]
                 void SetBlockByIndex(glm::ivec3 pos, Game::Block block);
 
@@ -97,7 +97,7 @@ namespace Game
 
                 // #### Pos ##### \\
                 // Gets a block by its position within the chunk [-8, 7]
-                Game::Block const* GetBlock(glm::ivec3 pos);
+                Game::Block const* GetBlock(glm::ivec3 pos) const;
                 // Sets a block by its position within the chunk [-8, 7]
                 void SetBlock(glm::ivec3 pos, Game::Block block);
 
@@ -158,7 +158,7 @@ namespace Game
                 constexpr static const glm::ivec3 DIMENSIONS{CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH};
                 constexpr static const glm::ivec3 HALF_DIMENSIONS = (DIMENSIONS / 2);
             private:
-                int ToIndex(glm::ivec3 pos);
+                int ToIndex(glm::ivec3 pos) const;
                 bool hasChanged_ = false;
 
                 Block blocks_[CHUNK_BLOCKS];

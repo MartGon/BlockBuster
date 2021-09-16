@@ -99,6 +99,7 @@ void BlockBuster::Editor::Editor::Update()
         shader.SetUniformMat4("transform", tMat);
         shader.SetUniformInt("textureType", display.type);
         shader.SetUniformInt("textureId", display.id);
+        shader.SetUniformInt("overrideColor", false);
 
         shader.SetUniformInt("textureArray", 0);
         shader.SetUniformInt("colorArray", 1);
@@ -387,9 +388,12 @@ void BlockBuster::Editor::Editor::UpdateEditor()
             auto transform = camera.GetProjViewMat() * model;
             shader.SetUniformMat4("transform", transform);
             shader.SetUniformInt("hasBorder", false);
+            shader.SetUniformInt("overrideColor", true);
+            shader.SetUniformInt("textureType", 1);
+            shader.SetUniformVec4("color", yellow);
             auto& mesh = GetMesh(cursor.type);
             glDisable(GL_CULL_FACE);
-            mesh.Draw(shader, yellow, GL_LINE);
+            mesh.Draw(shader, GL_LINE);
             glEnable(GL_CULL_FACE);
         }
     }
@@ -780,10 +784,13 @@ void BlockBuster::Editor::Editor::DrawCursor(Math::Transform t)
     auto transform = camera.GetProjViewMat() * model;
     shader.SetUniformMat4("transform", transform);
     shader.SetUniformInt("hasBorder", false);
+    shader.SetUniformInt("overrideColor", true);
+    shader.SetUniformInt("textureType", 1);
+    shader.SetUniformVec4("color", cursor.color);
     auto& mesh = GetMesh(cursor.type);
     //mesh.Draw(shader, cursor.color, GL_LINE);
     glDisable(GL_CULL_FACE);
-    mesh.Draw(shader, yellow, GL_LINE);
+    mesh.Draw(shader, GL_LINE);
     glEnable(GL_CULL_FACE);
 }
 

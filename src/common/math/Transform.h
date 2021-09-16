@@ -15,6 +15,7 @@ namespace Math
         float GetUniformScale() const;
 
         glm::mat4 GetTranslationMat() const;
+        // TODO: This has gimbal lock issues
         glm::mat4 GetRotationMat() const;
         glm::mat4 GetScaleMat() const;
 

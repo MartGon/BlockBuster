@@ -165,7 +165,7 @@ Game::Map::Map::Chunk::BlockIterator Game::Map::Map::Chunk::CreateBlockIterator(
     return BlockIterator{this};
 }
 
-const Game::Block* Game::Map::Map::Chunk::GetBlockByIndex(glm::ivec3 pos)
+const Game::Block* Game::Map::Map::Chunk::GetBlockByIndex(glm::ivec3 pos) const
 {
     auto index = ToIndex(pos);
     return &blocks_[index];
@@ -196,7 +196,7 @@ glm::ivec3 Game::Map::Map::Chunk::SmartIndexToIndex(glm::ivec3 smartIndex)
     return smartIndex - (glm::ivec3{glm::lessThan(smartIndex, glm::ivec3{0})} * DIMENSIONS);
 }
 
-const Game::Block* Game::Map::Map::Chunk::GetBlock(glm::ivec3 pos)
+const Game::Block* Game::Map::Map::Chunk::GetBlock(glm::ivec3 pos) const
 {
     auto index = PosToIndex(pos);
     return GetBlockByIndex(index);
@@ -267,7 +267,7 @@ bool Game::Map::Map::Chunk::IsPosValid(glm::ivec3 pos)
     return IsIndexValid(index);
 }
 
-int Game::Map::Map::Chunk::ToIndex(glm::ivec3 pos)
+int Game::Map::Map::Chunk::ToIndex(glm::ivec3 pos) const
 {
     bool valid = IsIndexValid(pos);
     assertm(valid, "Invalid chunk pos");

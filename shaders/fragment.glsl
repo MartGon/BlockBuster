@@ -4,6 +4,9 @@ out vec4 fragColor;
 in vec2 texCoords;
 
 uniform bool hasBorder;
+uniform bool overrideColor;
+uniform vec4 color;
+
 uniform vec4 borderColor;
 
 uniform int textureType;
@@ -26,7 +29,9 @@ void main()
             fragColor = borderColor;
         }
         else
-            fragColor = texture(colorArray, vec3(texCoords, textureId));
+        {
+            fragColor = overrideColor ? color : texture(colorArray, vec3(texCoords, textureId)) ; 
+        }
     }
     else
         fragColor = texture(textureArray, vec3(texCoords, textureId));
