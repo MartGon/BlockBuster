@@ -110,17 +110,7 @@ void BlockBuster::Editor::Editor::Update()
     // Draw new Map System Cubes
     glDisable(GL_CULL_FACE);
 
-    for(auto& cmData : chunkMeshMgr.GetMeshes())
-    {
-        auto& chunkMesh = cmData.second;
-        auto realPos = Game::Map::ToRealChunkPos(cmData.first, 2.0f);
-        Math::Transform t{realPos, glm::vec3{0.0f}, glm::vec3{1}};
-        auto mMat = t.GetTransformMat();
-        auto tMat = camera.GetProjViewMat() * mMat;
-        chunkShader.SetUniformMat4("transform", tMat);
-
-        chunkMesh.Draw(chunkShader);
-    }
+    chunkMeshMgr.DrawChunks(chunkShader, camera.GetProjViewMat());
 
     glEnable(GL_CULL_FACE);
     
@@ -216,7 +206,7 @@ void BlockBuster::Editor::Editor::NewProject()
 
     // Chunk meshes
     chunkMeshMgr.SetMap(&project.map);
-    chunkMeshMgr.Update();
+    chunkMeshMgr.SetBlockScale(blockScale);
 }
 
 void BlockBuster::Editor::Editor::SaveProject()
@@ -279,7 +269,7 @@ bool BlockBuster::Editor::Editor::OpenProject()
 
         // Chunk meshes
         chunkMeshMgr.SetMap(&project.map);
-        chunkMeshMgr.Update();
+        chunkMeshMgr.SetBlockScale(blockScale);
     }
 
     return isOk;
@@ -934,7 +924,6 @@ void BlockBuster::Editor::Editor::PasteSelection()
         auto pos = cursor.pos + bData.first;
         if(project.map.IsBlockNull(pos))
         {
-            std::cout << "Block is null\n";
             auto placeAction = std::make_unique<PlaceBlockAction>(pos, bData.second, &project.map);
             batchPlace->AddAction(std::move(placeAction));
         }

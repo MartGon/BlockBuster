@@ -942,7 +942,10 @@ void BlockBuster::Editor::Editor::GUI()
                 ImGui::Text("Editor");
                 ImGui::Separator();
 
-                ImGui::SliderFloat("Block Scale", &blockScale, 1, 5);
+                if(ImGui::SliderFloat("Block Scale", &blockScale, 1, 5))
+                {
+                    chunkMeshMgr.SetBlockScale(blockScale);
+                };
 
                 ImGui::Text("Select Tool - Cursor Display");
                 ImGui::SameLine();
