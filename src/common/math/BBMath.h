@@ -31,4 +31,7 @@ namespace Math
             res = lBound + (res - hBound);
         return res;
     }
+
+    glm::mat4 GetRotMatInverse(const glm::mat4& rotMat);
+    glm::vec3 RotateVec3(const glm::mat4& rotMat, glm::vec3 vec);
 }

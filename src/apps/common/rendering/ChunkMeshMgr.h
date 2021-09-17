@@ -7,8 +7,6 @@
 
 namespace Rendering::ChunkMesh
 {
-    Rendering::Mesh GenerateChunkMesh(Game::Map::Map* map, glm::ivec3 chunkIndex);
-
     class Manager
     {
     public:

@@ -4,9 +4,20 @@
 
 #include <math/BBMath.h>
 
+bool Game::operator==(BlockRot a, BlockRot b)
+{
+    return a.y == b.y && a.z == b.z;
+}
+
 glm::vec3 Game::Block::GetRotation() const
 {
     return BlockRotToVec3(this->rot);
+}
+
+glm::mat4 Game::Block::GetRotationMat() const
+{
+    auto t = Game::GetBlockTransform(glm::vec3{0}, rot, 1);
+    return t.GetRotationMat();    
 }
 
 Game::BlockRot Game::GetNextValidRotation(Game::BlockRot rot, Game::RotationAxis axis, bool positive)

@@ -6,10 +6,12 @@
 #include <gl/VertexArray.h>
 #include <gl/Shader.h>
 
-#include <game/Block.h>
+#include <game/Map.h>
 
 namespace Rendering::ChunkMesh
 {
+    Rendering::Mesh GenerateChunkMesh(Game::Map::Map* map, glm::ivec3 chunkIndex);
+
     enum FaceType
     {
         TOP = 0,
@@ -17,7 +19,8 @@ namespace Rendering::ChunkMesh
         RIGHT = 2,
         LEFT = 3,
         FRONT = 4,
-        BACK = 5
+        BACK = 5,
+        END = 6
     };
 
     class Builder
@@ -27,8 +30,16 @@ namespace Rendering::ChunkMesh
         void Reset();
         void AddFace(FaceType face, glm::vec3 voxelPos, int displayType, int textureId, float blockScale = 1.0f);
         void AddSlopeFace(FaceType face, glm::vec3 voxelPos, Game::BlockRot rot, int displayType, int textureId, float blockScale = 1.0f);
+
+        void AddBlockMesh(const Game::Map::Map::Chunk& chunk, glm::ivec3 pos, Game::Block const* block);
+        void AddSlopeMesh(const Game::Map::Map::Chunk& chunk, glm::ivec3 pos, Game::Block const* slope);
+
         Mesh Build();
     private:
+
+        ChunkMesh::FaceType GetBorderFaceSlope(glm::ivec3 rotSide, const glm::mat4& rotMat);
+        Game::Block const* GetNeiBlock(const Game::Map::Map::Chunk& chunk, glm::ivec3 pos, glm::ivec3 offset);
+
         std::vector<glm::vec3> vertices;
         // Note: Vertices have to be floats, otherwise some weird shit happens during rendering
         std::vector<int> vertexIndices;

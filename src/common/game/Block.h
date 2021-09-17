@@ -62,6 +62,7 @@ namespace Game
         RotType y = ROT_0;
         RotType z = ROT_0;
     };
+    bool operator==(BlockRot a, BlockRot b);
 
     class Block
     {
@@ -72,6 +73,7 @@ namespace Game
         Display display;
 
         glm::vec3 GetRotation() const;
+        glm::mat4 GetRotationMat() const;
     };
 
     // TODO: 270 on z to 90 with Y rot
@@ -80,4 +82,6 @@ namespace Game
     Math::Transform GetBlockTransform(const Block& block, glm::ivec3 pos, float blockScale);
     Math::Transform GetBlockTransform(glm::ivec3 pos, float blockScale);
     Math::Transform GetBlockTransform(glm::ivec3 pos, Game::BlockRot rot, float blockScale);
+
+    
 }

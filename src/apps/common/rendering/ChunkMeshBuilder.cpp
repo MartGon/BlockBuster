@@ -1,9 +1,36 @@
 #include <rendering/ChunkMeshBuilder.h>
 
+#include <math/BBMath.h>
+
 #include <array>
 
+#include <debug/Debug.h>
 
 using namespace Rendering;
+
+// TODO: Should check the map instead of only within chunk neighbors
+Mesh ChunkMesh::GenerateChunkMesh(Game::Map::Map* map, glm::ivec3 chunkIndex)
+{
+    ChunkMesh::Builder builder;
+
+    auto& chunk = map->GetChunk(chunkIndex);
+    auto bIt = chunk.CreateBlockIterator();
+    for(auto bData = bIt.GetNextBlock(); !bIt.IsOver(); bData = bIt.GetNextBlock())
+    {
+        auto pos = bData.first;
+        auto block = bData.second;
+        if(block->type == Game::BlockType::BLOCK)
+        {
+            builder.AddBlockMesh(chunk, pos, block);
+        }
+        else if(block->type == Game::BlockType::SLOPE)
+        {
+            builder.AddSlopeMesh(chunk, pos, block);
+        }
+    }
+
+    return builder.Build();
+}
 
 void ChunkMesh::Builder::Reset()
 {
@@ -98,6 +125,83 @@ void ChunkMesh::Builder::AddSlopeFace(FaceType face, glm::vec3 voxelPos, Game::B
     lastIndex += vertsSize;
 }
 
+const std::unordered_map<ChunkMesh::FaceType, glm::ivec3> offsets = {
+    { ChunkMesh::FaceType::LEFT, glm::ivec3{-1, 0, 0} },
+    { ChunkMesh::FaceType::RIGHT, glm::ivec3{1, 0, 0} },
+    { ChunkMesh::FaceType::BOTTOM, glm::ivec3{0, -1, 0} },
+    { ChunkMesh::FaceType::BACK, glm::ivec3{0, 0, -1} },
+    { ChunkMesh::FaceType::TOP, glm::ivec3{0, 1, 0} },
+    { ChunkMesh::FaceType::FRONT, glm::ivec3{0, 0, 1} },
+};
+
+const std::unordered_map<glm::ivec3, ChunkMesh::FaceType> revOffsets = {
+    { glm::ivec3{-1, 0, 0}, ChunkMesh::FaceType::LEFT },
+    { glm::ivec3{1, 0, 0}, ChunkMesh::FaceType::RIGHT },
+    { glm::ivec3{0, -1, 0}, ChunkMesh::FaceType::BOTTOM },
+    { glm::ivec3{0, 1, 0}, ChunkMesh::FaceType::TOP },
+    { glm::ivec3{0, 0, -1}, ChunkMesh::FaceType::BACK },
+    { glm::ivec3{0, 0, 1}, ChunkMesh::FaceType::FRONT },
+};
+
+void ChunkMesh::Builder::AddBlockMesh(const Game::Map::Map::Chunk& chunk, glm::ivec3 pos, Game::Block const* block)
+{
+    for(auto pair : offsets)   
+    {
+        auto offset = pair.second;
+        auto nei = GetNeiBlock(chunk, pos, offset);
+
+        if(!nei || nei->type == Game::BlockType::NONE)
+        {
+            AddFace(pair.first, pos, block->display.type, block->display.id);
+        }
+        else if(nei->type == Game::BlockType::SLOPE)
+        {
+            auto rotMat = Math::GetRotMatInverse(nei->GetRotationMat());
+            auto face = GetBorderFaceSlope(-offset, rotMat);
+            if(face != FaceType::BOTTOM && face != FaceType::BACK)
+                AddFace(pair.first, pos, block->display.type, block->display.id);
+        }
+    }
+}
+
+void ChunkMesh::Builder::AddSlopeMesh(const Game::Map::Map::Chunk& chunk, glm::ivec3 pos, Game::Block const* block)
+{
+    auto rotMat = Math::GetRotMatInverse(block->GetRotationMat());
+    std::unordered_map<FaceType, bool> shouldDraw;
+    shouldDraw.reserve(6);
+    for(auto pair : offsets)   
+    {
+        auto offset = pair.second;
+        auto face = GetBorderFaceSlope(offset, rotMat);
+
+        auto nei = GetNeiBlock(chunk, pos, offset);
+        if(!nei || nei->type == Game::BlockType::NONE)
+            shouldDraw[face] = false;
+        else if(nei->type == Game::BlockType::BLOCK)
+            shouldDraw[face] = true;
+        else if(nei->type == Game::BlockType::SLOPE)
+        {
+            auto rotMat = Math::GetRotMatInverse(nei->GetRotationMat());
+            auto neiFace = GetBorderFaceSlope(-offset, rotMat);
+            bool sameSide = neiFace == FaceType::LEFT && face == FaceType::RIGHT || neiFace == FaceType::RIGHT && face == FaceType::LEFT;
+            bool sameRot = nei->rot == block->rot;
+            shouldDraw[face] = neiFace == FaceType::BOTTOM || neiFace == FaceType::BACK || (sameSide && sameRot);
+        }
+    }
+
+    const std::array<FaceType, 4> facesToDraw = {FaceType::RIGHT, FaceType::LEFT, FaceType::BOTTOM, FaceType::BACK};
+    for(auto face : facesToDraw)
+    {   
+        if(!shouldDraw[face])
+            AddSlopeFace(face, pos, block->rot, block->display.type, block->display.id);
+    }
+
+    // Slope face has to be build most of the times. Can only be avoided if up, front, left and right are all covered.
+    bool skipSlope = shouldDraw[FaceType::TOP] && shouldDraw[FaceType::FRONT] && shouldDraw[FaceType::LEFT] && shouldDraw[FaceType::RIGHT];
+    if(!skipSlope)
+        AddSlopeFace(FaceType::TOP, pos, block->rot, block->display.type, block->display.id);
+}
+
 Mesh ChunkMesh::Builder::Build()
 {
     Mesh mesh;
@@ -110,4 +214,25 @@ Mesh ChunkMesh::Builder::Build()
     vao.SetIndices(indices);
 
     return mesh;
+}
+
+// #### PRIVATE #### \\
+
+ChunkMesh::FaceType ChunkMesh::Builder::GetBorderFaceSlope(glm::ivec3 rotSide, const glm::mat4& rotMat)
+{
+    glm::ivec3 side = Math::RotateVec3(rotMat, rotSide);
+    auto it = revOffsets.find(side);
+    assertm(it != revOffsets.end(), "Could not find side in revOffsets");
+
+    return it->second;
+}
+
+Game::Block const* ChunkMesh::Builder::GetNeiBlock(const Game::Map::Map::Chunk& chunk, glm::ivec3 pos, glm::ivec3 offset)
+{
+    auto adjacentPos = pos + offset;
+    Game::Block const* nei = nullptr;
+    if(chunk.IsPosValid(adjacentPos))            
+        nei = chunk.GetBlock(adjacentPos);
+
+    return nei;
 }
