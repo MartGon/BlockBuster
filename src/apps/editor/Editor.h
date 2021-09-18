@@ -219,6 +219,9 @@ namespace BlockBuster
             void UpdatePopUp();
             void ClosePopUp(bool accept = false);
 
+            // Widgets
+            void HelpMarker(const char* text);
+
             // GUI
             void MenuBar();
 
@@ -230,6 +233,9 @@ namespace BlockBuster
             void MenuOpenMap();
             void MenuSave();
             void MenuSaveAs();
+
+            // GUI - Help
+            void HelpShortCutWindow();
 
             // Tools - GUI
             void SelectBlockTypeGUI();
@@ -343,6 +349,9 @@ namespace BlockBuster
                 bool useTextureArray = true;
             #endif
             bool drawChunkBorders = false;
+
+            // Help
+            bool showShortcutWindow = false;
 
             // Test
             bool playerMode = false;

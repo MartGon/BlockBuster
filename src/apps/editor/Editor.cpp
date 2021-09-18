@@ -1442,6 +1442,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         if(sym >= SDLK_1 &&  sym <= SDLK_4 && io.KeyCtrl)
             SelectTool(static_cast<Tool>(sym - SDLK_1));
 
+        // Select display/blocktype/axis
         if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && !io.KeyAlt)
         {
             if(tool == Tool::PLACE_BLOCK)

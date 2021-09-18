@@ -33,8 +33,8 @@
 
 #include <Editor.h>
 
-const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 600;
+const int WINDOW_WIDTH = 1024;
+const int WINDOW_HEIGHT = 720;
 
 int main(int argc, char* args[])
 {

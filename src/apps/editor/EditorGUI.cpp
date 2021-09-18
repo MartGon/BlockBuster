@@ -326,6 +326,21 @@ void BlockBuster::Editor::Editor::ClosePopUp(bool accept)
     ImGui::CloseCurrentPopup();
 }
 
+// #### Widgets #### \\
+
+void BlockBuster::Editor::Editor::HelpMarker(const char* text)
+{
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        ImGui::TextUnformatted(text);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
+
 // #### GUI #### \\
 
 void BlockBuster::Editor::Editor::MenuBar()
@@ -403,6 +418,16 @@ void BlockBuster::Editor::Editor::MenuBar()
             ImGui::EndMenu();
         }
 
+        if(ImGui::BeginMenu("Help", true))
+        {
+            if(ImGui::MenuItem("Keyboard Shortcut Reference", "Ctrl + Shift + K"))
+            {
+                showShortcutWindow = true;
+            }
+
+            ImGui::EndMenu();
+        }
+
         ImGui::EndMenuBar();
     }
 }
@@ -461,6 +486,131 @@ void BlockBuster::Editor::Editor::MenuSave()
 void BlockBuster::Editor::Editor::MenuSaveAs()
 {
     OpenPopUp(PopUpState::SAVE_AS);
+}
+
+// #### GUI - Help #### \\
+
+void BlockBuster::Editor::Editor::HelpShortCutWindow()
+{
+    if(!showShortcutWindow)
+        return;
+
+    auto& io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f,0.5f));
+    if(ImGui::Begin("Keyboard Shortcuts Reference", &showShortcutWindow))
+    {
+        if(ImGui::BeginTable("## Shortcuts", 4))
+        {
+            ImGui::TableSetupColumn("##Camera", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("##Edit", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("##Navigation", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("##Test Mode", ImGuiTableColumnFlags_WidthFixed);
+
+            ImGui::TableNextColumn();
+            ImGui::TableHeader("Camera");
+            ImGui::TableNextColumn();
+            ImGui::TableHeader("Edit");
+            ImGui::TableNextColumn();
+            ImGui::TableHeader("Navigation");
+            ImGui::TableNextColumn();
+            ImGui::TableHeader("Test Mode");
+            
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            ImGui::Text("Camera movement");
+            ImGui::BulletText("W - Forward");
+            ImGui::BulletText("S - Backward");
+            ImGui::BulletText("A - Strafe left");
+            ImGui::BulletText("D - Strafe right");
+            ImGui::BulletText("Q - Ascend");
+            ImGui::BulletText("E - Descend");
+            
+
+            ImGui::Text("Camera rotation");
+            ImGui::BulletText("Up Arrow - Pitch up");
+            ImGui::BulletText("Down Arrow - Pitch down");
+            ImGui::BulletText("Left Arrow - Turn left");
+            ImGui::BulletText("Right Arrow - Turn right");
+            
+
+            ImGui::Text("Camera mode");
+            ImGui::SameLine();
+            HelpMarker("Editor Camera: Movement ignores the camera rotation. Can only rotate camera with arrows\n"
+                    "FPS Camera: Movement according to camera angle. Can rotate camera with mouse");
+            ImGui::BulletText("Middle mouse button (hold) - Set FPS camera");
+            ImGui::BulletText("F - Toggle FPS/Editor camera");
+
+            ImGui::TableNextColumn();
+
+            ImGui::Text("Tool selection");
+            ImGui::BulletText("Ctrl + 1 - Place block");
+            ImGui::BulletText("Ctrl + 2 - Rotate block");
+            ImGui::BulletText("Ctrl + 3 - Paint block");
+            ImGui::BulletText("Ctrl + 4 - Select blocks");
+            
+
+            ImGui::Text("Place block tool");
+            ImGui::BulletText("1 - Select block type");
+            ImGui::BulletText("2 - Select slope type");
+            
+
+            ImGui::Text("Rotate block tool");
+            ImGui::BulletText("1 - Select y axis");
+            ImGui::BulletText("2 - Select z axis");
+            
+
+            ImGui::Text("Paint block tool");
+            ImGui::BulletText("1 - Select texture display");
+            ImGui::BulletText("2 - Select color display");
+            
+            ImGui::Text("Select blocks tool");
+            ImGui::Text("Movement");
+            ImGui::BulletText("Numpad 8 - Move cursor on +Z");
+            ImGui::BulletText("Numpad 2 - Move cursor on -Z");
+            ImGui::BulletText("Numpad 6 - Move cursor on +X");
+            ImGui::BulletText("Numpad 4 - Move cursor on -X");
+            ImGui::BulletText("Numpad 7 - Move cursor on +Y");
+            ImGui::BulletText("Numpad 9 - Move cursor on -Y");
+            ImGui::Text("Scaling");
+            ImGui::BulletText("Ctrl + Numpad 8 - Scale cursor on +Z");
+            ImGui::BulletText("Ctrl + Numpad 2 - Scale cursor on -Z");
+            ImGui::BulletText("Ctrl + Numpad 6 - Scale cursor on +X");
+            ImGui::BulletText("Ctrl + Numpad 4 - Scale cursor on -X");
+            ImGui::BulletText("Ctrl + Numpad 7 - Scale cursor on +Y");
+            ImGui::BulletText("Ctrl + Numpad 9 - Scale cursor on -Y");
+            
+            ImGui::TableNextColumn();
+
+            ImGui::Text("Tab navigation");
+            ImGui::BulletText("Alt + 1 - Tools Tab");
+            ImGui::BulletText("Alt + 2 - Options Tab");
+            ImGui::BulletText("Alt + 3 - Debug Tab");
+
+            ImGui::Text("File/Edit/Options");
+            ImGui::BulletText("Check the menus");
+
+            ImGui::TableNextColumn();
+            ImGui::Text("Mode");
+            ImGui::BulletText("P - Toggle Editor/Test Mode");
+
+            ImGui::Text("Player Movement");
+            ImGui::BulletText("W - Forward");
+            ImGui::BulletText("S - Backward");
+            ImGui::BulletText("A - Strafe left");
+            ImGui::BulletText("D - Strafe right");
+
+            ImGui::Text("Player Rotation");
+            ImGui::BulletText("Mouse Up - Pitch up");
+            ImGui::BulletText("Mouse Down - Pitch down");
+            ImGui::BulletText("Mouse Left - Turn left");
+            ImGui::BulletText("Mouse Right - Pitch right");
+            
+
+            ImGui::EndTable();
+        }
+        ImGui::End();
+    }
 }
 
 // #### GUI - Tools #### \\
@@ -603,6 +753,8 @@ void BlockBuster::Editor::Editor::GUI()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(window_);
     ImGui::NewFrame();
+
+    HelpShortCutWindow();
 
     bool open;
     auto displaySize = io_->DisplaySize;

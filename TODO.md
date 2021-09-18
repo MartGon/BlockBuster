@@ -17,6 +17,7 @@
     Go to pos - Done
 
     Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
+    Write Shortcut Cheatsheet in a popup window / tab. Use collapsing headers, cause why not. - DONE
 
 ### Maintenance and performance
 
@@ -47,7 +48,7 @@
 ## TODO
 ### Features
     
-    Write Shortcut Cheatsheet in a popup window / tab. Use collapsing headers, cause why not.
+    Load textures of different sizes, rather than only 160x160
     Release first version
     SemiSlope mesh and collisions
     Selection Tool
