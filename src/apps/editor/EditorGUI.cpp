@@ -463,6 +463,138 @@ void BlockBuster::Editor::Editor::MenuSaveAs()
     OpenPopUp(PopUpState::SAVE_AS);
 }
 
+// #### GUI - Tools #### \\
+
+void BlockBuster::Editor::Editor::SelectBlockTypeGUI()
+{
+    ImGui::Text("Block Type");
+    ImGui::SameLine();
+    ImGui::RadioButton("Block", &blockType, Game::BlockType::BLOCK);
+    ImGui::SameLine();
+    ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
+}
+
+void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
+{
+    ImGui::Text("Display Type");
+    ImGui::SameLine();
+    ImGui::RadioButton("Texture", &displayType, Game::DisplayType::TEXTURE);
+    ImGui::SameLine();
+
+    ImGui::RadioButton("Color", &displayType, Game::DisplayType::COLOR);
+
+
+    ImGui::Text("Palette");
+
+    // Palette
+    const glm::vec2 iconSize = displayType == Game::DisplayType::TEXTURE ? glm::vec2{32.f} : glm::vec2{20.f};
+    const glm::vec2 selectSize = iconSize + glm::vec2{2.0f};
+    const auto effectiveSize = glm::vec2{selectSize.x + 8.0f, selectSize.y + 6.0f};
+    const auto MAX_ROWS = 2;
+    const auto MAX_COLUMNS = 64;
+    const auto scrollbarOffsetX = 14.0f;
+
+    glm::vec2 region = ImGui::GetContentRegionAvail();
+    int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
+    int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : project.cPalette.GetCount();
+    int minRows = glm::max((int)glm::ceil((float)entries / (float)columns), 1);
+    int rows = glm::min(MAX_ROWS, minRows);
+    glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * rows};
+    auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
+    if(ImGui::BeginTable("Texture Palette", columns, tableFlags, tableSize))
+    {                        
+        for(unsigned int i = 0; i < entries; i++)
+        {
+            ImGui::TableNextColumn();
+            std::string label = "##selectable" + std::to_string(i);
+
+            // This part of the code is to "fix" the display of the palette
+            bool firstRowElement = (i % columns) == 0;
+            glm::vec2 offset = (firstRowElement ? glm::vec2{4.0f, 0.0f} : glm::vec2{0.0f});
+            glm::vec2 size = selectSize + offset;
+            glm::vec2 cursorPos = ImGui::GetCursorPos();
+            glm::vec2 pos = cursorPos + (size - iconSize) / 2.0f + offset / 2.0f;
+            
+            if(displayType == Game::DisplayType::COLOR)
+            {
+                auto newPos = cursorPos + glm::vec2{0.0f, -3.0f};
+                size += glm::vec2{-2.0f, 0.0f};
+                if(!firstRowElement)
+                    ImGui::SetCursorPos(newPos);
+                
+                pos += glm::vec2{-1.0f, 0.0f};
+            }
+            // Until around here
+            
+            bool selected = displayType == Game::DisplayType::TEXTURE && i == textureId || 
+                displayType == Game::DisplayType::COLOR && i == colorId;
+            if(ImGui::Selectable(label.c_str(), selected, 0, size))
+            {
+                if(displayType == Game::DisplayType::TEXTURE)
+                {
+                    textureId = i;
+                }
+                else if(displayType == Game::DisplayType::COLOR)
+                {
+                    colorId = i;
+                }
+            }
+            ImGui::SetCursorPos(pos);
+            
+            if(displayType == Game::DisplayType::TEXTURE)
+            {
+                ImGui::Image(&guiTextures[i], iconSize);
+            }
+            else if(displayType == Game::DisplayType::COLOR)
+            {
+                auto color = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(i).data.color);
+                ImGui::ColorButton("## color", color);
+            }
+        }       
+        ImGui::TableNextRow();
+        
+        ImGui::EndTable();
+    }
+
+    if(displayType == Game::DisplayType::COLOR)
+    {
+        auto color = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(colorId).data.color);
+        if(ImGui::ColorButton("Chosen Color", color))
+        {
+            ImGui::OpenPopup("Color Picker");
+            pickingColor = true;
+        }
+        ImGui::SameLine();
+        ImGui::Text("Select color");
+        if(ImGui::BeginPopup("Color Picker"))
+        {
+            if(ImGui::ColorPicker4("##picker", &colorPick.x, ImGuiColorEditFlags__OptionsDefault))
+                colorId = -1;
+            ImGui::EndPopup();
+        }
+        else if(pickingColor)
+        {
+            pickingColor = false;
+            if(displayType == Game::DisplayType::COLOR)
+            {
+                auto color = Rendering::FloatColorToUint8(colorPick);
+                if(!project.cPalette.HasColor(color))
+                {
+                    auto res = project.cPalette.AddColor(color);
+                    colorId = res.data.id;
+                }
+            }
+        }
+    }
+    else if(displayType == Game::DisplayType::TEXTURE)
+    {
+        if(ImGui::Button("Add Texture"))
+        {
+            OpenPopUp(PopUpState::LOAD_TEXTURE);
+        }
+    }
+}
+
 // #### GUI - Base #### \\
 
 void BlockBuster::Editor::Editor::GUI()
@@ -554,132 +686,12 @@ void BlockBuster::Editor::Editor::GUI()
 
                     if(pbSelected)
                     {
-                        ImGui::Text("Block Type");
-                        ImGui::SameLine();
-                        ImGui::RadioButton("Block", &blockType, Game::BlockType::BLOCK);
-                        ImGui::SameLine();
-                        ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
+                        SelectBlockTypeGUI();
                     }
 
                     if(pbSelected || paintSelected)
                     {
-                        ImGui::Text("Display Type");
-                        ImGui::SameLine();
-                        ImGui::RadioButton("Texture", &displayType, Game::DisplayType::TEXTURE);
-                        ImGui::SameLine();
-
-                        ImGui::RadioButton("Color", &displayType, Game::DisplayType::COLOR);
-
-
-                        ImGui::Text("Palette");
-
-                        // Palette
-                        const glm::vec2 iconSize = displayType == Game::DisplayType::TEXTURE ? glm::vec2{32.f} : glm::vec2{20.f};
-                        const glm::vec2 selectSize = iconSize + glm::vec2{2.0f};
-                        const auto effectiveSize = glm::vec2{selectSize.x + 8.0f, selectSize.y + 6.0f};
-                        const auto MAX_ROWS = 2;
-                        const auto MAX_COLUMNS = 64;
-                        const auto scrollbarOffsetX = 14.0f;
-
-                        glm::vec2 region = ImGui::GetContentRegionAvail();
-                        int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
-                        int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : project.cPalette.GetCount();
-                        int minRows = glm::max((int)glm::ceil((float)entries / (float)columns), 1);
-                        int rows = glm::min(MAX_ROWS, minRows);
-                        glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * rows};
-                        auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_ScrollY;
-                        if(ImGui::BeginTable("Texture Palette", columns, tableFlags, tableSize))
-                        {                        
-                            for(unsigned int i = 0; i < entries; i++)
-                            {
-                                ImGui::TableNextColumn();
-                                std::string label = "##selectable" + std::to_string(i);
-
-                                // This part of the code is to "fix" the display of the palette
-                                bool firstRowElement = (i % columns) == 0;
-                                glm::vec2 offset = (firstRowElement ? glm::vec2{4.0f, 0.0f} : glm::vec2{0.0f});
-                                glm::vec2 size = selectSize + offset;
-                                glm::vec2 cursorPos = ImGui::GetCursorPos();
-                                glm::vec2 pos = cursorPos + (size - iconSize) / 2.0f + offset / 2.0f;
-                                
-                                if(displayType == Game::DisplayType::COLOR)
-                                {
-                                    auto newPos = cursorPos + glm::vec2{0.0f, -3.0f};
-                                    size += glm::vec2{-2.0f, 0.0f};
-                                    if(!firstRowElement)
-                                        ImGui::SetCursorPos(newPos);
-                                    
-                                    pos += glm::vec2{-1.0f, 0.0f};
-                                }
-                                // Until around here
-                                
-                                bool selected = displayType == Game::DisplayType::TEXTURE && i == textureId || 
-                                    displayType == Game::DisplayType::COLOR && i == colorId;
-                                if(ImGui::Selectable(label.c_str(), selected, 0, size))
-                                {
-                                    if(displayType == Game::DisplayType::TEXTURE)
-                                    {
-                                        textureId = i;
-                                    }
-                                    else if(displayType == Game::DisplayType::COLOR)
-                                    {
-                                        colorId = i;
-                                    }
-                                }
-                                ImGui::SetCursorPos(pos);
-                                
-                                if(displayType == Game::DisplayType::TEXTURE)
-                                {
-                                    ImGui::Image(&guiTextures[i], iconSize);
-                                }
-                                else if(displayType == Game::DisplayType::COLOR)
-                                {
-                                    auto color = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(i).data.color);
-                                    ImGui::ColorButton("## color", color);
-                                }
-                            }       
-                            ImGui::TableNextRow();
-                            
-                            ImGui::EndTable();
-                        }
-
-                        if(displayType == Game::DisplayType::COLOR)
-                        {
-                            auto color = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(colorId).data.color);
-                            if(ImGui::ColorButton("Chosen Color", color))
-                            {
-                                ImGui::OpenPopup("Color Picker");
-                                pickingColor = true;
-                            }
-                            ImGui::SameLine();
-                            ImGui::Text("Select color");
-                            if(ImGui::BeginPopup("Color Picker"))
-                            {
-                                if(ImGui::ColorPicker4("##picker", &colorPick.x, ImGuiColorEditFlags__OptionsDefault))
-                                    colorId = -1;
-                                ImGui::EndPopup();
-                            }
-                            else if(pickingColor)
-                            {
-                                pickingColor = false;
-                                if(displayType == Game::DisplayType::COLOR)
-                                {
-                                    auto color = Rendering::FloatColorToUint8(colorPick);
-                                    if(!project.cPalette.HasColor(color))
-                                    {
-                                        auto res = project.cPalette.AddColor(color);
-                                        colorId = res.data.id;
-                                    }
-                                }
-                            }
-                        }
-                        else if(displayType == Game::DisplayType::TEXTURE)
-                        {
-                            if(ImGui::Button("Add Texture"))
-                            {
-                                OpenPopUp(PopUpState::LOAD_TEXTURE);
-                            }
-                        }
+                        SelectBlockDisplayGUI();
                     }
                     
                     if(rotbSelected)            
@@ -767,21 +779,17 @@ void BlockBuster::Editor::Editor::GUI()
                                 ImGui::SetCursorPosX(cursorX + 4);
                                 if(ImGui::BeginTable("###Select Tools Pad", 2, 0, ImVec2{100, 0}))
                                 {
-                                    ImGui::TableNextColumn();
-                                    ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
-                                    if(ImGui::Selectable("Move", &selectTool, SelectSubTool::MOVE))
-                                        OnChooseSelectSubTool(selectTool);
+                                    const std::array<const char*, 4> names = {"Move", "Edit", "Rotate", "Fill"};
+                                    for(unsigned int i = SelectSubTool::MOVE; i < SelectSubTool::END; i++)
+                                    {
+                                        auto subTool = static_cast<SelectSubTool>(i);
+                                        ImGui::TableNextColumn();
+                                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
+                                        if(ImGui::Selectable(names[i], &selectTool, subTool))
+                                            OnChooseSelectSubTool(selectTool);
 
-                                    ImGui::TableNextColumn();
-                                    if(ImGui::Selectable("Edit", &selectTool, SelectSubTool::EDIT))
-                                        OnChooseSelectSubTool(selectTool);
-
-                                    ImGui::TableNextColumn();
-                                    if(ImGui::Selectable("Rotate", &selectTool, SelectSubTool::ROTATE_OR_MIRROR))
-                                        OnChooseSelectSubTool(selectTool);
-
-                                    ImGui::PopStyleVar();
-
+                                        ImGui::PopStyleVar();
+                                    }
                                     
 
                                     ImGui::EndTable();
@@ -915,6 +923,30 @@ void BlockBuster::Editor::Editor::GUI()
                                         ImGui::PushStyleColor(ImGuiCol_Text, red);
                                         ImGui::Text("%s", selectRotErrorText.c_str());
                                         ImGui::PopStyleColor();
+                                        break;
+                                    }
+
+                                    case SelectSubTool::FILL_OR_PAINT:
+                                    {
+                                        if(ImGui::Button("Fill"))
+                                        {
+                                            FillSelection();
+                                        }
+
+                                        ImGui::SameLine();
+                                        if(ImGui::Button("Replace"))
+                                        {
+                                            ReplaceSelection();
+                                        }
+
+                                        ImGui::SameLine();
+                                        if(ImGui::Button("Paint"))
+                                        {
+                                            PaintSelection();
+                                        }
+
+                                        SelectBlockTypeGUI();
+                                        SelectBlockDisplayGUI();
                                     }
 
                                     default:

@@ -602,10 +602,11 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     {
                         if(IsDisplayValid())
                         {
-                            auto display = GetBlockDisplay();                            
+                                                       
                             auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
                             if(auto found = project.map.GetBlock(iNewPos); !found || found->type == Game::BlockType::NONE)
                             {
+                                auto display = GetBlockDisplay(); 
                                 auto block = Game::Block{blockType, rot, display};
                                 auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &project.map);
 
@@ -812,10 +813,8 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
     }
 }
 
-std::vector<BlockBuster::Editor::BlockData> BlockBuster::Editor::Editor::GetBlocksInSelection(bool globalPos)
+void BlockBuster::Editor::Editor::EnumBlocksInSelection(std::function<void(glm::ivec3, glm::ivec3)> onEach)
 {
-    std::vector<BlockBuster::Editor::BlockData> selection;
-
     auto scale = glm::vec3{blockScale};
     glm::ivec3 cursorBasePos = cursor.pos;
     for(unsigned int x = 0; x < cursor.scale.x; x++)
@@ -826,16 +825,29 @@ std::vector<BlockBuster::Editor::BlockData> BlockBuster::Editor::Editor::GetBloc
             {
                 auto offset = glm::ivec3{x, y, z};
                 auto ipos = cursorBasePos + offset;
-                if(!project.map.IsBlockNull(ipos))
-                {
-                    if(globalPos)
-                        selection.push_back({ipos, *project.map.GetBlock(ipos)});
-                    else
-                        selection.push_back({offset, *project.map.GetBlock(ipos)});
-                }
+                onEach(ipos, offset);
             }
         }
     }
+}
+
+std::vector<BlockBuster::Editor::BlockData> BlockBuster::Editor::Editor::GetBlocksInSelection(bool globalPos)
+{
+    std::vector<BlockBuster::Editor::BlockData> selection;
+
+    auto scale = glm::vec3{blockScale};
+    glm::ivec3 cursorBasePos = cursor.pos;
+    auto onEach = [this, &selection, globalPos](glm::ivec3 ipos, glm::ivec3 offset)
+    {
+        if(!this->project.map.IsBlockNull(ipos))
+        {
+            if(globalPos)
+                selection.push_back({ipos, *this->project.map.GetBlock(ipos)});
+            else
+                selection.push_back({offset, *this->project.map.GetBlock(ipos)});
+        }
+    };
+    EnumBlocksInSelection(onEach);
 
     return selection;
 }
@@ -1272,6 +1284,56 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection
 
     return res;
 }
+
+void BlockBuster::Editor::Editor::FillSelection()
+{
+    auto batchPlace = std::make_unique<BatchedAction>();
+    auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
+    {
+        if(this->project.map.IsBlockNull(pos))
+        {
+            Game::Block block{this->blockType, Game::BlockRot{}, this->GetBlockDisplay()};
+            auto placeAction = std::make_unique<PlaceBlockAction>(pos, block, &this->project.map);
+            batchPlace->AddAction(std::move(placeAction));
+        }
+    };
+    EnumBlocksInSelection(onEach);
+    DoToolAction(std::move(batchPlace));
+}
+
+void BlockBuster::Editor::Editor::ReplaceSelection()
+{
+    auto batchPlace = std::make_unique<BatchedAction>();
+    auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
+    {
+        if(!this->project.map.IsBlockNull(pos))
+        {
+            Game::Block block{this->blockType, Game::BlockRot{}, this->GetBlockDisplay()};
+            auto placeAction = std::make_unique<UpdateBlockAction>(pos, block, &this->project.map);
+            batchPlace->AddAction(std::move(placeAction));
+        }
+    };
+    EnumBlocksInSelection(onEach);
+    DoToolAction(std::move(batchPlace));
+}
+
+void BlockBuster::Editor::Editor::PaintSelection()
+{
+    auto batchPlace = std::make_unique<BatchedAction>();
+    auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
+    {
+        if(!this->project.map.IsBlockNull(pos))
+        {
+            auto block = this->project.map.GetBlock(pos);
+            auto display = this->GetBlockDisplay();
+            auto placeAction = std::make_unique<PaintAction>(pos, block, display, &this->project.map);
+            batchPlace->AddAction(std::move(placeAction));
+        }
+    };
+    EnumBlocksInSelection(onEach);
+    DoToolAction(std::move(batchPlace));
+}
+
 
 void BlockBuster::Editor::Editor::OnChooseSelectSubTool(SelectSubTool subTool)
 {

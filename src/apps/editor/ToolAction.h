@@ -77,7 +77,7 @@ namespace BlockBuster
         class PaintAction : public ToolAction
         {
         public:
-            PaintAction(glm::ivec3 pos, Game::Block* block, Game::Display display, Game::Map::Map* map) : 
+            PaintAction(glm::ivec3 pos, Game::Block const* block, Game::Display display, Game::Map::Map* map) : 
                 pos_{pos}, block_{block}, display_{display}, prevDisplay_{block->display}, map_{map} {}
 
             void Do() override;
@@ -89,7 +89,7 @@ namespace BlockBuster
 
             glm::ivec3 pos_;
 
-            Game::Block* block_;
+            Game::Block const* block_;
             Game::Display display_;
             Game::Display prevDisplay_;
             std::vector<Game::Block>* blocks_;

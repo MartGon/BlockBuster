@@ -1,3 +1,4 @@
+# TODO - Editor
 
 ## DONE
 
@@ -55,10 +56,10 @@
         Key shortcuts for scaling/movement/startmoving - Done
         Copy/Cut Paste - Done
         Mirror selection - Done
-        Paint Selection
+        Paint Selection - Done
         Hide Selection
         Rotate Selection - Done
-        Fill Selection
+        Fill Selection - Done
         Remove Selection - Done
         Block icons to move in 3D space
         Asset list with other bbms
@@ -67,6 +68,8 @@
     Block color - Border/NoBorder option
 
 ### Maintenance and performance
+    Keybind struct(key, bool (ctrl, shift, alt), callback to check). Create on start, hold on a vector
+    Thin wrapper over map on editor/client. HasChanged method is not needed in server. Handle if a chunk has changed on the wrapper itself
     Check for supported GL features for calling glDebugMessageCallback/glTexStorage3D
     Compress map data (Reduce rotations, position to uint16, colors to uint8)
     Tool Class heirarchy

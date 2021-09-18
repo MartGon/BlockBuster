@@ -93,11 +93,13 @@ namespace BlockBuster
                 SELECT_BLOCKS
             };
 
-            enum class SelectSubTool
+            enum SelectSubTool
             {
                 MOVE,
                 EDIT,
                 ROTATE_OR_MIRROR,
+                FILL_OR_PAINT,
+                END
             };
 
             struct Result
@@ -135,6 +137,7 @@ namespace BlockBuster
 
             void DrawCursor(Math::Transform t);
             void DrawSelectCursor(glm::ivec3 pos);
+            void EnumBlocksInSelection(std::function<void(glm::ivec3 pos, glm::ivec3 offset)> onEach);
             std::vector<BlockData> GetBlocksInSelection(bool globalPos = true);
             void SelectBlocks();
             void ClearSelection();
@@ -149,6 +152,9 @@ namespace BlockBuster
             void PasteSelection();
             Result RotateSelection(Game::RotationAxis axis, Game::RotType rotType);
             Result MirrorSelection(MirrorPlane plane);
+            void FillSelection();
+            void ReplaceSelection();
+            void PaintSelection();
             void OnChooseSelectSubTool(SelectSubTool subTool);
 
             void HandleKeyShortCut(const SDL_KeyboardEvent& e);
@@ -224,6 +230,10 @@ namespace BlockBuster
             void MenuOpenMap();
             void MenuSave();
             void MenuSaveAs();
+
+            // Tools - GUI
+            void SelectBlockTypeGUI();
+            void SelectBlockDisplayGUI();
 
             void GUI();
 
