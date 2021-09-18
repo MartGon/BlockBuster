@@ -44,6 +44,10 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
 
         ImGui::EndPopup();
     }
+    else if(state == params.popUpState)
+    {
+        ClosePopUp();
+    }
 }
 
 void BlockBuster::Editor::Editor::BasicPopUp(const BasicPopUpParams& params)
@@ -746,7 +750,7 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
             OpenPopUp(PopUpState::LOAD_TEXTURE);
         }
         ImGui::SameLine();
-        HelpMarker("Warning!: Every texture must have the same size and format (RGB/RGBA)");
+        HelpMarker("Warning!: Every texture must be a square and have the same size and format (RGB/RGBA)");
     }
 }
 

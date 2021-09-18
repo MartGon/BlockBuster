@@ -69,44 +69,6 @@ void BlockBuster::Editor::Editor::Update()
     project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
     chunkShader.SetUniformInt("colorArray", 1);
 
-    // Draw pre view painted block
-    bool isPainted = intersecting && tool == PAINT_BLOCK;
-    if(isPainted)
-    {
-        auto block = project.map.GetBlock(pointedBlockPos);
-        Math::Transform t = Game::GetBlockTransform(*block, pointedBlockPos, blockScale);
-
-        // HACK: To avoid z fighting.
-        // Option 2: Changing block display each time the block is pointed/unpointd. Create wrapper function to do it safely. 
-        //  Revert changes when saving project
-        const auto factor = 1.025f;
-        t.scale *= factor;
-
-        if(block->type == Game::BlockType::SLOPE)
-        {
-            const glm::vec3 up{0.0f, 1.0f, 0.0f};
-            glm::vec3 rot = t.GetRotationMat() * glm::vec4{up, 1.0f};
-            auto offset = (factor - 1.f) / 2.0f;
-            t.position += (rot * offset);
-        }
-        
-        auto mMat = t.GetTransformMat();
-        auto tMat = camera.GetProjViewMat() * mMat;
-        auto& mesh = GetMesh(block->type);
-
-        auto display =  GetBlockDisplay();
-    
-        shader.SetUniformMat4("transform", tMat);
-        shader.SetUniformInt("textureType", display.type);
-        shader.SetUniformInt("textureId", display.id);
-        shader.SetUniformInt("overrideColor", false);
-
-        shader.SetUniformInt("textureArray", 0);
-        shader.SetUniformInt("colorArray", 1);
-
-        mesh.Draw(shader, project.tPalette.GetTextureArray(), display.id);
-    }
-
     // Draw new Map System Cubes
     chunkMeshMgr.DrawChunks(chunkShader, camera.GetProjViewMat());
     
@@ -364,6 +326,48 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     }
 
     glEnable(GL_DEPTH_TEST);
+
+    // Draw pre view painted block
+    bool isPainted = intersecting && tool == PAINT_BLOCK;
+    if(isPainted)
+    {
+        auto block = project.map.GetBlock(pointedBlockPos);
+        Math::Transform t = Game::GetBlockTransform(*block, pointedBlockPos, blockScale);
+
+        // HACK: To avoid z fighting.
+        // Option 2: Changing block display each time the block is pointed/unpointd. Create wrapper function to do it safely. 
+        //  Revert changes when saving project
+        const auto factor = 1.025f;
+        t.scale *= factor;
+
+        if(block->type == Game::BlockType::SLOPE)
+        {
+            const glm::vec3 up{0.0f, 1.0f, 0.0f};
+            glm::vec3 rot = t.GetRotationMat() * glm::vec4{up, 1.0f};
+            auto offset = (factor - 1.f) / 2.0f;
+            t.position += (rot * offset);
+        }
+        
+        auto mMat = t.GetTransformMat();
+        auto tMat = camera.GetProjViewMat() * mMat;
+        auto& mesh = GetMesh(block->type);
+
+        auto display =  GetBlockDisplay();
+        bool validTex = display.type == Game::DisplayType::TEXTURE && display.id < project.tPalette.GetCount();
+        bool validCol = display.type == Game::DisplayType::COLOR && display.id < project.cPalette.GetCount();
+        bool validDisplay = validTex || validCol;
+
+        shader.SetUniformMat4("transform", tMat);
+        shader.SetUniformInt("textureType", display.type);
+        shader.SetUniformInt("textureId", display.id);
+        shader.SetUniformInt("overrideColor", false);
+
+        shader.SetUniformInt("textureArray", 0);
+        shader.SetUniformInt("colorArray", 1);
+
+        if(validDisplay)
+            mesh.Draw(shader, project.tPalette.GetTextureArray(), display.id);
+    }
 
     // Draw chunk borders
     if(drawChunkBorders)
