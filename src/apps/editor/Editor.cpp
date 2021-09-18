@@ -42,7 +42,7 @@ void BlockBuster::Editor::Editor::Start()
     if(!mapName.empty() && mapName.size() < 16)
     {
         std::strcpy(fileName, mapName.c_str());
-        mapLoaded = OpenProject();
+        mapLoaded = OpenProject().type == General::ResultType::SUCCESS;
     }
     
     if(!mapLoaded)
@@ -108,11 +108,7 @@ void BlockBuster::Editor::Editor::Update()
     }
 
     // Draw new Map System Cubes
-    glDisable(GL_CULL_FACE);
-
     chunkMeshMgr.DrawChunks(chunkShader, camera.GetProjViewMat());
-
-    glEnable(GL_CULL_FACE);
     
     if(playerMode)
         UpdatePlayerMode();
@@ -150,23 +146,23 @@ glm::vec4 BlockBuster::Editor::Editor::GetBorderColor(glm::vec4 basecolor, glm::
     return borderColor;
 }
 
-bool BlockBuster::Editor::Editor::LoadTexture()
+General::Result<bool> BlockBuster::Editor::Editor::LoadTexture()
 {
     if(project.tPalette.GetCount() >= MAX_TEXTURES)
-        return false;
+        return General::CreateError<bool>("Maximum of textures reached");
 
     if(IsTextureInPalette(textureFolder, textureFilename))
-        return false;
+        return General::CreateError<bool>("Texture is already in palette");
 
-    auto res = project.tPalette.AddTexture(textureFolder, textureFilename, true);
+    auto res = project.tPalette.AddTexture(textureFolder, textureFilename, false);
     if(res.type == General::ResultType::ERROR)
     {
-        return false;
+        return General::CreateError<bool>(res.err.info);
     }
     else
         SyncGUITextures();
 
-    return true;
+    return General::CreateSuccess<bool>(true);
 }
 
 bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName)
@@ -233,10 +229,13 @@ void BlockBuster::Editor::Editor::SaveProject()
     unsaved = false;
 }
 
-bool BlockBuster::Editor::Editor::OpenProject()
+General::Result<bool> BlockBuster::Editor::Editor::OpenProject()
 {
     std::filesystem::path mapPath = mapsFolder / fileName;
     Project temp = ::BlockBuster::Editor::ReadProjectFromFile(mapPath);
+
+    auto res = General::CreateError<bool>("Could not open project");
+
     bool isOk = temp.isOk;
     if(isOk)
     {
@@ -270,9 +269,11 @@ bool BlockBuster::Editor::Editor::OpenProject()
         // Chunk meshes
         chunkMeshMgr.SetMap(&project.map);
         chunkMeshMgr.SetBlockScale(blockScale);
-    }
 
-    return isOk;
+        res = General::CreateSuccess<bool>(true);
+    }
+    
+    return res;
 }
 
 // #### Editor #### \\

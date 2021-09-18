@@ -18,10 +18,11 @@
 
     Debug Info tab (Coordinates - Position(real, chunk, block) and orientation)
     Write Shortcut Cheatsheet in a popup window / tab. Use collapsing headers, cause why not. - DONE
+    Load textures of different sizes, rather than only 160x160 - DONE
 
 ### Maintenance and performance
 
-    Chunk Meshes
+    Chunk Meshes - Done
     Texture Array GL Wrapper - Done
     ImGui uses TextureArray - Done
     Create null texture or Error when loading null texture (Throw on editor, use null texture when loading) - Done
@@ -48,7 +49,6 @@
 ## TODO
 ### Features
     
-    Load textures of different sizes, rather than only 160x160
     Release first version
     SemiSlope mesh and collisions
     Selection Tool
@@ -69,7 +69,7 @@
     Block color - Border/NoBorder option
 
 ### Maintenance and performance
-    Keybind struct(key, bool (ctrl, shift, alt), callback to check). Create on start, hold on a vector
+    Keybind struct(key, bool (ctrl, shift, alt), callback to check/call). Create on start, hold on a vector
     Thin wrapper over map on editor/client. HasChanged method is not needed in server. Handle if a chunk has changed on the wrapper itself
     Check for supported GL features for calling glDebugMessageCallback/glTexStorage3D
     Compress map data (Reduce rotations, position to uint16, colors to uint8)

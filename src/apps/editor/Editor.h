@@ -111,13 +111,13 @@ namespace BlockBuster
             // Rendering
             Rendering::Mesh& GetMesh(Game::BlockType type);
             glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
-            bool LoadTexture();
+            General::Result<bool> LoadTexture();
             bool IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName);
 
             // World
             void NewProject();
             void SaveProject();
-            bool OpenProject();
+            General::Result<bool> OpenProject();
 
             // Editor
             void UpdateEditor();
@@ -188,7 +188,7 @@ namespace BlockBuster
                 std::string name;
                 char* textBuffer; 
                 size_t bufferSize;
-                std::function<bool()> onAccept;
+                std::function<General::Result<bool>()> onAccept;
                 std::function<void()> onCancel;
                 std::string errorPrefix;
 

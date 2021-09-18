@@ -4,21 +4,7 @@
 
 GL::TextureArray::TextureArray(GLsizei length, GLsizei textureSize, int channels) : length_{length}, texSize_{textureSize}, channels_{channels}
 {
-    glActiveTexture(GL_TEXTURE0);
-    glGenTextures(1, &handle_);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, handle_);
-
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    
-    // auto iFormat = channels == 3 ? GL_RGB8 : GL_RGBA8;
-    // glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iFormat, textureSize, textureSize, length); -- Only usable in OpenGL ^4.2
-    
-    auto iFormat = channels == 3 ? GL_RGB : GL_RGBA;
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iFormat, textureSize, textureSize, length, 0, iFormat,  GL_UNSIGNED_BYTE, NULL);
+    Init();
 }
 
 GL::TextureArray::~TextureArray()
@@ -58,9 +44,28 @@ General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filep
     int channels;
     int sizeX, sizeY;
 
-    stbi_set_flip_vertically_on_load(flipVertically);
-    auto data = stbi_load(filepath.string().c_str(), &sizeX, &sizeY, &channels, 0);
+    auto fileStr = filepath.string();
+    auto filename = fileStr.c_str();
+    bool valid = stbi_info(filename, &sizeX, &sizeY, &channels);
+    if(valid)
+    {
+        bool isSquared = sizeX == sizeY;
+        if(!IsInitialized() && isSquared)
+        {
+            texSize_ = sizeX;
+            channels_ = channels;
+            Init();
+        }
+        else if(!isSquared || sizeX != texSize_ || channels_ != channels)
+        {
+            return General::CreateError<GLuint>("Texture has invalid size or format");
+        }
+    }
+    else
+        return General::CreateError<GLuint>("Failed to load error");
 
+    stbi_set_flip_vertically_on_load(flipVertically);
+    auto data = stbi_load(filename, &sizeX, &sizeY, &channels, 0);
     if(data)
     {
         // Note: 1 instead of length (before GL_RGB) because it's the amount of images to be set on this call. It's always one.
@@ -100,4 +105,29 @@ void GL::TextureArray::Bind(GLuint activeTexture) const
 GLuint GL::TextureArray::GetHandle() const
 {
     return handle_;
+}
+
+// #### Private #### \\
+
+void GL::TextureArray::Init()
+{
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &handle_);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, handle_);
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // auto iFormat = channels == 3 ? GL_RGB8 : GL_RGBA8;
+    // glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, iFormat, textureSize, textureSize, length); -- Only usable in OpenGL ^4.2
+    
+    auto iFormat = channels_ == 3 ? GL_RGB : GL_RGBA;
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iFormat, texSize_, texSize_, length_, 0, iFormat,  GL_UNSIGNED_BYTE, NULL);
+}
+
+bool GL::TextureArray::IsInitialized()
+{
+    return handle_ != -1;
 }

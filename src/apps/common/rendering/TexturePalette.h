@@ -10,6 +10,7 @@ namespace Rendering
     class TexturePalette
     {
     public:
+        TexturePalette(int capacity) : tArray_{capacity} {}
         TexturePalette(int capacity, int texturesSize) : tArray_{capacity, texturesSize}
         {
         }

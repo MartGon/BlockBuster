@@ -13,12 +13,12 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
     if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
         bool accept = ImGui::InputText("File name", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-        bool ok = true;
+        General::Result<bool> res = General::CreateSuccess<bool>(true);
         if(ImGui::Button("Accept") || accept)
         {
-            ok = params.onAccept();
+            res = params.onAccept();
 
-            if(ok)
+            if(res.type == General::ResultType::SUCCESS)
             {
                 params.onError = false;
                 
@@ -27,7 +27,7 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
             else
             {
                 params.onError = true;
-                params.errorText = params.errorPrefix + params.textBuffer + '\n';
+                params.errorText = params.errorPrefix + params.textBuffer + ": " + res.err.info + '\n';
             }
         }
 
@@ -73,7 +73,7 @@ void BlockBuster::Editor::Editor::OpenMapPopUp()
 void BlockBuster::Editor::Editor::SaveAsPopUp()
 {
     std::string errorPrefix = "Could not save map ";
-    auto onAccept = [this](){this->SaveProject(); return true;};
+    auto onAccept = [this](){this->SaveProject(); return General::CreateSuccess<bool>(true);};
     auto onCancel = [](){};
     EditTextPopUpParams params{PopUpState::SAVE_AS, "Save As", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
     EditTextPopUp(params);
@@ -82,13 +82,16 @@ void BlockBuster::Editor::Editor::SaveAsPopUp()
 void BlockBuster::Editor::Editor::LoadTexturePopUp()
 {
     std::string errorPrefix = "Could not open texture ";
-    auto onAccept = std::bind(&BlockBuster::Editor::Editor::LoadTexture, this);
+    auto onAccept = [this](){
+            auto res = this->LoadTexture();
+            return res;
+    };
     auto onCancel = [](){};
     EditTextPopUpParams params{PopUpState::LOAD_TEXTURE, "Load Texture", textureFilename, 32, onAccept, onCancel, errorPrefix, onError, errorText};
     EditTextPopUp(params);
 }
 
-std::vector<SDL_DisplayMode> GetDisplayModes()
+static std::vector<SDL_DisplayMode> GetDisplayModes()
 {
     std::vector<SDL_DisplayMode> displayModes;
 
@@ -111,12 +114,12 @@ std::vector<SDL_DisplayMode> GetDisplayModes()
     return displayModes;
 }
 
-std::string DisplayModeToString(int w, int h, int rr)
+static std::string DisplayModeToString(int w, int h, int rr)
 {
     return std::to_string(w) + " x " + std::to_string(h) + " " + std::to_string(rr) + " Hz";
 }
 
-std::string DisplayModeToString(SDL_DisplayMode mode)
+static std::string DisplayModeToString(SDL_DisplayMode mode)
 {
     return std::to_string(mode.w) + " x " + std::to_string(mode.h) + " " + std::to_string(mode.refresh_rate) + " Hz";
 }
@@ -742,6 +745,8 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
         {
             OpenPopUp(PopUpState::LOAD_TEXTURE);
         }
+        ImGui::SameLine();
+        HelpMarker("Warning!: Every texture must have the same size and format (RGB/RGBA)");
     }
 }
 

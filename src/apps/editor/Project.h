@@ -20,7 +20,7 @@ namespace BlockBuster::Editor
         void Init();
 
         Game::Map::Map map;
-        Rendering::TexturePalette tPalette{16, 160};
+        Rendering::TexturePalette tPalette{16};
         Rendering::ColorPalette cPalette{32};
         float blockScale;
 
