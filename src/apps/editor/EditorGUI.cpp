@@ -3,6 +3,8 @@
 #include <iostream>
 #include <debug/Debug.h>
 
+#include <array>
+
 // #### GUI - PopUps #### \\
 
 void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& params)
@@ -940,7 +942,7 @@ void BlockBuster::Editor::Editor::GUI()
                                 ImGui::SetCursorPosX(cursorX + 4);
                                 if(ImGui::BeginTable("###Select Tools Pad", 2, 0, ImVec2{100, 0}))
                                 {
-                                    const std::array<const char*, 4> names = {"Move", "Edit", "Rotate", "Fill"};
+                                    const std::array<const char*, 4> names = std::array<const char*, 4>{"Move", "Edit", "Rotate", "Fill"};
                                     for(unsigned int i = SelectSubTool::MOVE; i < SelectSubTool::END; i++)
                                     {
                                         auto subTool = static_cast<SelectSubTool>(i);
