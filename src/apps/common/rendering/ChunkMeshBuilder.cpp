@@ -166,9 +166,15 @@ void ChunkMesh::Builder::AddBlockMesh(const Game::Map::Map::Chunk& chunk, glm::i
 
 void ChunkMesh::Builder::AddSlopeMesh(const Game::Map::Map::Chunk& chunk, glm::ivec3 pos, Game::Block const* block)
 {
+    struct SkipInfo
+    {
+        bool skip = false;
+        bool fullFace = false;
+    };
+
     auto rotMat = Math::GetRotMatInverse(block->GetRotationMat());
-    std::unordered_map<FaceType, bool> shouldDraw;
-    shouldDraw.reserve(6);
+    std::unordered_map<FaceType, SkipInfo> skipDraw;
+    skipDraw.reserve(6);
     for(auto pair : offsets)   
     {
         auto offset = pair.second;
@@ -176,28 +182,31 @@ void ChunkMesh::Builder::AddSlopeMesh(const Game::Map::Map::Chunk& chunk, glm::i
 
         auto nei = GetNeiBlock(chunk, pos, offset);
         if(!nei || nei->type == Game::BlockType::NONE)
-            shouldDraw[face] = false;
+            skipDraw[face] = SkipInfo{false, false};
         else if(nei->type == Game::BlockType::BLOCK)
-            shouldDraw[face] = true;
+            skipDraw[face] = SkipInfo{true, true};
         else if(nei->type == Game::BlockType::SLOPE)
         {
             auto rotMat = Math::GetRotMatInverse(nei->GetRotationMat());
             auto neiFace = GetBorderFaceSlope(-offset, rotMat);
             bool sameSide = neiFace == FaceType::LEFT && face == FaceType::RIGHT || neiFace == FaceType::RIGHT && face == FaceType::LEFT;
             bool sameRot = nei->rot == block->rot;
-            shouldDraw[face] = neiFace == FaceType::BOTTOM || neiFace == FaceType::BACK || (sameSide && sameRot);
+            bool fullFace = neiFace == FaceType::BOTTOM || neiFace == FaceType::BACK;
+            bool skip = fullFace || (sameSide && sameRot);
+            skipDraw[face] = SkipInfo{skip, fullFace};
         }
     }
 
     const std::array<FaceType, 4> facesToDraw = {FaceType::RIGHT, FaceType::LEFT, FaceType::BOTTOM, FaceType::BACK};
     for(auto face : facesToDraw)
     {   
-        if(!shouldDraw[face])
+        if(!skipDraw[face].skip)
             AddSlopeFace(face, pos, block->rot, block->display.type, block->display.id);
     }
 
-    // Slope face has to be build most of the times. Can only be avoided if up, front, left and right are all covered.
-    bool skipSlope = shouldDraw[FaceType::TOP] && shouldDraw[FaceType::FRONT] && shouldDraw[FaceType::LEFT] && shouldDraw[FaceType::RIGHT];
+    // Slope face has to be build most of the times. Can only be avoided if up, front, left and right are all covered by full faces
+    bool skipSlope = skipDraw[FaceType::TOP].fullFace && skipDraw[FaceType::FRONT].fullFace && 
+        skipDraw[FaceType::LEFT].fullFace && skipDraw[FaceType::RIGHT].fullFace;
     if(!skipSlope)
         AddSlopeFace(FaceType::TOP, pos, block->rot, block->display.type, block->display.id);
 }
