@@ -88,7 +88,7 @@ bool BlockBuster::Editor::Editor::Quit()
 void BlockBuster::Editor::Editor::Shutdown()
 {
     config.options["Map"] = std::string(fileName);
-    config.options["TextureFolder"] = textureFolder.string();
+    config.options["TextureFolder"] = project.textureFolder.string();
     config.options["MapsFolder"] = mapsFolder.string();
     config.options["showCursor"] = std::to_string(cursor.show);
 }
@@ -113,10 +113,10 @@ General::Result<bool> BlockBuster::Editor::Editor::LoadTexture()
     if(project.tPalette.GetCount() >= MAX_TEXTURES)
         return General::CreateError<bool>("Maximum of textures reached");
 
-    if(IsTextureInPalette(textureFolder, textureFilename))
+    if(IsTextureInPalette(project.textureFolder, textureFilename))
         return General::CreateError<bool>("Texture is already in palette");
 
-    auto res = project.tPalette.AddTexture(textureFolder, textureFilename, false);
+    auto res = project.tPalette.AddTexture(project.textureFolder, textureFilename, false);
     if(res.type == General::ResultType::ERROR)
     {
         return General::CreateError<bool>(res.err.info);
@@ -157,6 +157,9 @@ void BlockBuster::Editor::Editor::NewProject()
     newMap = true;
     unsaved = false;
 
+    // Texturefolder
+    project.textureFolder = GetConfigOption("TextureFolder", TEXTURES_DIR);
+
     // Filename
     std::strcpy(fileName, "NewMap.bbm");
 
@@ -175,9 +178,6 @@ void BlockBuster::Editor::Editor::SaveProject()
     // Camera
     project.cameraPos = camera.GetPos();
     project.cameraRot = camera.GetRotation();
-
-    // Texture folder
-    project.textureFolder = textureFolder;
 
     // Cursor Pos
     project.cursorPos = cursor.pos;

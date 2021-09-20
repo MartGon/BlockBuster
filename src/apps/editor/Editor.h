@@ -279,7 +279,6 @@ namespace BlockBuster
             int textureId = 0;
             int colorId = 0;
 
-            std::filesystem::path textureFolder = TEXTURES_DIR;
             char textureFilename[32] = "texture.png";
 
             const int MAX_TEXTURES = 32;
