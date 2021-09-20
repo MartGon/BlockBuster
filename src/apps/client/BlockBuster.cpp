@@ -50,6 +50,7 @@ int main()
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE
         }
     };
+    
     BlockBuster::Client client(config);
     client.Start();
 

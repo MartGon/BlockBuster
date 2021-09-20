@@ -60,30 +60,38 @@ int main(int argc, char* args[])
     {
         config = App::LoadConfig(configPath);
     }
-    catch(const std::out_of_range& e)
+    catch (const std::out_of_range& e)
     {
         std::cerr << "Configuration file is corrupted:" << e.what() << '\n';
         std::cerr << "Either fix or remove it to generate the default one\n";
         std::exit(-1);
     }
-    catch(const std::exception& e)
+    catch (const std::exception& e)
     {
         std::cerr << e.what() << '\n';
         std::cerr << "Loading default config\n";
     }
 
-    BlockBuster::Editor::Editor editor(config);
-    editor.Start();
+    
+    try {
+        BlockBuster::Editor::Editor editor(config);
+        editor.Start();
 
-    while(!editor.Quit())
-    {
-        editor.Update();
+        while (!editor.Quit())
+        {
+            editor.Update();
+        }
+        editor.Shutdown();
+
+        App::WriteConfig(editor.config, configPath);
+
+        std::cout << "Quitting\n";
     }
-    editor.Shutdown();
-
-    App::WriteConfig(editor.config, configPath);
-
-    std::cout << "Quitting\n";
+    catch (const std::runtime_error& e)
+    {
+        std::cerr << e.what() << '\n';
+        std::exit(-1);
+    }
 
     return 0;
 }

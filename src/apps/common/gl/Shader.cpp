@@ -76,7 +76,7 @@ unsigned int GL::Shader::LoadShader(const std::filesystem::path& shader, unsigne
     unsigned int ref;
 
     std::ifstream file{shader};
-    if(file.good())
+    if (file.good())
     {
         std::stringstream stream;
         stream << file.rdbuf();
@@ -88,6 +88,8 @@ unsigned int GL::Shader::LoadShader(const std::filesystem::path& shader, unsigne
         glCompileShader(ref);
         CheckCompileErrors(ref, shader.string());
     }
+    else
+        throw std::runtime_error("Invalid path for shader file");
 
     return ref;
 }
@@ -133,7 +135,7 @@ void GL::Shader::CheckLinkErrors(unsigned int program)
 {
     int success = true;
     glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if(!success)
+    if(success != GL_TRUE)
     {
         std::string error;
         error.resize(1024);
