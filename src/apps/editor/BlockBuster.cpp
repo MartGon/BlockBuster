@@ -72,7 +72,6 @@ int main(int argc, char* args[])
         std::cerr << "Loading default config\n";
     }
 
-    
     try {
         BlockBuster::Editor::Editor editor(config);
         editor.Start();
@@ -82,16 +81,16 @@ int main(int argc, char* args[])
             editor.Update();
         }
         editor.Shutdown();
-
-        App::WriteConfig(editor.config, configPath);
+        config = editor.config;
 
         std::cout << "Quitting\n";
     }
     catch (const std::runtime_error& e)
     {
         std::cerr << e.what() << '\n';
-        std::exit(-1);
     }
+
+    App::WriteConfig(config, configPath);
 
     return 0;
 }
