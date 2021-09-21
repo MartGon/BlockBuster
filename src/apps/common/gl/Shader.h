@@ -10,7 +10,8 @@ namespace GL
     {
     public:
         static Shader FromFolder(const std::filesystem::path& folder, const std::string& vertexName, const std::string& fragmentName);
-
+        
+        Shader() = default;
         Shader(const std::filesystem::path& vertex, const std::filesystem::path& fragment);
         ~Shader();
 

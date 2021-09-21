@@ -9,6 +9,8 @@
 
 #include <Configuration.h>
 
+#include <mglogger/MGLogger.h>
+
 #include <exception>
 #include <stdexcept>
 
@@ -25,7 +27,6 @@ namespace App
         virtual bool Quit() = 0;
         virtual void Shutdown() {};
     
-    
         Configuration config;
     protected:
 
@@ -36,6 +37,7 @@ namespace App
         ImGuiIO* io_;
         SDL_Window* window_;
         SDL_GLContext context_;
+        std::unique_ptr<Log::Logger> logger;
     };
 
     class InitError : public std::runtime_error

@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 
 #include <glm/glm.hpp>
+#include <mglogger/MGLogger.h>
 
 #include <string>
 #include <filesystem>
@@ -38,8 +39,15 @@ namespace App
             std::filesystem::path shadersFolder;
         };
 
+        struct LogConfig
+        {
+            std::filesystem::path logFile;
+            Log::Verbosity verbosity;
+        };
+
         WindowConfig window;
         OpenGLConfig openGL;
+        LogConfig log;
 
         // Extra options by application
         std::unordered_map<std::string, std::string> options;

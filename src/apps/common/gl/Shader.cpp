@@ -89,7 +89,7 @@ unsigned int GL::Shader::LoadShader(const std::filesystem::path& shader, unsigne
         CheckCompileErrors(ref, shader.string());
     }
     else
-        throw std::runtime_error("Invalid path for shader file");
+        throw std::runtime_error("Invalid path for shader file: " + shader.string());
 
     return ref;
 }

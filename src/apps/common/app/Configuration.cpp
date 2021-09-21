@@ -43,6 +43,11 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
     file << "shadersFolder=" << config.openGL.shadersFolder.string() << '\n';
     file << '\n';
 
+    file << "### Logging Options ###" << '\n';
+    file << "logFilePath=" << config.log.logFile.string() << '\n';
+    file << "verbosity=" << static_cast<int>(config.log.verbosity) << '\n';
+    file << '\n';
+
     file << "### " << config.window.name << " Options ###" << '\n';
     WriteValuePairs(file, config.options);
     file << '\n';
@@ -67,8 +72,15 @@ std::unordered_map<std::string, std::string> LoadKeyValuePairs(std::fstream& fil
     return keyValues;
 }
 
-template <typename T = int>
-T ExtractInt(std::unordered_map<std::string, std::string>& dictionary, std::string key)
+int ExtractInt(std::unordered_map<std::string, std::string>& dictionary, std::string key)
+{
+    auto value = dictionary.at(key);
+    dictionary.erase(key);
+    return std::stoi(value);
+}
+
+template <typename T>
+T ExtractEnum(std::unordered_map<std::string, std::string>& dictionary, std::string key)
 {
     auto value = dictionary.at(key);
     dictionary.erase(key);
@@ -107,7 +119,7 @@ App::Configuration App::LoadConfig(std::filesystem::path filePath)
     config.window.refreshRate = ExtractInt(config.options, "RefreshRate");
     config.window.xPos = ExtractInt(config.options, "xPos");
     config.window.yPos = ExtractInt(config.options, "yPos");
-    config.window.mode = ExtractInt<App::Configuration::WindowMode>(config.options, "mode");
+    config.window.mode = ExtractEnum<App::Configuration::WindowMode>(config.options, "mode");
     config.window.vsync = ExtractInt(config.options, "vsync");
     config.window.fov = glm::radians(ExtractFloat(config.options, "fov"));
 
@@ -115,6 +127,9 @@ App::Configuration App::LoadConfig(std::filesystem::path filePath)
     config.openGL.minorVersion = ExtractInt(config.options, "minorVersion");
     config.openGL.minorVersion = ExtractInt(config.options, "profileMask");
     config.openGL.shadersFolder = ExtractString(config.options, "shadersFolder");
+
+    config.log.logFile = ExtractString(config.options, "logFilePath");
+    config.log.verbosity = ExtractEnum<Log::Verbosity>(config.options, "verbosity");
 
     return config;
 }

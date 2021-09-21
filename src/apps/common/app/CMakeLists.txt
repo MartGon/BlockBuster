@@ -14,7 +14,9 @@ target_link_libraries(App
     ${CMAKE_DL_LIBS} 
     ${SDL2_LIBRARIES} 
     Threads::Threads 
-    GL 
+    GL
+
+    Log
 )
 target_include_directories(App PUBLIC include 
     ${OPENGL_INCLUDE_DIR}  

@@ -24,9 +24,23 @@ void GLAPIENTRY ErrorCallback(GLenum source, GLenum type, GLuint id, GLenum seve
 
 App::App::App(Configuration config) : config{config}
 {
+    // Init logger
+    auto filelogger = std::make_unique<Log::FileLogger>();
+    filelogger->OpenLogFile(config.log.logFile);
+    filelogger->SetVerbosity(config.log.verbosity);
+    if(filelogger->IsOk())
+        logger = std::move(filelogger);
+    else
+    {
+        std::string msg = "Could not open log file: " + std::string(config.log.logFile) + '\n';
+        throw InitError(msg.c_str());
+    }
+
+    // SDL
     if(SDL_Init(0))
     {
         std::string msg = "SDL Init failed: " + std::string(SDL_GetError()) + "\n";
+        logger->LogCritical(msg);
         throw InitError(msg.c_str());
     }
 
@@ -38,6 +52,7 @@ App::App::App(Configuration config) : config{config}
     if(!window_)
     {
         std::string msg = "SDL_CreateWindow failed: " + std::string(SDL_GetError()) + "\n";
+        logger->LogCritical(msg);
         throw InitError(msg.c_str());
     }
     SDL_SetWindowFullscreen(window_, config.window.mode);
@@ -48,6 +63,7 @@ App::App::App(Configuration config) : config{config}
     if(!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
     {
         std::string msg =  "gladLoadGLLoader failed \n";
+        logger->LogCritical(msg);
         throw InitError(msg.c_str());
     }
 

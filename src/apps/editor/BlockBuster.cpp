@@ -52,6 +52,9 @@ int main(int argc, char* args[])
         },
         App::Configuration::OpenGLConfig{
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE, SHADERS_DIR
+        },
+        App::Configuration::LogConfig{
+            "./editor.log", Log::Verbosity::ERROR
         }
     };
 

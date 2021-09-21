@@ -18,8 +18,17 @@
 
 void BlockBuster::Editor::Editor::Start()
 {
-    // Shaders
-    shader.Use();
+    // Load shaders
+    try{
+        shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
+        chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
+    }
+    catch(const std::runtime_error& e)
+    {
+        this->logger->LogCritical(e.what());
+        quit = true;
+        return;
+    }
 
     // Meshes
     cube = Rendering::Primitive::GenerateCube();
@@ -747,7 +756,7 @@ void BlockBuster::Editor::Editor::DoToolAction()
         SetUnsaved(true);
     }
     else
-        std::cout << "Could not do action\n";
+        logger->LogDebug("Could not do action");
 }
 
 void BlockBuster::Editor::Editor::UndoToolAction()
@@ -764,7 +773,7 @@ void BlockBuster::Editor::Editor::UndoToolAction()
             SetUnsaved(false);
     }
     else
-        std::cout << "Could not undo anymore\n";
+        logger->LogDebug("Could not undo anymore");
 }
 
 void BlockBuster::Editor::Editor::ClearActionHistory()
@@ -861,7 +870,7 @@ void BlockBuster::Editor::Editor::SelectBlocks()
 {
     selection = GetBlocksInSelection();
 
-    std::cout << "Selected " << selection.size() << " blocks\n";
+   logger->LogDebug("Selected " + std::to_string(selection.size()) + " blocks");
 }
 
 void BlockBuster::Editor::Editor::ClearSelection()
@@ -912,7 +921,7 @@ void BlockBuster::Editor::Editor::CopySelection()
 {
     clipboard = GetBlocksInSelection(false);
 
-    std::cout << clipboard.size() << " copied to clipboard\n";
+    logger->LogDebug(std::to_string(clipboard.size()) + std::string(" copied to clipboard"));
 }
 
 void BlockBuster::Editor::Editor::RemoveSelection()
@@ -1410,7 +1419,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         if(sym == SDLK_p)
         {
             playerMode = !playerMode;
-            std::cout << "Player mode enabled: " << playerMode << "\n";
+            logger->LogDebug("Player mode enabled: " + std::to_string(playerMode));
             if(playerMode)
             {
                 player.transform.position = camera.GetPos();
@@ -1535,7 +1544,7 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
             if(e.key.keysym.sym == SDLK_p)
             {
                 playerMode = !playerMode;
-                std::cout << "Player mode enabled: " << playerMode << "\n";
+                logger->LogDebug("Player mode enabled: " + std::to_string(playerMode));
                 if(playerMode)
                 {
                     player.transform.position = camera.GetPos();
