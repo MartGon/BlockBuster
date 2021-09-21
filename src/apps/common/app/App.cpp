@@ -25,16 +25,24 @@ void GLAPIENTRY ErrorCallback(GLenum source, GLenum type, GLuint id, GLenum seve
 App::App::App(Configuration config) : config{config}
 {
     // Init logger
+    auto cLogger = std::make_unique<Log::ComposedLogger>();
+    auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
+    cLogger->AddLogger(std::move(consoleLogger));
+
     auto filelogger = std::make_unique<Log::FileLogger>();
     filelogger->OpenLogFile(config.log.logFile);
-    filelogger->SetVerbosity(config.log.verbosity);
+    
     if(filelogger->IsOk())
-        logger = std::move(filelogger);
+        cLogger->AddLogger(std::move(filelogger));
     else
     {
         std::string msg = "Could not open log file: " + std::string(config.log.logFile) + '\n';
+        cLogger->LogError(msg);
         throw InitError(msg.c_str());
     }
+    cLogger->SetVerbosity(config.log.verbosity);
+    std::cout << "Set verbosity " << static_cast<std::underlying_type_t<Log::Verbosity>>(config.log.verbosity) << "\n";
+    logger = std::move(cLogger);
 
     // SDL
     if(SDL_Init(0))

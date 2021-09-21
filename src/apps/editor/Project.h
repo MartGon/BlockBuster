@@ -4,6 +4,8 @@
 #include <rendering/TexturePalette.h>
 #include <rendering/ColorPalette.h>
 
+#include <mglogger/MGLogger.h>
+
 namespace BlockBuster::Editor
 {
     struct TextureInfo
@@ -36,6 +38,6 @@ namespace BlockBuster::Editor
         bool isOk = true;
     };
 
-    void WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath);
-    Project ReadProjectFromFile(std::filesystem::path filepath);
+    void WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath, Log::Logger* logger = nullptr);
+    Project ReadProjectFromFile(std::filesystem::path filepath, Log::Logger* logger = nullptr);
 }

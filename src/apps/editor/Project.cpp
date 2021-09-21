@@ -70,12 +70,13 @@ std::string ReadFromFile(std::fstream& file)
 
 static const int magicNumber = 0xB010F0;
 
-void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath)
+void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath, Log::Logger* logger)
 {
     std::fstream file{filepath, file.binary | file.out};
     if(!file.is_open())
     {
-        std::cout << "Could not open file " << filepath << '\n';
+        if(logger)
+            logger->LogError("Could not open file " + filepath.string());
         return;
     }
 
@@ -142,14 +143,15 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     WriteToFile(file, p.cursorScale);
 }
 
-BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::filesystem::path filepath)
+BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::filesystem::path filepath, Log::Logger* logger)
 {
     Project p;
 
     std::fstream file{filepath, file.binary | file.in};
     if(!file.is_open())
     {
-        std::cout << "Could not open file " << filepath << '\n';
+        if(logger)
+            logger->LogError("Could not open file " + filepath.string());
         p.isOk = false;
         return p;
     }
@@ -157,7 +159,8 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     auto magic = ReadFromFile<int>(file);
     if(magic != magicNumber)
     {
-        std::cout << "Wrong file format for file " << filepath << "\n";
+        if(logger)
+            logger->LogError("Wrong format for file " + filepath.string());
         p.isOk = false;
         return p;
     }
@@ -197,8 +200,8 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
         auto res = p.tPalette.AddTexture(p.textureFolder, filename);
         if(res.type == General::ResultType::ERROR)
         {
-            std::cout << "Could not load texture " << texturePath << "\n";
-            std::cout << "Loading dummy texture instead\n";
+            if(logger)
+                logger->LogError("Could not load texture " + texturePath.string() + "Loading dummy texture instead");
             p.tPalette.AddNullTexture(texturePath);
         }
     }
