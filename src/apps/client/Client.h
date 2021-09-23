@@ -13,6 +13,8 @@
 #include <game/Player.h>
 #include <game/Block.h>
 
+#include <enet/enet.h>
+
 namespace BlockBuster
 {
     class Client : public App::App

@@ -19,12 +19,15 @@ target_link_libraries(BlockBuster
     Game 
     App
     AppsGame
+
+    enet
 )
 target_include_directories(BlockBuster PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${OPENGL_INCLUDE_DIR} 
     ${DEPS_FOLDER} 
-    ${DEPS_FOLDER}/imgui 
+    ${DEPS_FOLDER}/imgui
+    ${DEPS_FOLDER}/enet/include
     ${COMMON_DIR} 
     ${APPS_COMMON_DIR}
 )
