@@ -62,6 +62,7 @@ namespace BlockBuster
                 UNSAVED_WARNING,
                 VIDEO_SETTINGS,
                 GO_TO_BLOCK,
+                SET_TEXTURE_FOLDER,
                 MAX
             };
 
@@ -211,6 +212,7 @@ namespace BlockBuster
             void VideoOptionsPopUp();
             void UnsavedWarningPopUp();
             void GoToBlockPopUp();
+            void SetTextureFolderPopUp();
 
             void OpenWarningPopUp(std::function<void()> onExit);
 
@@ -331,6 +333,7 @@ namespace BlockBuster
             // File
             std::filesystem::path mapsFolder = ".";
             char fileName[16] = "Map.bbm";
+            char textureFolderPath[128] = "";
             const int magicNumber = 0xB010F0;
             bool newMap = true;
 

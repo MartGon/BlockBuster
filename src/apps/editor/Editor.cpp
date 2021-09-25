@@ -37,6 +37,7 @@ void BlockBuster::Editor::Editor::Start()
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_MULTISAMPLE);
 
     // Camera
     int width, height;
@@ -97,7 +98,6 @@ bool BlockBuster::Editor::Editor::Quit()
 void BlockBuster::Editor::Editor::Shutdown()
 {
     config.options["Map"] = std::string(fileName);
-    config.options["TextureFolder"] = project.textureFolder.string();
     config.options["MapsFolder"] = mapsFolder.string();
     config.options["showCursor"] = std::to_string(cursor.show);
 }
@@ -167,7 +167,7 @@ void BlockBuster::Editor::Editor::NewProject()
     unsaved = false;
 
     // Texturefolder
-    project.textureFolder = GetConfigOption("TextureFolder", TEXTURES_DIR);
+    project.textureFolder = "./";
 
     // Filename
     std::strcpy(fileName, "NewMap.bbm");
@@ -317,10 +317,13 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     }
     
     // Camera
-    if(cameraMode == CameraMode::EDITOR)
-        UpdateEditorCamera();
-    else if(cameraMode == CameraMode::FPS)
-        UpdateFPSCameraPosition();
+    if(!io_->WantCaptureKeyboard)
+    {
+        if(cameraMode == CameraMode::EDITOR)
+            UpdateEditorCamera();
+        else if(cameraMode == CameraMode::FPS)
+            UpdateFPSCameraPosition();
+    }
 
     // Draw Cursor
     glDisable(GL_DEPTH_TEST);
@@ -408,8 +411,6 @@ void BlockBuster::Editor::Editor::UpdateEditor()
 
 void BlockBuster::Editor::Editor::UpdateEditorCamera()
 {
-    if(io_->WantCaptureKeyboard)
-        return;
     auto state = SDL_GetKeyboardState(nullptr);
 
     // Rotation

@@ -4,6 +4,7 @@
 #include <debug/Debug.h>
 
 #include <array>
+#include <cstring>
 
 // #### GUI - PopUps #### \\
 
@@ -261,6 +262,24 @@ void BlockBuster::Editor::Editor::GoToBlockPopUp()
     BasicPopUp({PopUpState::GO_TO_BLOCK, "Go to block", inPopUp});
 }
 
+void BlockBuster::Editor::Editor::SetTextureFolderPopUp()
+{
+    std::string errorPrefix = "Could not set texture folder ";
+    auto onAccept = [this](){
+        if(std::filesystem::is_directory(this->textureFolderPath))
+        {
+            this->project.textureFolder = this->textureFolderPath;
+            return General::CreateSuccess<bool>(true);
+        }
+        else
+            return General::CreateError<bool>("Path is not a folder");
+    };
+    auto onCancel = [](){};
+    EditTextPopUpParams params{PopUpState::SET_TEXTURE_FOLDER, "Set Texture Folder", textureFolderPath, 128, onAccept, 
+        onCancel, errorPrefix, onError, errorText};
+    EditTextPopUp(params);
+}
+
 void BlockBuster::Editor::Editor::OpenWarningPopUp(std::function<void()> onExit)
 {
     OpenPopUp(PopUpState::UNSAVED_WARNING);
@@ -286,7 +305,6 @@ void BlockBuster::Editor::Editor::InitPopUps()
     popUps[VIDEO_SETTINGS].name = "Video";
     popUps[VIDEO_SETTINGS].update = std::bind(&BlockBuster::Editor::Editor::VideoOptionsPopUp, this);
     popUps[VIDEO_SETTINGS].onOpen = [this](){
-        std::cout << "Loading config\n";
         preConfig = config.window;
     };
     popUps[VIDEO_SETTINGS].onClose = [this](bool accept){
@@ -299,9 +317,15 @@ void BlockBuster::Editor::Editor::InitPopUps()
 
     popUps[GO_TO_BLOCK].name = "Go to block";
     popUps[GO_TO_BLOCK].onOpen = [this](){
-        this->goToPos = this->camera.GetPos() / this->blockScale;
+        this->goToPos = Game::Map::ToGlobalPos(camera.GetPos(), this->blockScale);
     };
     popUps[GO_TO_BLOCK].update = std::bind(&BlockBuster::Editor::Editor::GoToBlockPopUp, this);
+
+    popUps[SET_TEXTURE_FOLDER].name = "Set Texture Folder";
+    popUps[SET_TEXTURE_FOLDER].onOpen = [this](){
+        std::strcpy(this->textureFolderPath, this->project.textureFolder.string().c_str());
+    };
+    popUps[SET_TEXTURE_FOLDER].update = std::bind(&BlockBuster::Editor::Editor::SetTextureFolderPopUp, this);
 }
 
 void BlockBuster::Editor::Editor::OpenPopUp(PopUpState puState)
@@ -408,6 +432,17 @@ void BlockBuster::Editor::Editor::MenuBar()
             {
                 OpenPopUp(PopUpState::GO_TO_BLOCK);
                 std::cout << "Going to block\n";
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if(ImGui::BeginMenu("Project", true))
+        {
+            
+            if(ImGui::MenuItem("Set Texture Folder"))
+            {
+                OpenPopUp(PopUpState::SET_TEXTURE_FOLDER);
             }
 
             ImGui::EndMenu();
