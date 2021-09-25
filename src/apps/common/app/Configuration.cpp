@@ -40,6 +40,8 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
     file << "majorVersion=" << config.openGL.majorVersion << '\n';
     file << "minorVersion=" << config.openGL.minorVersion << '\n';
     file << "profileMask=" << config.openGL.profileMask << '\n';
+    file << "antialiasing=" << config.openGL.antialiasing << '\n';
+    file << "msaaSamples=" << config.openGL.msaaSamples << '\n';
     file << "shadersFolder=" << config.openGL.shadersFolder.string() << '\n';
     file << '\n';
 
@@ -125,7 +127,9 @@ App::Configuration App::LoadConfig(std::filesystem::path filePath)
 
     config.openGL.majorVersion = ExtractInt(config.options, "majorVersion");
     config.openGL.minorVersion = ExtractInt(config.options, "minorVersion");
-    config.openGL.minorVersion = ExtractInt(config.options, "profileMask");
+    config.openGL.profileMask = ExtractInt(config.options, "profileMask");
+    config.openGL.antialiasing = ExtractInt(config.options, "antialiasing");
+    config.openGL.msaaSamples = ExtractInt(config.options, "msaaSamples");
     config.openGL.shadersFolder = ExtractString(config.options, "shadersFolder");
 
     config.log.logFile = ExtractString(config.options, "logFilePath");

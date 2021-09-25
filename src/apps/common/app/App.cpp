@@ -52,6 +52,18 @@ App::App::App(Configuration config) : config{config}
         throw InitError(msg.c_str());
     }
 
+    if(config.openGL.antialiasing)
+    {
+        if(SDL_InitSubSystem(SDL_INIT_VIDEO))
+        {
+            std::string msg = "SDL Init Video failed: " + std::string(SDL_GetError()) + "\n";
+            logger->LogCritical(msg);
+            throw InitError(msg.c_str());
+        }
+
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, config.openGL.msaaSamples);
+    }
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, config.openGL.majorVersion);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, config.openGL.minorVersion);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, config.openGL.profileMask);

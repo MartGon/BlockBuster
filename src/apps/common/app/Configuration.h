@@ -36,6 +36,8 @@ namespace App
             int majorVersion;
             int minorVersion;
             int profileMask;
+            bool antialiasing;
+            int msaaSamples;
             std::filesystem::path shadersFolder;
         };
 
