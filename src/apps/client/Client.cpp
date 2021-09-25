@@ -12,11 +12,21 @@ void BlockBuster::Client::Start()
 
     // Meshes
     circle = Rendering::Primitive::GenerateCircle(0.5f, 64);
+
+    // Camera
+    camera_.SetPos(glm::vec3{0, 2, 3});
+    camera_.SetTarget(glm::vec3{0});
+    auto winSize = GetWindowSize();
+    camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
+    camera_.SetParam(Rendering::Camera::Param::FOV, config.window.fov);
+    camController_ = Game::App::CameraController{&camera_, {window_, io_}, Game::App::CameraMode::EDITOR};
+
 }
 
 void BlockBuster::Client::Update()
 {
     HandleSDLEvents();
+    camController_.Update();
 
     // Clear Buffer
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -24,7 +34,8 @@ void BlockBuster::Client::Update()
 
     // Draw data
     glm::mat4 t{1.f};
-    shader.SetUniformMat4("transform", t);
+    auto transform = camera_.GetProjViewMat() * t;
+    shader.SetUniformMat4("transform", transform);
     shader.SetUniformVec4("color", glm::vec4{1.0f});
     circle.Draw(shader);
 
@@ -48,5 +59,6 @@ void BlockBuster::Client::HandleSDLEvents()
             quit = true;
             break;
         }
+        camController_.HandleSDLEvent(e);
     }
 }

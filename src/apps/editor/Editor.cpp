@@ -44,6 +44,7 @@ void BlockBuster::Editor::Editor::Start()
     SDL_GetWindowSize(window_, &width, &height);
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
     camera.SetParam(Rendering::Camera::Param::FOV, config.window.fov);
+    cameraController = Game::App::CameraController{&camera, {window_, io_}, Game::App::CameraMode::EDITOR};
     
     // World
     mapsFolder = GetConfigOption("MapsFolder", ".");
@@ -289,7 +290,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
 
                 if(button == SDL_BUTTON_MIDDLE)
                 {
-                    SetCameraMode(CameraMode::FPS);
+                    SetCameraMode(Game::App::CameraMode::FPS);
                 }
             }
             break;
@@ -298,13 +299,12 @@ void BlockBuster::Editor::Editor::UpdateEditor()
                 auto button = e.button.button;
                 if(button == SDL_BUTTON_MIDDLE)
                 {
-                    SetCameraMode(CameraMode::EDITOR);
+                    SetCameraMode(Game::App::CameraMode::EDITOR);
                 }
             }
             break;
         case SDL_MOUSEMOTION:
-            if(cameraMode == CameraMode::FPS)
-                UpdateFPSCameraRotation(e.motion);
+            cameraController.HandleSDLEvent(e);
             break;
         }
     }
@@ -319,10 +319,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     // Camera
     if(!io_->WantCaptureKeyboard)
     {
-        if(cameraMode == CameraMode::EDITOR)
-            UpdateEditorCamera();
-        else if(cameraMode == CameraMode::FPS)
-            UpdateFPSCameraPosition();
+        cameraController.Update();
     }
 
     // Draw Cursor
@@ -409,115 +406,9 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     GUI();
 }
 
-void BlockBuster::Editor::Editor::UpdateEditorCamera()
+void BlockBuster::Editor::Editor::SetCameraMode(Game::App::CameraMode mode)
 {
-    auto state = SDL_GetKeyboardState(nullptr);
-
-    // Rotation
-    auto cameraRot = camera.GetRotation();
-    float pitch = 0.0f;
-    float yaw = 0.0f;
-    if(state[SDL_SCANCODE_UP])
-        pitch += -CAMERA_ROT_SPEED;
-    if(state[SDL_SCANCODE_DOWN])
-        pitch += CAMERA_ROT_SPEED;
-
-    if(state[SDL_SCANCODE_LEFT])
-        yaw += CAMERA_ROT_SPEED;
-    if(state[SDL_SCANCODE_RIGHT])
-        yaw += -CAMERA_ROT_SPEED;
-    
-    cameraRot.x = glm::max(glm::min(cameraRot.x + pitch, glm::pi<float>() - CAMERA_ROT_SPEED), CAMERA_ROT_SPEED);
-    cameraRot.y = Math::OverflowSumFloat(cameraRot.y, yaw, 0.0f, glm::two_pi<float>());
-    camera.SetRotation(cameraRot.x, cameraRot.y);
-    
-    // Position
-    auto cameraPos = camera.GetPos();
-    auto front = camera.GetFront();
-    auto xAxis = glm::normalize(-glm::cross(front, Rendering::Camera::UP));
-    auto zAxis = glm::normalize(-glm::cross(xAxis, Rendering::Camera::UP));
-    glm::vec3 moveDir{0};
-    if(state[SDL_SCANCODE_A])
-        moveDir += xAxis;
-    if(state[SDL_SCANCODE_D])
-        moveDir -= xAxis;
-    if(state[SDL_SCANCODE_W])
-        moveDir -= zAxis;
-    if(state[SDL_SCANCODE_S])
-        moveDir += zAxis;
-    if(state[SDL_SCANCODE_Q])
-        moveDir.y += 1;
-    if(state[SDL_SCANCODE_E])
-        moveDir.y -= 1;
-    //if(state[SDL_SCANCODE_F])
-    //    cameraPos = glm::vec3{0.0f, 2.0f, 0.0f};
-           
-    auto offset = glm::length(moveDir) > 0.0f ? (glm::normalize(moveDir) * CAMERA_MOVE_SPEED) : moveDir;
-    cameraPos += offset;
-    camera.SetPos(cameraPos);
-}
-
-void BlockBuster::Editor::Editor::UpdateFPSCameraPosition()
-{
-    auto state = SDL_GetKeyboardState(nullptr);
-
-    auto cameraPos = camera.GetPos();
-    auto front = camera.GetFront();
-    auto xAxis = glm::normalize(-glm::cross(front, Rendering::Camera::UP));
-    auto zAxis = glm::normalize(-glm::cross(xAxis, Rendering::Camera::UP));
-    glm::vec3 moveDir{0};
-    if(state[SDL_SCANCODE_A])
-        moveDir += xAxis;
-    if(state[SDL_SCANCODE_D])
-        moveDir += -xAxis;
-    if(state[SDL_SCANCODE_W])
-        moveDir += front;
-    if(state[SDL_SCANCODE_S])
-        moveDir += -front;
-    if(state[SDL_SCANCODE_Q])
-        moveDir.y += 1.0f;
-    if(state[SDL_SCANCODE_E])
-        moveDir.y += -1.0f;
-
-    auto offset = glm::length(moveDir) > 0.0f ? (glm::normalize(moveDir) * CAMERA_MOVE_SPEED) : moveDir;
-    cameraPos += offset;
-    camera.SetPos(cameraPos);
-}
-
-void BlockBuster::Editor::Editor::UpdateFPSCameraRotation(SDL_MouseMotionEvent motion)
-{
-    auto winSize = GetWindowSize();
-    SDL_WarpMouseInWindow(window_, winSize.x / 2, winSize.y / 2);
-
-    auto cameraRot = camera.GetRotation();
-    auto pitch = cameraRot.x;
-    auto yaw = cameraRot.y;
-
-    pitch = glm::max(glm::min(pitch + motion.yrel * CAMERA_ROT_SPEED  / 10.0f, glm::pi<float>() - CAMERA_ROT_SPEED), CAMERA_ROT_SPEED);
-    yaw = yaw - motion.xrel * CAMERA_ROT_SPEED / 10.0f;
-
-    camera.SetRotation(pitch, yaw);
-}
-
-void BlockBuster::Editor::Editor::SetCameraMode(CameraMode mode)
-{
-    cameraMode = mode;
-    auto& io = ImGui::GetIO();
-    if(cameraMode == CameraMode::FPS)
-    {
-        io.ConfigFlags |= ImGuiConfigFlags_::ImGuiConfigFlags_NoMouseCursorChange;
-        SDL_SetWindowGrab(window_, SDL_TRUE);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-    }
-    else
-    {
-        io.ConfigFlags &= ~ImGuiConfigFlags_NoMouseCursorChange;
-        SDL_SetWindowGrab(window_, SDL_FALSE);
-        SDL_SetRelativeMouseMode(SDL_FALSE);
-
-        auto winSize = GetWindowSize();
-        SDL_WarpMouseInWindow(window_, winSize.x / 2, winSize.y / 2);
-    }
+    cameraController.SetMode(mode);
 }
 
 void BlockBuster::Editor::Editor::SelectTool(Tool newTool)
@@ -562,7 +453,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
     // Window to eye
     auto winSize = GetWindowSize();
     auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{winSize.x, winSize.y});
-    if(cameraMode == CameraMode::FPS)
+    if(cameraController.GetMode() == Game::App::CameraMode::FPS)
         ray = Collisions::Ray{camera.GetPos(), camera.GetPos() + camera.GetFront()};
 
     // Check intersection
@@ -1349,7 +1240,6 @@ void BlockBuster::Editor::Editor::PaintSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-
 void BlockBuster::Editor::Editor::OnChooseSelectSubTool(SelectSubTool subTool)
 {
     // Always stop moving selection
@@ -1412,7 +1302,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         // Camera mode
         if(sym == SDLK_f)
         {
-            auto mode = cameraMode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
+            auto mode = cameraController.GetMode() == Game::App::CameraMode::EDITOR ? Game::App::CameraMode::FPS : Game::App::CameraMode::EDITOR;
             SetCameraMode(mode);
         }
         
@@ -1424,7 +1314,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
             if(playerMode)
             {
                 player.transform.position = camera.GetPos();
-                SetCameraMode(CameraMode::FPS);
+                SetCameraMode(Game::App::CameraMode::FPS);
             }
         }
 
@@ -1520,8 +1410,8 @@ void BlockBuster::Editor::Editor::Exit()
             playerMode = false;
 
         OpenWarningPopUp(std::bind(&BlockBuster::Editor::Editor::Exit, this));
-        if(cameraMode != CameraMode::EDITOR)
-            SetCameraMode(CameraMode::EDITOR);
+        if(cameraController.GetMode() != Game::App::CameraMode::EDITOR)
+            SetCameraMode(Game::App::CameraMode::EDITOR);
     }
     else
         quit = true;
@@ -1549,10 +1439,10 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
                 if(playerMode)
                 {
                     player.transform.position = camera.GetPos();
-                    SetCameraMode(CameraMode::FPS);
+                    SetCameraMode(Game::App::CameraMode::FPS);
                 }
                 else
-                    SetCameraMode(CameraMode::EDITOR);
+                    SetCameraMode(Game::App::CameraMode::EDITOR);
             }
             break;
         case SDL_QUIT:
@@ -1562,8 +1452,7 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
             HandleWindowEvent(e.window);
             break;
         case SDL_MOUSEMOTION:
-            if(cameraMode == CameraMode::FPS)
-                UpdateFPSCameraRotation(e.motion);
+            cameraController.HandleSDLEvent(e);
             break;
         }
     }

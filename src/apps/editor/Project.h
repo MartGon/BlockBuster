@@ -24,12 +24,12 @@ namespace BlockBuster::Editor
         Game::Map::Map map;
         Rendering::TexturePalette tPalette{16};
         Rendering::ColorPalette cPalette{32};
+        std::filesystem::path textureFolder;
+        
         float blockScale;
 
         glm::vec3 cameraPos;
         glm::vec2 cameraRot;
-
-        std::filesystem::path textureFolder;
 
         glm::ivec3 cursorPos;
         glm::ivec3 cursorScale;

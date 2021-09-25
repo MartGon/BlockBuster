@@ -12,6 +12,7 @@
 
 #include <game/Player.h>
 #include <game/Block.h>
+#include <game/CameraController.h>
 
 #include <enet/enet.h>
 
@@ -32,6 +33,8 @@ namespace BlockBuster
 
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "circleVertex.glsl", "circleFrag.glsl");
         Rendering::Mesh circle;
+        Rendering::Camera camera_;
+        Game::App::CameraController camController_;
         
         bool quit = false;
     };

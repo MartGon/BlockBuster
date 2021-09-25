@@ -14,6 +14,7 @@
 #include <game/Player.h>
 #include <game/Block.h>
 #include <game/Map.h>
+#include <game/CameraController.h>
 
 #include <imgui/backends/imgui_impl_opengl3.h>
 
@@ -74,12 +75,6 @@ namespace BlockBuster
                 DEBUG_TAB
             };
 
-            enum class CameraMode
-            {
-                EDITOR = 0,
-                FPS
-            };
-
             enum class CursorMode
             {
                 BLOCKS,
@@ -122,11 +117,8 @@ namespace BlockBuster
 
             // Editor
             void UpdateEditor();
-
-            void UpdateEditorCamera();
-            void UpdateFPSCameraPosition();
-            void UpdateFPSCameraRotation(SDL_MouseMotionEvent motion);
-            void SetCameraMode(CameraMode cameraMode);
+            
+            void SetCameraMode(Game::App::CameraMode cameraMode);
 
             void SelectTool(Tool tool);
             void UseTool(glm::vec<2, int> mousePos, ActionType actionType = ActionType::LEFT_BUTTON);
@@ -255,9 +247,7 @@ namespace BlockBuster
             Rendering::Mesh slope;
             Rendering::ChunkMesh::Manager chunkMeshMgr;
             Rendering::Camera camera;
-            CameraMode cameraMode = CameraMode::EDITOR;
-            const float CAMERA_MOVE_SPEED = 0.25f;
-            const float CAMERA_ROT_SPEED = glm::radians(1.0f);
+            Game::App::CameraController cameraController;
             
             // Editor
             bool quit = false;

@@ -11,8 +11,12 @@
     - Server
     - Client
 - Networking
-    - Server Startup
-    - Design server/client packet structs (tagged unions): Client Request, Server accept, Client Move Command, Server Move Update
+    - Server and Clent Startup
+    - Design server/client packet structs (tagged unions): 
+        - Client Request
+        - Server accept
+        - Client Move Command 
+        - Server Move Update
     - Handle client requests and send accept packet
     - Send player positions and update in client
     - Rust Proxy
