@@ -6,12 +6,14 @@
 void BlockBuster::Client::Start()
 {
     glEnable(GL_MULTISAMPLE);
+    glEnable(GL_DEPTH_TEST);
 
     // Shaders
     shader.Use();
 
     // Meshes
     circle = Rendering::Primitive::GenerateCircle(0.5f, 64);
+    sphere = Rendering::Primitive::GenerateSphere(2.f, 8);
 
     // Camera
     camera_.SetPos(glm::vec3{0, 2, 3});
@@ -37,7 +39,8 @@ void BlockBuster::Client::Update()
     auto transform = camera_.GetProjViewMat() * t;
     shader.SetUniformMat4("transform", transform);
     shader.SetUniformVec4("color", glm::vec4{1.0f});
-    circle.Draw(shader);
+    sphere.Draw(shader, drawMode);
+    //sphere.Draw(shader);
 
     SDL_GL_SwapWindow(window_);
 }
@@ -57,6 +60,10 @@ void BlockBuster::Client::HandleSDLEvents()
         {
         case SDL_QUIT:
             quit = true;
+            break;
+        case SDL_KEYDOWN:
+            if(e.key.keysym.sym == SDLK_f)
+                drawMode = drawMode == GL_FILL ? GL_LINE : GL_FILL;
             break;
         }
         camController_.HandleSDLEvent(e);

@@ -33,9 +33,11 @@ namespace BlockBuster
 
         GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "circleVertex.glsl", "circleFrag.glsl");
         Rendering::Mesh circle;
+        Rendering::Mesh sphere;
         Rendering::Camera camera_;
         Game::App::CameraController camController_;
         
         bool quit = false;
+        int drawMode = GL_FILL;
     };
 }

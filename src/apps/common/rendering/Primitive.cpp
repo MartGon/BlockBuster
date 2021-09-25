@@ -294,3 +294,108 @@ Rendering::Mesh Primitive::GenerateCircle(float radius, unsigned int samples)
 
     return circle;
 }
+
+Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int samples)
+{
+    Rendering::Mesh sphere;
+    GL::VertexArray& vao = sphere.GetVAO();
+
+    const glm::vec3 top{0.0f, 0.0f, radius};
+    const glm::vec3 bottom{0.0f, 0.0f, -radius};
+    std::vector<glm::vec3> vertices = {top};
+    std::vector<unsigned int> indices;
+    const float pitchStep = glm::pi<float>() / (float) samples;
+    const float yawStep = glm::two_pi<float>() / (float)samples;
+
+    // First ring
+    float pitch = pitchStep;
+    for(unsigned int j = 0; j < samples; j++)
+    {
+        float yaw = yawStep * j;
+        auto vertex = glm::vec3{glm::cos(yaw) * glm::sin(pitch), glm::sin(yaw) * glm::sin(pitch), glm::cos(pitch)} * radius;
+        vertices.push_back(vertex);
+
+        indices.push_back(0);
+        indices.push_back(j);
+        indices.push_back(j + 1);
+    }
+    // Last triangle
+    indices.push_back(0);
+    indices.push_back(samples);
+    indices.push_back(1);
+
+    // Middle rings
+    for(unsigned int i = 1; i < samples - 1; i++)
+    {
+        float pitch = pitchStep * (i + 1);
+        for(unsigned int j = 0; j < samples; j++)
+        {
+            float yaw = yawStep * j;
+            auto v1 = glm::vec3{glm::cos(yaw) * glm::sin(pitch), glm::sin(yaw) * glm::sin(pitch), glm::cos(pitch)} * radius;
+            vertices.push_back(v1);
+
+            std::cout << "Vertex count " << vertices.size() << "\n";
+            auto base = samples * i + 1;
+            auto i1 = base + j;
+            auto i2 = base - samples + j;
+            auto i3 = base - samples + 1 + j;
+            auto i4 = base + j + 1;
+
+            std::cout << "T1 Sample " << j << " Index 1: " << i1 << "\n";
+            std::cout << "T1 Sample " << j << " Index 2: " << i2 << "\n";
+            std::cout << "T1 Sample " << j << " Index 3: " << i3 << "\n";
+            std::cout << "T1 Sample " << j << " Index 4: " << i4 << "\n";
+            
+            if(j < samples - 1)
+            {
+                indices.push_back(i1);
+                indices.push_back(i2);
+                indices.push_back(i3);
+
+                indices.push_back(i1);
+                indices.push_back(i3);
+                indices.push_back(i4);            
+            }
+            else
+            {
+                indices.push_back(i1);
+                indices.push_back(i2);
+                indices.push_back(i3 - samples);
+
+                indices.push_back(i1);
+                indices.push_back(i3 - samples);
+                indices.push_back(i3);
+            }
+        }
+    }
+
+    // Last ring
+    
+    pitch = pitchStep * (samples - 1);
+    auto bottomIndex = vertices.size() + samples;
+    for(unsigned int j = 0; j < samples; j++)
+    {
+        float yaw = yawStep * j;
+        auto vertex = glm::vec3{glm::cos(yaw) * glm::sin(pitch), glm::sin(yaw) * glm::sin(pitch), glm::cos(pitch)} * radius;
+        vertices.push_back(vertex);
+
+        auto base = bottomIndex - samples;
+        indices.push_back(base + j);
+        indices.push_back(base + j + 1);
+        indices.push_back(bottomIndex);
+    }
+
+    // Last triangle
+    indices.push_back(bottomIndex);
+    indices.push_back(bottomIndex - samples);
+    indices.push_back(bottomIndex - 1);
+
+    vertices.push_back(bottom);
+    
+
+    vao.GenVBO(vertices, 3);
+    vao.SetIndices(indices);
+
+    return sphere;
+}
+
