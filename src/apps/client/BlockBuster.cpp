@@ -45,9 +45,16 @@ int main()
             WINDOW_HEIGHT,
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
+            App::Configuration::WindowMode::WINDOW,
+            true,
+            60,
+            glm::radians(60.0f)
         },
         App::Configuration::OpenGLConfig{
-            4, 6, SDL_GL_CONTEXT_PROFILE_CORE
+            4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
+        },
+        App::Configuration::LogConfig{
+            "./client.log", Log::Verbosity::DEBUG
         }
     };
     

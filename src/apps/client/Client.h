@@ -27,29 +27,12 @@ namespace BlockBuster
         bool Quit() override;
         
     private:
-        GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "vertex.glsl", "fragment.glsl");
-        Rendering::Mesh cube;
-        Rendering::Mesh slope;
 
-        GL::Texture texture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
-        GL::Texture gTexture = GL::Texture::FromFolder(TEXTURES_DIR, "SmoothStone.png");
+        void HandleSDLEvents();
 
-        bool showDemoWindow = true;
-        bool quit = false;
-        bool gravity = false;
-        bool noclip = false;
-        bool moveCamera = false;
-
-        const float scale = 5.0f;
-        const float playerScale = 1.0f;
-        const float gravitySpeed = -0.4f;
-
-        glm::vec2 mousePos;
-        glm::vec3 cameraPos{0.0f, 12.0f, 8.0f};
-
-        std::vector<Game::Block> blocks;
+        GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "circleVertex.glsl", "circleFrag.glsl");
+        Rendering::Mesh circle;
         
-        uint frame = 0;
-        AppGame::Player player;
+        bool quit = false;
     };
 }

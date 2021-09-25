@@ -1,5 +1,8 @@
 #include <Primitive.h>
 
+#include <math/BBMath.h>
+#include <glm/gtc/constants.hpp>
+
 using namespace Rendering;
 
 Rendering::Mesh Primitive::GenerateCube()
@@ -256,4 +259,38 @@ Rendering::Mesh Primitive::GenerateSlope()
     });
 
     return slope;
+}
+
+Rendering::Mesh Primitive::GenerateCircle(float radius, unsigned int samples)
+{
+    Rendering::Mesh circle;
+    GL::VertexArray& circleVao = circle.GetVAO();
+
+    const glm::vec3 center{0.0f, 0.0f, 0.0f};
+    std::vector<glm::vec3> vertices = {center};
+    std::vector<unsigned int> indices;
+
+    const float step = glm::two_pi<float>() / (float)samples;
+    for(unsigned int i = 0; i < samples; i++)
+    {
+        auto angle = i * step;
+        auto vertex = glm::vec3{glm::cos(angle), glm::sin(angle), 0.0f} * radius;
+
+        vertices.push_back(vertex);
+
+        // Center
+        indices.push_back(0);
+        indices.push_back(i);
+        indices.push_back(i + 1);
+    }
+
+    // Last vertex
+    indices.push_back(0);
+    indices.push_back(samples);
+    indices.push_back(1);
+
+    circleVao.GenVBO(vertices, 3);
+    circleVao.SetIndices(indices);
+
+    return circle;
 }
