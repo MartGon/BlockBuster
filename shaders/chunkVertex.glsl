@@ -5,7 +5,7 @@ layout (location = 2) in int index;
 
 uniform mat4 transform;
 
-out vec2 texCoords;
+centroid out vec2 texCoords;
 flat out ivec2 iDisplay;
 
 vec2 iTexCoords[4] = vec2[4](

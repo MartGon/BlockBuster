@@ -5,7 +5,7 @@ layout (location = 2) in vec2 iTexCoords;
 
 uniform mat4 transform;
 
-out vec2 texCoords;
+centroid out vec2 texCoords;
 
 void main()
 {

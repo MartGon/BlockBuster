@@ -1,7 +1,7 @@
 #version 330 core
 out vec4 fragColor;
 
-in vec2 texCoords;
+centroid in vec2 texCoords;
 flat in ivec2 iDisplay;
 
 uniform sampler2DArray textureArray;

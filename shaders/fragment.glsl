@@ -1,7 +1,7 @@
 #version 330 core
 out vec4 fragColor;
 
-in vec2 texCoords;
+centroid in vec2 texCoords;
 
 uniform bool hasBorder;
 uniform bool overrideColor;
