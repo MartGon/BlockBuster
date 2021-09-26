@@ -7,13 +7,15 @@ void BlockBuster::Client::Start()
 {
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
     // Shaders
     shader.Use();
 
     // Meshes
     circle = Rendering::Primitive::GenerateCircle(0.5f, 64);
-    sphere = Rendering::Primitive::GenerateSphere(2.f, 8);
+    //sphere = Rendering::Primitive::GenerateSphere(2.f, 32);
+    cylinder = Rendering::Primitive::GenerateCylinder(2.f, 4.f, 16);
 
     // Camera
     camera_.SetPos(glm::vec3{0, 2, 3});
@@ -22,7 +24,6 @@ void BlockBuster::Client::Start()
     camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, config.window.fov);
     camController_ = Game::App::CameraController{&camera_, {window_, io_}, Game::App::CameraMode::EDITOR};
-
 }
 
 void BlockBuster::Client::Update()
@@ -39,7 +40,7 @@ void BlockBuster::Client::Update()
     auto transform = camera_.GetProjViewMat() * t;
     shader.SetUniformMat4("transform", transform);
     shader.SetUniformVec4("color", glm::vec4{1.0f});
-    sphere.Draw(shader, drawMode);
+    cylinder.Draw(shader, drawMode);
     //sphere.Draw(shader);
 
     SDL_GL_SwapWindow(window_);

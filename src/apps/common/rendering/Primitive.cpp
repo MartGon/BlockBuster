@@ -392,10 +392,116 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int samples)
 
     vertices.push_back(bottom);
     
-
     vao.GenVBO(vertices, 3);
     vao.SetIndices(indices);
 
     return sphere;
 }
 
+std::vector<glm::vec3> GenExternCircleVertices(float radius, float height, unsigned int samples)
+{
+    std::vector<glm::vec3> vertices;;
+    std::vector<unsigned int> indices;
+
+    const float step = glm::two_pi<float>() / (float)samples;
+    for(unsigned int i = 0; i < samples; i++)
+    {
+        auto angle = i * step;
+        auto vertex = glm::vec3{glm::cos(angle) * radius, glm::sin(angle) * radius, height};
+
+        vertices.push_back(vertex);
+    }
+
+    return vertices;
+}
+
+Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float height, unsigned int samples)
+{
+    Rendering::Mesh cylinder;
+    GL::VertexArray& vao = cylinder.GetVAO();
+
+    // Samples
+    const unsigned int hSamples = samples;
+
+    // Generate vertices
+    const glm::vec3 bottomCenter{0.0f, 0.0f, -height / 2.f};
+    const glm::vec3 topCenter{0.0f, 0.0f, height / 2.f};
+    std::vector<glm::vec3> vertices = {bottomCenter};
+
+    // Bottom Circle
+    auto bottomCircleVertices = GenExternCircleVertices(radius, bottomCenter.z, samples);
+    vertices.insert(vertices.end(), bottomCircleVertices.begin(), bottomCircleVertices.end());
+
+    // Middle rings
+    const float yStep = glm::two_pi<float>() / (float)samples;
+    const float hStep = height / (float)samples;
+    for(unsigned int i = 0; i < samples; i++)
+    {
+        float h = i * hStep - (height / 2.f);
+        auto circleVertices = GenExternCircleVertices(radius, h, samples);
+        vertices.insert(vertices.end(), circleVertices.begin(), circleVertices.end());
+    }
+
+    // Top Cirlce
+    auto topCircleVertices = GenExternCircleVertices(radius, topCenter.z, samples);
+    vertices.insert(vertices.end(), topCircleVertices.begin(), topCircleVertices.end());
+    vertices.push_back(topCenter);
+
+    // Generate Indices
+    std::vector<unsigned int> indices;
+
+    // Bottom circle
+    for(unsigned int i = 1; i < samples; i++)
+    {
+        indices.push_back(i);
+        indices.push_back(0);
+        indices.push_back(i + 1);
+    }
+    indices.push_back(samples);
+    indices.push_back(0);
+    indices.push_back(1);
+    
+    // Middle rings
+    for(unsigned int j = 1; j < hSamples + 2; j++)
+    {
+        auto hBase = samples * j;
+        for(unsigned int i = 1; i < samples; i++)
+        {
+            auto base = hBase + i;
+            indices.push_back(base);
+            indices.push_back(base - samples);
+            indices.push_back(base - samples + 1);
+
+            indices.push_back(base + 1);
+            indices.push_back(base);
+            indices.push_back(base - samples + 1);        
+        }
+        indices.push_back(hBase + samples);
+        indices.push_back(hBase);
+        indices.push_back(hBase - samples + 1);
+
+        indices.push_back(hBase + samples);
+        indices.push_back(hBase - samples + 1);
+        indices.push_back(hBase + 1);
+    }
+
+    // Top circle
+    auto topCenterIndex = vertices.size() - 1;
+    auto firstIndex = topCenterIndex - samples;
+    for(unsigned int i = 0; i < samples; i++)
+    {
+        indices.push_back(topCenterIndex);
+        indices.push_back(firstIndex + i);
+        indices.push_back(firstIndex + i + 1);
+    }
+    indices.push_back(topCenterIndex);
+    indices.push_back(topCenterIndex - 1);
+    indices.push_back(firstIndex);
+
+    // Vao
+
+    vao.GenVBO(vertices, 3);
+    vao.SetIndices(indices);
+
+    return cylinder;
+}

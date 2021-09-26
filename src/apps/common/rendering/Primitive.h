@@ -10,5 +10,6 @@ namespace Rendering
         Rendering::Mesh GenerateSlope();
         Rendering::Mesh GenerateCircle(float radius, unsigned int samples = 20);
         Rendering::Mesh GenerateSphere(float radius, unsigned int samples = 20);
+        Rendering::Mesh GenerateCylinder(float radius, float height, unsigned int samples = 20);
     }
 }
