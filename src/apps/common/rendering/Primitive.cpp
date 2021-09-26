@@ -295,7 +295,7 @@ Rendering::Mesh Primitive::GenerateCircle(float radius, unsigned int samples)
     return circle;
 }
 
-Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int samples)
+Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int pSamples, unsigned int ySamples)
 {
     Rendering::Mesh sphere;
     GL::VertexArray& vao = sphere.GetVAO();
@@ -304,12 +304,12 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int samples)
     const glm::vec3 bottom{0.0f, 0.0f, -radius};
     std::vector<glm::vec3> vertices = {top};
     std::vector<unsigned int> indices;
-    const float pitchStep = glm::pi<float>() / (float) samples;
-    const float yawStep = glm::two_pi<float>() / (float)samples;
+    const float pitchStep = glm::pi<float>() / (float) pSamples;
+    const float yawStep = glm::two_pi<float>() / (float)ySamples;
 
     // First ring
     float pitch = pitchStep;
-    for(unsigned int j = 0; j < samples; j++)
+    for(unsigned int j = 0; j < ySamples; j++)
     {
         float yaw = yawStep * j;
         auto vertex = glm::vec3{glm::cos(yaw) * glm::sin(pitch), glm::sin(yaw) * glm::sin(pitch), glm::cos(pitch)} * radius;
@@ -321,26 +321,26 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int samples)
     }
     // Last triangle
     indices.push_back(0);
-    indices.push_back(samples);
+    indices.push_back(ySamples);
     indices.push_back(1);
 
     // Middle rings
-    for(unsigned int i = 1; i < samples - 1; i++)
+    for(unsigned int i = 1; i < pSamples - 1; i++)
     {
         float pitch = pitchStep * (i + 1);
-        for(unsigned int j = 0; j < samples; j++)
+        for(unsigned int j = 0; j < ySamples; j++)
         {
             float yaw = yawStep * j;
             auto v1 = glm::vec3{glm::cos(yaw) * glm::sin(pitch), glm::sin(yaw) * glm::sin(pitch), glm::cos(pitch)} * radius;
             vertices.push_back(v1);
 
-            auto base = samples * i + 1;
+            auto base = ySamples * i + 1;
             auto i1 = base + j;
-            auto i2 = base - samples + j;
-            auto i3 = base - samples + 1 + j;
+            auto i2 = base - ySamples + j;
+            auto i3 = base - ySamples + 1 + j;
             auto i4 = base + j + 1;
             
-            if(j < samples - 1)
+            if(j < ySamples - 1)
             {
                 indices.push_back(i2);
                 indices.push_back(i1);
@@ -354,9 +354,9 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int samples)
             {
                 indices.push_back(i2);
                 indices.push_back(i1);
-                indices.push_back(i3 - samples);
+                indices.push_back(i3 - ySamples);
 
-                indices.push_back(i3 - samples);
+                indices.push_back(i3 - ySamples);
                 indices.push_back(i1);
                 indices.push_back(i3);
             }
@@ -364,15 +364,15 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int samples)
     }
 
     // Last ring
-    pitch = pitchStep * (samples - 1);
-    auto bottomIndex = vertices.size() + samples;
-    for(unsigned int j = 0; j < samples; j++)
+    pitch = pitchStep * (pSamples - 1);
+    auto bottomIndex = vertices.size() + ySamples;
+    for(unsigned int j = 0; j < ySamples; j++)
     {
         float yaw = yawStep * j;
         auto vertex = glm::vec3{glm::cos(yaw) * glm::sin(pitch), glm::sin(yaw) * glm::sin(pitch), glm::cos(pitch)} * radius;
         vertices.push_back(vertex);
 
-        auto base = bottomIndex - samples;
+        auto base = bottomIndex - ySamples;
         indices.push_back(base + j + 1);
         indices.push_back(base + j);
         indices.push_back(bottomIndex);
@@ -380,7 +380,7 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int samples)
 
     // Last triangle
     indices.push_back(bottomIndex);
-    indices.push_back(bottomIndex - samples);
+    indices.push_back(bottomIndex - ySamples);
     indices.push_back(bottomIndex - 1);
 
     vertices.push_back(bottom);
