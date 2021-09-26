@@ -14,8 +14,8 @@ void BlockBuster::Client::Start()
 
     // Meshes
     circle = Rendering::Primitive::GenerateCircle(0.5f, 64);
-    //sphere = Rendering::Primitive::GenerateSphere(2.f, 32);
-    cylinder = Rendering::Primitive::GenerateCylinder(2.f, 4.f, 16);
+    sphere = Rendering::Primitive::GenerateSphere(2.f, 32);
+    cylinder = Rendering::Primitive::GenerateCylinder(2.f, 4.f, 32, 10);
 
     // Camera
     camera_.SetPos(glm::vec3{0, 2, 3});
@@ -40,7 +40,7 @@ void BlockBuster::Client::Update()
     auto transform = camera_.GetProjViewMat() * t;
     shader.SetUniformMat4("transform", transform);
     shader.SetUniformVec4("color", glm::vec4{1.0f});
-    cylinder.Draw(shader, drawMode);
+    sphere.Draw(shader, drawMode);
     //sphere.Draw(shader);
 
     SDL_GL_SwapWindow(window_);
