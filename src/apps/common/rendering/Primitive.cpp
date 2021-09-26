@@ -328,7 +328,7 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int pSamples, u
     for(unsigned int i = 1; i < pSamples - 1; i++)
     {
         float pitch = pitchStep * (i + 1);
-        for(unsigned int j = 0; j < ySamples; j++)
+        for(unsigned int j = 0; j < ySamples - 1; j++)
         {
             float yaw = yawStep * j;
             auto v1 = glm::vec3{glm::cos(yaw) * glm::sin(pitch), glm::sin(yaw) * glm::sin(pitch), glm::cos(pitch)} * radius;
@@ -340,27 +340,33 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int pSamples, u
             auto i3 = base - ySamples + 1 + j;
             auto i4 = base + j + 1;
             
-            if(j < ySamples - 1)
-            {
-                indices.push_back(i2);
-                indices.push_back(i1);
-                indices.push_back(i3);
+            indices.push_back(i2);
+            indices.push_back(i1);
+            indices.push_back(i3);
 
-                indices.push_back(i3);
-                indices.push_back(i1);
-                indices.push_back(i4);            
-            }
-            else
-            {
-                indices.push_back(i2);
-                indices.push_back(i1);
-                indices.push_back(i3 - ySamples);
-
-                indices.push_back(i3 - ySamples);
-                indices.push_back(i1);
-                indices.push_back(i3);
-            }
+            indices.push_back(i3);
+            indices.push_back(i1);
+            indices.push_back(i4);            
         }
+
+        auto j = ySamples - 1;
+        float yaw = yawStep * j;
+        auto v1 = glm::vec3{glm::cos(yaw) * glm::sin(pitch), glm::sin(yaw) * glm::sin(pitch), glm::cos(pitch)} * radius;
+        vertices.push_back(v1);
+
+        auto base = ySamples * i + 1;
+        auto i1 = base + j;
+        auto i2 = base - ySamples + j;
+        auto i3 = base - ySamples + 1 + j;
+        auto i4 = base + j + 1;
+
+        indices.push_back(i2);
+        indices.push_back(i1);
+        indices.push_back(i3 - ySamples);
+
+        indices.push_back(i3 - ySamples);
+        indices.push_back(i1);
+        indices.push_back(i3);
     }
 
     // Last ring
@@ -377,14 +383,13 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int pSamples, u
         indices.push_back(base + j);
         indices.push_back(bottomIndex);
     }
+    vertices.push_back(bottom);
 
     // Last triangle
     indices.push_back(bottomIndex);
     indices.push_back(bottomIndex - ySamples);
     indices.push_back(bottomIndex - 1);
 
-    vertices.push_back(bottom);
-    
     vao.GenVBO(vertices, 3);
     vao.SetIndices(indices);
 
@@ -394,7 +399,6 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int pSamples, u
 std::vector<glm::vec3> GenExternCircleVertices(float radius, float height, unsigned int samples)
 {
     std::vector<glm::vec3> vertices;;
-    std::vector<unsigned int> indices;
 
     const float step = glm::two_pi<float>() / (float)samples;
     for(unsigned int i = 0; i < samples; i++)
@@ -420,21 +424,21 @@ Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float heigh
 
     // Bottom Circle
     auto bottomCircleVertices = GenExternCircleVertices(radius, bottomCenter.z, yawSamples);
-    vertices.insert(vertices.end(), bottomCircleVertices.begin(), bottomCircleVertices.end());
+    vertices.insert(vertices.end(), std::make_move_iterator(bottomCircleVertices.begin()), std::make_move_iterator(bottomCircleVertices.end()));
 
     // Middle rings
     const float yStep = glm::two_pi<float>() / (float)yawSamples;
     const float hStep = height / (float)hSamples;
-    for(unsigned int i = 0; i < hSamples; i++)
+    for(unsigned int i = 1; i < hSamples; i++)
     {
         float h = i * hStep - (height / 2.f);
         auto circleVertices = GenExternCircleVertices(radius, h, yawSamples);
-        vertices.insert(vertices.end(), circleVertices.begin(), circleVertices.end());
+        vertices.insert(vertices.end(), std::make_move_iterator(circleVertices.begin()), std::make_move_iterator(circleVertices.end()));
     }
 
     // Top Cirlce
     auto topCircleVertices = GenExternCircleVertices(radius, topCenter.z, yawSamples);
-    vertices.insert(vertices.end(), topCircleVertices.begin(), topCircleVertices.end());
+    vertices.insert(vertices.end(), std::make_move_iterator(topCircleVertices.begin()), std::make_move_iterator(topCircleVertices.end()));
     vertices.push_back(topCenter);
 
     // Generate Indices
@@ -452,7 +456,7 @@ Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float heigh
     indices.push_back(1);
     
     // Middle rings
-    for(unsigned int j = 1; j < hSamples + 2; j++)
+    for(unsigned int j = 1; j < hSamples + 1; j++)
     {
         auto hBase = yawSamples * j;
         for(unsigned int i = 1; i < yawSamples; i++)
@@ -489,7 +493,6 @@ Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float heigh
     indices.push_back(firstIndex);
 
     // Vao
-
     vao.GenVBO(vertices, 3);
     vao.SetIndices(indices);
 
