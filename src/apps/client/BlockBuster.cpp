@@ -29,7 +29,7 @@
 #include <math/Transform.h>
 
 #include <game/Block.h>
-#include <game/Player.h>
+#include <client/Player.h>
 
 #include <Client.h>
 

@@ -44,7 +44,7 @@ void BlockBuster::Editor::Editor::Start()
     SDL_GetWindowSize(window_, &width, &height);
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
     camera.SetParam(Rendering::Camera::Param::FOV, config.window.fov);
-    cameraController = Game::App::CameraController{&camera, {window_, io_}, Game::App::CameraMode::EDITOR};
+    cameraController = ::App::Client::CameraController{&camera, {window_, io_}, ::App::Client::CameraMode::EDITOR};
     
     // World
     mapsFolder = GetConfigOption("MapsFolder", ".");
@@ -53,7 +53,7 @@ void BlockBuster::Editor::Editor::Start()
     if(!mapName.empty() && mapName.size() < 16)
     {
         std::strcpy(fileName, mapName.c_str());
-        mapLoaded = OpenProject().type == General::ResultType::SUCCESS;
+        mapLoaded = OpenProject().type == Util::ResultType::SUCCESS;
     }
     
     if(!mapLoaded)
@@ -118,23 +118,23 @@ glm::vec4 BlockBuster::Editor::Editor::GetBorderColor(glm::vec4 basecolor, glm::
     return borderColor;
 }
 
-General::Result<bool> BlockBuster::Editor::Editor::LoadTexture()
+Util::Result<bool> BlockBuster::Editor::Editor::LoadTexture()
 {
     if(project.tPalette.GetCount() >= MAX_TEXTURES)
-        return General::CreateError<bool>("Maximum of textures reached");
+        return Util::CreateError<bool>("Maximum of textures reached");
 
     if(IsTextureInPalette(project.textureFolder, textureFilename))
-        return General::CreateError<bool>("Texture is already in palette");
+        return Util::CreateError<bool>("Texture is already in palette");
 
     auto res = project.tPalette.AddTexture(project.textureFolder, textureFilename, false);
-    if(res.type == General::ResultType::ERROR)
+    if(res.type == Util::ResultType::ERROR)
     {
-        return General::CreateError<bool>(res.err.info);
+        return Util::CreateError<bool>(res.err.info);
     }
     else
         SyncGUITextures();
 
-    return General::CreateSuccess<bool>(true);
+    return Util::CreateSuccess<bool>(true);
 }
 
 bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName)
@@ -201,12 +201,12 @@ void BlockBuster::Editor::Editor::SaveProject()
     unsaved = false;
 }
 
-General::Result<bool> BlockBuster::Editor::Editor::OpenProject()
+Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
 {
     std::filesystem::path mapPath = mapsFolder / fileName;
     Project temp = ::BlockBuster::Editor::ReadProjectFromFile(mapPath, logger.get());
 
-    auto res = General::CreateError<bool>("Could not open project");
+    auto res = Util::CreateError<bool>("Could not open project");
 
     bool isOk = temp.isOk;
     if(isOk)
@@ -242,7 +242,7 @@ General::Result<bool> BlockBuster::Editor::Editor::OpenProject()
         chunkMeshMgr.SetMap(&project.map);
         chunkMeshMgr.SetBlockScale(blockScale);
 
-        res = General::CreateSuccess<bool>(true);
+        res = Util::CreateSuccess<bool>(true);
     }
     
     return res;
@@ -290,7 +290,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
 
                 if(button == SDL_BUTTON_MIDDLE)
                 {
-                    SetCameraMode(Game::App::CameraMode::FPS);
+                    SetCameraMode(::App::Client::CameraMode::FPS);
                 }
             }
             break;
@@ -299,7 +299,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
                 auto button = e.button.button;
                 if(button == SDL_BUTTON_MIDDLE)
                 {
-                    SetCameraMode(Game::App::CameraMode::EDITOR);
+                    SetCameraMode(::App::Client::CameraMode::EDITOR);
                 }
             }
             break;
@@ -406,7 +406,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     GUI();
 }
 
-void BlockBuster::Editor::Editor::SetCameraMode(Game::App::CameraMode mode)
+void BlockBuster::Editor::Editor::SetCameraMode(::App::Client::CameraMode mode)
 {
     cameraController.SetMode(mode);
 }
@@ -453,7 +453,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
     // Window to eye
     auto winSize = GetWindowSize();
     auto ray = Rendering::ScreenToWorldRay(camera, mousePos, glm::vec2{winSize.x, winSize.y});
-    if(cameraController.GetMode() == Game::App::CameraMode::FPS)
+    if(cameraController.GetMode() == ::App::Client::CameraMode::FPS)
         ray = Collisions::Ray{camera.GetPos(), camera.GetPos() + camera.GetFront()};
 
     // Check intersection
@@ -1302,7 +1302,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
         // Camera mode
         if(sym == SDLK_f)
         {
-            auto mode = cameraController.GetMode() == Game::App::CameraMode::EDITOR ? Game::App::CameraMode::FPS : Game::App::CameraMode::EDITOR;
+            auto mode = cameraController.GetMode() == ::App::Client::CameraMode::EDITOR ? ::App::Client::CameraMode::FPS : ::App::Client::CameraMode::EDITOR;
             SetCameraMode(mode);
         }
         
@@ -1314,7 +1314,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
             if(playerMode)
             {
                 player.transform.position = camera.GetPos();
-                SetCameraMode(Game::App::CameraMode::FPS);
+                SetCameraMode(::App::Client::CameraMode::FPS);
             }
         }
 
@@ -1410,8 +1410,8 @@ void BlockBuster::Editor::Editor::Exit()
             playerMode = false;
 
         OpenWarningPopUp(std::bind(&BlockBuster::Editor::Editor::Exit, this));
-        if(cameraController.GetMode() != Game::App::CameraMode::EDITOR)
-            SetCameraMode(Game::App::CameraMode::EDITOR);
+        if(cameraController.GetMode() != ::App::Client::CameraMode::EDITOR)
+            SetCameraMode(::App::Client::CameraMode::EDITOR);
     }
     else
         quit = true;
@@ -1439,10 +1439,10 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
                 if(playerMode)
                 {
                     player.transform.position = camera.GetPos();
-                    SetCameraMode(Game::App::CameraMode::FPS);
+                    SetCameraMode(::App::Client::CameraMode::FPS);
                 }
                 else
-                    SetCameraMode(Game::App::CameraMode::EDITOR);
+                    SetCameraMode(::App::Client::CameraMode::EDITOR);
             }
             break;
         case SDL_QUIT:

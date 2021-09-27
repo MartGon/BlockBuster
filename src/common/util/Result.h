@@ -1,9 +1,8 @@
 
 #include <string>
 
-namespace General
+namespace Util
 {
-
     enum ResultType
     {
         ERROR,

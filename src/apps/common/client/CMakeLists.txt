@@ -2,6 +2,7 @@ SET(SOURCES
 
     Player.cpp
     CameraController.cpp
+    Map.cpp
 )
 
 

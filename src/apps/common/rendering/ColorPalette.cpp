@@ -1,21 +1,21 @@
 #include <rendering/ColorPalette.h>
 
-General::Result<Rendering::ColorPalette::Member> Rendering::ColorPalette::AddColor(glm::u8vec4 color)
+Util::Result<Rendering::ColorPalette::Member> Rendering::ColorPalette::AddColor(glm::u8vec4 color)
 {
     auto ptr = reinterpret_cast<void*>(&color);
     auto res = tArray_.AddTexture(ptr);
-    if(res.type == General::ResultType::ERROR)
-        return General::CreateError<Rendering::ColorPalette::Member>(res.err.info);
+    if(res.type == Util::ResultType::ERROR)
+        return Util::CreateError<Rendering::ColorPalette::Member>(res.err.info);
     
-    return General::CreateSuccess(AddMember(res.data, color));
+    return Util::CreateSuccess(AddMember(res.data, color));
 }
 
-General::Result<Rendering::ColorPalette::Member> Rendering::ColorPalette::GetMember(unsigned int index)
+Util::Result<Rendering::ColorPalette::Member> Rendering::ColorPalette::GetMember(unsigned int index)
 {
     if(index < 0 || index >= members_.size())
-        return General::CreateError<Rendering::ColorPalette::Member>("Invalid index for color palette");
+        return Util::CreateError<Rendering::ColorPalette::Member>("Invalid index for color palette");
     
-    return General::CreateSuccess(members_[index]);
+    return Util::CreateSuccess(members_[index]);
 }
 
 bool Rendering::ColorPalette::HasColor(glm::u8vec4 color)

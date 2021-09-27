@@ -29,15 +29,15 @@ GL::TextureArray& GL::TextureArray::operator=(TextureArray&& other)
     return *this;
 }
 
-General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
+Util::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
 {
     return AddTexture(folder / filename, flipVertically);
 }
 
-General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVertically)
+Util::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filepath, bool flipVertically)
 {
     if(count_ >= length_)
-        return General::CreateError<GLuint>("Texture Array reached maximum size");
+        return Util::CreateError<GLuint>("Texture Array reached maximum size");
 
     Bind();
 
@@ -58,11 +58,11 @@ General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filep
         }
         else if(!isSquared || sizeX != texSize_ || channels_ != channels)
         {
-            return General::CreateError<GLuint>("Texture has invalid size or format");
+            return Util::CreateError<GLuint>("Texture has invalid size or format");
         }
     }
     else
-        return General::CreateError<GLuint>("Failed to load error");
+        return Util::CreateError<GLuint>("Failed to load error");
 
     stbi_set_flip_vertically_on_load(flipVertically);
     auto data = stbi_load(filename, &sizeX, &sizeY, &channels, 0);
@@ -77,15 +77,15 @@ General::Result<GLuint> GL::TextureArray::AddTexture(std::filesystem::path filep
     }
     else
     {
-        return General::CreateError<GLuint>("Failed to load error");
+        return Util::CreateError<GLuint>("Failed to load error");
     }
 
     stbi_set_flip_vertically_on_load(false);
 
-    return General::CreateSuccess<GLuint>(count_++);
+    return Util::CreateSuccess<GLuint>(count_++);
 }
 
-General::Result<GLuint> GL::TextureArray::AddTexture(const void* data)
+Util::Result<GLuint> GL::TextureArray::AddTexture(const void* data)
 {
     Bind();
     
@@ -93,7 +93,7 @@ General::Result<GLuint> GL::TextureArray::AddTexture(const void* data)
     glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, count_, texSize_, texSize_, 1, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
 
-    return General::CreateSuccess<GLuint>(count_++);
+    return Util::CreateSuccess<GLuint>(count_++);
 }
 
 void GL::TextureArray::Bind(GLuint activeTexture) const

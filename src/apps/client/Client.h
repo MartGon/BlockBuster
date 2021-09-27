@@ -10,11 +10,12 @@
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
 
-#include <game/Player.h>
+#include <client/Player.h>
 #include <game/Block.h>
-#include <game/CameraController.h>
+#include <client/CameraController.h>
+#include <game/Map.h>
 
-#include <enet/enet.h>
+#include <rendering/ChunkMeshMgr.h>
 
 namespace BlockBuster
 {
@@ -30,13 +31,20 @@ namespace BlockBuster
     private:
 
         void HandleSDLEvents();
+        void DrawScene();
 
-        GL::Shader shader = GL::Shader::FromFolder(SHADERS_DIR, "circleVertex.glsl", "circleFrag.glsl");
-        Rendering::Mesh circle;
-        Rendering::Mesh sphere;
+        // Scene
+        Game::Map::Map map_;
+
+        // Rendering
+        GL::Shader shader;
+        GL::Shader chunkShader;
         Rendering::Mesh cylinder;
+        Rendering::ChunkMesh::Manager chunkMeshMgr_{&map_};
         Rendering::Camera camera_;
-        Game::App::CameraController camController_;
+
+        // Controls
+        ::App::Client::CameraController camController_;
         
         bool quit = false;
         int drawMode = GL_FILL;

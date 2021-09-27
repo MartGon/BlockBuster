@@ -2,7 +2,7 @@
 
 #include <math/BBMath.h>
 
-using namespace Game::App;
+using namespace App::Client;
 
 void CameraController::Update()
 {

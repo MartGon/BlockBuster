@@ -5,7 +5,7 @@
 #include <SDL2/SDL.h>
 #include <imgui/imgui.h>
 
-namespace Game::App
+namespace App::Client
 {
     enum class CameraMode
     {

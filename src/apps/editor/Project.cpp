@@ -33,12 +33,6 @@ static void WriteToFile(std::fstream& file, T val)
     file.write(reinterpret_cast<char*>(&val), sizeof(T));
 }
 
-template<int S, typename T>
-static void WriteToFile(std::fstream& file, T* val)
-{
-    file.write(reinterpret_cast<char*>(val), sizeof(T)*S);
-}
-
 static void WriteToFile(std::fstream& file, std::string str)
 {
     for(auto c : str)
@@ -198,7 +192,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
         auto filename = ReadFromFile<std::string>(file);
         auto texturePath = p.textureFolder / filename;
         auto res = p.tPalette.AddTexture(p.textureFolder, filename);
-        if(res.type == General::ResultType::ERROR)
+        if(res.type == Util::ResultType::ERROR)
         {
             if(logger)
                 logger->LogError("Could not load texture " + texturePath.string() + "Loading dummy texture instead");

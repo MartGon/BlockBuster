@@ -5,16 +5,25 @@
 
 void BlockBuster::Client::Start()
 {
+    // GL features
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
     // Shaders
-    shader.Use();
+    // Load shaders
+    try{
+        shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "circleVertex.glsl", "circleFrag.glsl");
+        chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
+    }
+    catch(const std::runtime_error& e)
+    {
+        this->logger->LogCritical(e.what());
+        quit = true;
+        return;
+    }
 
     // Meshes
-    circle = Rendering::Primitive::GenerateCircle(0.5f, 64);
-    sphere = Rendering::Primitive::GenerateSphere(2.f, 8, 16);
     cylinder = Rendering::Primitive::GenerateCylinder(2.f, 4.f, 32, 1);
 
     // Camera
@@ -23,7 +32,19 @@ void BlockBuster::Client::Start()
     auto winSize = GetWindowSize();
     camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, config.window.fov);
-    camController_ = Game::App::CameraController{&camera_, {window_, io_}, Game::App::CameraMode::EDITOR};
+    camController_ = ::App::Client::CameraController{&camera_, {window_, io_}, ::App::Client::CameraMode::EDITOR};
+
+    // Ma
+    Game::Display display{Game::DisplayType::COLOR, 0};
+    Game::BlockRot rot{Game::ROT_0, Game::ROT_0};
+    for(int x = -8; x < 8; x++)
+    {
+        for(int z = -8; z < 8; z++)
+        {
+            map_.AddBlock(glm::ivec3{x, 0, z}, Game::Block{Game::BlockType::BLOCK, rot, display});
+        }
+    }
+    chunkMeshMgr_.Update();
 }
 
 void BlockBuster::Client::Update()
@@ -35,13 +56,7 @@ void BlockBuster::Client::Update()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Draw data
-    glm::mat4 t{1.f};
-    auto transform = camera_.GetProjViewMat() * t;
-    shader.SetUniformMat4("transform", transform);
-    shader.SetUniformVec4("color", glm::vec4{1.0f});
-    sphere.Draw(shader, drawMode);
-    //cylinder.Draw(shader);
+    DrawScene();
 
     SDL_GL_SwapWindow(window_);
 }
@@ -69,4 +84,18 @@ void BlockBuster::Client::HandleSDLEvents()
         }
         camController_.HandleSDLEvent(e);
     }
+}
+
+void BlockBuster::Client::DrawScene()
+{
+    // Draw data
+    glm::mat4 t{1.f};
+    auto view = camera_.GetProjViewMat();
+    auto transform = view * t;
+    shader.SetUniformMat4("transform", transform);
+    shader.SetUniformVec4("color", glm::vec4{1.0f});
+    cylinder.Draw(shader, drawMode);
+
+    // Draw map
+    chunkMeshMgr_.DrawChunks(chunkShader, view);
 }

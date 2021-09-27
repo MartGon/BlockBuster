@@ -3,7 +3,7 @@
 
 #include <filesystem>
 
-#include <general/Result.h>
+#include <util/Result.h>
 
 namespace GL
 {
@@ -20,9 +20,9 @@ namespace GL
         TextureArray(TextureArray&& other);
         TextureArray& operator=(TextureArray&& other);
 
-        General::Result<GLuint> AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically = true);
-        General::Result<GLuint> AddTexture(std::filesystem::path filepath, bool flipVertically = true);
-        General::Result<GLuint> AddTexture(const void* data);
+        Util::Result<GLuint> AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically = true);
+        Util::Result<GLuint> AddTexture(std::filesystem::path filepath, bool flipVertically = true);
+        Util::Result<GLuint> AddTexture(const void* data);
 
         void Bind(GLuint activeTexture = GL_TEXTURE0) const;
 

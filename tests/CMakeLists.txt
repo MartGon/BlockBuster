@@ -10,6 +10,7 @@ target_include_directories(BlockBusterTests PUBLIC
 target_link_libraries(BlockBusterTests
     Game
     Math
+    Util
     
     Debug
 )

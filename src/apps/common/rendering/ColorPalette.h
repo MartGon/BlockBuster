@@ -22,8 +22,8 @@ namespace Rendering
             glm::u8vec4 color;
         };
 
-        General::Result<Member> AddColor(glm::u8vec4 color);
-        General::Result<Member> GetMember(unsigned int id);
+        Util::Result<Member> AddColor(glm::u8vec4 color);
+        Util::Result<Member> GetMember(unsigned int id);
         bool HasColor(glm::u8vec4 color);
 
         size_t GetCount() const

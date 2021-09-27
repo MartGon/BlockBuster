@@ -21,10 +21,10 @@ namespace Rendering
             std::filesystem::path filepath;
         };
 
-        General::Result<Member> AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically = true);
-        General::Result<Member> AddTexture(std::filesystem::path filepath, bool flipVertically = true);
-        General::Result<Member> AddNullTexture(std::filesystem::path filepath = std::filesystem::path{});
-        General::Result<Member> GetMember(unsigned int index);
+        Util::Result<Member> AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically = true);
+        Util::Result<Member> AddTexture(std::filesystem::path filepath, bool flipVertically = true);
+        Util::Result<Member> AddNullTexture(std::filesystem::path filepath = std::filesystem::path{});
+        Util::Result<Member> GetMember(unsigned int index);
 
         size_t GetCount() const
         {

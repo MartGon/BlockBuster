@@ -2,34 +2,34 @@
 
 #include <array>
 
-General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
+Util::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically)
 {
    auto filepath = folder / filename;
    return AddTexture(filepath, flipVertically);
 }
 
-General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddTexture(std::filesystem::path filepath, bool flipVertically)
+Util::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddTexture(std::filesystem::path filepath, bool flipVertically)
 {
     auto result = tArray_.AddTexture(filepath, flipVertically);
-    if(result.type == General::ResultType::SUCCESS)
+    if(result.type == Util::ResultType::SUCCESS)
     {
         auto m = AddMember(result.data, filepath);
-        return General::CreateSuccess(m);
+        return Util::CreateSuccess(m);
     }
     else
-        return General::CreateError<Rendering::TexturePalette::Member>(result.err.info);
+        return Util::CreateError<Rendering::TexturePalette::Member>(result.err.info);
 
 }
 
-General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::GetMember(unsigned int index)
+Util::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::GetMember(unsigned int index)
 {
     if(index < 0 || index >= members_.size())
-        return General::CreateError<Rendering::TexturePalette::Member>("Invalid index for texture palette");
+        return Util::CreateError<Rendering::TexturePalette::Member>("Invalid index for texture palette");
 
-    return General::CreateSuccess(members_[index]);
+    return Util::CreateSuccess(members_[index]);
 }
 
-General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddNullTexture(std::filesystem::path filepath)
+Util::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::AddNullTexture(std::filesystem::path filepath)
 {
     static constexpr auto nullTex{[]() constexpr{
             constexpr const auto size = 160 * 160 * 3;
@@ -44,7 +44,7 @@ General::Result<Rendering::TexturePalette::Member> Rendering::TexturePalette::Ad
     auto result = tArray_.AddTexture(ptr);
     auto m = AddMember(result.data, filepath);
 
-    return General::CreateSuccess(m);
+    return Util::CreateSuccess(m);
 }
 
 Rendering::TexturePalette::Member Rendering::TexturePalette::AddMember(unsigned int id, std::filesystem::path path)

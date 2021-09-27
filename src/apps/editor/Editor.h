@@ -11,10 +11,10 @@
 #include <rendering/Rendering.h>
 #include <rendering/ChunkMeshMgr.h>
 
-#include <game/Player.h>
+#include <client/Player.h>
 #include <game/Block.h>
 #include <game/Map.h>
-#include <game/CameraController.h>
+#include <client/CameraController.h>
 
 #include <imgui/backends/imgui_impl_opengl3.h>
 
@@ -107,18 +107,18 @@ namespace BlockBuster
             // Rendering
             Rendering::Mesh& GetMesh(Game::BlockType type);
             glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
-            General::Result<bool> LoadTexture();
+            Util::Result<bool> LoadTexture();
             bool IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName);
 
             // World
             void NewProject();
             void SaveProject();
-            General::Result<bool> OpenProject();
+            Util::Result<bool> OpenProject();
 
             // Editor
             void UpdateEditor();
             
-            void SetCameraMode(Game::App::CameraMode cameraMode);
+            void SetCameraMode(::App::Client::CameraMode cameraMode);
 
             void SelectTool(Tool tool);
             void UseTool(glm::vec<2, int> mousePos, ActionType actionType = ActionType::LEFT_BUTTON);
@@ -181,7 +181,7 @@ namespace BlockBuster
                 std::string name;
                 char* textBuffer; 
                 size_t bufferSize;
-                std::function<General::Result<bool>()> onAccept;
+                std::function<Util::Result<bool>()> onAccept;
                 std::function<void()> onCancel;
                 std::string errorPrefix;
 
@@ -247,7 +247,7 @@ namespace BlockBuster
             Rendering::Mesh slope;
             Rendering::ChunkMesh::Manager chunkMeshMgr;
             Rendering::Camera camera;
-            Game::App::CameraController cameraController;
+            ::App::Client::CameraController cameraController;
             
             // Editor
             bool quit = false;

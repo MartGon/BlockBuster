@@ -16,12 +16,12 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
     if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
         bool accept = ImGui::InputText("File name", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-        General::Result<bool> res = General::CreateSuccess<bool>(true);
+        Util::Result<bool> res = Util::CreateSuccess<bool>(true);
         if(ImGui::Button("Accept") || accept)
         {
             res = params.onAccept();
 
-            if(res.type == General::ResultType::SUCCESS)
+            if(res.type == Util::ResultType::SUCCESS)
             {
                 params.onError = false;
                 
@@ -80,7 +80,7 @@ void BlockBuster::Editor::Editor::OpenMapPopUp()
 void BlockBuster::Editor::Editor::SaveAsPopUp()
 {
     std::string errorPrefix = "Could not save map ";
-    auto onAccept = [this](){this->SaveProject(); return General::CreateSuccess<bool>(true);};
+    auto onAccept = [this](){this->SaveProject(); return Util::CreateSuccess<bool>(true);};
     auto onCancel = [](){};
     EditTextPopUpParams params{PopUpState::SAVE_AS, "Save As", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
     EditTextPopUp(params);
@@ -269,10 +269,10 @@ void BlockBuster::Editor::Editor::SetTextureFolderPopUp()
         if(std::filesystem::is_directory(this->textureFolderPath))
         {
             this->project.textureFolder = this->textureFolderPath;
-            return General::CreateSuccess<bool>(true);
+            return Util::CreateSuccess<bool>(true);
         }
         else
-            return General::CreateError<bool>("Path is not a folder");
+            return Util::CreateError<bool>("Path is not a folder");
     };
     auto onCancel = [](){};
     EditTextPopUpParams params{PopUpState::SET_TEXTURE_FOLDER, "Set Texture Folder", textureFolderPath, 128, onAccept, 

@@ -4,6 +4,7 @@
 
 - Setup scene in client
     - Make simple map
+        - This requires redoing serialization
     - Load in client
     - Render and calculate delta time
     - Make simple *player* entity, a cube with a given position and move dir. Move in random dirs

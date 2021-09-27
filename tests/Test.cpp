@@ -4,6 +4,8 @@
 #include <math/BBMath.h>
 #include <game/Map.h>
 
+#include <util/Serializable.h>
+
 TEST_CASE("Math tests")
 {
     CHECK(Math::OverflowSumInt(1, 3, 0, 3) == 0);
@@ -49,5 +51,34 @@ TEST_CASE("Map tests")
         blockIndex = glm::ivec3{0, -8, 0};
         globalPos = Game::Map::ToGlobalPos(chunkIndex, blockIndex);
         CHECK(globalPos == glm::vec3{16, 24, -16});
+    }
+}
+
+TEST_CASE("Buffer tests")
+{
+    Util::Buffer buffer{128};
+    Util::Buffer b;
+    auto writer = buffer.GetWriter();
+    
+    SUBCASE("Check Resizing")
+    {
+        for(uint8_t i = 0; i < 128; i++)
+            writer.Write(i);
+
+        CHECK(buffer.GetCapacity() == 128);
+        CHECK(buffer.GetSize() == 128);
+
+        for(uint8_t i = 0; i < 12; i++)
+            writer.Write(i);
+
+        CHECK(buffer.GetCapacity() == 256);
+        CHECK(buffer.GetSize() == 140);
+    }
+    SUBCASE("Check write and read")
+    {
+        const int value = 354;
+        buffer.Write(value, 0);
+        auto read = buffer.Read<int>(0);
+        CHECK(value == read);
     }
 }

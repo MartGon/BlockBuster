@@ -6,6 +6,7 @@
 #include <glm/gtx/hash.hpp>
 
 #include <unordered_map>
+#include <util/Serializable.h>
 
 namespace Game
 {
@@ -187,6 +188,8 @@ namespace Game
             };
 
             ChunkIterator CreateChunkIterator();
+
+            Util::Buffer ToBuffer();
 
         private:
             std::unordered_map<glm::ivec3, Chunk> chunks_;
