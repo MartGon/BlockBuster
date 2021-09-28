@@ -26,7 +26,7 @@ namespace Game
             Map& operator=(Map&&) = default;
 
             // Gets a block by its global position
-            Game::Block const* GetBlock(glm::ivec3 pos);
+            Game::Block const* GetBlock(glm::ivec3 pos) const;
             // Sets a block by its global position
             void AddBlock(glm::ivec3 pos, Game::Block block);
             // Removes a block by its global position

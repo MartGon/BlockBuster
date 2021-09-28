@@ -4,13 +4,13 @@
 
 // #### Public Interface #### \\
 
-Game::Block const* Game::Map::Map::GetBlock(glm::ivec3 pos)
+Game::Block const* Game::Map::Map::GetBlock(glm::ivec3 pos) const
 {
     Game::Block const* block = nullptr;
     auto index = ToChunkIndex(pos);
     if(chunks_.find(index) != chunks_.end())
     {
-        auto& chunk = chunks_[index];
+        auto& chunk = chunks_.at(index);
         auto blockPos = ToBlockChunkPos(pos);
         block = chunk.GetBlockByIndex(blockPos);
     }

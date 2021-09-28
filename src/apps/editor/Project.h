@@ -4,6 +4,8 @@
 #include <rendering/TexturePalette.h>
 #include <rendering/ColorPalette.h>
 
+#include <client/Map.h>
+
 #include <mglogger/MGLogger.h>
 
 namespace BlockBuster::Editor
@@ -25,6 +27,7 @@ namespace BlockBuster::Editor
         Rendering::TexturePalette tPalette{16};
         Rendering::ColorPalette cPalette{32};
         std::filesystem::path textureFolder;
+        App::Client::Map cMap;
         
         float blockScale;
 

@@ -34,17 +34,16 @@ void BlockBuster::Client::Start()
     camera_.SetParam(Rendering::Camera::Param::FOV, config.window.fov);
     camController_ = ::App::Client::CameraController{&camera_, {window_, io_}, ::App::Client::CameraMode::EDITOR};
 
-    // Ma
+    // Map
     Game::Display display{Game::DisplayType::COLOR, 0};
     Game::BlockRot rot{Game::ROT_0, Game::ROT_0};
     for(int x = -8; x < 8; x++)
     {
         for(int z = -8; z < 8; z++)
         {
-            map_.AddBlock(glm::ivec3{x, 0, z}, Game::Block{Game::BlockType::BLOCK, rot, display});
+            map_.SetBlock(glm::ivec3{x, 0, z}, Game::Block{Game::BlockType::BLOCK, rot, display});
         }
     }
-    chunkMeshMgr_.Update();
 }
 
 void BlockBuster::Client::Update()
@@ -97,5 +96,5 @@ void BlockBuster::Client::DrawScene()
     cylinder.Draw(shader, drawMode);
 
     // Draw map
-    chunkMeshMgr_.DrawChunks(chunkShader, view);
+    map_.Draw(chunkShader, view);
 }

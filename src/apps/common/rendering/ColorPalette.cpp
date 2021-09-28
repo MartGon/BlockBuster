@@ -35,3 +35,17 @@ Rendering::ColorPalette::Member Rendering::ColorPalette::AddMember(unsigned int 
     members_.push_back(m);
     return m;
 }
+
+Util::Buffer Rendering::ColorPalette::ToBuffer() const
+{
+    Util::Buffer buffer;
+
+    auto cCount = GetCount();
+    buffer.Write(cCount);
+    for(auto i = 0; i < cCount; i++)
+    {
+        buffer.Write(members_[i].color);
+    }
+
+    return std::move(buffer);
+}

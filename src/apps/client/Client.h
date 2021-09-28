@@ -11,9 +11,8 @@
 #include <rendering/Rendering.h>
 
 #include <client/Player.h>
-#include <game/Block.h>
+#include <client/Map.h>
 #include <client/CameraController.h>
-#include <game/Map.h>
 
 #include <rendering/ChunkMeshMgr.h>
 
@@ -34,13 +33,12 @@ namespace BlockBuster
         void DrawScene();
 
         // Scene
-        Game::Map::Map map_;
+        ::App::Client::Map map_;
 
         // Rendering
         GL::Shader shader;
         GL::Shader chunkShader;
         Rendering::Mesh cylinder;
-        Rendering::ChunkMesh::Manager chunkMeshMgr_{&map_};
         Rendering::Camera camera_;
 
         // Controls

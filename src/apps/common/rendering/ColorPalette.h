@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <gl/TextureArray.h>
+#include <util/Serializable.h>
 
 #include <vector>
 
@@ -35,6 +36,8 @@ namespace Rendering
         {
             return &tArray_;
         }
+
+        Util::Buffer ToBuffer() const;
 
     private:
 

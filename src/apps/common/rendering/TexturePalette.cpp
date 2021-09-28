@@ -53,3 +53,18 @@ Rendering::TexturePalette::Member Rendering::TexturePalette::AddMember(unsigned 
     members_.push_back(m);
     return m;
 }
+
+Util::Buffer Rendering::TexturePalette::ToBuffer() const
+{
+    Util::Buffer buffer;
+    auto texCount = GetCount();
+    buffer.Write(texCount);
+    for(auto i = 0; i < texCount; i++)
+    {
+        auto texturePath =  members_[i].filepath;
+        auto textureName = texturePath.filename().string();
+        buffer.Write(textureName);
+    }
+
+    return std::move(buffer);
+}
