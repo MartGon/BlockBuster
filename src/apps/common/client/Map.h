@@ -8,7 +8,7 @@
 
 namespace App::Client
 {
-    class Map : public Util::Serializable
+    class Map
     {
     public:
 

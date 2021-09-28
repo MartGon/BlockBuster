@@ -8,36 +8,21 @@ namespace Util
     class Buffer
     {
     public:
+        static Buffer Concat(Buffer first, Buffer second);
+
         Buffer();
         Buffer(uint32_t capacity);
 
         Buffer(const Buffer&) = delete;
         Buffer& operator=(const Buffer&) = delete;
 
-        Buffer(Buffer&& other)
-        {
-            *this = std::move(other);
-        }
-        Buffer& operator=(Buffer&& other)
-        {
-            auto oldBuffer = this->buffer;
-            this->buffer = other.buffer;
-            this->capacity = other.capacity;
-            this->size = other.size;
-            other.buffer = oldBuffer;
-
-            return *this;
-        }
+        Buffer(Buffer&& other);
+        Buffer& operator=(Buffer&& other);
         ~Buffer();
 
         inline uint32_t GetSize() const
         {
             return size;
-        }
-        
-        inline void SetSize(uint32_t size)
-        {
-            this->size = size;
         }
 
         inline uint32_t GetCapacity() const
@@ -51,14 +36,33 @@ namespace Util
         }
 
         template<typename T>
-        void Write(T data, uint32_t offset)
+        void WriteAt(T data, uint32_t offset)
         {
             T* ptr = reinterpret_cast<T*>(buffer + offset);
             *ptr = data;
         }
+        void WriteAt(void* data, uint32_t dataSize, uint32_t offset);
 
         template<typename T>
-        T Read(uint32_t offset)
+        void Write(T data)
+        {
+            auto index = size;
+            auto newSize = index + sizeof(T);
+            if(newSize > capacity)
+                Reserve(capacity + MEM_BLOCK_SIZE);
+            WriteAt(data, index);
+            size = newSize;
+            index += sizeof(T);
+        }
+
+        template<>
+        void Write(const char* data);
+
+        void Write(void* data, uint32_t dataSize);
+        void Write(std::string str);
+
+        template<typename T>
+        T ReadAt(uint32_t offset)
         {
             T* ptr = reinterpret_cast<T*>(buffer + offset);
             return *ptr;
@@ -66,46 +70,38 @@ namespace Util
 
         void Reserve(uint32_t capacity);
 
-        class Writer
+        void Append(Buffer b);
+
+        class Reader
         {
         friend class Buffer;
         public:
-
             template<typename T>
-            void Write(T data)
+            T Read()
             {
-                auto index = buffer->GetSize();
-                auto newSize = index + sizeof(T);
-                auto capacity = buffer->GetCapacity();
-                if(newSize > capacity)
-                    buffer->Reserve(capacity + MEM_BLOCK_SIZE);
-                buffer->Write(data, index);
-                buffer->SetSize(newSize);
+                auto ret = buffer->ReadAt<T>(index);
                 index += sizeof(T);
+                return ret;
             }
 
-            void Write(std::string str);
+            template<>
+            std::string Read();
+            Buffer Read(uint32_t dataSize);
+
+            bool IsOver() const;
+            void Skip(uint32_t bytes);
 
         private:
-            Writer(Buffer* buffer) : buffer{buffer} {}
-
+            Reader(Buffer* buffer) : buffer{buffer} {}
+            uint32_t index = 0;
             Buffer* buffer;
-            const uint32_t MEM_BLOCK_SIZE = 128;
         };
-
-        Writer GetWriter();
+        Reader GetReader();
 
     private:
+        static const uint32_t MEM_BLOCK_SIZE = 128;
         uint32_t size = 0;
-        uint32_t capacity;
-        unsigned char* buffer;
-    };
-
-    class Serializable
-    {
-    public:
-        virtual ~Serializable();
-        virtual Buffer ToBuffer() = 0;
-
+        uint32_t capacity = 0;
+        unsigned char* buffer = nullptr;
     };
 }

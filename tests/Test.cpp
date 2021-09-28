@@ -57,19 +57,17 @@ TEST_CASE("Map tests")
 TEST_CASE("Buffer tests")
 {
     Util::Buffer buffer{128};
-    Util::Buffer b;
-    auto writer = buffer.GetWriter();
     
     SUBCASE("Check Resizing")
     {
         for(uint8_t i = 0; i < 128; i++)
-            writer.Write(i);
+            buffer.Write(i);
 
         CHECK(buffer.GetCapacity() == 128);
         CHECK(buffer.GetSize() == 128);
 
         for(uint8_t i = 0; i < 12; i++)
-            writer.Write(i);
+            buffer.Write(i);
 
         CHECK(buffer.GetCapacity() == 256);
         CHECK(buffer.GetSize() == 140);
@@ -77,8 +75,49 @@ TEST_CASE("Buffer tests")
     SUBCASE("Check write and read")
     {
         const int value = 354;
-        buffer.Write(value, 0);
-        auto read = buffer.Read<int>(0);
+        buffer.WriteAt(value, 0);
+        auto read = buffer.ReadAt<int>(0);
         CHECK(value == read);
+    }
+    SUBCASE("Concat")
+    {
+        Util::Buffer a{3};
+        Util::Buffer b{1};
+        a.Write<char>('H');
+        a.Write<char>('e');
+        a.Write<char>('y');
+        b.Write<char>('\0');
+
+        a.Append(std::move(b));
+        auto hey = std::move(a);
+        CHECK(hey.GetSize() == 4);
+        CHECK(hey.GetCapacity() == 4);
+
+        std::string str((char*)hey.GetData());
+        CHECK(str == "Hey");
+
+        hey.WriteAt(' ', 3);
+        hey.Write("mate");
+
+        CHECK(hey.GetSize() == 9);
+        CHECK(hey.GetCapacity() == 132);
+        str = (char*)hey.GetData();
+        CHECK(str == "Hey mate");
+    }
+    SUBCASE("Reader")
+    {
+        Util::Buffer a;
+        a.Write("Hello world\0");
+        auto reader = a.GetReader();
+
+        auto subBuffer = reader.Read(5);
+        subBuffer.Write('\0');
+        std::string hello((char*)subBuffer.GetData());
+        CHECK("Hello" == hello);
+        
+        reader.Skip(1);
+        auto world = reader.Read<std::string>();
+        CHECK("world" == world);
+        CHECK(reader.IsOver() == true);
     }
 }

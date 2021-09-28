@@ -5,7 +5,11 @@ using namespace App::Client;
 Util::Buffer Map::ToBuffer()
 {
     Util::Buffer buffer;
-    auto writer = buffer.GetWriter();
 
+    // Concat inner buffers
     auto mapBuffer = map_.ToBuffer();
+    //auto tPaletteBuffer;
+    //auto cPaletteBuffer;
+
+    return buffer;
 }

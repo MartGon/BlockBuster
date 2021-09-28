@@ -91,32 +91,31 @@ Game::Map::Map::ChunkIterator Game::Map::Map::CreateChunkIterator()
 Util::Buffer Game::Map::Map::ToBuffer()
 {
     Util::Buffer buffer;
-    auto writer = buffer.GetWriter();
     // Write map
     auto chunkIndices = GetChunkIndices();
 
-    writer.Write(chunkIndices.size());
+    buffer.Write(chunkIndices.size());
     for(auto chunkIndex : chunkIndices)
     {   
         auto& chunk = GetChunk(chunkIndex);
         auto i8Index = glm::lowp_i8vec3{chunkIndex};
-        writer.Write(i8Index);
+        buffer.Write(i8Index);
 
         auto blockCount = chunk.GetBlockCount();
-        writer.Write(blockCount);
+        buffer.Write(blockCount);
 
         auto chunkIt = chunk.CreateBlockIterator();
         for(auto b = chunkIt.GetNextBlock(); !chunkIt.IsOver(); b = chunkIt.GetNextBlock())
         {
             // Write pos - block pair
             glm::lowp_i8vec3 pos = b.first;
-            writer.Write(pos);
+            buffer.Write(pos);
 
             auto block = b.second;
-            writer.Write(b.second->type);
+            buffer.Write(b.second->type);
             if(block->type == Game::BlockType::SLOPE)
-               writer.Write(block->rot);
-            writer.Write(block->display);
+               buffer.Write(block->rot);
+            buffer.Write(block->display);
         }
     }
 
