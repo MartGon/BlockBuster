@@ -32,7 +32,7 @@ namespace Game
             // Removes a block by its global position
             void RemoveBlock(glm::ivec3 pos);
             // Checks a block by its global position
-            bool IsBlockNull(glm::ivec3 pos);
+            bool IsNullBlock(glm::ivec3 pos) const;
 
             std::vector<glm::ivec3> GetChunkIndices() const;
             // Gets a chunk by its chunk index
@@ -190,6 +190,7 @@ namespace Game
             ChunkIterator CreateChunkIterator();
 
             Util::Buffer ToBuffer();
+            static Map FromBuffer(Util::Buffer::Reader& reader);
 
         private:
             std::unordered_map<glm::ivec3, Chunk> chunks_;

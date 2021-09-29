@@ -41,7 +41,7 @@ void Game::Map::Map::RemoveBlock(glm::ivec3 pos)
     }
 }
 
-bool Game::Map::Map::IsBlockNull(glm::ivec3 pos)
+bool Game::Map::Map::IsNullBlock(glm::ivec3 pos) const
 {
     auto block = GetBlock(pos);
     return !block || block->type == Game::BlockType::NONE;
@@ -120,6 +120,33 @@ Util::Buffer Game::Map::Map::ToBuffer()
     }
 
     return buffer;
+}
+
+Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
+{
+    Game::Map::Map map;
+
+    auto chunkIndicesCount = reader.Read<std::size_t>();
+    for(auto i = 0; i < chunkIndicesCount; i++)
+    {
+        auto chunkIndex = reader.Read<glm::lowp_i8vec3>();
+        auto blockCount = reader.Read<unsigned int>();
+        for(auto b = 0; b < blockCount; b++)
+        {
+            auto chunkBlockPos = reader.Read<glm::lowp_i8vec3>();
+            auto globalPos = Game::Map::ToGlobalPos(chunkIndex, chunkBlockPos);
+            
+            Game::Block block;
+            block.type = reader.Read<Game::BlockType>();
+            if(block.type == Game::BlockType::SLOPE)
+                block.rot = reader.Read<Game::BlockRot>();
+            block.display = reader.Read<Game::Display>();
+
+            map.AddBlock(globalPos, block);
+        }
+    }
+
+    return std::move(map);
 }
 
 // #### Iterator #### \\

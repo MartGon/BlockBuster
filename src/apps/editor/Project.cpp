@@ -12,19 +12,22 @@ BlockBuster::Editor::Project::Project()
 
 void BlockBuster::Editor::Project::Init()
 {
-    blockScale = 2.0f;
+    map.SetBlockScale(2.0f);
     const auto black = glm::u8vec4{0, 0, 0, 255};
     const auto red = glm::u8vec4{255, 0, 0, 255};
     const auto white = glm::u8vec4{255};
-    cPalette.AddColor(white);
-    cPalette.AddColor(black);
-    cPalette.AddColor(red);
-    
-    
+    map.cPalette.AddColor(white);
+    map.cPalette.AddColor(black);
+    map.cPalette.AddColor(red);
 
-    map.AddBlock(glm::ivec3{0}, Game::Block{ 
+    map.SetBlock(glm::ivec3{0}, Game::Block{ 
         Game::BLOCK, Game::ROT_0, Game::ROT_0, Game::Display{Game::DisplayType::COLOR, 2}
     });
+}
+
+static void WriteToFile(std::fstream& file, void* data, uint32_t size)
+{
+    file.write(reinterpret_cast<char*>(data), size);
 }
 
 template<typename T>
@@ -62,6 +65,13 @@ std::string ReadFromFile(std::fstream& file)
     return str;
 }
 
+static Util::Buffer ReadFromFile(std::fstream& file, uint32_t size)
+{
+    Util::Buffer buffer{size};
+    file.read(reinterpret_cast<char*>(buffer.GetData()), size);
+    return std::move(buffer);
+}
+
 static const int magicNumber = 0xB010F0;
 
 void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath, Log::Logger* logger)
@@ -77,56 +87,10 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     WriteToFile(file, magicNumber);
 
     // Write map
-    auto& map = p.map;
-    auto chunkIndices = p.map.GetChunkIndices();
-
-    WriteToFile(file, chunkIndices.size());
-    for(auto chunkIndex : chunkIndices)
-    {   
-        auto& chunk = map.GetChunk(chunkIndex);
-        auto i8Index = glm::lowp_i8vec3{chunkIndex};
-        WriteToFile(file, i8Index);
-
-        auto blockCount = chunk.GetBlockCount();
-        WriteToFile(file, blockCount);
-
-        auto chunkIt = chunk.CreateBlockIterator();
-        for(auto b = chunkIt.GetNextBlock(); !chunkIt.IsOver(); b = chunkIt.GetNextBlock())
-        {
-            // Write pos - block pair
-            glm::lowp_i8vec3 pos = b.first;
-            WriteToFile(file, pos);
-
-            auto block = b.second;
-            WriteToFile(file, b.second->type);
-            if(block->type == Game::BlockType::SLOPE)
-                WriteToFile(file, block->rot);
-            WriteToFile(file, block->display);
-        }
-    }
-
-    // Write blockscale
-    WriteToFile(file, p.blockScale);
-
-    // Write textures
-    WriteToFile(file, p.textureFolder.string());
-
-    auto texCount = p.tPalette.GetCount();
-    WriteToFile(file, texCount);
-    for(auto i = 0; i < texCount; i++)
-    {
-        auto texturePath =  p.tPalette.GetMember(i).data.filepath;
-        auto textureName = texturePath.filename().string();
-        WriteToFile(file, textureName);
-    }
-
-    // Colors table
-    auto cCount = p.cPalette.GetCount();
-    WriteToFile(file, cCount);
-    for(auto i = 0; i < cCount; i++)
-    {
-        WriteToFile(file, p.cPalette.GetMember(i).data.color);
-    }
+    auto buffer = p.map.ToBuffer();
+    auto size = buffer.GetSize();
+    WriteToFile(file, size);
+    WriteToFile(file, buffer.GetData(), size);
 
     // Camera Pos/Rot
     WriteToFile(file, p.cameraPos);
@@ -160,53 +124,9 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     }
 
     // Load map
-    auto chunkIndicesCount = ReadFromFile<std::size_t>(file);
-    for(auto i = 0; i < chunkIndicesCount; i++)
-    {
-        auto chunkIndex = ReadFromFile<glm::lowp_i8vec3>(file);
-        auto blockCount = ReadFromFile<unsigned int>(file);
-        for(auto b = 0; b < blockCount; b++)
-        {
-            auto chunkBlockPos = ReadFromFile<glm::lowp_i8vec3>(file);
-            auto globalPos = Game::Map::ToGlobalPos(chunkIndex, chunkBlockPos);
-            
-            Game::Block block;
-            block.type = ReadFromFile<Game::BlockType>(file);
-            if(block.type == Game::BlockType::SLOPE)
-                block.rot = ReadFromFile<Game::BlockRot>(file);
-            block.display = ReadFromFile<Game::Display>(file);
-
-            p.map.AddBlock(globalPos, block);
-        }
-    }
-
-    // Load blockScale
-    p.blockScale = ReadFromFile<float>(file);
-
-    // Load textures
-    p.textureFolder = ReadFromFile<std::string>(file);
-
-    auto textureSize = ReadFromFile<std::size_t>(file);
-    for(auto i = 0; i < textureSize; i++)
-    {
-        auto filename = ReadFromFile<std::string>(file);
-        auto texturePath = p.textureFolder / filename;
-        auto res = p.tPalette.AddTexture(p.textureFolder, filename);
-        if(res.type == Util::ResultType::ERROR)
-        {
-            if(logger)
-                logger->LogError("Could not load texture " + texturePath.string() + "Loading dummy texture instead");
-            p.tPalette.AddNullTexture(texturePath);
-        }
-    }
-
-    // Color Table
-    auto colorsSize = ReadFromFile<std::size_t>(file);
-    for(auto i = 0; i < colorsSize; i++)
-    {
-        auto color = ReadFromFile<glm::u8vec4>(file);
-        p.cPalette.AddColor(color);
-    }
+    auto bufferSize = ReadFromFile<uint32_t>(file);
+    Util::Buffer buffer = ReadFromFile(file, bufferSize);
+    p.map = App::Client::Map::FromBuffer(buffer.GetReader(), logger);
 
     // Camera Pos/Rot
     p.cameraPos = ReadFromFile<glm::vec3>(file);

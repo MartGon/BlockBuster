@@ -58,8 +58,10 @@ namespace Util
         template<>
         void Write(const char* data);
 
-        void Write(void* data, uint32_t dataSize);
+        template<>
         void Write(std::string str);
+
+        void Write(void* data, uint32_t dataSize);
 
         template<typename T>
         T ReadAt(uint32_t offset)

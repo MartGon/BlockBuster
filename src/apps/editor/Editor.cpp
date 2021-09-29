@@ -68,20 +68,18 @@ void BlockBuster::Editor::Editor::Start()
 
 void BlockBuster::Editor::Editor::Update()
 {
-    chunkMeshMgr.Update();
-
     // Clear Buffer
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Setup texture arrays
-    project.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
+    project.map.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
     chunkShader.SetUniformInt("textureArray", 0);
-    project.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
+    project.map.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
     chunkShader.SetUniformInt("colorArray", 1);
 
     // Draw new Map System Cubes
-    chunkMeshMgr.DrawChunks(chunkShader, camera.GetProjViewMat());
+    project.map.Draw(chunkShader, camera.GetProjViewMat());
     
     if(playerMode)
         UpdatePlayerMode();
@@ -120,13 +118,13 @@ glm::vec4 BlockBuster::Editor::Editor::GetBorderColor(glm::vec4 basecolor, glm::
 
 Util::Result<bool> BlockBuster::Editor::Editor::LoadTexture()
 {
-    if(project.tPalette.GetCount() >= MAX_TEXTURES)
+    if(project.map.tPalette.GetCount() >= MAX_TEXTURES)
         return Util::CreateError<bool>("Maximum of textures reached");
 
-    if(IsTextureInPalette(project.textureFolder, textureFilename))
+    if(IsTextureInPalette(project.map.textureFolder, textureFilename))
         return Util::CreateError<bool>("Texture is already in palette");
 
-    auto res = project.tPalette.AddTexture(project.textureFolder, textureFilename, false);
+    auto res = project.map.tPalette.AddTexture(project.map.textureFolder, textureFilename, false);
     if(res.type == Util::ResultType::ERROR)
     {
         return Util::CreateError<bool>(res.err.info);
@@ -140,8 +138,8 @@ Util::Result<bool> BlockBuster::Editor::Editor::LoadTexture()
 bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName)
 {
     auto texturePath = folder / textureName;
-    for(int i = 0; i < project.tPalette.GetCount(); i++)
-        if(project.tPalette.GetMember(i).data.filepath == texturePath)
+    for(int i = 0; i < project.map.tPalette.GetCount(); i++)
+        if(project.map.tPalette.GetMember(i).data.filepath == texturePath)
             return true;
     
     return false;
@@ -168,16 +166,12 @@ void BlockBuster::Editor::Editor::NewProject()
     unsaved = false;
 
     // Texturefolder
-    project.textureFolder = "./";
+    project.map.textureFolder = "./";
 
     // Filename
     std::strcpy(fileName, "NewMap.bbm");
 
     ClearActionHistory();
-
-    // Chunk meshes
-    chunkMeshMgr.SetMap(&project.map);
-    chunkMeshMgr.SetBlockScale(blockScale);
 }
 
 void BlockBuster::Editor::Editor::SaveProject()
@@ -222,7 +216,7 @@ Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
         unsaved = false;
 
         // Color Palette
-        colorPick = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(0).data.color);
+        colorPick = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(0).data.color);
 
         // Clear history
         ClearActionHistory();
@@ -237,10 +231,6 @@ Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
         cursor.scale = project.cursorScale;
 
         SyncGUITextures();
-
-        // Chunk meshes
-        chunkMeshMgr.SetMap(&project.map);
-        chunkMeshMgr.SetBlockScale(blockScale);
 
         res = Util::CreateSuccess<bool>(true);
     }
@@ -326,7 +316,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     glDisable(GL_DEPTH_TEST);
     if(cursor.enabled && cursor.show && tool != SELECT_BLOCKS)
     {   
-        auto t = Game::GetBlockTransform(cursor.pos, cursor.rot, blockScale);
+        auto t = Game::GetBlockTransform(cursor.pos, cursor.rot, project.map.GetBlockScale());
         DrawCursor(t);
     }
     else if(tool == SELECT_BLOCKS)
@@ -341,7 +331,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     if(isPainted)
     {
         auto block = project.map.GetBlock(pointedBlockPos);
-        Math::Transform t = Game::GetBlockTransform(*block, pointedBlockPos, blockScale);
+        Math::Transform t = Game::GetBlockTransform(block, pointedBlockPos, project.map.GetBlockScale());
 
         // HACK: To avoid z fighting.
         // Option 2: Changing block display each time the block is pointed/unpointd. Create wrapper function to do it safely. 
@@ -349,7 +339,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
         const auto factor = 1.025f;
         t.scale *= factor;
 
-        if(block->type == Game::BlockType::SLOPE)
+        if(block.type == Game::BlockType::SLOPE)
         {
             const glm::vec3 up{0.0f, 1.0f, 0.0f};
             glm::vec3 rot = t.GetRotationMat() * glm::vec4{up, 1.0f};
@@ -359,11 +349,11 @@ void BlockBuster::Editor::Editor::UpdateEditor()
         
         auto mMat = t.GetTransformMat();
         auto tMat = camera.GetProjViewMat() * mMat;
-        auto& mesh = GetMesh(block->type);
+        auto& mesh = GetMesh(block.type);
 
         auto display =  GetBlockDisplay();
-        bool validTex = display.type == Game::DisplayType::TEXTURE && display.id < project.tPalette.GetCount();
-        bool validCol = display.type == Game::DisplayType::COLOR && display.id < project.cPalette.GetCount();
+        bool validTex = display.type == Game::DisplayType::TEXTURE && display.id < project.map.tPalette.GetCount();
+        bool validCol = display.type == Game::DisplayType::COLOR && display.id < project.map.cPalette.GetCount();
         bool validDisplay = validTex || validCol;
 
         shader.SetUniformMat4("transform", tMat);
@@ -375,31 +365,14 @@ void BlockBuster::Editor::Editor::UpdateEditor()
         shader.SetUniformInt("colorArray", 1);
 
         if(validDisplay)
-            mesh.Draw(shader, project.tPalette.GetTextureArray(), display.id);
+            mesh.Draw(shader, project.map.tPalette.GetTextureArray(), display.id);
     }
 
     // Draw chunk borders
     if(drawChunkBorders)
     {
-        auto chunkIt = project.map.CreateChunkIterator();
-        for(auto chunk = chunkIt.GetNextChunk(); !chunkIt.IsOver(); chunk = chunkIt.GetNextChunk())
-        {
-            auto pos = Game::Map::ToRealChunkPos(chunk.first, blockScale);
-            auto size = glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale;
-            Math::Transform ct{pos, glm::vec3{0.0f}, size};
-            auto model = ct.GetTransformMat();
-
-            auto transform = camera.GetProjViewMat() * model;
-            shader.SetUniformMat4("transform", transform);
-            shader.SetUniformInt("hasBorder", false);
-            shader.SetUniformInt("overrideColor", true);
-            shader.SetUniformInt("textureType", 1);
-            shader.SetUniformVec4("color", yellow);
-            auto& mesh = GetMesh(cursor.type);
-            glDisable(GL_CULL_FACE);
-            mesh.Draw(shader, GL_LINE);
-            glEnable(GL_CULL_FACE);
-        }
+        auto view = camera.GetProjViewMat();
+        project.map.DrawChunkBorders(shader, cube, view, yellow);
     }
 
     // Create GUI
@@ -463,12 +436,12 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
     if (optimizeIntersection)
     {
 #endif
-        intersect = Game::CastRayFirst(&project.map, ray, blockScale);
+        intersect = Game::CastRayFirst(project.map.GetMap(), ray, blockScale);
 #ifdef _DEBUG
     }
     else
     {
-        auto intersections = Game::CastRay(&project.map, ray, blockScale);
+        auto intersections = Game::CastRay(project.map.GetMap(), ray, blockScale);
         auto scale = blockScale;
         std::sort(intersections.begin(), intersections.end(), [ray, scale](const auto& a, const auto& b)
         {
@@ -510,7 +483,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         {
                                                        
                             auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                            if(auto found = project.map.GetBlock(iNewPos); !found || found->type == Game::BlockType::NONE)
+                            if(project.map.IsNullBlock(iNewPos))
                             {
                                 auto display = GetBlockDisplay(); 
                                 auto block = Game::Block{blockType, rot, display};
@@ -523,7 +496,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                     else if(actionType == ActionType::HOVER)
                     {
                         cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                        if(auto found = project.map.GetBlock(cursor.pos); !found || found->type == Game::BlockType::NONE)
+                        if(project.map.IsNullBlock(cursor.pos))
                         {
                             cursor.enabled = true;
                             cursor.type = blockType;
@@ -593,7 +566,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 {
                     auto display = GetBlockDisplay();
                     if(IsDisplayValid())
-                        DoToolAction(std::make_unique<PaintAction>(iPos, &block, display, &project.map));
+                        DoToolAction(std::make_unique<PaintAction>(iPos, display, &project.map));
                 }
                 if(actionType == ActionType::RIGHT_BUTTON)
                 {
@@ -745,12 +718,12 @@ std::vector<BlockBuster::Editor::BlockData> BlockBuster::Editor::Editor::GetBloc
     glm::ivec3 cursorBasePos = cursor.pos;
     auto onEach = [this, &selection, globalPos](glm::ivec3 ipos, glm::ivec3 offset)
     {
-        if(!this->project.map.IsBlockNull(ipos))
+        if(!this->project.map.IsNullBlock(ipos))
         {
             if(globalPos)
-                selection.push_back({ipos, *this->project.map.GetBlock(ipos)});
+                selection.push_back({ipos, this->project.map.GetBlock(ipos)});
             else
-                selection.push_back({offset, *this->project.map.GetBlock(ipos)});
+                selection.push_back({offset, this->project.map.GetBlock(ipos)});
         }
     };
     EnumBlocksInSelection(onEach);
@@ -775,7 +748,7 @@ bool BlockBuster::Editor::Editor::CanMoveSelection(glm::ivec3 offset)
     for(const auto& pair : selection)
     {
         auto pos = pair.first + offset;
-        if(auto block = project.map.GetBlock(pos); block && block->type != Game::BlockType::NONE && !IsBlockInSelection(pos))
+        if(project.map.IsNullBlock(pos) && !IsBlockInSelection(pos))
             return false;
     }
 
@@ -840,7 +813,7 @@ void BlockBuster::Editor::Editor::PasteSelection()
     for(auto& bData : clipboard)
     {
         auto pos = cursor.pos + bData.first;
-        if(project.map.IsBlockNull(pos))
+        if(project.map.IsNullBlock(pos))
         {
             auto placeAction = std::make_unique<PlaceBlockAction>(pos, bData.second, &project.map);
             batchPlace->AddAction(std::move(placeAction));
@@ -1180,7 +1153,7 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection
             }
 
         }
-        if(project.map.IsBlockNull(mirrorPos))
+        if(project.map.IsNullBlock(mirrorPos))
             batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(mirrorPos, bData.second, &project.map));
         else
             batch->AddAction(std::make_unique<BlockBuster::Editor::UpdateBlockAction>(mirrorPos, bData.second, &project.map));
@@ -1196,7 +1169,7 @@ void BlockBuster::Editor::Editor::FillSelection()
     auto batchPlace = std::make_unique<BatchedAction>();
     auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
     {
-        if(this->project.map.IsBlockNull(pos))
+        if(this->project.map.IsNullBlock(pos))
         {
             Game::Block block{this->blockType, Game::BlockRot{}, this->GetBlockDisplay()};
             auto placeAction = std::make_unique<PlaceBlockAction>(pos, block, &this->project.map);
@@ -1212,10 +1185,10 @@ void BlockBuster::Editor::Editor::ReplaceSelection()
     auto batchPlace = std::make_unique<BatchedAction>();
     auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
     {
-        if(!this->project.map.IsBlockNull(pos))
+        if(!this->project.map.IsNullBlock(pos))
         {
             Game::Block block{this->blockType, Game::BlockRot{}, this->GetBlockDisplay()};
-            auto placeAction = std::make_unique<UpdateBlockAction>(pos, block, &this->project.map);
+            auto placeAction = std::make_unique<UpdateBlockAction>(pos, block, &project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
     };
@@ -1228,11 +1201,11 @@ void BlockBuster::Editor::Editor::PaintSelection()
     auto batchPlace = std::make_unique<BatchedAction>();
     auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
     {
-        if(!this->project.map.IsBlockNull(pos))
+        if(!this->project.map.IsNullBlock(pos))
         {
             auto block = this->project.map.GetBlock(pos);
             auto display = this->GetBlockDisplay();
-            auto placeAction = std::make_unique<PaintAction>(pos, block, display, &this->project.map);
+            auto placeAction = std::make_unique<PaintAction>(pos, display, &project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
     };
@@ -1378,7 +1351,7 @@ Game::Display BlockBuster::Editor::Editor::GetBlockDisplay()
 bool BlockBuster::Editor::Editor::IsDisplayValid()
 {
     auto display = GetBlockDisplay();
-    auto texCount = project.tPalette.GetCount();
+    auto texCount = project.map.tPalette.GetCount();
     bool isValidTexture = display.type == Game::DisplayType::TEXTURE && display.id < texCount;
     bool isColor = display.type == Game::DisplayType::COLOR;
     return isColor || isValidTexture;
@@ -1460,7 +1433,7 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
     player.transform.rotation = glm::vec3{0.0f, glm::degrees(camera.GetRotation().y) - 90.0f, 0.0f};
 
     player.Update();
-    player.HandleCollisions(&project.map, blockScale);
+    player.HandleCollisions(project.map.GetMap(), blockScale);
     auto playerPos = player.transform.position;
 
     auto cameraPos = playerPos + glm::vec3{0.0f, player.height, 0.0f};

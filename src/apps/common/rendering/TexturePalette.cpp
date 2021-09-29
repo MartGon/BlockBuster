@@ -68,3 +68,25 @@ Util::Buffer Rendering::TexturePalette::ToBuffer() const
 
     return std::move(buffer);
 }
+
+Rendering::TexturePalette Rendering::TexturePalette::FromBuffer(Util::Buffer::Reader& reader, std::filesystem::path textureFolder, Log::Logger* logger)
+{
+    TexturePalette palette{16};
+
+    auto textureSize = reader.Read<std::size_t>();
+    for(auto i = 0; i < textureSize; i++)
+    {
+        auto filename = reader.Read<std::string>();
+        auto texturePath = textureFolder / filename;
+        auto res = palette.AddTexture(textureFolder, filename);
+        if(res.type == Util::ResultType::ERROR)
+        {
+            if(logger)
+                logger->LogError("Could not load texture " + texturePath.string() + "Loading dummy texture instead");
+            palette.AddNullTexture(texturePath);
+        }
+    }
+
+
+    return std::move(palette);
+}

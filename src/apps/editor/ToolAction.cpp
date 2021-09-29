@@ -7,7 +7,7 @@
 
 void BlockBuster::Editor::PlaceBlockAction::Do()
 {
-    map_->AddBlock(pos_, block_);
+    map_->SetBlock(pos_, block_);
 }
 
 void BlockBuster::Editor::PlaceBlockAction::Undo()
@@ -17,12 +17,12 @@ void BlockBuster::Editor::PlaceBlockAction::Undo()
 
 void BlockBuster::Editor::UpdateBlockAction::Do()
 {
-    map_->AddBlock(pos_, update_);
+    map_->SetBlock(pos_, update_);
 }
 
 void BlockBuster::Editor::UpdateBlockAction::Undo()
 {
-    map_->AddBlock(pos_, prev_);
+    map_->SetBlock(pos_, prev_);
 }
 
 void BlockBuster::Editor::RemoveAction::Do()
@@ -32,7 +32,7 @@ void BlockBuster::Editor::RemoveAction::Do()
 
 void BlockBuster::Editor::RemoveAction::Undo()
 { 
-    map_->AddBlock(pos_, block_);
+    map_->SetBlock(pos_, block_);
 }
 
 void BlockBuster::Editor::PaintAction::Do()
@@ -47,11 +47,11 @@ void BlockBuster::Editor::PaintAction::Undo()
 
 void BlockBuster::Editor::PaintAction::SetBlockDisplay(Game::Display d)
 {
-    if(auto block = map_->GetBlock(pos_))
+    if(!map_->IsNullBlock(pos_))
     {
-        auto c = *block;
-        c.display = d;
-        map_->AddBlock(pos_, c);
+        auto block = map_->GetBlock(pos_);
+        block.display = d;
+        map_->SetBlock(pos_, block);
     }
 }
 
@@ -67,11 +67,11 @@ void BlockBuster::Editor::RotateAction::Undo()
 
 void BlockBuster::Editor::RotateAction::SetBlockRot(Game::BlockRot rot)
 {
-    if(auto block = map_->GetBlock(pos_))
+     if(!map_->IsNullBlock(pos_))
     {
-        auto c = *block;
-        c.rot = rot;
-        map_->AddBlock(pos_, c);
+        auto block = map_->GetBlock(pos_);
+        block.rot = rot;
+        map_->SetBlock(pos_, block);
     }
 }
 
@@ -96,7 +96,7 @@ void BlockBuster::Editor::MoveSelectionAction::MoveSelection(glm::ivec3 offset)
         // Set new block
         auto pos = pair.first;
         auto newPos = pos + offset;
-        map_->AddBlock(newPos, pair.second);
+        map_->SetBlock(newPos, pair.second);
 
         // Remove prev
         auto behind = pos - offset;

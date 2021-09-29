@@ -1,7 +1,8 @@
 #pragma once
 
 #include <game/Block.h>
-#include <game/Map.h>
+
+#include <client/Map.h>
 
 #include <vector>
 #include <memory>
@@ -30,7 +31,7 @@ namespace BlockBuster
         class PlaceBlockAction : public ToolAction
         {
         public:
-            PlaceBlockAction(glm::ivec3 pos, Game::Block block, Game::Map::Map* map) : 
+            PlaceBlockAction(glm::ivec3 pos, Game::Block block, App::Client::Map* map) : 
                 pos_{pos}, block_{block}, map_{map} {}
 
             void Do() override;
@@ -39,14 +40,14 @@ namespace BlockBuster
         private:
             glm::ivec3 pos_;
             Game::Block block_;
-            Game::Map::Map* map_;
+            App::Client::Map* map_;
         };
 
         class UpdateBlockAction : public ToolAction
         {
         public:
-            UpdateBlockAction(glm::ivec3 pos, Game::Block update, Game::Map::Map* map) :
-                pos_{pos}, update_{update}, map_{map}, prev_{*map_->GetBlock(pos)} {}
+            UpdateBlockAction(glm::ivec3 pos, Game::Block update, App::Client::Map* map) :
+                pos_{pos}, update_{update}, map_{map}, prev_{map_->GetBlock(pos)} {}
 
             void Do() override;
             void Undo() override;
@@ -54,7 +55,7 @@ namespace BlockBuster
         private:
             glm::ivec3 pos_;
             Game::Block update_;
-            Game::Map::Map* map_;
+            App::Client::Map* map_;
 
             Game::Block prev_;
         };
@@ -62,7 +63,7 @@ namespace BlockBuster
         class RemoveAction : public ToolAction
         {
         public:
-            RemoveAction(glm::ivec3 pos, Game::Block block, Game::Map::Map* map) : 
+            RemoveAction(glm::ivec3 pos, Game::Block block, App::Client::Map* map) : 
                 pos_{pos}, block_{block}, map_{map} {}
 
             void Do() override;
@@ -71,14 +72,16 @@ namespace BlockBuster
         private:
             glm::ivec3 pos_;
             Game::Block block_;
-            Game::Map::Map* map_;
+            App::Client::Map* map_;
         };
 
         class PaintAction : public ToolAction
         {
         public:
-            PaintAction(glm::ivec3 pos, Game::Block const* block, Game::Display display, Game::Map::Map* map) : 
-                pos_{pos}, block_{block}, display_{display}, prevDisplay_{block->display}, map_{map} {}
+            PaintAction(glm::ivec3 pos, Game::Display display, App::Client::Map* map) : 
+                pos_{pos}, display_{display}, prevDisplay_{map->GetBlock(pos_).display}, map_{map} {
+                    
+                }
 
             void Do() override;
             void Undo() override;
@@ -89,18 +92,17 @@ namespace BlockBuster
 
             glm::ivec3 pos_;
 
-            Game::Block const* block_;
             Game::Display display_;
             Game::Display prevDisplay_;
             std::vector<Game::Block>* blocks_;
             
-            Game::Map::Map* map_;
+            App::Client::Map* map_;
         };
 
         class RotateAction : public ToolAction
         {
         public:
-            RotateAction(glm::ivec3 pos, Game::Block* block, Game::Map::Map* map, Game::BlockRot rot) :
+            RotateAction(glm::ivec3 pos, Game::Block* block, App::Client::Map* map, Game::BlockRot rot) :
                 pos_{pos}, block_{block}, map_{map}, rot_{rot}, prevRot_{block->rot} {}
 
             void Do() override;
@@ -113,7 +115,7 @@ namespace BlockBuster
             Game::Block* block_;
 
             glm::ivec3 pos_;
-            Game::Map::Map* map_;
+            App::Client::Map* map_;
             Game::BlockRot rot_;
             Game::BlockRot prevRot_;
         };
@@ -121,7 +123,7 @@ namespace BlockBuster
         class MoveSelectionAction : public ToolAction
         {
         public:
-            MoveSelectionAction(Game::Map::Map* map, std::vector<BlockData> selection, glm::ivec3 offset, glm::ivec3* cursorPos, std::vector<BlockData>* selTarget) :
+            MoveSelectionAction(App::Client::Map* map, std::vector<BlockData> selection, glm::ivec3 offset, glm::ivec3* cursorPos, std::vector<BlockData>* selTarget) :
                 map_{map}, selection_{selection}, offset_{offset}, cursorPos_{cursorPos}, selTarget_{selTarget} {}
         
             void Do() override;
@@ -131,7 +133,7 @@ namespace BlockBuster
             bool IsBlockInSelection(glm::ivec3 pos);
             void MoveSelection(glm::ivec3 offset);
 
-            Game::Map::Map* map_;
+            App::Client::Map* map_;
             std::vector<std::pair<glm::ivec3, Game::Block>> selection_;
             glm::ivec3 offset_;
 

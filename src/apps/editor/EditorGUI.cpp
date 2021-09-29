@@ -248,7 +248,7 @@ void BlockBuster::Editor::Editor::GoToBlockPopUp()
 
         if(ImGui::Button("Accept"))
         {
-            glm::vec3 cameraPos = (glm::vec3)this->goToPos * this->blockScale;
+            glm::vec3 cameraPos = (glm::vec3)this->goToPos * this->project.map.GetBlockScale();
             this->camera.SetPos(cameraPos);
             ClosePopUp();
         }
@@ -268,7 +268,7 @@ void BlockBuster::Editor::Editor::SetTextureFolderPopUp()
     auto onAccept = [this](){
         if(std::filesystem::is_directory(this->textureFolderPath))
         {
-            this->project.textureFolder = this->textureFolderPath;
+            this->project.map.textureFolder = this->textureFolderPath;
             return Util::CreateSuccess<bool>(true);
         }
         else
@@ -317,13 +317,13 @@ void BlockBuster::Editor::Editor::InitPopUps()
 
     popUps[GO_TO_BLOCK].name = "Go to block";
     popUps[GO_TO_BLOCK].onOpen = [this](){
-        this->goToPos = Game::Map::ToGlobalPos(camera.GetPos(), this->blockScale);
+        this->goToPos = Game::Map::ToGlobalPos(camera.GetPos(), this->project.map.GetBlockScale());
     };
     popUps[GO_TO_BLOCK].update = std::bind(&BlockBuster::Editor::Editor::GoToBlockPopUp, this);
 
     popUps[SET_TEXTURE_FOLDER].name = "Set Texture Folder";
     popUps[SET_TEXTURE_FOLDER].onOpen = [this](){
-        std::strcpy(this->textureFolderPath, this->project.textureFolder.string().c_str());
+        std::strcpy(this->textureFolderPath, this->project.map.textureFolder.string().c_str());
     };
     popUps[SET_TEXTURE_FOLDER].update = std::bind(&BlockBuster::Editor::Editor::SetTextureFolderPopUp, this);
 }
@@ -480,14 +480,15 @@ void BlockBuster::Editor::Editor::MenuBar()
 
 void BlockBuster::Editor::Editor::SyncGUITextures()
 {
-    auto tCount = project.tPalette.GetCount();
+    auto& tPalette = project.map.tPalette;
+    auto tCount = tPalette.GetCount();
 
     guiTextures.clear();
     guiTextures.reserve(tCount);
     for(unsigned int i = 0; i < tCount; i++)
     {
-        auto res = project.tPalette.GetMember(i);
-        auto handle = project.tPalette.GetTextureArray()->GetHandle();
+        auto res = tPalette.GetMember(i);
+        auto handle = tPalette.GetTextureArray()->GetHandle();
         ImGui::Impl::ExtraData ea;
         ea.array = ImGui::Impl::TextureArrayData{res.data.id};
         auto texture = ImGui::Impl::Texture{handle, ImGui::Impl::TextureType::TEXTURE_ARRAY, ea};
@@ -690,7 +691,7 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
 
     glm::vec2 region = ImGui::GetContentRegionAvail();
     int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
-    int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : project.cPalette.GetCount();
+    int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : project.map.cPalette.GetCount();
     int minRows = glm::max((int)glm::ceil((float)entries / (float)columns), 1);
     int rows = glm::min(MAX_ROWS, minRows);
     glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * rows};
@@ -741,7 +742,7 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
             }
             else if(displayType == Game::DisplayType::COLOR)
             {
-                auto color = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(i).data.color);
+                auto color = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(i).data.color);
                 ImGui::ColorButton("## color", color);
             }
         }       
@@ -752,7 +753,7 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
 
     if(displayType == Game::DisplayType::COLOR)
     {
-        auto color = Rendering::Uint8ColorToFloat(project.cPalette.GetMember(colorId).data.color);
+        auto color = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(colorId).data.color);
         if(ImGui::ColorButton("Chosen Color", color))
         {
             ImGui::OpenPopup("Color Picker");
@@ -772,9 +773,9 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
             if(displayType == Game::DisplayType::COLOR)
             {
                 auto color = Rendering::FloatColorToUint8(colorPick);
-                if(!project.cPalette.HasColor(color))
+                if(!project.map.cPalette.HasColor(color))
                 {
-                    auto res = project.cPalette.AddColor(color);
+                    auto res = project.map.cPalette.AddColor(color);
                     colorId = res.data.id;
                 }
             }
@@ -1174,7 +1175,7 @@ void BlockBuster::Editor::Editor::GUI()
 
                 if(ImGui::SliderFloat("Block Scale", &blockScale, 1, 5))
                 {
-                    chunkMeshMgr.SetBlockScale(blockScale);
+                    project.map.SetBlockScale(blockScale);
                 };
 
                 ImGui::Text("Select Tool - Cursor Display");
@@ -1239,8 +1240,8 @@ void BlockBuster::Editor::Editor::GUI()
                     if(intersecting)
                     {
                         auto pointedBlock = project.map.GetBlock(pointedBlockPos);
-                        blockRot = pointedBlock->GetRotation();
-                        type = pointedBlock->type;
+                        blockRot = pointedBlock.GetRotation();
+                        type = pointedBlock.type;
                     }
                     ImGui::InputInt("Block Type", &type, 1, 100, ImGuiInputTextFlags_ReadOnly);
                     ImGui::InputFloat3("Block Rotation", &blockRot.x, "%.2f", ImGuiInputTextFlags_ReadOnly);

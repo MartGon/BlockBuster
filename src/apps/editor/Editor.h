@@ -143,6 +143,7 @@ namespace BlockBuster
             void RemoveSelection();
             void CutSelection();
             void PasteSelection();
+            // TODO: Change this to use Util::Result
             Result RotateSelection(Game::RotationAxis axis, Game::RotType rotType);
             Result MirrorSelection(MirrorPlane plane);
             void FillSelection();
@@ -245,7 +246,6 @@ namespace BlockBuster
             GL::Shader chunkShader;
             Rendering::Mesh cube;
             Rendering::Mesh slope;
-            Rendering::ChunkMesh::Manager chunkMeshMgr;
             Rendering::Camera camera;
             ::App::Client::CameraController cameraController;
             
@@ -331,7 +331,7 @@ namespace BlockBuster
             ::App::Configuration::WindowConfig preConfig;
 
             // Options
-            float& blockScale = project.blockScale;
+            float blockScale = 2.0f;
 
             // Debug
             #ifdef _DEBUG

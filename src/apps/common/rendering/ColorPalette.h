@@ -38,6 +38,7 @@ namespace Rendering
         }
 
         Util::Buffer ToBuffer() const;
+        static ColorPalette FromBuffer(Util::Buffer::Reader& reader);
 
     private:
 

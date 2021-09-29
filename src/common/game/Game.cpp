@@ -41,6 +41,7 @@ std::vector<Game::RayBlockIntersection> Game::CastRay(Game::Map::Map* map, Colli
     return intersections;
 }
 
+// TODO: Change map to const&
 Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::Ray ray, float blockScale)
 {
     Game::RayBlockIntersection intersect = {glm::vec3{0}, nullptr, Collisions::RayIntersection{false}};

@@ -5,6 +5,9 @@
 #include <rendering/ChunkMeshBuilder.h>
 #include <game/Map.h>
 
+#include <iostream>
+
+
 namespace Rendering::ChunkMesh
 {
     class Manager
@@ -13,7 +16,6 @@ namespace Rendering::ChunkMesh
         Manager() {}
         Manager(Game::Map::Map* map, float blockScale = 2.0f) : map_{map}, blockScale_{blockScale}
         {
-
         }
 
         void Reset()

@@ -82,6 +82,7 @@ void Buffer::Write(const char* data)
     Write(str);
 }
 
+template<>
 void Buffer::Write(std::string str)
 {
     for(auto c : str)

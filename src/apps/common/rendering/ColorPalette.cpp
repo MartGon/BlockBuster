@@ -49,3 +49,17 @@ Util::Buffer Rendering::ColorPalette::ToBuffer() const
 
     return std::move(buffer);
 }
+
+Rendering::ColorPalette Rendering::ColorPalette::FromBuffer(Util::Buffer::Reader& reader)
+{
+    ColorPalette palette{32};
+
+    auto colorsSize = reader.Read<std::size_t>();
+    for(auto i = 0; i < colorsSize; i++)
+    {
+        auto color = reader.Read<glm::u8vec4>();
+        palette.AddColor(color);
+    }
+
+    return std::move(palette);
+}

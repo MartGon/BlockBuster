@@ -3,6 +3,8 @@
 #include <gl/TextureArray.h>
 #include <util/Serializable.h>
 
+#include <mglogger/Logger.h>
+
 #include <vector>
 
 namespace Rendering
@@ -38,6 +40,7 @@ namespace Rendering
         }
         
         Util::Buffer ToBuffer() const;
+        static TexturePalette FromBuffer(Util::Buffer::Reader& reader, std::filesystem::path textureFolder, Log::Logger* logger);
 
     private:
 

@@ -23,13 +23,7 @@ namespace BlockBuster::Editor
 
         void Init();
 
-        Game::Map::Map map;
-        Rendering::TexturePalette tPalette{16};
-        Rendering::ColorPalette cPalette{32};
-        std::filesystem::path textureFolder;
-        App::Client::Map cMap;
-        
-        float blockScale;
+        App::Client::Map map;
 
         glm::vec3 cameraPos;
         glm::vec2 cameraRot;
