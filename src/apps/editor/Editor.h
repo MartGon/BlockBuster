@@ -322,7 +322,7 @@ namespace BlockBuster
 
             // File
             std::filesystem::path mapsFolder = ".";
-            char fileName[16] = "Map.bbm";
+            char fileName[16];
             char textureFolderPath[128] = "";
             const int magicNumber = 0xB010F0;
             bool newMap = true;

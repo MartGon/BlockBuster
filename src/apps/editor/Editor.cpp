@@ -48,7 +48,7 @@ void BlockBuster::Editor::Editor::Start()
     
     // World
     mapsFolder = GetConfigOption("MapsFolder", ".");
-    auto mapName = GetConfigOption("Map", "Map.bbm");
+    auto mapName = GetConfigOption("Map", "");
     bool mapLoaded = false;
     if(!mapName.empty() && mapName.size() < 16)
     {
@@ -169,7 +169,7 @@ void BlockBuster::Editor::Editor::NewProject()
     project.map.textureFolder = "./";
 
     // Filename
-    std::strcpy(fileName, "NewMap.bbm");
+    fileName[0] = '\0';
 
     ClearActionHistory();
 }
@@ -207,6 +207,7 @@ Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
     {
         // Move to main project if it's ok
         project = std::move(temp);
+        SyncGUITextures();
 
         // Window
         RenameMainWindow(fileName);
@@ -229,8 +230,6 @@ Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
         cursor.pos = project.cursorPos;
         savedPos = project.cursorPos;
         cursor.scale = project.cursorScale;
-
-        SyncGUITextures();
 
         res = Util::CreateSuccess<bool>(true);
     }
