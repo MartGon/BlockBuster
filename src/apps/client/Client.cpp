@@ -59,6 +59,33 @@ void BlockBuster::Client::Start()
         {3, Math::Transform{glm::vec3{7.0f, 4.15f, -7.0f}, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}}},
         {4, Math::Transform{glm::vec3{7.0f, 4.15f, 7.0f}, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}}},
     };
+
+    for(auto player : players)
+    {
+        auto playerId = player.first;
+        GeneratePlayerTarget(playerId);
+    }
+}
+
+void BlockBuster::Client::GeneratePlayerTarget(unsigned int playerId)
+{
+    auto x = Util::Random::Uniform(-14.f, 14.f);
+    auto z = Util::Random::Uniform(-14.f, 14.f);
+    playerTargets[playerId] = glm::vec3{x, 4.15f, z};
+}
+
+void BlockBuster::Client::PlayerUpdate(unsigned int playerId, float deltaTime)
+{
+    auto& player = players[playerId];
+    auto playerTarget = playerTargets[playerId];
+
+    auto moveDir = glm::normalize(playerTarget - player.position);
+    auto velocity = moveDir * PLAYER_SPEED * deltaTime;
+    player.position += velocity;
+
+    auto dist = glm::length(playerTarget - player.position);
+    if(dist < 1.0f)
+        GeneratePlayerTarget(playerId);
 }
 
 void BlockBuster::Client::Update()
@@ -67,7 +94,7 @@ void BlockBuster::Client::Update()
     auto prev = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
     DoUpdate(deltaTime);
     auto now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    deltaTime = (now - prev) / 1000000.f;
+    deltaTime = (now - prev) / 1000000000.f;
     logger->LogInfo("Elapsed time: " + std::to_string(deltaTime));
 }
 
@@ -75,6 +102,10 @@ void BlockBuster::Client::DoUpdate(float deltaTime)
 {
     HandleSDLEvents();
     camController_.Update();
+
+    // Networking
+    for(auto player : players)
+        PlayerUpdate(player.first, deltaTime);
 
     // Clear Buffer
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);

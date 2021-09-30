@@ -31,7 +31,7 @@ namespace Game
     struct Display
     {
         DisplayType type;
-        int id;
+        unsigned int id;
         //DisplayOptions options;
     };
 

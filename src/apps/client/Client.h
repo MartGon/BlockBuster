@@ -33,6 +33,10 @@ namespace BlockBuster
         void HandleSDLEvents();
         void DrawScene();
 
+        // Networking
+        void GeneratePlayerTarget(unsigned int playerId);
+        void PlayerUpdate(unsigned int playerId, float deltaTime);
+
         // Scene
         ::App::Client::Map map_;
 
@@ -43,7 +47,7 @@ namespace BlockBuster
         Rendering::Camera camera_;
 
         // Update
-        float deltaTime = 16;
+        float deltaTime = 0.016666f;
 
         // Controls
         ::App::Client::CameraController camController_;
@@ -51,6 +55,7 @@ namespace BlockBuster
         // Player transforms
         std::unordered_map<uint8_t, Math::Transform> players;
         std::unordered_map<uint8_t, glm::vec3> playerTargets;
+        float PLAYER_SPEED = 2.f;
         
         bool quit = false;
         int drawMode = GL_FILL;

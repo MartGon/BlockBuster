@@ -5,10 +5,10 @@
 - Setup scene in client
     - Make simple map
         - This requires redoing serialization - DONE
-        - Refactor to use this App::Client::Map in project
-    - Load App::Clinet::Map in client
-    - Render and calculate delta time
-    - Make simple *player* entity, a cube with a given position and move dir. Move in random dirs
+        - Refactor to use this App::Client::Map in project - DONE
+    - Use App::Clinet::Map in client - DONE
+    - Render and calculate delta time - DONE
+    - Make simple *player* entity, a cube with a given position and move dir. Move in random dirs - DONE
 - Creat Enet wrapper classes
     - Server
     - Client
