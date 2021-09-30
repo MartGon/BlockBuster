@@ -396,7 +396,7 @@ Rendering::Mesh Primitive::GenerateSphere(float radius, unsigned int pSamples, u
     return sphere;
 }
 
-std::vector<glm::vec3> GenExternCircleVertices(float radius, float height, unsigned int samples)
+static std::vector<glm::vec3> GenExternCircleVertices(float radius, float height, unsigned int samples)
 {
     std::vector<glm::vec3> vertices;;
 
@@ -404,7 +404,7 @@ std::vector<glm::vec3> GenExternCircleVertices(float radius, float height, unsig
     for(unsigned int i = 0; i < samples; i++)
     {
         auto angle = i * step;
-        auto vertex = glm::vec3{glm::cos(angle) * radius, glm::sin(angle) * radius, height};
+        auto vertex = glm::vec3{glm::cos(angle) * radius, height, glm::sin(angle) * radius};
 
         vertices.push_back(vertex);
     }
@@ -418,12 +418,12 @@ Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float heigh
     GL::VertexArray& vao = cylinder.GetVAO();
 
     // Generate vertices
-    const glm::vec3 bottomCenter{0.0f, 0.0f, -height / 2.f};
-    const glm::vec3 topCenter{0.0f, 0.0f, height / 2.f};
+    const glm::vec3 bottomCenter{0.0f, -height / 2.f, 0.0f};
+    const glm::vec3 topCenter{0.0f, height / 2.f, 0.0f};
     std::vector<glm::vec3> vertices = {bottomCenter};
 
     // Bottom Circle
-    auto bottomCircleVertices = GenExternCircleVertices(radius, bottomCenter.z, yawSamples);
+    auto bottomCircleVertices = GenExternCircleVertices(radius, bottomCenter.y, yawSamples);
     vertices.insert(vertices.end(), std::make_move_iterator(bottomCircleVertices.begin()), std::make_move_iterator(bottomCircleVertices.end()));
 
     // Middle rings
@@ -437,7 +437,7 @@ Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float heigh
     }
 
     // Top Cirlce
-    auto topCircleVertices = GenExternCircleVertices(radius, topCenter.z, yawSamples);
+    auto topCircleVertices = GenExternCircleVertices(radius, topCenter.y, yawSamples);
     vertices.insert(vertices.end(), std::make_move_iterator(topCircleVertices.begin()), std::make_move_iterator(topCircleVertices.end()));
     vertices.push_back(topCenter);
 
@@ -447,12 +447,12 @@ Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float heigh
     // Bottom circle
     for(unsigned int i = 1; i < yawSamples; i++)
     {
-        indices.push_back(i);
         indices.push_back(0);
+        indices.push_back(i);
         indices.push_back(i + 1);
     }
-    indices.push_back(yawSamples);
     indices.push_back(0);
+    indices.push_back(yawSamples);
     indices.push_back(1);
     
     // Middle rings
@@ -462,20 +462,20 @@ Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float heigh
         for(unsigned int i = 1; i < yawSamples; i++)
         {
             auto base = hBase + i;
-            indices.push_back(base);
             indices.push_back(base - yawSamples);
+            indices.push_back(base);
             indices.push_back(base - yawSamples + 1);
 
-            indices.push_back(base + 1);
             indices.push_back(base);
+            indices.push_back(base + 1);
             indices.push_back(base - yawSamples + 1);        
         }
-        indices.push_back(hBase + yawSamples);
         indices.push_back(hBase);
+        indices.push_back(hBase + yawSamples);
         indices.push_back(hBase - yawSamples + 1);
 
-        indices.push_back(hBase + yawSamples);
         indices.push_back(hBase - yawSamples + 1);
+        indices.push_back(hBase + yawSamples);
         indices.push_back(hBase + 1);
     }
 
@@ -484,12 +484,12 @@ Rendering::Mesh Rendering::Primitive::GenerateCylinder(float radius, float heigh
     auto firstIndex = topCenterIndex - yawSamples;
     for(unsigned int i = 0; i < yawSamples; i++)
     {
-        indices.push_back(topCenterIndex);
         indices.push_back(firstIndex + i);
+        indices.push_back(topCenterIndex);
         indices.push_back(firstIndex + i + 1);
     }
-    indices.push_back(topCenterIndex);
     indices.push_back(topCenterIndex - 1);
+    indices.push_back(topCenterIndex);
     indices.push_back(firstIndex);
 
     // Vao
