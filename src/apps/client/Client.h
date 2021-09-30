@@ -29,6 +29,7 @@ namespace BlockBuster
         
     private:
 
+        void DoUpdate(float deltaTime);
         void HandleSDLEvents();
         void DrawScene();
 
@@ -41,8 +42,15 @@ namespace BlockBuster
         Rendering::Mesh cylinder;
         Rendering::Camera camera_;
 
+        // Update
+        float deltaTime = 16;
+
         // Controls
         ::App::Client::CameraController camController_;
+
+        // Player transforms
+        std::unordered_map<uint8_t, Math::Transform> players;
+        std::unordered_map<uint8_t, glm::vec3> playerTargets;
         
         bool quit = false;
         int drawMode = GL_FILL;

@@ -54,7 +54,7 @@ int main()
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
-            "./client.log", Log::Verbosity::DEBUG
+            "./client.log", Log::Verbosity::ERROR
         }
     };
     
