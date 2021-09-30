@@ -20,6 +20,16 @@ namespace Util
         ResultType type;
         T data;
         Error err;
+
+        inline bool IsError() const
+        {
+            return type == ResultType::ERROR;
+        }
+
+        inline bool IsSuccess() const
+        {
+            return !IsError();
+        }
     };
 
     template<typename T>

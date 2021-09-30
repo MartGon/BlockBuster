@@ -1,6 +1,7 @@
 SET(SOURCES
     Result.cpp
     Serializable.cpp
+    Random.cpp
 )
 
 
