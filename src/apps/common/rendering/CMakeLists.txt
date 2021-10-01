@@ -4,10 +4,6 @@ SET(SOURCES
     Mesh.cpp
     Primitive.cpp
     Rendering.cpp
-    TexturePalette.cpp
-    ColorPalette.cpp
-    ChunkMeshBuilder.cpp
-    ChunkMeshMgr.cpp
 )
 
 

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <game/Map.h>
-#include <rendering/TexturePalette.h>
-#include <rendering/ColorPalette.h>
-#include <rendering/ChunkMeshMgr.h>
+#include <TexturePalette.h>
+#include <ColorPalette.h>
+#include <ChunkMeshMgr.h>
 #include <util/Serializable.h>
 
 namespace App::Client
@@ -32,7 +32,7 @@ namespace App::Client
         uint32_t GetBlockCount() const;
 
         Util::Buffer ToBuffer();
-        static Map FromBuffer(Util::Buffer::Reader reader, Log::Logger* logger);
+        static Map FromBuffer(Util::Buffer::Reader reader);
 
         void Draw(GL::Shader& shader, const glm::mat4& view);
         void DrawChunkBorders(GL::Shader& shader, Rendering::Mesh& cubeMesh, const glm::mat4& view, glm::vec4 color = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f});

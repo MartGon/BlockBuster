@@ -131,14 +131,14 @@ Util::Buffer Map::ToBuffer()
     return buffer;
 }
 
-Map Map::FromBuffer(Util::Buffer::Reader reader, Log::Logger* logger)
+Map Map::FromBuffer(Util::Buffer::Reader reader)
 {
     Map map;
 
     map.blockScale = reader.Read<float>();
     map.map_ = Game::Map::Map::FromBuffer(reader);
     map.textureFolder = reader.Read<std::string>();
-    map.tPalette = Rendering::TexturePalette::FromBuffer(reader, map.textureFolder, logger);
+    map.tPalette = Rendering::TexturePalette::FromBuffer(reader, map.textureFolder);
     map.cPalette = Rendering::ColorPalette::FromBuffer(reader);
 
     return std::move(map);

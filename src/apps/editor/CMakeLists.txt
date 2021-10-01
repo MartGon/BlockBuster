@@ -9,8 +9,8 @@ SET(SOURCES
 
 add_executable(Editor ${SOURCES})
 target_link_libraries(Editor 
-    imgui 
     GLAD 
+    imgui 
     ${X11_LIBRARIES} 
     ${OPENGL_LIBRARIES} 
     ${CMAKE_DL_LIBS} 

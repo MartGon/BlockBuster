@@ -1,4 +1,4 @@
-#include <rendering/ColorPalette.h>
+#include <ColorPalette.h>
 
 Util::Result<Rendering::ColorPalette::Member> Rendering::ColorPalette::AddColor(glm::u8vec4 color)
 {

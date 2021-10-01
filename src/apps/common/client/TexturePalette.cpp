@@ -1,4 +1,6 @@
-#include <rendering/TexturePalette.h>
+#include <TexturePalette.h>
+
+#include <ServiceLocator.h>
 
 #include <array>
 
@@ -69,7 +71,7 @@ Util::Buffer Rendering::TexturePalette::ToBuffer() const
     return std::move(buffer);
 }
 
-Rendering::TexturePalette Rendering::TexturePalette::FromBuffer(Util::Buffer::Reader& reader, std::filesystem::path textureFolder, Log::Logger* logger)
+Rendering::TexturePalette Rendering::TexturePalette::FromBuffer(Util::Buffer::Reader& reader, std::filesystem::path textureFolder)
 {
     TexturePalette palette{16};
 
@@ -81,7 +83,7 @@ Rendering::TexturePalette Rendering::TexturePalette::FromBuffer(Util::Buffer::Re
         auto res = palette.AddTexture(textureFolder, filename);
         if(res.type == Util::ResultType::ERROR)
         {
-            if(logger)
+            if(auto logger = App::ServiceLocator::GetLogger())
                 logger->LogError("Could not load texture " + texturePath.string() + "Loading dummy texture instead");
             palette.AddNullTexture(texturePath);
         }

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <game/Map.h>
-#include <rendering/TexturePalette.h>
-#include <rendering/ColorPalette.h>
+#include <client/TexturePalette.h>
+#include <client/ColorPalette.h>
 
 #include <client/Map.h>
 
@@ -35,6 +35,6 @@ namespace BlockBuster::Editor
         bool isOk = true;
     };
 
-    void WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath, Log::Logger* logger = nullptr);
-    Project ReadProjectFromFile(std::filesystem::path filepath, Log::Logger* logger = nullptr);
+    void WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath);
+    Project ReadProjectFromFile(std::filesystem::path filepath);
 }

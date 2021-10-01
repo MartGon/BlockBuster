@@ -1,4 +1,4 @@
-#include <rendering/ChunkMeshMgr.h>
+#include <ChunkMeshMgr.h>
 
 #include <debug/Debug.h>
 

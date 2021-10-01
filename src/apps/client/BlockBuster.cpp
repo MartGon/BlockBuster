@@ -31,6 +31,8 @@
 #include <game/Block.h>
 #include <client/Player.h>
 
+#include <client/ServiceLocator.h>
+
 #include <Client.h>
 
 const int WINDOW_WIDTH = 800;
@@ -57,6 +59,24 @@ int main()
             "./client.log", Log::Verbosity::ERROR
         }
     };
+
+        // Init logger
+    auto cLogger = std::make_unique<Log::ComposedLogger>();
+    auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
+    cLogger->AddLogger(std::move(consoleLogger));
+
+    auto filelogger = std::make_unique<Log::FileLogger>();
+    filelogger->OpenLogFile(config.log.logFile);
+    
+    if(filelogger->IsOk())
+        cLogger->AddLogger(std::move(filelogger));
+    else
+    {
+        std::string msg = "Could not open log file: " + std::string(config.log.logFile) + '\n';
+        cLogger->LogError(msg);
+    }
+    cLogger->SetVerbosity(config.log.verbosity);
+    App::ServiceLocator::SetLogger(std::move(cLogger));
     
     BlockBuster::Client client(config);
     client.Start();

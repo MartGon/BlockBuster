@@ -3,6 +3,11 @@ SET(SOURCES
     Player.cpp
     CameraController.cpp
     Map.cpp
+    ServiceLocator.cpp
+    TexturePalette.cpp
+    ColorPalette.cpp
+    ChunkMeshBuilder.cpp
+    ChunkMeshMgr.cpp
 )
 
 
@@ -19,6 +24,7 @@ target_link_libraries(AppsGame
     Collisions 
     Math
     Game
+    App
 )
 target_include_directories(AppsGame PUBLIC include 
     ${OPENGL_INCLUDE_DIR}  

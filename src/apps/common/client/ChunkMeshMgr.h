@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#include <rendering/ChunkMeshBuilder.h>
+#include <ChunkMeshBuilder.h>
 #include <game/Map.h>
 
 #include <iostream>

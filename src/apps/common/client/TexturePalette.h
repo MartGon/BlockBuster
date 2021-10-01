@@ -40,7 +40,7 @@ namespace Rendering
         }
         
         Util::Buffer ToBuffer() const;
-        static TexturePalette FromBuffer(Util::Buffer::Reader& reader, std::filesystem::path textureFolder, Log::Logger* logger);
+        static TexturePalette FromBuffer(Util::Buffer::Reader& reader, std::filesystem::path textureFolder);
 
     private:
 

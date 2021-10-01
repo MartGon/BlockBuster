@@ -9,7 +9,7 @@
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
-#include <rendering/ChunkMeshMgr.h>
+#include <client/ChunkMeshMgr.h>
 
 #include <client/Player.h>
 #include <game/Block.h>
@@ -341,6 +341,7 @@ namespace BlockBuster
                 bool useTextureArray = true;
             #endif
             bool drawChunkBorders = false;
+            Log::Logger* logger = nullptr;
 
             // Help
             bool showShortcutWindow = false;

@@ -23,5 +23,6 @@ target_include_directories(App PUBLIC include
     ${GLAD_INCLUDE_DIR} 
     ${DEPS_FOLDER} 
     ${DEPS_FOLDER}/imgui 
+    ${APPS_COMMON_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

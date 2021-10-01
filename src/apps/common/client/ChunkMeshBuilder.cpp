@@ -1,4 +1,4 @@
-#include <rendering/ChunkMeshBuilder.h>
+#include <ChunkMeshBuilder.h>
 
 #include <math/BBMath.h>
 

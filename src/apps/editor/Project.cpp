@@ -1,6 +1,7 @@
 #include <Project.h>
 
 #include <debug/Debug.h>
+#include <client/ServiceLocator.h>
 
 #include <fstream>
 #include <iostream>
@@ -74,12 +75,12 @@ static Util::Buffer ReadFromFile(std::fstream& file, uint32_t size)
 
 static const int magicNumber = 0xB010F0;
 
-void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath, Log::Logger* logger)
+void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath)
 {
     std::fstream file{filepath, file.binary | file.out};
     if(!file.is_open())
     {
-        if(logger)
+        if(auto logger = App::ServiceLocator::GetLogger())
             logger->LogError("Could not open file " + filepath.string());
         return;
     }
@@ -101,14 +102,14 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     WriteToFile(file, p.cursorScale);
 }
 
-BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::filesystem::path filepath, Log::Logger* logger)
+BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::filesystem::path filepath)
 {
     Project p;
 
     std::fstream file{filepath, file.binary | file.in};
     if(!file.is_open())
     {
-        if(logger)
+        if(auto logger = App::ServiceLocator::GetLogger())
             logger->LogError("Could not open file " + filepath.string());
         p.isOk = false;
         return p;
@@ -117,7 +118,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     auto magic = ReadFromFile<int>(file);
     if(magic != magicNumber)
     {
-        if(logger)
+        if(auto logger = App::ServiceLocator::GetLogger())
             logger->LogError("Wrong format for file " + filepath.string());
         p.isOk = false;
         return p;
@@ -126,7 +127,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     // Load map
     auto bufferSize = ReadFromFile<uint32_t>(file);
     Util::Buffer buffer = ReadFromFile(file, bufferSize);
-    p.map = App::Client::Map::FromBuffer(buffer.GetReader(), logger);
+    p.map = App::Client::Map::FromBuffer(buffer.GetReader());
 
     // Camera Pos/Rot
     p.cameraPos = ReadFromFile<glm::vec3>(file);

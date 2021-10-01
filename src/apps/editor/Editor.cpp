@@ -186,7 +186,7 @@ void BlockBuster::Editor::Editor::SaveProject()
     // Cursor Pos
     project.cursorPos = cursor.pos;
     project.cursorScale = cursor.scale;
-    ::BlockBuster::Editor::WriteProjectToFile(project, mapPath, logger.get());
+    ::BlockBuster::Editor::WriteProjectToFile(project, mapPath);
 
     RenameMainWindow(fileName);
 
@@ -198,7 +198,7 @@ void BlockBuster::Editor::Editor::SaveProject()
 Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
 {
     std::filesystem::path mapPath = mapsFolder / fileName;
-    Project temp = ::BlockBuster::Editor::ReadProjectFromFile(mapPath, logger.get());
+    Project temp = ::BlockBuster::Editor::ReadProjectFromFile(mapPath);
 
     auto res = Util::CreateError<bool>("Could not open project");
 

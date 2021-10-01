@@ -14,7 +14,7 @@
 #include <client/Map.h>
 #include <client/CameraController.h>
 
-#include <rendering/ChunkMeshMgr.h>
+#include <client/ChunkMeshMgr.h>
 
 namespace BlockBuster
 {
