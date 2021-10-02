@@ -10,11 +10,11 @@
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
 
-#include <client/Player.h>
-#include <client/Map.h>
-#include <client/CameraController.h>
+#include <game/Player.h>
+#include <game/Map.h>
+#include <game/CameraController.h>
 
-#include <client/ChunkMeshMgr.h>
+#include <game/ChunkMeshMgr.h>
 
 namespace BlockBuster
 {

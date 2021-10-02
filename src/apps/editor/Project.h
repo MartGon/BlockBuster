@@ -1,10 +1,10 @@
 #pragma once
 
-#include <game/Map.h>
-#include <client/TexturePalette.h>
-#include <client/ColorPalette.h>
+#include <blockbuster/Map.h>
+#include <game/TexturePalette.h>
+#include <game/ColorPalette.h>
 
-#include <client/Map.h>
+#include <game/Map.h>
 
 #include <mglogger/MGLogger.h>
 

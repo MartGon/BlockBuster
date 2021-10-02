@@ -1,6 +1,6 @@
 #pragma once
 
-#include <game/Block.h>
+#include <blockbuster/Block.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>

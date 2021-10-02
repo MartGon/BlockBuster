@@ -1,6 +1,6 @@
 #include <App.h>
 
-#include <client/ServiceLocator.h>
+#include <game/ServiceLocator.h>
 
 #include <string>
 

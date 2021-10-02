@@ -1,6 +1,6 @@
 #include <Editor.h>
 
-#include <game/Game.h>
+#include <blockbuster/Game.h>
 #include <math/BBMath.h>
 
 #include <iostream>

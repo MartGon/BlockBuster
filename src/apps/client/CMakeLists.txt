@@ -1,11 +1,11 @@
 SET(SOURCES
 
     Client.cpp
-    BlockBuster.cpp
+    Main.cpp
 )
 
-add_executable(BlockBuster ${SOURCES})
-target_link_libraries(BlockBuster 
+add_executable(Client ${SOURCES})
+target_link_libraries(Client 
     imgui 
     GLAD 
     ${X11_LIBRARIES} 
@@ -16,13 +16,13 @@ target_link_libraries(BlockBuster
     GL 
     Rendering 
     Math 
-    Game 
+    BlockBuster 
     App
-    AppsGame
+    Game
 
     enet
 )
-target_include_directories(BlockBuster PUBLIC 
+target_include_directories(Client PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${OPENGL_INCLUDE_DIR} 
     ${DEPS_FOLDER} 

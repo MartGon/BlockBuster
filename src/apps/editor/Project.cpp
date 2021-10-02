@@ -1,7 +1,7 @@
 #include <Project.h>
 
 #include <debug/Debug.h>
-#include <client/ServiceLocator.h>
+#include <game/ServiceLocator.h>
 
 #include <fstream>
 #include <iostream>

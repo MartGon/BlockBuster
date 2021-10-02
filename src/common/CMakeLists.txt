@@ -5,6 +5,6 @@ add_subdirectory(debug)
 add_subdirectory(util)
 add_subdirectory(math)
 add_subdirectory(collisions)
-add_subdirectory(game)
+add_subdirectory(blockbuster)
 
 #add_subdirectory(gl)

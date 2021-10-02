@@ -6,7 +6,7 @@
 #include <gl/VertexArray.h>
 #include <gl/Shader.h>
 
-#include <game/Map.h>
+#include <blockbuster/Map.h>
 
 namespace Rendering::ChunkMesh
 {

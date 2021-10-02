@@ -2,7 +2,7 @@
 #include <doctest/doctest.h>
 
 #include <math/BBMath.h>
-#include <game/Map.h>
+#include <blockbuster/Map.h>
 
 #include <util/Serializable.h>
 

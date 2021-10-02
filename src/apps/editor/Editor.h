@@ -9,12 +9,12 @@
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
-#include <client/ChunkMeshMgr.h>
+#include <game/ChunkMeshMgr.h>
 
-#include <client/Player.h>
-#include <game/Block.h>
-#include <game/Map.h>
-#include <client/CameraController.h>
+#include <game/Player.h>
+#include <blockbuster/Block.h>
+#include <blockbuster/Map.h>
+#include <game/CameraController.h>
 
 #include <imgui/backends/imgui_impl_opengl3.h>
 

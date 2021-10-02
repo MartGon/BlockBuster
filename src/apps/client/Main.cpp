@@ -28,19 +28,21 @@
 
 #include <math/Transform.h>
 
-#include <game/Block.h>
-#include <client/Player.h>
+#include <blockbuster/Block.h>
+#include <game/Player.h>
 
-#include <Editor.h>
+#include <game/ServiceLocator.h>
 
-const int WINDOW_WIDTH = 1024;
-const int WINDOW_HEIGHT = 720;
+#include <Client.h>
 
-int main(int argc, char* args[])
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 600;
+
+int main()
 {
     App::Configuration config{
         App::Configuration::WindowConfig{
-            "Editor",
+            "Client",
             WINDOW_WIDTH,
             WINDOW_HEIGHT,
             SDL_WINDOWPOS_CENTERED,
@@ -54,46 +56,35 @@ int main(int argc, char* args[])
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
-            "./editor.log", Log::Verbosity::ERROR
+            "./client.log", Log::Verbosity::ERROR
         }
     };
 
-    std::filesystem::path configPath("editor.ini");
-    try
-    {
-        config = App::LoadConfig(configPath);
-    }
-    catch (const std::out_of_range& e)
-    {
-        std::cerr << "Configuration file is corrupted:" << e.what() << '\n';
-        std::cerr << "Either fix or remove it to generate the default one\n";
-        std::exit(-1);
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
-        std::cerr << "Loading default config\n";
-    }
+        // Init logger
+    auto cLogger = std::make_unique<Log::ComposedLogger>();
+    auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
+    cLogger->AddLogger(std::move(consoleLogger));
 
-    try {
-        BlockBuster::Editor::Editor editor(config);
-        editor.Start();
-
-        while (!editor.Quit())
-        {
-            editor.Update();
-        }
-        editor.Shutdown();
-        config = editor.config;
-
-        std::cout << "Quitting\n";
-    }
-    catch (const std::runtime_error& e)
+    auto filelogger = std::make_unique<Log::FileLogger>();
+    filelogger->OpenLogFile(config.log.logFile);
+    
+    if(filelogger->IsOk())
+        cLogger->AddLogger(std::move(filelogger));
+    else
     {
-        std::cerr << e.what() << '\n';
+        std::string msg = "Could not open log file: " + std::string(config.log.logFile) + '\n';
+        cLogger->LogError(msg);
     }
+    cLogger->SetVerbosity(config.log.verbosity);
+    App::ServiceLocator::SetLogger(std::move(cLogger));
+    
+    BlockBuster::Client client(config);
+    client.Start();
 
-    App::WriteConfig(config, configPath);
+    while(!client.Quit())
+    {
+        client.Update();
+    }
 
     return 0;
 }

@@ -1,6 +1,6 @@
 SET(SOURCES
 
-    BlockBuster.cpp
+    Main.cpp
     Editor.cpp
     EditorGUI.cpp
     Project.cpp
@@ -20,9 +20,9 @@ target_link_libraries(Editor
     GL 
     Rendering 
     Math 
-    Game 
+    BlockBuster 
     App
-    AppsGame
+    Game
     
     Debug
 )

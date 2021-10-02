@@ -4,8 +4,8 @@
 
 #include <math/Transform.h>
 
-#include <game/Block.h>
-#include <game/Map.h>
+#include <blockbuster/Block.h>
+#include <blockbuster/Map.h>
 
 #include <vector>
 

@@ -11,8 +11,8 @@ SET(SOURCES
 )
 
 
-add_library(AppsGame ${SOURCES})
-target_link_libraries(AppsGame 
+add_library(Game ${SOURCES})
+target_link_libraries(Game 
     GLAD 
     ${X11_LIBRARIES} 
     ${OPENGL_LIBRARIES} 
@@ -23,10 +23,11 @@ target_link_libraries(AppsGame
     Rendering
     Collisions 
     Math
-    Game
-    App
+    BlockBuster
+
+    Log
 )
-target_include_directories(AppsGame PUBLIC include 
+target_include_directories(Game PUBLIC include 
     ${OPENGL_INCLUDE_DIR}  
     ${GLAD_INCLUDE_DIR} 
     ${DEPS_FOLDER} 

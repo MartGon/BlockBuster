@@ -1,4 +1,4 @@
-#include <client/Map.h>
+#include <game/Map.h>
 
 #include <iostream>
 

@@ -28,21 +28,19 @@
 
 #include <math/Transform.h>
 
-#include <game/Block.h>
-#include <client/Player.h>
+#include <blockbuster/Block.h>
+#include <game/Player.h>
 
-#include <client/ServiceLocator.h>
+#include <Editor.h>
 
-#include <Client.h>
+const int WINDOW_WIDTH = 1024;
+const int WINDOW_HEIGHT = 720;
 
-const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 600;
-
-int main()
+int main(int argc, char* args[])
 {
     App::Configuration config{
         App::Configuration::WindowConfig{
-            "Client",
+            "Editor",
             WINDOW_WIDTH,
             WINDOW_HEIGHT,
             SDL_WINDOWPOS_CENTERED,
@@ -56,35 +54,46 @@ int main()
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
-            "./client.log", Log::Verbosity::ERROR
+            "./editor.log", Log::Verbosity::ERROR
         }
     };
 
-        // Init logger
-    auto cLogger = std::make_unique<Log::ComposedLogger>();
-    auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
-    cLogger->AddLogger(std::move(consoleLogger));
-
-    auto filelogger = std::make_unique<Log::FileLogger>();
-    filelogger->OpenLogFile(config.log.logFile);
-    
-    if(filelogger->IsOk())
-        cLogger->AddLogger(std::move(filelogger));
-    else
+    std::filesystem::path configPath("editor.ini");
+    try
     {
-        std::string msg = "Could not open log file: " + std::string(config.log.logFile) + '\n';
-        cLogger->LogError(msg);
+        config = App::LoadConfig(configPath);
     }
-    cLogger->SetVerbosity(config.log.verbosity);
-    App::ServiceLocator::SetLogger(std::move(cLogger));
-    
-    BlockBuster::Client client(config);
-    client.Start();
-
-    while(!client.Quit())
+    catch (const std::out_of_range& e)
     {
-        client.Update();
+        std::cerr << "Configuration file is corrupted:" << e.what() << '\n';
+        std::cerr << "Either fix or remove it to generate the default one\n";
+        std::exit(-1);
     }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        std::cerr << "Loading default config\n";
+    }
+
+    try {
+        BlockBuster::Editor::Editor editor(config);
+        editor.Start();
+
+        while (!editor.Quit())
+        {
+            editor.Update();
+        }
+        editor.Shutdown();
+        config = editor.config;
+
+        std::cout << "Quitting\n";
+    }
+    catch (const std::runtime_error& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+
+    App::WriteConfig(config, configPath);
 
     return 0;
 }

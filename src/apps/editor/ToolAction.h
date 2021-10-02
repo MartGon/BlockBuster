@@ -1,8 +1,8 @@
 #pragma once
 
-#include <game/Block.h>
+#include <blockbuster/Block.h>
 
-#include <client/Map.h>
+#include <game/Map.h>
 
 #include <vector>
 #include <memory>

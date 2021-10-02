@@ -12,6 +12,7 @@ set(SHADERS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 
 add_compile_definitions(SHADERS_DIR="${SHADERS_FOLDER}")
 add_compile_definitions(TEXTURES_DIR="${CMAKE_SOURCE_DIR}/resources/textures/")
+add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD=1)
 # Add compile defines
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     add_compile_definitions(_DEBUG=1)
