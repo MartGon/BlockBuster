@@ -55,11 +55,9 @@ namespace Util
             index += sizeof(T);
         }
 
-        template<>
-        void Write(const char* data);
+        void WriteCStr(const char* data);
 
-        template<>
-        void Write(std::string str);
+        void WriteStr(std::string str);
 
         void Write(void* data, uint32_t dataSize);
 
@@ -86,8 +84,7 @@ namespace Util
                 return ret;
             }
 
-            template<>
-            std::string Read();
+            std::string ReadStr();
             Buffer Read(uint32_t dataSize);
 
             bool IsOver() const;

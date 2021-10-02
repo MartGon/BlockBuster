@@ -75,23 +75,20 @@ void Buffer::WriteAt(void* data, uint32_t dataSize, uint32_t offset)
     std::memcpy(index, data, dataSize);
 }
 
-template<>
-void Buffer::Write(const char* data)
+void Buffer::WriteCStr(const char* data)
 {
     std::string str(data);
-    Write(str);
+    WriteStr(str);
 }
 
-template<>
-void Buffer::Write(std::string str)
+void Buffer::WriteStr(std::string str)
 {
     for(auto c : str)
         Write(c);
     Write('\0');
 }
 
-template<>
-std::string Buffer::Reader::Read()
+std::string Buffer::Reader::ReadStr()
 {
     std::string str;
 

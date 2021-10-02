@@ -38,6 +38,11 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: ctest -C ${{env.BUILD_TYPE}}
 
+      - name: Cat log
+        if: ${{ failure() }}
+        working-directory: ${{github.workspace}}/build
+        run: cat Testing/Temporary/LastTest.log
+
       - name: Install Valgrind
         run: sudo apt install valgrind
 

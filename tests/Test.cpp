@@ -97,7 +97,7 @@ TEST_CASE("Buffer tests")
         CHECK(str == "Hey");
 
         hey.WriteAt(' ', 3);
-        hey.Write("mate");
+        hey.WriteStr("mate");
 
         CHECK(hey.GetSize() == 9);
         CHECK(hey.GetCapacity() == 132);
@@ -107,7 +107,7 @@ TEST_CASE("Buffer tests")
     SUBCASE("Reader")
     {
         Util::Buffer a;
-        a.Write("Hello world\0");
+        a.WriteStr("Hello world\0");
         auto reader = a.GetReader();
 
         auto subBuffer = reader.Read(5);
@@ -116,7 +116,7 @@ TEST_CASE("Buffer tests")
         CHECK("Hello" == hello);
         
         reader.Skip(1);
-        auto world = reader.Read<std::string>();
+        auto world = reader.ReadStr();
         CHECK("world" == world);
         CHECK(reader.IsOver() == true);
     }
