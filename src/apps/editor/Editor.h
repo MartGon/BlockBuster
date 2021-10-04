@@ -341,7 +341,6 @@ namespace BlockBuster
                 bool useTextureArray = true;
             #endif
             bool drawChunkBorders = false;
-            Log::Logger* logger = nullptr;
 
             // Help
             bool showShortcutWindow = false;

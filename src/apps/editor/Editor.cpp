@@ -747,7 +747,7 @@ bool BlockBuster::Editor::Editor::CanMoveSelection(glm::ivec3 offset)
     for(const auto& pair : selection)
     {
         auto pos = pair.first + offset;
-        if(project.map.IsNullBlock(pos) && !IsBlockInSelection(pos))
+        if(!project.map.IsNullBlock(pos) && !IsBlockInSelection(pos))
             return false;
     }
 

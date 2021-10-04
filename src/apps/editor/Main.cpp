@@ -29,6 +29,7 @@
 #include <math/Transform.h>
 
 #include <blockbuster/Block.h>
+#include <game/ServiceLocator.h>
 #include <game/Player.h>
 
 #include <Editor.h>
@@ -58,6 +59,25 @@ int main(int argc, char* args[])
         }
     };
 
+    // Init logger
+    auto cLogger = std::make_unique<Log::ComposedLogger>();
+    auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
+    cLogger->AddLogger(std::move(consoleLogger));
+
+    auto filelogger = std::make_unique<Log::FileLogger>();
+    filelogger->OpenLogFile(config.log.logFile);
+    
+    if(filelogger->IsOk())
+        cLogger->AddLogger(std::move(filelogger));
+    else
+    {
+        std::string msg = "Could not open log file: " + std::string(config.log.logFile) + '\n';
+        cLogger->LogError(msg);
+    }
+    cLogger->SetVerbosity(config.log.verbosity);
+    App::ServiceLocator::SetLogger(std::move(cLogger));
+
+    // Load config
     std::filesystem::path configPath("editor.ini");
     try
     {
@@ -65,32 +85,30 @@ int main(int argc, char* args[])
     }
     catch (const std::out_of_range& e)
     {
-        std::cerr << "Configuration file is corrupted:" << e.what() << '\n';
-        std::cerr << "Either fix or remove it to generate the default one\n";
+        App::ServiceLocator::GetLogger()->LogError(std::string("Configuration file is corrupted:") + e.what() + '\n');
+        App::ServiceLocator::GetLogger()->LogError("Either fix or remove it to generate the default one\n");
         std::exit(-1);
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
-        std::cerr << "Loading default config\n";
+        App::ServiceLocator::GetLogger()->LogError(std::string(e.what()) + '\n');
+        App::ServiceLocator::GetLogger()->LogInfo("Loading default config\n");
     }
 
     try {
         BlockBuster::Editor::Editor editor(config);
         editor.Start();
 
-        while (!editor.Quit())
+        while(!editor.Quit())
         {
             editor.Update();
         }
         editor.Shutdown();
         config = editor.config;
-
-        std::cout << "Quitting\n";
     }
     catch (const std::runtime_error& e)
     {
-        std::cerr << e.what() << '\n';
+        App::ServiceLocator::GetLogger()->LogError(std::string(e.what()) + '\n');
     }
 
     App::WriteConfig(config, configPath);

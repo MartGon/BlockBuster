@@ -60,7 +60,7 @@ int main()
         }
     };
 
-        // Init logger
+    // Init logger
     auto cLogger = std::make_unique<Log::ComposedLogger>();
     auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
     cLogger->AddLogger(std::move(consoleLogger));

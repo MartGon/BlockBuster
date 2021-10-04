@@ -124,7 +124,7 @@ Util::Buffer Map::ToBuffer()
     // Concat inner buffers
     buffer.Write(blockScale);
     buffer.Append(map_.ToBuffer());
-    buffer.Write(textureFolder);
+    buffer.Write<std::string>(textureFolder);
     buffer.Append(tPalette.ToBuffer());
     buffer.Append(cPalette.ToBuffer());
 

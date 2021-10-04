@@ -7,7 +7,6 @@ namespace App
     class ServiceLocator
     {
     public:
-
         static void SetLogger(std::unique_ptr<Log::Logger> logger);
         static Log::Logger* GetLogger();
 
