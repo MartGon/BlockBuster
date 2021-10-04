@@ -9,6 +9,7 @@
     - Use App::Clinet::Map in client - DONE
     - Render and calculate delta time - DONE
     - Make simple *player* entity, a cube with a given position and move dir. Move in random dirs - DONE
+    - Decide different sampling/packet rates.
 - Creat Enet wrapper classes
     - Server
     - Client
