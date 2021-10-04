@@ -55,10 +55,6 @@ namespace Util
             index += sizeof(T);
         }
 
-        void WriteCStr(const char* data);
-
-        void WriteStr(std::string str);
-
         void Write(void* data, uint32_t dataSize);
 
         template<typename T>
@@ -83,8 +79,6 @@ namespace Util
                 index += sizeof(T);
                 return ret;
             }
-
-            std::string ReadStr();
             Buffer Read(uint32_t dataSize);
 
             bool IsOver() const;
@@ -103,4 +97,14 @@ namespace Util
         uint32_t capacity = 0;
         unsigned char* buffer = nullptr;
     };
+
+    // Buffer Write specializations
+    template<>
+    void Buffer::Write(const char* data);
+    template<>
+    void Buffer::Write(std::string str);
+
+    // Buffer::Reader read specializations
+    template<>
+    std::string Buffer::Reader::Read();
 }

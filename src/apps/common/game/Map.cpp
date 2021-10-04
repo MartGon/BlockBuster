@@ -124,7 +124,7 @@ Util::Buffer Map::ToBuffer()
     // Concat inner buffers
     buffer.Write(blockScale);
     buffer.Append(map_.ToBuffer());
-    buffer.WriteStr(textureFolder);
+    buffer.Write(textureFolder);
     buffer.Append(tPalette.ToBuffer());
     buffer.Append(cPalette.ToBuffer());
 
@@ -137,7 +137,7 @@ Map Map::FromBuffer(Util::Buffer::Reader reader)
 
     map.blockScale = reader.Read<float>();
     map.map_ = Game::Map::Map::FromBuffer(reader);
-    map.textureFolder = reader.ReadStr();
+    map.textureFolder = reader.Read<std::string>();
     map.tPalette = Rendering::TexturePalette::FromBuffer(reader, map.textureFolder);
     map.cPalette = Rendering::ColorPalette::FromBuffer(reader);
 

@@ -65,7 +65,7 @@ Util::Buffer Rendering::TexturePalette::ToBuffer() const
     {
         auto texturePath =  members_[i].filepath;
         auto textureName = texturePath.filename().string();
-        buffer.WriteStr(textureName);
+        buffer.Write(textureName);
     }
 
     return std::move(buffer);
@@ -78,7 +78,7 @@ Rendering::TexturePalette Rendering::TexturePalette::FromBuffer(Util::Buffer::Re
     auto textureSize = reader.Read<std::size_t>();
     for(auto i = 0; i < textureSize; i++)
     {
-        auto filename = reader.ReadStr();
+        auto filename = reader.Read<std::string>();
         auto texturePath = textureFolder / filename;
         auto res = palette.AddTexture(textureFolder, filename);
         if(res.type == Util::ResultType::ERROR)
