@@ -269,6 +269,7 @@ void BlockBuster::Editor::Editor::SetTextureFolderPopUp()
         if(std::filesystem::is_directory(this->textureFolderPath))
         {
             this->project.map.textureFolder = this->textureFolderPath;
+            
             return Util::CreateSuccess<bool>(true);
         }
         else
@@ -690,7 +691,7 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
     const auto scrollbarOffsetX = 14.0f;
 
     glm::vec2 region = ImGui::GetContentRegionAvail();
-    int columns = glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS);
+    int columns = glm::max(1, glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS));
     int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : project.map.cPalette.GetCount();
     int minRows = glm::max((int)glm::ceil((float)entries / (float)columns), 1);
     int rows = glm::min(MAX_ROWS, minRows);

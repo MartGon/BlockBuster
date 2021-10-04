@@ -84,7 +84,7 @@ Rendering::TexturePalette Rendering::TexturePalette::FromBuffer(Util::Buffer::Re
         if(res.type == Util::ResultType::ERROR)
         {
             if(auto logger = App::ServiceLocator::GetLogger())
-                logger->LogError("Could not load texture " + texturePath.string() + "Loading dummy texture instead");
+                logger->LogError("Could not load texture " + texturePath.string() + ". Loading dummy texture instead");
             palette.AddNullTexture(texturePath);
         }
     }

@@ -74,8 +74,6 @@ int main(int argc, char* args[])
         std::string msg = "Could not open log file: " + std::string(config.log.logFile) + '\n';
         cLogger->LogError(msg);
     }
-    cLogger->SetVerbosity(config.log.verbosity);
-    App::ServiceLocator::SetLogger(std::move(cLogger));
 
     // Load config
     std::filesystem::path configPath("editor.ini");
@@ -94,6 +92,10 @@ int main(int argc, char* args[])
         App::ServiceLocator::GetLogger()->LogError(std::string(e.what()) + '\n');
         App::ServiceLocator::GetLogger()->LogInfo("Loading default config\n");
     }
+
+    // Set logger
+    cLogger->SetVerbosity(config.log.verbosity);
+    App::ServiceLocator::SetLogger(std::move(cLogger));
 
     try {
         BlockBuster::Editor::Editor editor(config);

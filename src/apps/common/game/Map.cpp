@@ -1,5 +1,7 @@
 #include <game/Map.h>
 
+#include <ServiceLocator.h>
+
 #include <iostream>
 
 using namespace App::Client;
@@ -12,7 +14,7 @@ Map::Map(Map&& other)
 Map& Map::operator=(Map&& other) 
 {
     std::swap(this->map_, other.map_);
-    std::swap(this->textureFolder, textureFolder);
+    std::swap(this->textureFolder, other.textureFolder);
     std::swap(this->blockScale, other.blockScale);
     std::swap(tPalette, other.tPalette);
     std::swap(cPalette, other.cPalette);
