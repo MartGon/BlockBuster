@@ -4,7 +4,7 @@
 #include <math/BBMath.h>
 #include <blockbuster/Map.h>
 
-#include <util/Serializable.h>
+#include <util/Buffer.h>
 
 TEST_CASE("Math tests")
 {

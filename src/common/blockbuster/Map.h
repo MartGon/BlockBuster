@@ -6,7 +6,7 @@
 #include <glm/gtx/hash.hpp>
 
 #include <unordered_map>
-#include <util/Serializable.h>
+#include <util/Buffer.h>
 
 namespace Game
 {

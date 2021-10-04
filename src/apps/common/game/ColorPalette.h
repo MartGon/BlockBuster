@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <gl/TextureArray.h>
-#include <util/Serializable.h>
+#include <util/Buffer.h>
 
 #include <vector>
 

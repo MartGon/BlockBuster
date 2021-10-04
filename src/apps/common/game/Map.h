@@ -4,7 +4,7 @@
 #include <TexturePalette.h>
 #include <ColorPalette.h>
 #include <ChunkMeshMgr.h>
-#include <util/Serializable.h>
+#include <util/Buffer.h>
 
 namespace App::Client
 {

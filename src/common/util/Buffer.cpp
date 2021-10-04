@@ -1,4 +1,4 @@
-#include <util/Serializable.h>
+#include <util/Buffer.h>
 
 #include <debug/Debug.h>
 

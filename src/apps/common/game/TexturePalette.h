@@ -1,7 +1,7 @@
 #pragma once
 
 #include <gl/TextureArray.h>
-#include <util/Serializable.h>
+#include <util/Buffer.h>
 
 #include <mglogger/Logger.h>
 
