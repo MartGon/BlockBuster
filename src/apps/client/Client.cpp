@@ -74,13 +74,13 @@ void BlockBuster::Client::GeneratePlayerTarget(unsigned int playerId)
     playerTargets[playerId] = glm::vec3{x, 4.15f, z};
 }
 
-void BlockBuster::Client::PlayerUpdate(unsigned int playerId, float deltaTime)
+void BlockBuster::Client::PlayerUpdate(unsigned int playerId, double deltaTime)
 {
     auto& player = players[playerId];
     auto playerTarget = playerTargets[playerId];
 
     auto moveDir = glm::normalize(playerTarget - player.position);
-    auto velocity = moveDir * PLAYER_SPEED * deltaTime;
+    auto velocity = moveDir * PLAYER_SPEED * (float)UPDATE_RATE ;
     player.position += velocity;
 
     auto dist = glm::length(playerTarget - player.position);
@@ -88,32 +88,45 @@ void BlockBuster::Client::PlayerUpdate(unsigned int playerId, float deltaTime)
         GeneratePlayerTarget(playerId);
 }
 
-void BlockBuster::Client::Update()
+double BlockBuster::Client::GetCurrentTime() const
 {
     using namespace std::chrono;
-    auto prev = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    DoUpdate(deltaTime);
-    auto now = duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count();
-    deltaTime = (now - prev) / 1000000000.f;
-    logger->LogInfo("Elapsed time: " + std::to_string(deltaTime));
+    return duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count() / 1e9;
 }
 
-void BlockBuster::Client::DoUpdate(float deltaTime)
+void BlockBuster::Client::Update()
 {
-    HandleSDLEvents();
+    double previous = GetCurrentTime();
+    double lag = 0.0;
+
+    logger->LogInfo("Update rate(s) is: " + std::to_string(UPDATE_RATE));
+    while(!quit)
+    {
+        auto now = GetCurrentTime();
+        auto elapsed = (now - previous);
+        
+        previous = now;
+        lag += elapsed;
+
+        HandleSDLEvents();
+
+        while(lag >= UPDATE_RATE)
+        {
+            DoUpdate(UPDATE_RATE);
+            lag -= UPDATE_RATE;
+        }
+
+        DrawScene();
+    }
+}
+
+void BlockBuster::Client::DoUpdate(double deltaTime)
+{
     camController_.Update();
 
     // Networking
     for(auto player : players)
         PlayerUpdate(player.first, deltaTime);
-
-    // Clear Buffer
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    DrawScene();
-
-    SDL_GL_SwapWindow(window_);
 }
 
 bool BlockBuster::Client::Quit()
@@ -143,6 +156,10 @@ void BlockBuster::Client::HandleSDLEvents()
 
 void BlockBuster::Client::DrawScene()
 {
+    // Clear Buffer
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     // Draw data
     auto view = camera_.GetProjViewMat();
 
@@ -163,4 +180,7 @@ void BlockBuster::Client::DrawScene()
 
     // Draw map
     map_.Draw(chunkShader, view);
+
+    // Swap buffers
+    SDL_GL_SwapWindow(window_);
 }

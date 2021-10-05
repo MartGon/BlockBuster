@@ -29,13 +29,16 @@ namespace BlockBuster
         
     private:
 
-        void DoUpdate(float deltaTime);
+        void DoUpdate(double deltaTime);
         void HandleSDLEvents();
         void DrawScene();
 
         // Networking
         void GeneratePlayerTarget(unsigned int playerId);
-        void PlayerUpdate(unsigned int playerId, float deltaTime);
+        void PlayerUpdate(unsigned int playerId, double deltaTime);
+
+        // Time
+        double GetCurrentTime() const;
 
         // Scene
         ::App::Client::Map map_;
@@ -47,7 +50,7 @@ namespace BlockBuster
         Rendering::Camera camera_;
 
         // Update
-        float deltaTime = 0.016666f;
+        const double UPDATE_RATE = 0.020;
 
         // Controls
         ::App::Client::CameraController camController_;
