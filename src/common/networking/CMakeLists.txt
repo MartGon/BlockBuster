@@ -1,5 +1,6 @@
 SET(SOURCES
 
+    Address.cpp
     Exception.cpp
     Host.cpp
     HostFactory.cpp

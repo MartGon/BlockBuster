@@ -1,9 +1,10 @@
 #pragma once
 
 #include <stdint.h>
-#include <Peer.h>
-
 #include <optional>
+
+#include <Peer.h>
+#include <Address.h>
 
 namespace ENet
 {
@@ -20,12 +21,13 @@ namespace ENet
         Host& operator=(Host&&);
 
         ENetEvent PollEvent(uint32_t timeout = 0);
-        std::optional<ENet::Peer> Connect(ENetAddress address);
+        std::optional<ENet::Peer> Connect(Address address);
+        void Broadcast(uint8_t channelId, const Packet& packet);
 
     private:
-        Host(ENetAddress address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth);
+        Host(Address address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth);
 
-        ENetAddress address_;
+        Address address_;
         uint32_t connections_;
         uint32_t channels_;
         uint32_t inBandwidth_;

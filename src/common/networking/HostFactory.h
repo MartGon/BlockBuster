@@ -3,6 +3,7 @@
 #include <enet/enet.h>
 #include <memory>
 #include <optional>
+
 #include <Host.h>
 
 namespace ENet
@@ -14,7 +15,7 @@ namespace ENet
 
         HostFactory* Get();
 
-        Host CreateHost(ENetAddress address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth);
+        Host CreateHost(Address address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth);
 
     private:
         static std::unique_ptr<HostFactory> socketFactory_;
