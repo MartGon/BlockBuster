@@ -11,7 +11,6 @@ Peer::Peer(ENetPeer* peer) : peer_{peer}
 
 Peer::~Peer()
 {
-    enet_peer_reset(peer_);
 }
 
 Peer::Peer(Peer&& other)

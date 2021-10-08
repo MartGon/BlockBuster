@@ -13,7 +13,7 @@ Packet::Packet(const void* data, uint32_t size, ENetPacketFlag flags)
 
 Packet::~Packet()
 {
-    enet_packet_destroy(packet_);
+    
 }
 
 Packet::Packet(Packet&& other)

@@ -10,6 +10,8 @@ namespace ENet
     {
     friend class Host;
     public:
+        // TODO: Move back to private. Only hosts should create these
+        Peer(ENetPeer* peer);
         ~Peer();
 
         Peer(const Peer&) = delete;
@@ -20,9 +22,10 @@ namespace ENet
 
         bool SendPacket(uint8_t channelId, const Packet& packet);
 
-    private:
-        Peer(ENetPeer* peer);
+        // Get address
 
-        ENetPeer* peer_;
+    private:
+
+        ENetPeer* peer_ = nullptr;
     };
 }

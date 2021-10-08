@@ -12,10 +12,12 @@ namespace ENet
     friend class Host;
     public:
 
-        static std::optional<Address> CreateByDomain(const std::string& domain);
-        static std::optional<Address> CreateByIPAddress(const std::string& ip);
+        static Address CreateNull();
+        static std::optional<Address> CreateByDomain(const std::string& domain, uint16_t port);
+        static std::optional<Address> CreateByIPAddress(const std::string& ip, uint16_t port);
 
         std::string GetHostName() const;
+        uint16_t GetPort() const;
 
     private:
         Address(std::string hostname, ENetAddress address) : hostname_{hostname}, address_{address}

@@ -1,0 +1,22 @@
+SET(SOURCES
+
+    Server.cpp
+)
+
+add_executable(Server ${SOURCES})
+target_link_libraries(Server
+
+    Collisions 
+    Math
+    Log
+    Networking
+
+    enet
+)
+
+target_include_directories(Server PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${DEPS_FOLDER} 
+    ${DEPS_FOLDER}/enet/include
+    ${COMMON_DIR}
+)

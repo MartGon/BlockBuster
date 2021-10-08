@@ -11,6 +11,15 @@ Host::Host(Address address, uint32_t connections, uint32_t channels, uint32_t in
         throw Exception("Could not create Enet::Host");
 }
 
+Host::Host(uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth) : 
+    address_{Address::CreateNull()}, connections_{connections}, channels_{channels}, inBandwidth_{inBandwidth}, outBandwidth_{outBandwidth}
+{
+    socket_ = enet_host_create(nullptr, connections, channels, inBandwidth, outBandwidth);
+    if(socket_ == nullptr)
+        throw Exception("Could not create Enet::Host");
+}
+
+
 Host::~Host()
 {
     if(socket_)

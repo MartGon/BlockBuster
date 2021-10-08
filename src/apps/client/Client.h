@@ -13,15 +13,16 @@
 #include <game/Player.h>
 #include <game/Map.h>
 #include <game/CameraController.h>
-
 #include <game/ChunkMeshMgr.h>
+
+#include <networking/Networking.h>
 
 namespace BlockBuster
 {
     class Client : public App::App
     {
     public:
-        Client(::App::Configuration config) : App{config} {}
+        Client(::App::Configuration config);
 
         void Start() override;
         void Update() override;
@@ -31,6 +32,7 @@ namespace BlockBuster
 
         void DoUpdate(double deltaTime);
         void HandleSDLEvents();
+        void UpdateNetworking();
         void DrawScene();
 
         // Networking
@@ -48,6 +50,7 @@ namespace BlockBuster
         GL::Shader chunkShader;
         Rendering::Mesh cylinder;
         Rendering::Camera camera_;
+        int drawMode = GL_FILL;
 
         // Update
         const double UPDATE_RATE = 0.020;
@@ -59,8 +62,12 @@ namespace BlockBuster
         std::unordered_map<uint8_t, Math::Transform> players;
         std::unordered_map<uint8_t, glm::vec3> playerTargets;
         float PLAYER_SPEED = 2.f;
-        
+
+        // Networking
+        ENet::Host host;
+        std::optional<ENet::Peer> server;
+
+        // App
         bool quit = false;
-        int drawMode = GL_FILL;
     };
 }

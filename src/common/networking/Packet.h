@@ -4,6 +4,9 @@
 
 namespace ENet
 {
+    // TODO: Create two types of packets: Sent and recv
+    // Sent is deallocated by enet
+    // Recv is deallocated by us
     class Packet
     {
     friend class Host;

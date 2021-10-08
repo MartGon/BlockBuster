@@ -13,12 +13,13 @@ namespace ENet
     public:
         ~HostFactory();
 
-        HostFactory* Get();
+        static HostFactory* Get();
 
-        Host CreateHost(Address address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth);
+        Host CreateHost(Address address, uint32_t connections, uint32_t channels, uint32_t inBandwidth = 0, uint32_t outBandwidth = 0);
+        Host CreateHost(uint32_t connections, uint32_t channels, uint32_t inBandwidth = 0, uint32_t outBandwidth = 0);
 
     private:
-        static std::unique_ptr<HostFactory> socketFactory_;
+        static std::unique_ptr<HostFactory> hostFactory_;
 
         HostFactory();
     };

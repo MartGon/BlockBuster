@@ -8,6 +8,10 @@
 
 namespace ENet
 {
+    // TODO: Consider storing peers in a vector. They are bound to the host instance after all
+    // Allow the user to set some callbacks to handle different events
+    // After that, user simply calls PollEvent to dispatch each of the events
+
     class Host
     {
     friend class HostFactory;
@@ -26,6 +30,7 @@ namespace ENet
 
     private:
         Host(Address address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth);
+        Host(uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth);
 
         Address address_;
         uint32_t connections_;

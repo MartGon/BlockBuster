@@ -2,13 +2,15 @@
 
 using namespace ENet;
 
+std::unique_ptr<HostFactory> HostFactory::hostFactory_;
+
 HostFactory* HostFactory::Get()
 {
-    HostFactory* ptr = socketFactory_.get();
+    HostFactory* ptr = hostFactory_.get();
     if(ptr == nullptr)
     {
-        socketFactory_ = std::unique_ptr<HostFactory>();
-        ptr = socketFactory_.get();
+        hostFactory_ = std::unique_ptr<HostFactory>();
+        ptr = hostFactory_.get();
     }
 
     return ptr;
@@ -17,6 +19,11 @@ HostFactory* HostFactory::Get()
 Host HostFactory::CreateHost(Address address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth)
 {
     return Host{address, connections, channels, inBandwidth, outBandwidth};
+}
+
+Host HostFactory::CreateHost(uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth)
+{
+    return Host{connections, channels, inBandwidth, outBandwidth};
 }
 
 HostFactory::HostFactory()

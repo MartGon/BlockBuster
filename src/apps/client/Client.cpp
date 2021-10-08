@@ -6,6 +6,13 @@
 #include <algorithm>
 #include <chrono>
 
+using namespace BlockBuster;
+
+Client::Client(::App::Configuration config) : App{config}, 
+    host{ENet::HostFactory::Get()->CreateHost(1, 2)}
+{
+}
+
 void BlockBuster::Client::Start()
 {
     // GL features
@@ -65,33 +72,20 @@ void BlockBuster::Client::Start()
         auto playerId = player.first;
         GeneratePlayerTarget(playerId);
     }
-}
 
-void BlockBuster::Client::GeneratePlayerTarget(unsigned int playerId)
-{
-    auto x = Util::Random::Uniform(-14.f, 14.f);
-    auto z = Util::Random::Uniform(-14.f, 14.f);
-    playerTargets[playerId] = glm::vec3{x, 4.15f, z};
-}
-
-void BlockBuster::Client::PlayerUpdate(unsigned int playerId, double deltaTime)
-{
-    auto& player = players[playerId];
-    auto playerTarget = playerTargets[playerId];
-
-    auto moveDir = glm::normalize(playerTarget - player.position);
-    auto velocity = moveDir * PLAYER_SPEED * (float)UPDATE_RATE ;
-    player.position += velocity;
-
-    auto dist = glm::length(playerTarget - player.position);
-    if(dist < 1.0f)
-        GeneratePlayerTarget(playerId);
-}
-
-double BlockBuster::Client::GetCurrentTime() const
-{
-    using namespace std::chrono;
-    return duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count() / 1e9;
+    // Networking
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
+    server = host.Connect(serverAddress);
+    auto event = host.PollEvent(5000);
+    if(event.type == ENET_EVENT_TYPE_CONNECT)
+    {
+        logger->LogInfo("Connection to server successful");
+    }
+    else if(event.type == ENET_EVENT_TYPE_DISCONNECT)
+    {
+        logger->LogInfo("Connection to server failed. Quitting");
+        quit = true;
+    }
 }
 
 void BlockBuster::Client::Update()
@@ -109,6 +103,7 @@ void BlockBuster::Client::Update()
         lag += elapsed;
 
         HandleSDLEvents();
+        UpdateNetworking();
 
         while(lag >= UPDATE_RATE)
         {
@@ -154,6 +149,32 @@ void BlockBuster::Client::HandleSDLEvents()
     }
 }
 
+void Client::UpdateNetworking()
+{
+    auto event = host.PollEvent(0);
+    switch (event.type)
+    {
+    case ENET_EVENT_TYPE_CONNECT:
+        logger->LogInfo("Connected to client");
+        break;
+    case ENET_EVENT_TYPE_RECEIVE:
+    {
+        logger->LogInfo("Server packet recv of size: " + std::to_string(event.packet->dataLength));
+        uint32_t* tick = (uint32_t*) event.packet->data;
+        logger->LogInfo("Server packet with data: " + std::to_string(*tick));
+        enet_packet_destroy(event.packet);
+        break;
+    }
+    case ENET_EVENT_TYPE_DISCONNECT:
+        logger->LogInfo("Disconnected from server");
+        break;
+    
+    default:
+        //logger.LogInfo("Nothing happened"));
+        break;
+    }
+}
+
 void BlockBuster::Client::DrawScene()
 {
     // Clear Buffer
@@ -183,4 +204,31 @@ void BlockBuster::Client::DrawScene()
 
     // Swap buffers
     SDL_GL_SwapWindow(window_);
+}
+
+void BlockBuster::Client::GeneratePlayerTarget(unsigned int playerId)
+{
+    auto x = Util::Random::Uniform(-14.f, 14.f);
+    auto z = Util::Random::Uniform(-14.f, 14.f);
+    playerTargets[playerId] = glm::vec3{x, 4.15f, z};
+}
+
+void BlockBuster::Client::PlayerUpdate(unsigned int playerId, double deltaTime)
+{
+    auto& player = players[playerId];
+    auto playerTarget = playerTargets[playerId];
+
+    auto moveDir = glm::normalize(playerTarget - player.position);
+    auto velocity = moveDir * PLAYER_SPEED * (float)UPDATE_RATE ;
+    player.position += velocity;
+
+    auto dist = glm::length(playerTarget - player.position);
+    if(dist < 1.0f)
+        GeneratePlayerTarget(playerId);
+}
+
+double BlockBuster::Client::GetCurrentTime() const
+{
+    using namespace std::chrono;
+    return duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count() / 1e9;
 }

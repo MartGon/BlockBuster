@@ -20,6 +20,7 @@ target_link_libraries(Client
     App
     Game
 
+    Networking
     enet
 )
 target_include_directories(Client PUBLIC 
