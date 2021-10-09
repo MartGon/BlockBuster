@@ -42,25 +42,134 @@ Host& Host::operator=(Host&& other)
     return *this;
 }
 
-ENetEvent Host::PollEvent(uint32_t tiemout)
+void Host::SetOnRecvCallback(std::function<void(PeerId, uint8_t, RecvPacket)> callback)
+{
+    onRecv_ = callback;
+}
+
+void Host::SetOnConnectCallback(std::function<void(PeerId)> callback)
+{
+    onConnect_ = callback;
+}
+
+void Host::SetOnDisconnectCallback(std::function<void(PeerId)> callback)
+{
+    onDisconnect_ = callback;
+}
+
+void Host::PollEvent(uint32_t timeout)
 {
     ENetEvent event;
-    enet_host_service(socket_, &event, tiemout);
+    bool eventOccurred = enet_host_service(socket_, &event, timeout) > 0;
 
-    return event;
+    switch (event.type)
+    {
+        case ENET_EVENT_TYPE_CONNECT:
+        {
+            auto peerId = AddPeer(event.peer);
+            onConnect_(peerId);
+            break;
+        }
+        case ENET_EVENT_TYPE_RECEIVE:
+        {
+            RecvPacket recv{event.packet};
+            auto peerId = GetPeerId(event.peer);
+            onRecv_(peerId, event.channelID, std::move(recv));
+            break;
+        }
+        case ENET_EVENT_TYPE_DISCONNECT:
+        {
+            auto peerId = GetPeerId(event.peer);
+            onDisconnect_(peerId);
+            RemovePeer(event.peer);
+            break;
+        }
+        default:
+            break;
+    }
 }
 
-std::optional<Peer> Host::Connect(Address address)
+void Host::Connect(Address address)
 {
-    std::optional <Peer> ret;
-    auto peer = enet_host_connect(socket_, &address.address_, channels_, 0);
-    if(peer)
-        ret = Peer{peer};
-
-    return ret;
+    enet_host_connect(socket_, &address.address_, channels_, 0);
 }
 
-void Host::Broadcast(uint8_t channelId, const Packet& packet)
+void Host::SendPacket(PeerId id, uint8_t channelId, const SentPacket& packet)
 {
-    enet_host_broadcast(socket_, channelId, packet.packet_);
+    auto p = enet_packet_create(packet.data_, packet.size_, packet.flags_);
+    auto& peer = GetPeer(id);
+    peer.SendPacket(channelId, packet);
+}
+
+void Host::Broadcast(uint8_t channelId, const SentPacket& packet)
+{
+    auto p = enet_packet_create(packet.data_, packet.size_, packet.flags_);
+    enet_host_broadcast(socket_, channelId, p);
+}
+
+PeerInfo Host::GetPeerInfo(PeerId id) const
+{
+    auto& peer = GetPeer(id);
+
+    PeerInfo info;
+    info.address = Address{peer.peer_->address};
+    info.roundTripTimeMs = peer.peer_->roundTripTime;
+
+    return info;
+}
+
+// ##### PRIVATE ##### \\
+
+const Peer& Host::GetPeer(PeerId id) const
+{
+    CheckPeer(id);
+    return peers_.at(id);
+}
+
+Peer& Host::GetPeer(PeerId id)
+{
+    CheckPeer(id);
+    return peers_.at(id);
+}
+
+PeerId Host::AddPeer(ENetPeer* peer)
+{
+    auto peerId = GetFreePeerId();
+    if(peerId != (uint8_t)-1)
+        peers_.emplace(peerId, Peer{peer});
+    else
+        throw Exception("Could not add Peer. Max connections reached.");
+
+    return peerId;
+}
+
+PeerId Host::RemovePeer(ENetPeer* peer)
+{
+    auto peerId = GetPeerId(peer);
+    peers_.erase(peerId);
+    return peerId;
+}
+
+void Host::CheckPeer(PeerId id) const
+{
+    if(peers_.find(id) == peers_.end())
+        throw Exception("Could not find peer with id " + std::to_string(id));
+}
+
+PeerId Host::GetPeerId(ENetPeer* peer) const
+{
+    for(auto& pair : peers_)
+        if(pair.second.peer_ == peer)
+            return pair.first;
+    
+    return -1;
+}
+
+PeerId Host::GetFreePeerId() const
+{
+    for(uint32_t i = 0; i < connections_; i++)
+        if(peers_.find(i) == peers_.end())
+            return i;
+
+    return -1;
 }

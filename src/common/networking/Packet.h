@@ -4,24 +4,43 @@
 
 namespace ENet
 {
-    // TODO: Create two types of packets: Sent and recv
-    // Sent is deallocated by enet
-    // Recv is deallocated by us
-    class Packet
+    class RecvPacket
     {
     friend class Host;
     friend class Peer;
     public:
-        Packet(const void* data, uint32_t size, ENetPacketFlag flags);
-        ~Packet();
+        
+        ~RecvPacket();
 
-        Packet(const Packet& ) = delete;
-        Packet& operator=(const Packet&) = delete;
+        RecvPacket(const RecvPacket& ) = delete;
+        RecvPacket& operator=(const RecvPacket&) = delete;
 
-        Packet(Packet&&);
-        Packet& operator=(Packet&&);
+        RecvPacket(RecvPacket&&);
+        RecvPacket& operator=(RecvPacket&&);
+
+        uint32_t GetSize() const;
+        const void* GetData() const;
 
     private:
-        ENetPacket* packet_;
+        RecvPacket(ENetPacket* packet);
+        ENetPacket* packet_ = nullptr;
+    };
+
+    class SentPacket
+    {
+    friend class Host;
+    friend class Peer;
+    public:
+        SentPacket(const void* data, uint32_t size, ENetPacketFlag flag);
+        
+        SentPacket(const SentPacket&) = delete;
+        SentPacket& operator=(const SentPacket&) = delete;
+
+        SentPacket(SentPacket&&) = default;
+        SentPacket& operator=(SentPacket&&) = default;
+    private:
+        const void* data_ = nullptr;
+        uint32_t size_;
+        ENetPacketFlag flags_;
     };
 }

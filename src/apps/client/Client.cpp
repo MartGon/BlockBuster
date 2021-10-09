@@ -75,17 +75,17 @@ void BlockBuster::Client::Start()
 
     // Networking
     auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
-    server = host.Connect(serverAddress);
-    auto event = host.PollEvent(5000);
-    if(event.type == ENET_EVENT_TYPE_CONNECT)
+    host.SetOnConnectCallback([this](auto id)
     {
-        logger->LogInfo("Connection to server successful");
-    }
-    else if(event.type == ENET_EVENT_TYPE_DISCONNECT)
+        this->logger->LogInfo("Succes on connection to server");
+    });
+    host.SetOnRecvCallback([this](auto id, auto channel, ENet::RecvPacket packet)
     {
-        logger->LogInfo("Connection to server failed. Quitting");
-        quit = true;
-    }
+        this->logger->LogInfo("Server packet recv of size: " + std::to_string(packet.GetSize()));
+        uint32_t* tick = (uint32_t*) packet.GetData();
+        logger->LogInfo("Server packet with data: " + std::to_string(*tick));
+    });
+    host.Connect(serverAddress);
 }
 
 void BlockBuster::Client::Update()
@@ -151,28 +151,7 @@ void BlockBuster::Client::HandleSDLEvents()
 
 void Client::UpdateNetworking()
 {
-    auto event = host.PollEvent(0);
-    switch (event.type)
-    {
-    case ENET_EVENT_TYPE_CONNECT:
-        logger->LogInfo("Connected to client");
-        break;
-    case ENET_EVENT_TYPE_RECEIVE:
-    {
-        logger->LogInfo("Server packet recv of size: " + std::to_string(event.packet->dataLength));
-        uint32_t* tick = (uint32_t*) event.packet->data;
-        logger->LogInfo("Server packet with data: " + std::to_string(*tick));
-        enet_packet_destroy(event.packet);
-        break;
-    }
-    case ENET_EVENT_TYPE_DISCONNECT:
-        logger->LogInfo("Disconnected from server");
-        break;
-    
-    default:
-        //logger.LogInfo("Nothing happened"));
-        break;
-    }
+    host.PollEvent(0);
 }
 
 void BlockBuster::Client::DrawScene()

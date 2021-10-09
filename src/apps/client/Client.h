@@ -65,7 +65,6 @@ namespace BlockBuster
 
         // Networking
         ENet::Host host;
-        std::optional<ENet::Peer> server;
 
         // App
         bool quit = false;

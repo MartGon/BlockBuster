@@ -4,25 +4,37 @@
 
 using namespace ENet;
 
-Packet::Packet(const void* data, uint32_t size, ENetPacketFlag flags)
+RecvPacket::RecvPacket(ENetPacket* packet) : packet_{packet}
 {
-    packet_ = enet_packet_create(data, size, flags);
-    if(packet_ == nullptr)
-        throw Exception("Could not create packet");
 }
 
-Packet::~Packet()
+RecvPacket::~RecvPacket()
 {
-    
+    enet_packet_destroy(packet_);
 }
 
-Packet::Packet(Packet&& other)
+RecvPacket::RecvPacket(RecvPacket&& other)
 {
     *this = std::move(other);
 }
 
-Packet& Packet::operator=(Packet&& other)
+RecvPacket& RecvPacket::operator=(RecvPacket&& other)
 {
     std::swap(packet_, other.packet_);
     return *this;
+}
+
+uint32_t RecvPacket::GetSize() const
+{
+    return packet_->dataLength;
+}
+
+const void* RecvPacket::GetData() const
+{
+    return packet_->data;
+}
+
+SentPacket::SentPacket(const void* data, uint32_t size, ENetPacketFlag flags) : 
+    data_{data}, size_{size}, flags_{flags}
+{
 }

@@ -13,41 +13,24 @@ int main()
     auto localhost = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
     auto host = hostFactory->CreateHost(localhost, 4, 2);
 
-    logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));
+    host.SetOnConnectCallback([&logger](auto peerId)
+    {
+        logger.LogInfo("Connected with peer " + std::to_string(peerId));
+    });
+
+    host.SetOnDisconnectCallback([&logger](auto peerId)
+    {
+        logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
+    });
 
     unsigned int tickCount = 0;
-    std::vector<ENet::Peer> peers;
-    while(true)
+    logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));
+    while(tickCount < 30)
     {
-        auto event = host.PollEvent(1000);
-        switch (event.type)
-        {
-        case ENET_EVENT_TYPE_CONNECT:
-            logger.LogInfo("A new client connected");
-            peers.emplace_back(event.peer);
-            break;
-        case ENET_EVENT_TYPE_RECEIVE:
-        {
-            logger.LogInfo("Client packet recv of size: " + std::to_string(event.packet->dataLength));
-            const char *str = (const char*) event.packet->data;
-            logger.LogInfo("Client packet with data: " + std::string(str));
-            break;
-        }
-        case ENET_EVENT_TYPE_DISCONNECT:
-            logger.LogInfo("Peer disconnected");
-            break;
-        
-        default:
-            //logger.LogInfo("Nothing happened"));
-            break;
-        }
+        host.PollEvent(1000);
 
-        for(auto& peer : peers)
-        {
-            ENet::Packet packet{&tickCount, sizeof(tickCount), ENET_PACKET_FLAG_RELIABLE};
-            peer.SendPacket(0, packet);
-        }
-
+        ENet::SentPacket packet{&tickCount, 4, ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
+        host.Broadcast(0, packet);
         tickCount++;
     }
 

@@ -24,7 +24,8 @@ Peer& Peer::operator=(Peer&& other)
     return *this;
 }
 
-bool Peer::SendPacket(uint8_t channelId, const Packet& packet)
+bool Peer::SendPacket(uint8_t channelId, const SentPacket& packet)
 {
-    return enet_peer_send(peer_, channelId, packet.packet_) == 0;
+    auto p = enet_packet_create(packet.data_, packet.size_, packet.flags_);
+    return enet_peer_send(peer_, channelId, p) == 0;
 }
