@@ -112,6 +112,10 @@ App::App::~App()
     SDL_GL_DeleteContext(context_);
     SDL_DestroyWindow(window_);
 
+    logger->LogInfo("Quitting SDL_INIT_VIDEO");
+    SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+    logger->LogInfo("Quitting SDL");
     SDL_Quit();
 }
 

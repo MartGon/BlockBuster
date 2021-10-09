@@ -35,6 +35,6 @@ namespace GL
         unsigned int CreateProgram(unsigned int vertexShader, unsigned int fragShader);
         void CheckLinkErrors(unsigned int shader);
 
-        unsigned int handle_;
+        unsigned int handle_ = 0;
     };
 }

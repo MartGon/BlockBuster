@@ -67,20 +67,23 @@ void Host::PollEvent(uint32_t timeout)
         case ENET_EVENT_TYPE_CONNECT:
         {
             auto peerId = AddPeer(event.peer);
-            onConnect_(peerId);
+            if(onConnect_)
+                onConnect_(peerId);
             break;
         }
         case ENET_EVENT_TYPE_RECEIVE:
         {
             RecvPacket recv{event.packet};
             auto peerId = GetPeerId(event.peer);
-            onRecv_(peerId, event.channelID, std::move(recv));
+            if(onRecv_)
+                onRecv_(peerId, event.channelID, std::move(recv));
             break;
         }
         case ENET_EVENT_TYPE_DISCONNECT:
         {
             auto peerId = GetPeerId(event.peer);
-            onDisconnect_(peerId);
+            if(onDisconnect_)
+                onDisconnect_(peerId);
             RemovePeer(event.peer);
             break;
         }
