@@ -15,7 +15,7 @@
 #include <game/CameraController.h>
 #include <game/ChunkMeshMgr.h>
 
-#include <networking/Networking.h>
+#include <networking/enetw/EnetW.h>
 
 namespace BlockBuster
 {
@@ -31,13 +31,16 @@ namespace BlockBuster
     private:
 
         void DoUpdate(double deltaTime);
+
+        // Input
         void HandleSDLEvents();
-        void UpdateNetworking();
+
+        // Rendering
         void DrawScene();
 
         // Networking
-        void GeneratePlayerTarget(unsigned int playerId);
-        void PlayerUpdate(unsigned int playerId, double deltaTime);
+        void UpdateNetworking();
+        void SendPlayerMovement();
 
         // Time
         double GetCurrentTime() const;
@@ -60,11 +63,13 @@ namespace BlockBuster
 
         // Player transforms
         std::unordered_map<uint8_t, Math::Transform> players;
-        std::unordered_map<uint8_t, glm::vec3> playerTargets;
         float PLAYER_SPEED = 2.f;
 
         // Networking
         ENet::Host host;
+        ENet::PeerId serverId = 0;
+        uint8_t playerId = 0;
+        uint32_t tickCount = 0;
 
         // App
         bool quit = false;

@@ -1,10 +1,13 @@
 #include <Client.h>
 
 #include <util/Random.h>
+#include <util/Time.h>
+
+#include <networking/NetworkPacket.h>
+#include <debug/Debug.h>
 
 #include <iostream>
 #include <algorithm>
-#include <chrono>
 
 using namespace BlockBuster;
 
@@ -62,41 +65,40 @@ void BlockBuster::Client::Start()
     // Init players
     players = {
         {1, Math::Transform{glm::vec3{-7.0f, 4.15f, -7.0f}, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}}},
-        {2, Math::Transform{glm::vec3{-7.0f, 4.15f, 7.0f}, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}}},
-        {3, Math::Transform{glm::vec3{7.0f, 4.15f, -7.0f}, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}}},
-        {4, Math::Transform{glm::vec3{7.0f, 4.15f, 7.0f}, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}}},
     };
-
-    for(auto player : players)
-    {
-        auto playerId = player.first;
-        GeneratePlayerTarget(playerId);
-    }
 
     // Networking
     auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
     host.SetOnConnectCallback([this](auto id)
     {
+        this->serverId = id;
         this->logger->LogInfo("Succes on connection to server");
     });
-    host.SetOnRecvCallback([this](auto id, auto channel, ENet::RecvPacket packet)
+    host.SetOnRecvCallback([this](auto id, auto channel, ENet::RecvPacket ePacket)
     {
-        this->logger->LogInfo("Server packet recv of size: " + std::to_string(packet.GetSize()));
-        uint32_t* tick = (uint32_t*) packet.GetData();
-        logger->LogInfo("Server packet with data: " + std::to_string(*tick));
+        this->logger->LogInfo("Server packet recv of size: " + std::to_string(ePacket.GetSize()));
+        
+        auto* packet = (Networking::Packet*) ePacket.GetData();
+        if(packet->header.type == Networking::Packet::Type::PLAYER_UPDATE)
+        {
+            Networking::Payload::PlayerUpdate playerUpdate = packet->data.playerUpdate;
+            logger->LogInfo("Server packet with player " + std::to_string(playerUpdate.playerId) + " data");
+            logger->LogInfo("Player new pos is " + glm::to_string(playerUpdate.pos));
+            this->players[playerUpdate.playerId].position = playerUpdate.pos;
+        }
     });
     host.Connect(serverAddress);
 }
 
 void BlockBuster::Client::Update()
 {
-    double previous = GetCurrentTime();
+    double previous = Util::Time::GetCurrentTime();
     double lag = 0.0;
 
     logger->LogInfo("Update rate(s) is: " + std::to_string(UPDATE_RATE));
     while(!quit)
     {
-        auto now = GetCurrentTime();
+        auto now =  Util::Time::GetCurrentTime();
         auto elapsed = (now - previous);
         
         previous = now;
@@ -119,9 +121,9 @@ void BlockBuster::Client::DoUpdate(double deltaTime)
 {
     camController_.Update();
 
+    SendPlayerMovement();
+
     // Networking
-    for(auto player : players)
-        PlayerUpdate(player.first, deltaTime);
 }
 
 bool BlockBuster::Client::Quit()
@@ -149,11 +151,6 @@ void BlockBuster::Client::HandleSDLEvents()
     }
 }
 
-void Client::UpdateNetworking()
-{
-    host.PollEvent(0);
-}
-
 void BlockBuster::Client::DrawScene()
 {
     // Clear Buffer
@@ -163,9 +160,9 @@ void BlockBuster::Client::DrawScene()
     // Draw data
     auto view = camera_.GetProjViewMat();
 
-    for(auto players : players)
+    for(auto player : players)
     {
-        auto t = players.second.GetTransformMat();
+        auto t = player.second.GetTransformMat();
         auto transform = view * t;
         shader.SetUniformMat4("transform", transform);
         shader.SetUniformVec4("color", glm::vec4{1.0f});
@@ -185,29 +182,36 @@ void BlockBuster::Client::DrawScene()
     SDL_GL_SwapWindow(window_);
 }
 
-void BlockBuster::Client::GeneratePlayerTarget(unsigned int playerId)
+void Client::UpdateNetworking()
 {
-    auto x = Util::Random::Uniform(-14.f, 14.f);
-    auto z = Util::Random::Uniform(-14.f, 14.f);
-    playerTargets[playerId] = glm::vec3{x, 4.15f, z};
+    host.PollEvent(0);
+
+    // TODO: Create something like PollAllEvents which empties the event queue;
 }
 
-void BlockBuster::Client::PlayerUpdate(unsigned int playerId, double deltaTime)
+void Client::SendPlayerMovement()
 {
-    auto& player = players[playerId];
-    auto playerTarget = playerTargets[playerId];
+    int8_t* state = (int8_t*)SDL_GetKeyboardState(nullptr);
+    glm::vec3 moveDir{0.0f};
+    moveDir.x = state[SDL_SCANCODE_KP_6] - state[SDL_SCANCODE_KP_4];
+    moveDir.z = state[SDL_SCANCODE_KP_2] - state[SDL_SCANCODE_KP_8];
+    logger->LogInfo(std::to_string(tickCount) + ": Move dir " + glm::to_string(moveDir));
+    auto len = glm::length(moveDir);
+    moveDir = len > 0 ? moveDir / len : moveDir;
 
-    auto moveDir = glm::normalize(playerTarget - player.position);
-    auto velocity = moveDir * PLAYER_SPEED * (float)UPDATE_RATE ;
-    player.position += velocity;
+    Networking::Packet::Header header;
+    header.type = Networking::Packet::Type::PLAYER_MOVEMENT;
+    header.tick = tickCount;
 
-    auto dist = glm::length(playerTarget - player.position);
-    if(dist < 1.0f)
-        GeneratePlayerTarget(playerId);
-}
+    Networking::Payload::PlayerMovement playerMovement;
+    playerMovement.playerId = playerId;
+    playerMovement.moveDir = moveDir;
 
-double BlockBuster::Client::GetCurrentTime() const
-{
-    using namespace std::chrono;
-    return duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count() / 1e9;
+    Networking::Payload::Data data;
+    data.playerMovement = playerMovement;
+    
+    Networking::Packet packet{header, data};
+
+    ENet::SentPacket sentPacket{&packet, sizeof(packet), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
+    host.SendPacket(serverId, 0, sentPacket);
 }

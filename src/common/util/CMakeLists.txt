@@ -2,6 +2,7 @@ SET(SOURCES
     Result.cpp
     Buffer.cpp
     Random.cpp
+    Time.cpp
 )
 
 

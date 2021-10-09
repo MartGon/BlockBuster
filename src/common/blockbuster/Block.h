@@ -30,8 +30,8 @@ namespace Game
 
     struct Display
     {
-        DisplayType type;
-        unsigned int id;
+        DisplayType type = TEXTURE;
+        unsigned int id = 0;
         //DisplayOptions options;
     };
 

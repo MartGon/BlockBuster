@@ -10,6 +10,7 @@ target_link_libraries(Server
     Math
     Log
     Networking
+    EnetW
 
     enet
 )
