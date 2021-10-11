@@ -6,6 +6,6 @@ add_subdirectory(util)
 add_subdirectory(math)
 add_subdirectory(networking)
 add_subdirectory(collisions)
-add_subdirectory(blockbuster)
+add_subdirectory(entity)
 
 #add_subdirectory(gl)

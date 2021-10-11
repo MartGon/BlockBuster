@@ -28,9 +28,9 @@
 
 #include <math/Transform.h>
 
-#include <blockbuster/Block.h>
+#include <entity/Block.h>
 #include <game/ServiceLocator.h>
-#include <game/Player.h>
+#include <game/PlayerController.h>
 
 #include <Editor.h>
 

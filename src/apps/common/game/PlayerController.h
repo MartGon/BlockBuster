@@ -4,14 +4,14 @@
 
 #include <math/Transform.h>
 
-#include <blockbuster/Block.h>
-#include <blockbuster/Map.h>
+#include <entity/Block.h>
+#include <entity/Map.h>
 
 #include <vector>
 
 namespace AppGame
 {
-    class Player
+    class PlayerController
     {
     public:
 

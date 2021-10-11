@@ -1,6 +1,6 @@
 #pragma once
 
-#include <blockbuster/Map.h>
+#include <entity/Map.h>
 #include <TexturePalette.h>
 #include <ColorPalette.h>
 #include <ChunkMeshMgr.h>

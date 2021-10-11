@@ -2,6 +2,7 @@ SET(SOURCES
     Block.cpp
     Map.cpp
     Game.cpp
+    Player.cpp
 )
 
 

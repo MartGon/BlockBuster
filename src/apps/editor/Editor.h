@@ -11,9 +11,9 @@
 #include <rendering/Rendering.h>
 #include <game/ChunkMeshMgr.h>
 
-#include <game/Player.h>
-#include <blockbuster/Block.h>
-#include <blockbuster/Map.h>
+#include <game/PlayerController.h>
+#include <entity/Block.h>
+#include <entity/Map.h>
 #include <game/CameraController.h>
 
 #include <imgui/backends/imgui_impl_opengl3.h>
@@ -347,7 +347,7 @@ namespace BlockBuster
 
             // Test
             bool playerMode = false;
-            AppGame::Player player;
+            AppGame::PlayerController player;
         };
     }
 }

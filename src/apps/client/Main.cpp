@@ -28,8 +28,8 @@
 
 #include <math/Transform.h>
 
-#include <blockbuster/Block.h>
-#include <game/Player.h>
+#include <entity/Block.h>
+#include <game/PlayerController.h>
 
 #include <game/ServiceLocator.h>
 
@@ -56,7 +56,7 @@ int main()
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
-            "./client.log", Log::Verbosity::ERROR
+            "./client.log", Log::Verbosity::DEBUG
         }
     };
 

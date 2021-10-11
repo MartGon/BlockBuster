@@ -62,11 +62,6 @@ void BlockBuster::Client::Start()
         }
     }
 
-    // Init players
-    players = {
-        {1, Math::Transform{glm::vec3{-7.0f, 4.15f, -7.0f}, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}}},
-    };
-
     // Networking
     auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
     host.SetOnConnectCallback([this](auto id)
@@ -84,7 +79,13 @@ void BlockBuster::Client::Start()
             Networking::Command::Server::PlayerUpdate playerUpdate = packet->data.playerUpdate;
             logger->LogInfo("Server packet with player " + std::to_string(playerUpdate.playerId) + " data");
             logger->LogInfo("Player new pos is " + glm::to_string(playerUpdate.pos));
-            this->players[playerUpdate.playerId].position = playerUpdate.pos;
+            if(playerTable.find(playerUpdate.playerId) == playerTable.end())
+            {
+                Math::Transform transform{playerUpdate.pos, glm::vec3{0.0f}, glm::vec3{1.0f}};
+                playerTable[playerUpdate.playerId] = Entity::Player{playerUpdate.playerId, transform};
+            }
+            else
+                this->playerTable[playerUpdate.playerId].transform.position = playerUpdate.pos;
         }
     });
     host.Connect(serverAddress);
@@ -160,9 +161,9 @@ void BlockBuster::Client::DrawScene()
     // Draw data
     auto view = camera_.GetProjViewMat();
 
-    for(auto player : players)
+    for(auto player : playerTable)
     {
-        auto t = player.second.GetTransformMat();
+        auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;
         shader.SetUniformMat4("transform", transform);
         shader.SetUniformVec4("color", glm::vec4{1.0f});

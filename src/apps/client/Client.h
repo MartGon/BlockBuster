@@ -10,10 +10,12 @@
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
 
-#include <game/Player.h>
+#include <game/PlayerController.h>
 #include <game/Map.h>
 #include <game/CameraController.h>
 #include <game/ChunkMeshMgr.h>
+
+#include <entity/Player.h>
 
 #include <networking/enetw/EnetW.h>
 
@@ -62,7 +64,7 @@ namespace BlockBuster
         ::App::Client::CameraController camController_;
 
         // Player transforms
-        std::unordered_map<uint8_t, Math::Transform> players;
+        std::unordered_map<Entity::ID, Entity::Player> playerTable;
         float PLAYER_SPEED = 2.f;
 
         // Networking

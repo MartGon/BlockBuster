@@ -1,16 +1,16 @@
-#include <Player.h>
+#include <PlayerController.h>
 
 #include <collisions/Collisions.h>
 
 #include <algorithm>
 #include <iostream>
 
-void AppGame::Player::HandleSDLEvent(const SDL_Event& event)
+void AppGame::PlayerController::HandleSDLEvent(const SDL_Event& event)
 {
 
 }
 
-void AppGame::Player::Update()
+void AppGame::PlayerController::Update()
 {
     this->prevPos = transform.position;
 
@@ -77,7 +77,7 @@ struct Intersection
     Math::Transform blockTransform;
 };
 
-void AppGame::Player::HandleCollisions(Game::Map::Map* map, float blockScale)
+void AppGame::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale)
 {
 
     std::vector<std::pair<Math::Transform, Game::Block>> blocks;
@@ -88,7 +88,7 @@ void AppGame::Player::HandleCollisions(Game::Map::Map* map, float blockScale)
     HandleCollisions(blocks);
 }
 
-void AppGame::Player::HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks)
+void AppGame::PlayerController::HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks)
 {
     bool intersects;
     unsigned int iterations = 0;

@@ -2,7 +2,7 @@
 #include <doctest/doctest.h>
 
 #include <math/BBMath.h>
-#include <blockbuster/Map.h>
+#include <entity/Map.h>
 
 #include <util/Buffer.h>
 
