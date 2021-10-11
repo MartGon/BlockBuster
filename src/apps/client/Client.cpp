@@ -3,7 +3,7 @@
 #include <util/Random.h>
 #include <util/Time.h>
 
-#include <networking/NetworkPacket.h>
+#include <networking/Command.h>
 #include <debug/Debug.h>
 
 #include <iostream>
@@ -79,9 +79,9 @@ void BlockBuster::Client::Start()
         this->logger->LogInfo("Server packet recv of size: " + std::to_string(ePacket.GetSize()));
         
         auto* packet = (Networking::Packet*) ePacket.GetData();
-        if(packet->header.type == Networking::Packet::Type::PLAYER_UPDATE)
+        if(packet->header.type == Networking::Command::Type::PLAYER_UPDATE)
         {
-            Networking::Payload::PlayerUpdate playerUpdate = packet->data.playerUpdate;
+            Networking::Command::Server::PlayerUpdate playerUpdate = packet->data.playerUpdate;
             logger->LogInfo("Server packet with player " + std::to_string(playerUpdate.playerId) + " data");
             logger->LogInfo("Player new pos is " + glm::to_string(playerUpdate.pos));
             this->players[playerUpdate.playerId].position = playerUpdate.pos;
@@ -200,14 +200,14 @@ void Client::SendPlayerMovement()
     moveDir = len > 0 ? moveDir / len : moveDir;
 
     Networking::Packet::Header header;
-    header.type = Networking::Packet::Type::PLAYER_MOVEMENT;
+    header.type = Networking::Command::Type::PLAYER_MOVEMENT;
     header.tick = tickCount;
 
-    Networking::Payload::PlayerMovement playerMovement;
+    Networking::Command::User::PlayerMovement playerMovement;
     playerMovement.playerId = playerId;
     playerMovement.moveDir = moveDir;
 
-    Networking::Payload::Data data;
+    Networking::Packet::Payload data;
     data.playerMovement = playerMovement;
     
     Networking::Packet packet{header, data};

@@ -2,7 +2,7 @@
 #include <mglogger/MGLogger.h>
 
 #include <networking/enetw/EnetW.h>
-#include <networking/NetworkPacket.h>
+#include <networking/Command.h>
 
 #include <math/Transform.h>
 #include <util/Time.h>
@@ -14,7 +14,7 @@
 int main()
 {
     Log::ConsoleLogger logger;
-    logger.SetVerbosity(Log::Verbosity::INFO);
+    logger.SetVerbosity(Log::Verbosity::ERROR);
 
     std::unordered_map<uint8_t, glm::vec3> players ={
         {1, glm::vec3{-7.0f, 4.15f, -7.0f}}
@@ -33,7 +33,7 @@ int main()
     {
         
         auto packet = (Networking::Packet*)recvPacket.GetData();
-        if(packet->header.type == Networking::Packet::Type::PLAYER_MOVEMENT)
+        if(packet->header.type == Networking::Command::Type::PLAYER_MOVEMENT)
         {
             auto playerMove = packet->data.playerMovement;
             logger.LogInfo("Player update for peer: " + std::to_string(peerId) + ". Move dir:" + glm::to_string(playerMove.moveDir));
@@ -72,11 +72,11 @@ int main()
         for(auto pair : players)
         {
             Networking::Packet::Header header;
-            header.type = Networking::Packet::Type::PLAYER_UPDATE;
+            header.type = Networking::Command::Type::PLAYER_UPDATE;
             header.tick = tickCount;
 
-            Networking::Payload::Data data;
-            data.playerUpdate = Networking::Payload::PlayerUpdate{pair.first, pair.second};
+            Networking::Packet::Payload data;
+            data.playerUpdate = Networking::Command::Server::PlayerUpdate{pair.first, pair.second};
 
             Networking::Packet packet {header, data};
 
