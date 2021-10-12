@@ -1,8 +1,9 @@
 
 #include <mglogger/MGLogger.h>
 
-#include <networking/enetw/EnetW.h>
+#include <networking/enetw/ENetW.h>
 #include <networking/Command.h>
+#include <networking/CommandBuffer.h>
 
 #include <util/Time.h>
 #include <util/Random.h>
@@ -14,7 +15,11 @@
 #include <glm/gtx/string_cast.hpp>
 
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
+std::unordered_map<ENet::PeerId, uint32_t> simHistory;
 Entity::ID lastId = 0;
+const double TICK_RATE = 0.020;
+
+Networking::CommandBuffer commandBuffer{5};
 
 glm::vec3 GetRandomPlayerPosition()
 {
@@ -26,18 +31,24 @@ glm::vec3 GetRandomPlayerPosition()
     return pos;
 }
 
+void HandleMoveCommand(Entity::Player& player, Networking::Command::User::PlayerMovement pm)
+{
+    const float PLAYER_SPEED = 2.f;
+    auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE;
+    player.transform.position += velocity;
+}
+
 int main()
 {
     Log::ConsoleLogger logger;
     logger.SetVerbosity(Log::Verbosity::DEBUG);
 
-    const double TICK_RATE = 0.020;
     unsigned int tickCount = 0;
 
     auto hostFactory = ENet::HostFactory::Get();
     auto localhost = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
     auto host = hostFactory->CreateHost(localhost, 4, 2);
-    host.SetOnConnectCallback([&logger, &tickCount, &host, &TICK_RATE](auto peerId)
+    host.SetOnConnectCallback([&logger, &tickCount, &host](auto peerId)
     {
         logger.LogInfo("Connected with peer " + std::to_string(peerId));
 
@@ -64,21 +75,10 @@ int main()
         ENet::SentPacket sentPacket{&packet, sizeof(packet), ENET_PACKET_FLAG_RELIABLE};
         host.SendPacket(peerId, 0, sentPacket);
     });
-    host.SetOnRecvCallback([&logger, TICK_RATE](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
+    host.SetOnRecvCallback([&logger](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
-        auto packet = (Networking::Command*)recvPacket.GetData();
-        if(packet->header.type == Networking::Command::Type::PLAYER_MOVEMENT)
-        {
-            auto playerMove = packet->data.playerMovement;
-            logger.LogInfo("Player update for peer: " + std::to_string(peerId) + ". Move dir:" + glm::to_string(playerMove.moveDir));
-
-            const float PLAYER_SPEED = 2.f;
-            auto velocity = playerMove.moveDir * PLAYER_SPEED * (float)TICK_RATE;
-            auto& player = playerTable.at(peerId);
-            player.transform.position += velocity;
-
-            // TODO: This packet should be saved into a queue/buffer to later be used on the simulation, instead of using it directly.
-        }
+        auto command = (Networking::Command*)recvPacket.GetData();
+        commandBuffer.Push(peerId, *command);
     });
     host.SetOnDisconnectCallback([&logger, &tickCount, &host](auto peerId)
     {
@@ -109,10 +109,32 @@ int main()
         host.PollAllEvents();
 
         auto now = Util::Time::GetCurrentTime();
-        // TODO: Update entities with the packets recv (on queue/buffer)
+
+        // Update
         for(auto& pair : playerTable)
         {
-            
+            auto peerId = pair.first;
+            auto lastTick = simHistory[peerId];
+
+            auto lastMoves = commandBuffer.Get(peerId, Networking::Command::Type::PLAYER_MOVEMENT, [lastTick](Networking::Command command){
+                return command.header.tick <= lastTick;
+            });
+
+            // TODO: Remove. ENet ensures in-order delivery
+            /*
+            std::sort(lastMoves.begin(), lastMoves.end(), [](auto a, auto b)
+            {
+                return a.header.tick < b.header.tick;
+            });
+            */
+
+            for(auto move : lastMoves)
+            {
+                HandleMoveCommand(pair.second, move.data.playerMovement);
+            }
+
+            if(lastMoves.size() > 0)
+                simHistory[peerId] = lastMoves[lastMoves.size() - 1].header.tick;
         }
 
         auto elapsed = Util::Time::GetCurrentTime() - now;
@@ -126,7 +148,7 @@ int main()
             auto player = pair.second;
 
             Networking::Command::Header header;
-            header.type = Networking::Command::Type::PLAYER_UPDATE;
+            header.type = Networking::Command::Type::PLAYER_POS_UPDATE;
             header.tick = tickCount;
 
             Networking::Command::Payload data;

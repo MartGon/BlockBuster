@@ -9,7 +9,7 @@ namespace Networking
         enum Type
         {
             CLIENT_CONFIG,
-            PLAYER_UPDATE,
+            PLAYER_POS_UPDATE,
             PLAYER_DISCONNECTED,
 
             PLAYER_MOVEMENT

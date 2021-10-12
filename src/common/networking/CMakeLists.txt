@@ -1,7 +1,8 @@
 add_subdirectory(enetw)
 
 SET(SOURCES
-    Packet.cpp
+    Command.cpp
+    CommandBuffer.cpp
 )
 
 add_library(Networking ${SOURCES})

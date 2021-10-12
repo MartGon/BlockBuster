@@ -74,7 +74,7 @@ void BlockBuster::Client::Start()
         this->logger->LogInfo("Server packet recv of size: " + std::to_string(ePacket.GetSize()));
         
         auto* packet = (Networking::Command*) ePacket.GetData();
-        if(packet->header.type == Networking::Command::Type::PLAYER_UPDATE)
+        if(packet->header.type == Networking::Command::Type::PLAYER_POS_UPDATE)
         {
             Networking::Command::Server::PlayerUpdate playerUpdate = packet->data.playerUpdate;
             logger->LogInfo("Server packet with player " + std::to_string(playerUpdate.playerId) + " data");

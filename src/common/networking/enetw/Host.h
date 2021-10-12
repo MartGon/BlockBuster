@@ -10,10 +10,6 @@
 
 namespace ENet
 {
-    // TODO: Consider storing peers in a vector. They are bound to the host instance after all
-    // Allow the user to set some callbacks to handle different events
-    // After that, user simply calls PollEvent to dispatch each of the events
-
     using PeerId = uint8_t;
 
     struct PeerInfo

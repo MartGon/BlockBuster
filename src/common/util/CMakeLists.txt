@@ -1,7 +1,9 @@
 SET(SOURCES
-    Result.cpp
+    
     Buffer.cpp
+    Queue.cpp
     Random.cpp
+    Result.cpp
     Time.cpp
 )
 

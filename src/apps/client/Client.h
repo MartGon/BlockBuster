@@ -17,7 +17,7 @@
 
 #include <entity/Player.h>
 
-#include <networking/enetw/EnetW.h>
+#include <networking/enetw/ENetW.h>
 
 namespace BlockBuster
 {
