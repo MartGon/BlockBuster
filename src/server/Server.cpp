@@ -52,21 +52,21 @@ int main()
         clientConfig.playerId = player.id;
         clientConfig.sampleRate = TICK_RATE;
 
-        Networking::Packet::Header header;
+        Networking::Command::Header header;
         header.tick = tickCount;
         header.type = Networking::Command::Type::CLIENT_CONFIG;
 
-        Networking::Packet::Payload data;
+        Networking::Command::Payload data;
         data.config = clientConfig;
 
-        Networking::Packet packet{header, data};
+        Networking::Command packet{header, data};
 
-        ENet::SentPacket sentPacket{&packet, sizeof(Networking::Packet), ENET_PACKET_FLAG_RELIABLE};
+        ENet::SentPacket sentPacket{&packet, sizeof(packet), ENET_PACKET_FLAG_RELIABLE};
         host.SendPacket(peerId, 0, sentPacket);
     });
     host.SetOnRecvCallback([&logger, TICK_RATE](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
-        auto packet = (Networking::Packet*)recvPacket.GetData();
+        auto packet = (Networking::Command*)recvPacket.GetData();
         if(packet->header.type == Networking::Command::Type::PLAYER_MOVEMENT)
         {
             auto playerMove = packet->data.playerMovement;
@@ -80,16 +80,33 @@ int main()
             // TODO: This packet should be saved into a queue/buffer to later be used on the simulation, instead of using it directly.
         }
     });
-    host.SetOnDisconnectCallback([&logger](auto peerId)
+    host.SetOnDisconnectCallback([&logger, &tickCount, &host](auto peerId)
     {
         logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
+        auto player = playerTable[peerId];
+        playerTable.erase(peerId);
+
+        // Informing players
+        Networking::Command::Server::PlayerDisconnected playerDisconnect;
+        playerDisconnect.playerId = player.id;
+
+        Networking::Command::Header header;
+        header.tick = tickCount;
+        header.type = Networking::Command::Type::PLAYER_DISCONNECTED;
+
+        Networking::Command::Payload payload;
+        payload.playerDisconnect = playerDisconnect;
+
+        Networking::Command command{header, payload};
+
+        ENet::SentPacket sentPacket{&command, sizeof(command), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
+        host.Broadcast(0, sentPacket);
     });
 
     logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));    
     while(true)
     {
-        // TODO: This should be called until not more events are available. 
-        host.PollEvent(0);
+        host.PollAllEvents();
 
         auto now = Util::Time::GetCurrentTime();
         // TODO: Update entities with the packets recv (on queue/buffer)
@@ -108,16 +125,16 @@ int main()
         {
             auto player = pair.second;
 
-            Networking::Packet::Header header;
+            Networking::Command::Header header;
             header.type = Networking::Command::Type::PLAYER_UPDATE;
             header.tick = tickCount;
 
-            Networking::Packet::Payload data;
+            Networking::Command::Payload data;
             data.playerUpdate = Networking::Command::Server::PlayerUpdate{player.id, player.transform.position};
 
-            Networking::Packet packet {header, data};
+            Networking::Command command{header, data};
 
-            ENet::SentPacket epacket{&packet, sizeof(Networking::Packet), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
+            ENet::SentPacket epacket{&command, sizeof(command), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
             host.Broadcast(0, epacket);
             tickCount++;
         }

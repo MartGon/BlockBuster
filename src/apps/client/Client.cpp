@@ -73,7 +73,7 @@ void BlockBuster::Client::Start()
     {
         this->logger->LogInfo("Server packet recv of size: " + std::to_string(ePacket.GetSize()));
         
-        auto* packet = (Networking::Packet*) ePacket.GetData();
+        auto* packet = (Networking::Command*) ePacket.GetData();
         if(packet->header.type == Networking::Command::Type::PLAYER_UPDATE)
         {
             Networking::Command::Server::PlayerUpdate playerUpdate = packet->data.playerUpdate;
@@ -86,6 +86,13 @@ void BlockBuster::Client::Start()
             }
             else
                 this->playerTable[playerUpdate.playerId].transform.position = playerUpdate.pos;
+        }
+        else if(packet->header.type == Networking::Command::Type::PLAYER_DISCONNECTED)
+        {
+            Networking::Command::Server::PlayerDisconnected playerDisconnect = packet->data.playerDisconnect;
+            logger->LogInfo("Player with id " + std::to_string(playerDisconnect.playerId) + " disconnected");
+
+            playerTable.erase(playerDisconnect.playerId);
         }
     });
     host.Connect(serverAddress);
@@ -123,8 +130,6 @@ void BlockBuster::Client::DoUpdate(double deltaTime)
     camController_.Update();
 
     SendPlayerMovement();
-
-    // Networking
 }
 
 bool BlockBuster::Client::Quit()
@@ -185,9 +190,7 @@ void BlockBuster::Client::DrawScene()
 
 void Client::UpdateNetworking()
 {
-    host.PollEvent(0);
-
-    // TODO: Create something like PollAllEvents which empties the event queue;
+    host.PollAllEvents();
 }
 
 void Client::SendPlayerMovement()
@@ -200,18 +203,17 @@ void Client::SendPlayerMovement()
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
 
-    Networking::Packet::Header header;
+    Networking::Command::Header header;
     header.type = Networking::Command::Type::PLAYER_MOVEMENT;
     header.tick = tickCount;
 
     Networking::Command::User::PlayerMovement playerMovement;
-    playerMovement.playerId = playerId;
     playerMovement.moveDir = moveDir;
 
-    Networking::Packet::Payload data;
+    Networking::Command::Payload data;
     data.playerMovement = playerMovement;
     
-    Networking::Packet packet{header, data};
+    Networking::Command packet{header, data};
 
     ENet::SentPacket sentPacket{&packet, sizeof(packet), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
     host.SendPacket(serverId, 0, sentPacket);

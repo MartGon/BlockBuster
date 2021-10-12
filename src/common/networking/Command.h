@@ -4,17 +4,18 @@
 
 namespace Networking
 {
-    namespace Command
+    struct Command
     {
         enum Type
         {
             CLIENT_CONFIG,
             PLAYER_UPDATE,
+            PLAYER_DISCONNECTED,
 
             PLAYER_MOVEMENT
         };
 
-        namespace Server
+        struct Server
         {
             struct ClientConfig
             {
@@ -27,20 +28,21 @@ namespace Networking
                 uint8_t playerId;
                 glm::vec3 pos;
             };
-        }
 
-        namespace User
+            struct PlayerDisconnected
+            {
+                uint8_t playerId;
+            }; 
+        };
+
+        struct User
         {
             struct PlayerMovement
             {
-                uint8_t playerId; // TODO: This shouldn't be needed. Keep a table in server that maps peerId to playerId
                 glm::vec3 moveDir;
             };
-        }
-    }
+        };
 
-    struct Packet
-    {
         struct Header
         {
             Command::Type type;
@@ -49,10 +51,11 @@ namespace Networking
 
         union Payload
         {
-            Command::Server::ClientConfig config;
-            Command::Server::PlayerUpdate playerUpdate;
+            Server::ClientConfig config;
+            Server::PlayerUpdate playerUpdate;
+            Server::PlayerDisconnected playerDisconnect;
 
-            Command::User::PlayerMovement playerMovement;
+            User::PlayerMovement playerMovement;
         };
 
         Header header;

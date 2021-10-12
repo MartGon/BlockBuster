@@ -1,6 +1,8 @@
 #include <Host.h>
 #include <Exception.h>
 
+#include <chrono>
+
 using namespace ENet;
 
 Host::Host(Address address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth) : 
@@ -18,7 +20,6 @@ Host::Host(uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32
     if(socket_ == nullptr)
         throw Exception("Could not create Enet::Host");
 }
-
 
 Host::~Host()
 {
@@ -57,7 +58,7 @@ void Host::SetOnDisconnectCallback(std::function<void(PeerId)> callback)
     onDisconnect_ = callback;
 }
 
-void Host::PollEvent(uint32_t timeout)
+bool Host::PollEvent(uint32_t timeout)
 {
     ENetEvent event;
     bool eventOccurred = enet_host_service(socket_, &event, timeout) > 0;
@@ -88,6 +89,22 @@ void Host::PollEvent(uint32_t timeout)
             break;
         }
         default:
+            break;
+    }
+
+    return eventOccurred;
+}
+
+void Host::PollAllEvents(uint32_t timeout)
+{
+    using namespace std::chrono;
+    auto start = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+    while(PollEvent())
+    {
+        auto now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+        auto elapsed = now - start;
+
+        if(elapsed > timeout)
             break;
     }
 }

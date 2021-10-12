@@ -37,7 +37,11 @@ namespace ENet
         void SetOnRecvCallback(std::function<void(PeerId, uint8_t, RecvPacket)> callback);
         void SetOnConnectCallback(std::function<void(PeerId)> callback);
         void SetOnDisconnectCallback(std::function<void(PeerId)> callback);
-        void PollEvent(uint32_t timeout = 0);
+
+        // Wait a maximum of timeout (ms) until an event is recv
+        bool PollEvent(uint32_t timeout = 0);
+        // Polls all events until none is recv or timeout (ms) elapses
+        void PollAllEvents(uint32_t timeout = -1);
 
         void Connect(Address address);
         void SendPacket(PeerId id, uint8_t channelId, const SentPacket& packet);
