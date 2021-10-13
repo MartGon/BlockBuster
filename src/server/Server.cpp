@@ -19,7 +19,7 @@ std::unordered_map<ENet::PeerId, uint32_t> simHistory;
 Entity::ID lastId = 0;
 const double TICK_RATE = 0.020;
 
-Networking::CommandBuffer commandBuffer{5};
+Networking::CommandBuffer commandBuffer{60};
 
 glm::vec3 GetRandomPlayerPosition()
 {
@@ -75,9 +75,10 @@ int main()
         ENet::SentPacket sentPacket{&packet, sizeof(packet), ENET_PACKET_FLAG_RELIABLE};
         host.SendPacket(peerId, 0, sentPacket);
     });
-    host.SetOnRecvCallback([&logger](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
+    host.SetOnRecvCallback([&logger, &tickCount](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
         auto command = (Networking::Command*)recvPacket.GetData();
+        logger.LogInfo("Command recv with tick: " + std::to_string(command->header.tick) + " on tick " + std::to_string(tickCount));
         commandBuffer.Push(peerId, *command);
     });
     host.SetOnDisconnectCallback([&logger, &tickCount, &host](auto peerId)
@@ -117,7 +118,7 @@ int main()
             auto lastTick = simHistory[peerId];
 
             auto lastMoves = commandBuffer.Get(peerId, Networking::Command::Type::PLAYER_MOVEMENT, [lastTick](Networking::Command command){
-                return command.header.tick <= lastTick;
+                return command.header.tick > lastTick;
             });
 
             // TODO: Remove. ENet ensures in-order delivery
@@ -127,6 +128,7 @@ int main()
                 return a.header.tick < b.header.tick;
             });
             */
+            logger.LogInfo("Processing " + std::to_string(lastMoves.size()) + " moves");
 
             for(auto move : lastMoves)
             {
@@ -143,6 +145,7 @@ int main()
         Util::Time::SleepMS(wait);
 
         // Send update
+        // TODO: Server commands / World Snapshots should be batched and then sent to client.
         for(auto pair : playerTable)
         {
             auto player = pair.second;
@@ -158,8 +161,9 @@ int main()
 
             ENet::SentPacket epacket{&command, sizeof(command), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
             host.Broadcast(0, epacket);
-            tickCount++;
         }
+
+        tickCount++;
     }
 
     logger.LogInfo("Server shutdown");
