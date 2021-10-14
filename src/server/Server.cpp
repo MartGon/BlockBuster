@@ -46,7 +46,7 @@ int main()
     unsigned int tickCount = 0;
 
     auto hostFactory = ENet::HostFactory::Get();
-    auto localhost = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
+    auto localhost = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
     auto host = hostFactory->CreateHost(localhost, 4, 2);
     host.SetOnConnectCallback([&logger, &tickCount, &host](auto peerId)
     {
@@ -117,7 +117,7 @@ int main()
             auto peerId = pair.first;
             auto lastTick = simHistory[peerId];
 
-            auto lastMoves = commandBuffer.Get(peerId, Networking::Command::Type::PLAYER_MOVEMENT, [lastTick](Networking::Command command){
+            auto lastMoves = commandBuffer.Get(peerId, Networking::Command::Type::PLAYER_MOVEMENT, [lastTick, tickCount](Networking::Command command){
                 return command.header.tick > lastTick;
             });
 

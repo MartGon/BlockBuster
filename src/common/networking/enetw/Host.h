@@ -16,6 +16,12 @@ namespace ENet
     {
         Address address;
         uint32_t roundTripTimeMs; // In milliseconds
+        uint32_t roundTripTimeVariance;
+        uint32_t packetsSent;
+        uint32_t packetsLost;
+        uint32_t packetLoss;
+        uint32_t incomingBandwidth;
+        uint32_t outgoingBandwidth;
     };
 
     class Host

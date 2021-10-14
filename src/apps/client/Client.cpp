@@ -66,12 +66,14 @@ void BlockBuster::Client::Start()
     auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
     host.SetOnConnectCallback([this](auto id)
     {
+        // TODO: Block until this code is called
+        this->connected = true;
         this->serverId = id;
         this->logger->LogInfo("Succes on connection to server");
     });
     host.SetOnRecvCallback([this](auto id, auto channel, ENet::RecvPacket ePacket)
     {
-        this->logger->LogInfo("Server packet recv of size: " + std::to_string(ePacket.GetSize()));
+        this->logger->LogInfo("Tick: " + std::to_string(tickCount) + " Server packet recv of size: " + std::to_string(ePacket.GetSize()));
         
         auto* packet = (Networking::Command*) ePacket.GetData();
         this->tickCount = packet->header.tick;
@@ -82,7 +84,7 @@ void BlockBuster::Client::Start()
             logger->LogInfo("Player new pos is " + glm::to_string(playerUpdate.pos));
             if(playerTable.find(playerUpdate.playerId) == playerTable.end())
             {
-                Math::Transform transform{playerUpdate.pos, glm::vec3{0.0f}, glm::vec3{1.0f}};
+                Math::Transform transform{playerUpdate.pos, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}};
                 playerTable[playerUpdate.playerId] = Entity::Player{playerUpdate.playerId, transform};
             }
             else
@@ -97,6 +99,17 @@ void BlockBuster::Client::Start()
         }
     });
     host.Connect(serverAddress);
+
+    auto attempts = 0;
+    while(!connected && attempts < 3)
+    {
+        logger->LogInfo("Connecting to server...");
+        host.PollAllEvents();
+        Util::Time::SleepMS(500);
+        attempts++;
+    }
+
+    //quit = !connected;
 }
 
 void BlockBuster::Client::Update()
@@ -114,7 +127,8 @@ void BlockBuster::Client::Update()
         lag += elapsed;
 
         HandleSDLEvents();
-        UpdateNetworking();
+        if(connected)
+            UpdateNetworking();
 
         while(lag >= UPDATE_RATE)
         {
@@ -122,8 +136,13 @@ void BlockBuster::Client::Update()
             lag -= UPDATE_RATE;
         }
 
-        DrawScene();
+        Render();
     }
+}
+
+bool BlockBuster::Client::Quit()
+{
+    return quit;
 }
 
 void BlockBuster::Client::DoUpdate(double deltaTime)
@@ -131,12 +150,42 @@ void BlockBuster::Client::DoUpdate(double deltaTime)
     camController_.Update();
 
     // TODO: Move this call to UpdateNetworking
-    SendPlayerMovement();
+    if(connected)
+        SendPlayerMovement();
 }
 
-bool BlockBuster::Client::Quit()
+void Client::UpdateNetworking()
 {
-    return quit;
+    // TODO: Set tickCount to last world snapshot recv
+    host.PollAllEvents();
+
+    // TODO: Sample inputs at server tickrate
+}
+
+void Client::SendPlayerMovement()
+{
+    int8_t* state = (int8_t*)SDL_GetKeyboardState(nullptr);
+    glm::vec3 moveDir{0.0f};
+    moveDir.x = state[SDL_SCANCODE_KP_6] - state[SDL_SCANCODE_KP_4];
+    moveDir.z = state[SDL_SCANCODE_KP_2] - state[SDL_SCANCODE_KP_8];
+    logger->LogInfo("Command sent: " + std::to_string(tickCount) + ": Move dir " + glm::to_string(moveDir));
+    auto len = glm::length(moveDir);
+    moveDir = len > 0 ? moveDir / len : moveDir;
+
+    Networking::Command::Header header;
+    header.type = Networking::Command::Type::PLAYER_MOVEMENT;
+    header.tick = tickCount;
+
+    Networking::Command::User::PlayerMovement playerMovement;
+    playerMovement.moveDir = moveDir;
+
+    Networking::Command::Payload data;
+    data.playerMovement = playerMovement;
+    
+    Networking::Command packet{header, data};
+
+    ENet::SentPacket sentPacket{&packet, sizeof(packet), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
+    host.SendPacket(serverId, 0, sentPacket);
 }
 
 void BlockBuster::Client::HandleSDLEvents()
@@ -145,6 +194,8 @@ void BlockBuster::Client::HandleSDLEvents()
     
     while(SDL_PollEvent(&e) != 0)
     {
+        ImGui_ImplSDL2_ProcessEvent(&e);
+
         switch(e.type)
         {
         case SDL_QUIT:
@@ -159,12 +210,21 @@ void BlockBuster::Client::HandleSDLEvents()
     }
 }
 
-void BlockBuster::Client::DrawScene()
+void Client::Render()
 {
     // Clear Buffer
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    DrawScene();
+    DrawGUI();
+
+    // Swap buffers
+    SDL_GL_SwapWindow(window_);
+}
+
+void BlockBuster::Client::DrawScene()
+{
     // Draw data
     auto view = camera_.GetProjViewMat();
 
@@ -185,41 +245,43 @@ void BlockBuster::Client::DrawScene()
 
     // Draw map
     map_.Draw(chunkShader, view);
-
-    // Swap buffers
-    SDL_GL_SwapWindow(window_);
 }
 
-void Client::UpdateNetworking()
+void Client::DrawGUI()
 {
-    // TODO: Set tickCount to last world snapshot recv
-    host.PollAllEvents();
+    // Clear GUI buffer
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window_);
+    ImGui::NewFrame();
 
-    // TODO: Sample inputs at server tickrate
-}
+    bool isOpen = true;
+    if(connected)
+    {
+        if(ImGui::Begin("Network Stats"))
+        {
+            auto info = host.GetPeerInfo(serverId);
 
-void Client::SendPlayerMovement()
-{
-    int8_t* state = (int8_t*)SDL_GetKeyboardState(nullptr);
-    glm::vec3 moveDir{0.0f};
-    moveDir.x = state[SDL_SCANCODE_KP_6] - state[SDL_SCANCODE_KP_4];
-    moveDir.z = state[SDL_SCANCODE_KP_2] - state[SDL_SCANCODE_KP_8];
-    logger->LogInfo(std::to_string(tickCount) + ": Move dir " + glm::to_string(moveDir));
-    auto len = glm::length(moveDir);
-    moveDir = len > 0 ? moveDir / len : moveDir;
+            ImGui::Text("Latency");
+            ImGui::Separator();
+            ImGui::Text("Ping:");ImGui::SameLine();ImGui::Text("%i ms", info.roundTripTimeMs);
+            ImGui::Text("Ping variance: %i", info.roundTripTimeVariance);
 
-    Networking::Command::Header header;
-    header.type = Networking::Command::Type::PLAYER_MOVEMENT;
-    header.tick = tickCount;
+            ImGui::Text("Packets");
+            ImGui::Separator();
+            ImGui::Text("Packets sent: %i", info.packetsSent);
+            ImGui::Text("Packets lost: %i", info.packetsLost);
+            ImGui::Text("Packet loss: %i", info.packetLoss);
 
-    Networking::Command::User::PlayerMovement playerMovement;
-    playerMovement.moveDir = moveDir;
+            ImGui::Text("Bandwidth");
+            ImGui::Separator();
+            ImGui::Text("In: %i B/s", info.incomingBandwidth);
+            ImGui::Text("Out: %i B/s", info.outgoingBandwidth);
+        }
 
-    Networking::Command::Payload data;
-    data.playerMovement = playerMovement;
+        ImGui::End();
+    }
     
-    Networking::Command packet{header, data};
-
-    ENet::SentPacket sentPacket{&packet, sizeof(packet), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
-    host.SendPacket(serverId, 0, sentPacket);
+    // Draw GUI
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }

@@ -134,6 +134,12 @@ PeerInfo Host::GetPeerInfo(PeerId id) const
     PeerInfo info;
     info.address = Address{peer.peer_->address};
     info.roundTripTimeMs = peer.peer_->roundTripTime;
+    info.roundTripTimeVariance = peer.peer_->roundTripTimeVariance;
+    info.packetsSent = peer.peer_->packetsSent;
+    info.packetsLost = peer.peer_->packetsLost;
+    info.packetLoss = peer.peer_->packetLoss;
+    info.incomingBandwidth = peer.peer_->incomingBandwidth;
+    info.outgoingBandwidth = peer.peer_->outgoingBandwidth;
 
     return info;
 }

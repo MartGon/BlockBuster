@@ -37,15 +37,14 @@ namespace BlockBuster
         // Input
         void HandleSDLEvents();
 
-        // Rendering
-        void DrawScene();
-
         // Networking
         void UpdateNetworking();
         void SendPlayerMovement();
 
-        // Time
-        double GetCurrentTime() const;
+        // Rendering
+        void DrawScene();
+        void DrawGUI();
+        void Render();
 
         // Scene
         ::App::Client::Map map_;
@@ -72,6 +71,7 @@ namespace BlockBuster
         ENet::PeerId serverId = 0;
         uint8_t playerId = 0;
         uint32_t tickCount = 0;
+        bool connected = false;
 
         // App
         bool quit = false;
