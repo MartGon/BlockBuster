@@ -18,6 +18,7 @@ namespace ENet
         uint32_t roundTripTimeMs; // In milliseconds
         uint32_t roundTripTimeVariance;
         uint32_t packetsSent;
+        uint32_t packetsAck;
         uint32_t packetsLost;
         uint32_t packetLoss;
         uint32_t incomingBandwidth;

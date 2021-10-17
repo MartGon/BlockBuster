@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <enet/enet.h>
 
 namespace ENet
 {
+
     class RecvPacket
     {
     friend class Host;
@@ -31,7 +33,7 @@ namespace ENet
     friend class Host;
     friend class Peer;
     public:
-        SentPacket(const void* data, uint32_t size, ENetPacketFlag flag);
+        SentPacket(const void* data, uint32_t size, uint8_t flag);
         
         SentPacket(const SentPacket&) = delete;
         SentPacket& operator=(const SentPacket&) = delete;
@@ -41,6 +43,6 @@ namespace ENet
     private:
         const void* data_ = nullptr;
         uint32_t size_;
-        ENetPacketFlag flags_;
+        uint8_t flags_;
     };
 }

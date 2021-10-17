@@ -33,7 +33,7 @@ glm::vec3 GetRandomPlayerPosition()
 
 void HandleMoveCommand(Entity::Player& player, Networking::Command::User::PlayerMovement pm)
 {
-    const float PLAYER_SPEED = 2.f;
+    const float PLAYER_SPEED = 5.f;
     auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE;
     player.transform.position += velocity;
 }
@@ -128,7 +128,7 @@ int main()
                 return a.header.tick < b.header.tick;
             });
             */
-            logger.LogInfo("Processing " + std::to_string(lastMoves.size()) + " moves");
+            //logger.LogInfo("Processing " + std::to_string(lastMoves.size()) + " moves");
 
             for(auto move : lastMoves)
             {
@@ -159,7 +159,7 @@ int main()
 
             Networking::Command command{header, data};
 
-            ENet::SentPacket epacket{&command, sizeof(command), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
+            ENet::SentPacket epacket{&command, sizeof(command), 0};
             host.Broadcast(0, epacket);
         }
 

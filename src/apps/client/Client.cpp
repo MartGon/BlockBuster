@@ -63,7 +63,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8080).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
     host.SetOnConnectCallback([this](auto id)
     {
         // TODO: Block until this code is called
@@ -101,7 +101,7 @@ void BlockBuster::Client::Start()
     host.Connect(serverAddress);
 
     auto attempts = 0;
-    while(!connected && attempts < 3)
+    while(!connected && attempts < 5)
     {
         logger->LogInfo("Connecting to server...");
         host.PollAllEvents();
@@ -109,7 +109,7 @@ void BlockBuster::Client::Start()
         attempts++;
     }
 
-    //quit = !connected;
+    quit = !connected;
 }
 
 void BlockBuster::Client::Update()
@@ -168,7 +168,7 @@ void Client::SendPlayerMovement()
     glm::vec3 moveDir{0.0f};
     moveDir.x = state[SDL_SCANCODE_KP_6] - state[SDL_SCANCODE_KP_4];
     moveDir.z = state[SDL_SCANCODE_KP_2] - state[SDL_SCANCODE_KP_8];
-    logger->LogInfo("Command sent: " + std::to_string(tickCount) + ": Move dir " + glm::to_string(moveDir));
+    //logger->LogInfo("Command sent: " + std::to_string(tickCount) + ": Move dir " + glm::to_string(moveDir));
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
 
@@ -269,6 +269,7 @@ void Client::DrawGUI()
             ImGui::Text("Packets");
             ImGui::Separator();
             ImGui::Text("Packets sent: %i", info.packetsSent);
+            ImGui::Text("Packets ack: %i", info.packetsAck);
             ImGui::Text("Packets lost: %i", info.packetsLost);
             ImGui::Text("Packet loss: %i", info.packetLoss);
 

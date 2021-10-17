@@ -34,7 +34,7 @@ const void* RecvPacket::GetData() const
     return packet_->data;
 }
 
-SentPacket::SentPacket(const void* data, uint32_t size, ENetPacketFlag flags) : 
+SentPacket::SentPacket(const void* data, uint32_t size, uint8_t flags) : 
     data_{data}, size_{size}, flags_{flags}
 {
 }

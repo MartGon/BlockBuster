@@ -136,6 +136,7 @@ PeerInfo Host::GetPeerInfo(PeerId id) const
     info.roundTripTimeMs = peer.peer_->roundTripTime;
     info.roundTripTimeVariance = peer.peer_->roundTripTimeVariance;
     info.packetsSent = peer.peer_->packetsSent;
+    info.packetsAck = enet_list_size(&peer.peer_->acknowledgements);
     info.packetsLost = peer.peer_->packetsLost;
     info.packetLoss = peer.peer_->packetLoss;
     info.incomingBandwidth = peer.peer_->incomingBandwidth;
