@@ -15,6 +15,8 @@
 #include <game/CameraController.h>
 #include <game/ChunkMeshMgr.h>
 
+#include <util/Time.h>
+
 #include <entity/Player.h>
 
 #include <networking/enetw/ENetW.h>
@@ -69,9 +71,19 @@ namespace BlockBuster
         // Networking
         ENet::Host host;
         ENet::PeerId serverId = 0;
+        double serverTickRate = 0.0;
+        Util::Time::Timer sampleTimer{0};
         uint8_t playerId = 0;
-        uint32_t tickCount = 0;
+        uint32_t serverTick = 0;
+        uint32_t clientTick = 0;
         bool connected = false;
+
+        // Networking - Debug
+        uint64_t lastSample = 0;
+        uint64_t samplingLag = 0;
+        uint64_t minSamplingLag = -1;
+        uint64_t maxSamplingLag = 0;
+        double moveSpeed = 0;
 
         // App
         bool quit = false;

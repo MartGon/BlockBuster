@@ -17,7 +17,7 @@
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
 std::unordered_map<ENet::PeerId, uint32_t> simHistory;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.020;
+const double TICK_RATE = 0.005;
 
 Networking::CommandBuffer commandBuffer{60};
 
@@ -109,7 +109,7 @@ int main()
     {
         host.PollAllEvents();
 
-        auto now = Util::Time::GetCurrentTime();
+        auto now = Util::Time::GetUNIXTime();
 
         // Update
         for(auto& pair : playerTable)
@@ -121,15 +121,6 @@ int main()
                 return command.header.tick > lastTick;
             });
 
-            // TODO: Remove. ENet ensures in-order delivery
-            /*
-            std::sort(lastMoves.begin(), lastMoves.end(), [](auto a, auto b)
-            {
-                return a.header.tick < b.header.tick;
-            });
-            */
-            //logger.LogInfo("Processing " + std::to_string(lastMoves.size()) + " moves");
-
             for(auto move : lastMoves)
             {
                 HandleMoveCommand(pair.second, move.data.playerMovement);
@@ -139,7 +130,7 @@ int main()
                 simHistory[peerId] = lastMoves[lastMoves.size() - 1].header.tick;
         }
 
-        auto elapsed = Util::Time::GetCurrentTime() - now;
+        auto elapsed = Util::Time::GetUNIXTime() - now;
         auto wait = (TICK_RATE - elapsed) * 1e3;
 
         Util::Time::SleepMS(wait);

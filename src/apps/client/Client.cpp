@@ -63,21 +63,32 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
     host.SetOnConnectCallback([this](auto id)
     {
-        // TODO: Block until this code is called
-        this->connected = true;
         this->serverId = id;
         this->logger->LogInfo("Succes on connection to server");
     });
     host.SetOnRecvCallback([this](auto id, auto channel, ENet::RecvPacket ePacket)
     {
-        this->logger->LogInfo("Tick: " + std::to_string(tickCount) + " Server packet recv of size: " + std::to_string(ePacket.GetSize()));
+        this->logger->LogInfo("Tick: " + std::to_string(serverTick) + " Server packet recv of size: " + std::to_string(ePacket.GetSize()));
         
         auto* packet = (Networking::Command*) ePacket.GetData();
-        this->tickCount = packet->header.tick;
-        if(packet->header.type == Networking::Command::Type::PLAYER_POS_UPDATE)
+        this->serverTick = packet->header.tick;
+        if(packet->header.type == Networking::Command::Type::CLIENT_CONFIG)
+        {
+            auto config = packet->data.config;
+            logger->LogInfo("Server tick rate is " + std::to_string(config.sampleRate));
+            this->serverTickRate = config.sampleRate;
+            uint64_t millisInterval = serverTickRate * 1e3;
+            logger->LogInfo("Timer duration is " + std::to_string(millisInterval));
+            this->sampleTimer = Util::Time::Timer{millisInterval};
+            this->serverTick = packet->header.tick;
+            this->playerId = config.playerId;
+
+            this->connected = true;
+        }
+        else if(packet->header.type == Networking::Command::Type::PLAYER_POS_UPDATE)
         {
             Networking::Command::Server::PlayerUpdate playerUpdate = packet->data.playerUpdate;
             logger->LogInfo("Server packet with player " + std::to_string(playerUpdate.playerId) + " data");
@@ -88,7 +99,12 @@ void BlockBuster::Client::Start()
                 playerTable[playerUpdate.playerId] = Entity::Player{playerUpdate.playerId, transform};
             }
             else
+            {
+                auto diff = playerUpdate.pos - this->playerTable[playerUpdate.playerId].transform.position;
+                auto distance = glm::length(diff);
+                this->moveSpeed = distance / this->serverTickRate;
                 this->playerTable[playerUpdate.playerId].transform.position = playerUpdate.pos;
+            }
         }
         else if(packet->header.type == Networking::Command::Type::PLAYER_DISCONNECTED)
         {
@@ -109,18 +125,26 @@ void BlockBuster::Client::Start()
         attempts++;
     }
 
+    if(!connected)
+    {
+        logger->LogInfo("Could not connect to server. Quitting");
+    }
+
     quit = !connected;
+
+    // Debug
+    lastSample = Util::Time::GetUNIXTimeMS<uint64_t>();
 }
 
 void BlockBuster::Client::Update()
 {
-    double previous = Util::Time::GetCurrentTime();
+    double previous = Util::Time::GetUNIXTime();
     double lag = 0.0;
 
     logger->LogInfo("Update rate(s) is: " + std::to_string(UPDATE_RATE));
     while(!quit)
     {
-        auto now =  Util::Time::GetCurrentTime();
+        auto now =  Util::Time::GetUNIXTime();
         auto elapsed = (now - previous);
         
         previous = now;
@@ -148,18 +172,25 @@ bool BlockBuster::Client::Quit()
 void BlockBuster::Client::DoUpdate(double deltaTime)
 {
     camController_.Update();
-
-    // TODO: Move this call to UpdateNetworking
-    if(connected)
-        SendPlayerMovement();
 }
 
 void Client::UpdateNetworking()
 {
-    // TODO: Set tickCount to last world snapshot recv
     host.PollAllEvents();
 
-    // TODO: Sample inputs at server tickrate
+    if(sampleTimer.IsOver())
+    {
+        SendPlayerMovement();
+        sampleTimer.ResetToNextStep();
+
+        // Debug
+        auto now = Util::Time::GetUNIXTimeMS<uint64_t>();
+        auto lag = now - lastSample;
+        minSamplingLag = lag < minSamplingLag ? lag : minSamplingLag;
+        maxSamplingLag = lag > maxSamplingLag ? lag : maxSamplingLag;
+        samplingLag = lag;
+        lastSample = now;
+    }
 }
 
 void Client::SendPlayerMovement()
@@ -168,13 +199,13 @@ void Client::SendPlayerMovement()
     glm::vec3 moveDir{0.0f};
     moveDir.x = state[SDL_SCANCODE_KP_6] - state[SDL_SCANCODE_KP_4];
     moveDir.z = state[SDL_SCANCODE_KP_2] - state[SDL_SCANCODE_KP_8];
-    //logger->LogInfo("Command sent: " + std::to_string(tickCount) + ": Move dir " + glm::to_string(moveDir));
+    logger->LogInfo(std::to_string(Util::Time::GetUNIXTimeMS<uint64_t>()) + " Command sent: " + std::to_string(serverTick) + ": Move dir " + glm::to_string(moveDir));
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
 
     Networking::Command::Header header;
     header.type = Networking::Command::Type::PLAYER_MOVEMENT;
-    header.tick = tickCount;
+    header.tick = serverTick;
 
     Networking::Command::User::PlayerMovement playerMovement;
     playerMovement.moveDir = moveDir;
@@ -277,6 +308,12 @@ void Client::DrawGUI()
             ImGui::Separator();
             ImGui::Text("In: %i B/s", info.incomingBandwidth);
             ImGui::Text("Out: %i B/s", info.outgoingBandwidth);
+
+            ImGui::Text("Input Sapmling");
+            ImGui::Separator();
+            ImGui::Text("Lag: %lu", samplingLag); ImGui::SameLine(); ImGui::Text("Min: %lu", minSamplingLag); ImGui::SameLine(); ImGui::Text("Max: %lu", maxSamplingLag);
+            ImGui::Text("Last TimeStamp: %lu", lastSample);
+            ImGui::Text("Move speed: %f", moveSpeed);
         }
 
         ImGui::End();

@@ -4,7 +4,46 @@
 
 namespace Util::Time
 {
-    double GetCurrentTime();
+    template <typename T = double>
+    // Returns current time in seconds
+    T GetUNIXTime()
+    {
+        using namespace std::chrono;
+        return static_cast<T>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count() / 1e9);
+    }
+
+    template <typename T = double>
+    // Returns current time in ms
+    T GetUNIXTimeMS()
+    {
+        using namespace std::chrono;
+        return static_cast<T>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count() / 1e6);
+    }
+
     void Sleep(uint32_t seconds);
     void SleepMS(uint32_t millis);
+
+    class Timer
+    {
+    public:
+        Timer(uint64_t durationMS);
+
+        bool IsOver() const;
+        void Reset();
+        uint64_t ResetToNextStep();
+
+        inline uint64_t GetDuration() const
+        {
+            return duration_;
+        }
+
+        inline uint64_t GetEndTime() const
+        {
+            return endTime_;
+        }
+
+    private:
+        uint64_t duration_;
+        uint64_t endTime_;
+    };
 }
