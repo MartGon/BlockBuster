@@ -100,9 +100,6 @@ void BlockBuster::Client::Start()
             }
             else
             {
-                auto diff = playerUpdate.pos - this->playerTable[playerUpdate.playerId].transform.position;
-                auto distance = glm::length(diff);
-                this->moveSpeed = distance / this->serverTickRate;
                 this->playerTable[playerUpdate.playerId].transform.position = playerUpdate.pos;
             }
         }
@@ -131,41 +128,33 @@ void BlockBuster::Client::Start()
     }
 
     quit = !connected;
-
-    // Debug
-    lastSample = Util::Time::GetUNIXTimeMS<uint64_t>();
 }
 
 void BlockBuster::Client::Update()
 {
-    double previous = Util::Time::GetUNIXTime();
+    prevRenderTime = Util::Time::GetUNIXTime();
     double lag = 0.0;
 
-    logger->LogInfo("Update rate(s) is: " + std::to_string(UPDATE_RATE));
+    logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate));
     while(!quit)
     {
         auto now =  Util::Time::GetUNIXTime();
-        frameInterval = (now - previous);
+        frameInterval = (now - prevRenderTime);
 
-        // Max FPS Correction
-        if(frameInterval < minFrameInterval)
-        {
-            auto diff = (minFrameInterval - frameInterval) * 1e3;
-            Util::Time::SleepMS(diff);
-            frameInterval = minFrameInterval;
-        }
-        
-        previous = now;
+        prevRenderTime = now;
         lag += frameInterval;
 
         HandleSDLEvents();
         if(connected)
             UpdateNetworking();
 
-        while(lag >= UPDATE_RATE)
+        while(lag >= serverTickRate)
         {
-            DoUpdate(UPDATE_RATE);
-            lag -= UPDATE_RATE;
+            if(connected)
+                SendPlayerMovement();
+
+            DoUpdate(serverTickRate);
+            lag -= serverTickRate;
         }
 
         Render();
@@ -185,20 +174,6 @@ void BlockBuster::Client::DoUpdate(double deltaTime)
 void Client::UpdateNetworking()
 {
     host.PollAllEvents();
-
-    if(sampleTimer.IsOver())
-    {
-        SendPlayerMovement();
-        sampleTimer.ResetToNextStep();
-
-        // Debug
-        auto now = Util::Time::GetUNIXTimeMS<uint64_t>();
-        auto lag = now - lastSample;
-        minSamplingLag = lag < minSamplingLag ? lag : minSamplingLag;
-        maxSamplingLag = lag > maxSamplingLag ? lag : maxSamplingLag;
-        samplingLag = lag;
-        lastSample = now;
-    }
 }
 
 void Client::SendPlayerMovement()
@@ -260,6 +235,14 @@ void Client::Render()
 
     // Swap buffers
     SDL_GL_SwapWindow(window_);
+
+    // Max FPS Correction
+    auto renderTime = Util::Time::GetUNIXTime() - prevRenderTime;
+    if(renderTime < minFrameInterval)
+    {
+        auto diff = (minFrameInterval - renderTime) * 1e3;
+        Util::Time::SleepMS(diff);
+    }
 }
 
 void BlockBuster::Client::DrawScene()
@@ -300,6 +283,11 @@ void Client::DrawGUI()
         {
             auto info = host.GetPeerInfo(serverId);
 
+            ImGui::Text("Config");
+            ImGui::Separator();
+            ImGui::Text("Server tick rate: %.2f ms", serverTickRate * 1e3);
+
+
             ImGui::Text("Latency");
             ImGui::Separator();
             ImGui::Text("Ping:");ImGui::SameLine();ImGui::Text("%i ms", info.roundTripTimeMs);
@@ -316,12 +304,6 @@ void Client::DrawGUI()
             ImGui::Separator();
             ImGui::Text("In: %i B/s", info.incomingBandwidth);
             ImGui::Text("Out: %i B/s", info.outgoingBandwidth);
-
-            ImGui::Text("Input Sapmling");
-            ImGui::Separator();
-            ImGui::Text("Lag: %lu", samplingLag); ImGui::SameLine(); ImGui::Text("Min: %lu", minSamplingLag); ImGui::SameLine(); ImGui::Text("Max: %lu", maxSamplingLag);
-            ImGui::Text("Last TimeStamp: %lu", lastSample);
-            ImGui::Text("Move speed: %f", moveSpeed);
 
             ImGui::End();
         }

@@ -14,13 +14,14 @@ namespace Networking
     public:
         CommandBuffer(uint32_t capacity);
 
+        std::optional<Command> Pop(ENet::PeerId peerId, Command::Type type);
         void Push(ENet::PeerId peerId, Command command);
 
         std::optional<Command> GetLast(ENet::PeerId peerId, Command::Type type);
         std::optional<Command> GetAt(ENet::PeerId peerId, Command::Type type, int32_t index);
-        std::vector<Command> Get(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> predicate);
-        std::optional<Command> GetFirst(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> predicate);
-        std::optional<Command> GetLast(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> predicate);
+        std::vector<Command> GetBy(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> predicate);
+        std::optional<Command> GetFirstBy(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> predicate);
+        std::optional<Command> GetLastBy(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> predicate);
 
     private:
 

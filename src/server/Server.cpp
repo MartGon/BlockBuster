@@ -17,7 +17,7 @@
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
 std::unordered_map<ENet::PeerId, uint32_t> simHistory;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.020;
+const double TICK_RATE = 0.015;
 
 Networking::CommandBuffer commandBuffer{60};
 
@@ -115,19 +115,11 @@ int main()
         for(auto& pair : playerTable)
         {
             auto peerId = pair.first;
-            auto lastTick = simHistory[peerId];
 
-            auto lastMoves = commandBuffer.Get(peerId, Networking::Command::Type::PLAYER_MOVEMENT, [lastTick, tickCount](Networking::Command command){
-                return command.header.tick > lastTick;
-            });
-
-            for(auto move : lastMoves)
+            while(auto command = commandBuffer.Pop(peerId, Networking::Command::Type::PLAYER_MOVEMENT))
             {
-                HandleMoveCommand(pair.second, move.data.playerMovement);
+                HandleMoveCommand(pair.second, command->data.playerMovement);
             }
-
-            if(lastMoves.size() > 0)
-                simHistory[peerId] = lastMoves[lastMoves.size() - 1].header.tick;
         }
 
         auto elapsed = Util::Time::GetUNIXTime() - now;

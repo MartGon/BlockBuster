@@ -7,6 +7,12 @@ CommandBuffer::CommandBuffer(uint32_t capacity) : capacity_{capacity}
 
 }
 
+std::optional<Command> CommandBuffer::Pop(ENet::PeerId peerId, Command::Type type)
+{
+    auto& q = GetQueue(peerId, type);
+    return q.Pop();
+}
+
 void CommandBuffer::Push(ENet::PeerId peerId, Command command)
 {
     auto& queue = GetQueue(peerId, command.header.type);
@@ -24,27 +30,27 @@ std::optional<Command> CommandBuffer::GetAt(ENet::PeerId peerId, Command::Type t
     return queue.At(index);
 }
 
-std::optional<Command> CommandBuffer::GetFirst(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> pred)
+std::optional<Command> CommandBuffer::GetFirstBy(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> pred)
 {
     std::optional<Command> ret;
-    auto commands = Get(peerId, type, pred);
+    auto commands = GetBy(peerId, type, pred);
     if(commands.size() > 0)
         ret = commands[0];
     
     return ret;
 }
 
-std::optional<Command> CommandBuffer::GetLast(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> pred)
+std::optional<Command> CommandBuffer::GetLastBy(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> pred)
 {
     std::optional<Command> ret;
-    auto commands = Get(peerId, type, pred);
+    auto commands = GetBy(peerId, type, pred);
     if(commands.size() > 0)
         ret = commands[commands.size() - 1];
     
     return ret;
 }
 
-std::vector<Command> CommandBuffer::Get(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> pred)
+std::vector<Command> CommandBuffer::GetBy(ENet::PeerId peerId, Command::Type type, std::function<bool(Command)> pred)
 {
     std::vector<Command> commands;
 

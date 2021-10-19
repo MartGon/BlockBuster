@@ -20,7 +20,7 @@ Time::Timer::Timer(uint64_t durationMS) : duration_{durationMS}, endTime_{GetUNI
 
 bool Time::Timer::IsOver() const
 {
-    return GetUNIXTimeMS<uint64_t>() > endTime_;
+    return GetUNIXTimeMS<uint64_t>() >= endTime_;
 }
 
 void Time::Timer::Reset()
@@ -36,7 +36,7 @@ uint64_t Time::Timer::ResetToNextStep()
     {
         auto diff = now - endTime_;
         auto nextDuration = std::min(duration_, duration_ - diff);
-        endTime_ = now + nextDuration;
+        endTime_ = endTime_ + nextDuration;
     }
 
     return diff;

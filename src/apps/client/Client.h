@@ -57,6 +57,8 @@ namespace BlockBuster
         Rendering::Mesh cylinder;
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
+
+        double prevRenderTime = 0.0;
         double frameInterval = 0.0;
         double maxFPS = 60.0;
         double minFrameInterval = 0.0;
@@ -80,13 +82,6 @@ namespace BlockBuster
         uint32_t serverTick = 0;
         uint32_t clientTick = 0;
         bool connected = false;
-
-        // Networking - Debug
-        uint64_t lastSample = 0;
-        uint64_t samplingLag = 0;
-        uint64_t minSamplingLag = -1;
-        uint64_t maxSamplingLag = 0;
-        double moveSpeed = 0;
 
         // App
         bool quit = false;
