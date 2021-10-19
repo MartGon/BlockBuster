@@ -57,6 +57,9 @@ namespace BlockBuster
         Rendering::Mesh cylinder;
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
+        double frameInterval = 0.0;
+        double maxFPS = 60.0;
+        double minFrameInterval = 0.0;
 
         // Update
         const double UPDATE_RATE = 0.020;

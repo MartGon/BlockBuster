@@ -145,10 +145,18 @@ void BlockBuster::Client::Update()
     while(!quit)
     {
         auto now =  Util::Time::GetUNIXTime();
-        auto elapsed = (now - previous);
+        frameInterval = (now - previous);
+
+        // Max FPS Correction
+        if(frameInterval < minFrameInterval)
+        {
+            auto diff = (minFrameInterval - frameInterval) * 1e3;
+            Util::Time::SleepMS(diff);
+            frameInterval = minFrameInterval;
+        }
         
         previous = now;
-        lag += elapsed;
+        lag += frameInterval;
 
         HandleSDLEvents();
         if(connected)
@@ -314,9 +322,25 @@ void Client::DrawGUI()
             ImGui::Text("Lag: %lu", samplingLag); ImGui::SameLine(); ImGui::Text("Min: %lu", minSamplingLag); ImGui::SameLine(); ImGui::Text("Max: %lu", maxSamplingLag);
             ImGui::Text("Last TimeStamp: %lu", lastSample);
             ImGui::Text("Move speed: %f", moveSpeed);
+
+            ImGui::End();
         }
 
-        ImGui::End();
+        if(ImGui::Begin("Rendering Stats"))
+        {
+            ImGui::Text("Latency");
+            ImGui::Separator();
+            uint64_t frameIntervalMs = frameInterval * 1e3;
+            ImGui::Text("Frame interval (delta time):");ImGui::SameLine();ImGui::Text("%lu ms", frameIntervalMs);
+            uint64_t fps = 1.0 / frameInterval;
+            ImGui::Text("FPS: %lu", fps);
+
+            ImGui::InputDouble("Max FPS", &maxFPS, 1.0, 5.0, "%.0f");
+            minFrameInterval = 1 / maxFPS;
+            ImGui::Text("Min Frame interval:");ImGui::SameLine();ImGui::Text("%.0f ms", minFrameInterval * 1e3);
+
+            ImGui::End();
+        }
     }
     
     // Draw GUI
