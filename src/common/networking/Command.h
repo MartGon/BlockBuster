@@ -12,7 +12,8 @@ namespace Networking
             PLAYER_POS_UPDATE,
             PLAYER_DISCONNECTED,
 
-            PLAYER_MOVEMENT
+            PLAYER_MOVEMENT,
+            ACK_COMMAND
         };
 
         struct Server
@@ -32,7 +33,12 @@ namespace Networking
             struct PlayerDisconnected
             {
                 uint8_t playerId;
-            }; 
+            };
+
+            struct AckCommand
+            {
+                uint32_t commandId;
+            };
         };
 
         struct User
@@ -54,6 +60,7 @@ namespace Networking
             Server::ClientConfig config;
             Server::PlayerUpdate playerUpdate;
             Server::PlayerDisconnected playerDisconnect;
+            Server::AckCommand ackCommand;
 
             User::PlayerMovement playerMovement;
         };

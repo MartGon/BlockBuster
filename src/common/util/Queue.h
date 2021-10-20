@@ -41,6 +41,11 @@ namespace Util
             return At(0);
         }
 
+        std::optional<T> Back() const
+        {
+            return At(-1);
+        }
+
         void Push(T val)
         {
             if(vector_.size() >= capacity_)
@@ -70,6 +75,6 @@ namespace Util
 
     private:
         std::vector<T> vector_;
-        uint32_t capacity_ = 5;
+        uint32_t capacity_ = 64;
     };
 }

@@ -16,10 +16,12 @@
 #include <game/ChunkMeshMgr.h>
 
 #include <util/Time.h>
+#include <util/Queue.h>
 
 #include <entity/Player.h>
 
 #include <networking/enetw/ENetW.h>
+#include <networking/Command.h>
 
 namespace BlockBuster
 {
@@ -44,6 +46,9 @@ namespace BlockBuster
         void SendPlayerMovement();
         uint64_t GetCurrentTime();
 
+        // Game
+        void PredictPlayerMovement(Networking::Command cmd);
+
         // Rendering
         void DrawScene();
         void DrawGUI();
@@ -61,10 +66,10 @@ namespace BlockBuster
 
         double prevRenderTime = 0.0;
         double frameInterval = 0.0;
-        double maxFPS = 15.0;
+        double maxFPS = 60.0;
         double minFrameInterval = 0.0;
 
-        // Update
+        // Updates
         const double UPDATE_RATE = 0.020;
 
         // Controls
@@ -77,12 +82,17 @@ namespace BlockBuster
         // Networking
         ENet::Host host;
         ENet::PeerId serverId = 0;
-        double serverTickRate = 0.0;
         uint8_t playerId = 0;
+        double serverTickRate = 0.0;
         uint32_t serverTick = 0;
-        uint32_t clientTick = 0;
         bool connected = false;
         uint64_t startTime = 0;
+        std::unordered_map<Entity::ID, Util::Queue<Networking::Command::Server::PlayerUpdate>> snapshotHistory_{128};
+
+        // Prediction
+        Util::Queue<Networking::Command> cmdHistory_{128};
+        uint32_t cmdId = 0;
+        uint32_t lastAck = 0;
 
         // App
         bool quit = false;

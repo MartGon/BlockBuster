@@ -16,10 +16,9 @@
 #include <glm/gtx/string_cast.hpp>
 
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
-std::unordered_map<ENet::PeerId, uint32_t> tickHistory;
 std::unordered_map<ENet::PeerId, std::map<uint32_t, glm::vec3>> simHistory;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.015;
+const double TICK_RATE = 0.020;
 
 Networking::CommandBuffer commandBuffer{60};
 
@@ -62,7 +61,6 @@ int main()
         player.id = lastId++;
         player.transform = Math::Transform{GetRandomPlayerPosition(), glm::vec3{0.0f}, glm::vec3{1.0f}};
         playerTable[peerId] = player;
-        tickHistory[peerId] = tickCount;
 
         // Inform client
         Networking::Command::Server::ClientConfig clientConfig;
@@ -115,6 +113,7 @@ int main()
         host.PollAllEvents();
 
         auto now = Util::Time::GetUNIXTime();
+        std::unordered_map<ENet::PeerId, uint32_t> ackHistory;
 
         // Update
         for(auto& pair : playerTable)
@@ -124,9 +123,12 @@ int main()
             while(auto command = commandBuffer.Pop(peerId, type))
             {
                 auto size = commandBuffer.GetSize(peerId, type);
-                auto lastTick = tickHistory[peerId]++;
-                logger.LogInfo("Command recv with tick: " + std::to_string(lastTick) + " on tick " + std::to_string(tickCount) + ". Buffer size: " + std::to_string(size));
-                HandleMoveCommand(peerId, command->data.playerMovement, lastTick);
+                auto cmdId = command->header.tick;
+
+                ackHistory[peerId] = cmdId;
+
+                logger.LogInfo("Command recv with cmd id: " + std::to_string(ackHistory[peerId]) + " on tick " + std::to_string(tickCount) + ". Buffer size: " + std::to_string(size));
+                HandleMoveCommand(peerId, command->data.playerMovement, tickCount);
             }
 
             // TODO: Save the position of the player for this tick. Slow computers will have jittery movement
@@ -141,6 +143,7 @@ int main()
         // TODO: Server commands / World Snapshots should be batched and then sent to client.
         for(auto pair : playerTable)
         {
+            // Broadcast this player's movement
             auto player = pair.second;
 
             Networking::Command::Header header;
@@ -154,6 +157,16 @@ int main()
 
             ENet::SentPacket epacket{&command, sizeof(command), 0};
             host.Broadcast(0, epacket);
+
+            // Send confirmed command to this player
+            Networking::Command::Payload ackData;
+            ackData.ackCommand = Networking::Command::Server::AckCommand{ackHistory[pair.first]};
+
+            header.type = Networking::Command::Type::ACK_COMMAND;
+            Networking::Command ack{header, ackData};
+
+            ENet::SentPacket apacket{&ack, sizeof(ack), 0};
+            host.SendPacket(pair.first, 0, apacket);
         }
 
         tickCount++;
