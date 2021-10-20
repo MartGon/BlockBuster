@@ -26,7 +26,6 @@ namespace Util
             return capacity_;
         }
 
-
         std::optional<T> At(int32_t index) const
         {
             std::optional<T> ret;

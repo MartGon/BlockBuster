@@ -11,11 +11,13 @@
 #include <entity/Player.h>
 
 #include <vector>
+#include <map>
 
 #include <glm/gtx/string_cast.hpp>
 
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
-std::unordered_map<ENet::PeerId, uint32_t> simHistory;
+std::unordered_map<ENet::PeerId, uint32_t> tickHistory;
+std::unordered_map<ENet::PeerId, std::map<uint32_t, glm::vec3>> simHistory;
 Entity::ID lastId = 0;
 const double TICK_RATE = 0.015;
 
@@ -31,11 +33,14 @@ glm::vec3 GetRandomPlayerPosition()
     return pos;
 }
 
-void HandleMoveCommand(Entity::Player& player, Networking::Command::User::PlayerMovement pm)
+void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMovement pm, uint32_t playerTick)
 {
+    auto& player = playerTable[peerId];
     const float PLAYER_SPEED = 5.f;
     auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE;
     player.transform.position += velocity;
+    
+    simHistory[peerId][playerTick] = player.transform.position;
 }
 
 int main()
@@ -57,6 +62,7 @@ int main()
         player.id = lastId++;
         player.transform = Math::Transform{GetRandomPlayerPosition(), glm::vec3{0.0f}, glm::vec3{1.0f}};
         playerTable[peerId] = player;
+        tickHistory[peerId] = tickCount;
 
         // Inform client
         Networking::Command::Server::ClientConfig clientConfig;
@@ -78,7 +84,6 @@ int main()
     host.SetOnRecvCallback([&logger, &tickCount](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
         auto command = (Networking::Command*)recvPacket.GetData();
-        logger.LogInfo("Command recv with tick: " + std::to_string(command->header.tick) + " on tick " + std::to_string(tickCount));
         commandBuffer.Push(peerId, *command);
     });
     host.SetOnDisconnectCallback([&logger, &tickCount, &host](auto peerId)
@@ -115,16 +120,21 @@ int main()
         for(auto& pair : playerTable)
         {
             auto peerId = pair.first;
-
-            while(auto command = commandBuffer.Pop(peerId, Networking::Command::Type::PLAYER_MOVEMENT))
+            auto type = Networking::Command::Type::PLAYER_MOVEMENT;
+            while(auto command = commandBuffer.Pop(peerId, type))
             {
-                HandleMoveCommand(pair.second, command->data.playerMovement);
+                auto size = commandBuffer.GetSize(peerId, type);
+                auto lastTick = tickHistory[peerId]++;
+                logger.LogInfo("Command recv with tick: " + std::to_string(lastTick) + " on tick " + std::to_string(tickCount) + ". Buffer size: " + std::to_string(size));
+                HandleMoveCommand(peerId, command->data.playerMovement, lastTick);
             }
+
+            // TODO: Save the position of the player for this tick. Slow computers will have jittery movement
+            // Could use some entity interpolation on the server
         }
 
         auto elapsed = Util::Time::GetUNIXTime() - now;
         auto wait = (TICK_RATE - elapsed) * 1e3;
-
         Util::Time::SleepMS(wait);
 
         // Send update

@@ -19,6 +19,11 @@ void CommandBuffer::Push(ENet::PeerId peerId, Command command)
     queue.Push(command);
 }
 
+uint32_t CommandBuffer::GetSize(ENet::PeerId peerId, Command::Type type)
+{
+    return GetQueue(peerId, type).GetSize();
+}
+
 std::optional<Command> CommandBuffer::GetLast(ENet::PeerId peerId, Command::Type type)
 {
     return GetAt(peerId, type, -1);

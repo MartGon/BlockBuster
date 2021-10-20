@@ -1,0 +1,74 @@
+Now
+
+Server						Client
+
+Sample Clock					Sample clock
+Read user input.Store in queue		Get server snapshot					
+Execute client user input			Sample and send player input
+-						Render Scene
+Send snapshot					
+Sleep time until next step
+
+My solution
+
+Default
+Server tick rate is Ts (default: 15ms)
+Server outgoing packet rate Os = Ts (15ms). Note: These are not reliable.
+
+Client input sample rate Tc = Ts (15ms). Note: If frame rate Fr < Tc, then some input samples are duplicated. So actually Tc = max(Ts, Fr)
+Client outgoing packet rate Oc = Tc. Note: Client outgoing packets are reliable
+
+Description
+- On each tick, server employs available user input.
+	- Each input recv is labeled with a seq number. The first one is the server's tick when player connected. The labeling is done by the server (this could be reviewed)
+	- Player position is updated by each unused input. In order for an input to be used, seq number < server tick count. 
+	  If Tc < Ts then on some ticks there will be no inputs, while in others there will be many of them batched.
+	- The server sends a world snapshot to each client
+	
+- On each frame, client does the following:
+	- It reads the last server snapshot and updates each entity position accordingly
+	- It sends player input to the server. If Tc < Ts then, multiple input are sent in a batch.
+	- Render frame
+
+Given these conditions:
+
+Server tick rate = 30 ms
+Client one framerate Fr1 (33.33 ms or 30 fps) Tc = max(Ts, Fr1) = 33.33 ms
+Client two framerate Fr2 (66.67 ms or 15 fps) Tc = max(Ts, Fr2) = 66.67 ms
+Client three framerate Fr3 (16.67 ms or 60 fps) Tc = max(Ts, Fr3) = 30 ms
+
+Client one and two should see themselves moving normally, although with a slight delay.
+
+Client one should see client two's character moving with noticeable jitter. Client two's character is updated in server every 66.67, and that is reflected in the client.
+Client one should see client three's character moving normally.
+
+Client two should see both client two and three moving normally.
+
+Client three should see himself with slight jitter (it moves almost every two frames).
+Client three should see client one with slight jitter, greater than the previous.
+Client three should see client two with heavy jitter. It moves every 4 frames.
+
+Entity interpolation requires
+
+Label snapshots with server timestamp
+Synchronize client clock to servers. This requires sending the server timestamp on the client config packet. Then we get a difference time which should be latency + clock desync.
+Given a client timestamp, we can find the two snapshots that the current rendering time is in between of. std::pair<Snapshot, std::optional>
+We can interpolate the positions based on the distance of the current rendering time to each of the snapshot's timestamps.
+Render time is 2 * Os behind current time. So two packets in a row have to be lost in order to use extrapolation.
+We use extrapolation when we don't find a right snapshot to use for interpolation. We use the last two available snapshots to calcualte a dir vector. Then use that dir for the next ticks until the next one arrives.
+
+Input prediction
+
+Client stores a buffer with the last sent user commands. Let say the last 10. We keep track for which server tick each user command will correspond. So if the last snapshot we have corresponds to
+server tick 50, and we send 5 user commands until the next one arrives, then we have user commands for tick 51, 52, 53, 54 and 55 stored in the queue.
+When server snapshot corresponding to tick 51 arrives, we reset the player position to the one provided by the server, and then re-apply the movement corresponding to commands 52, 53, 54 and 55.
+This behaves correctly under packet loss. If the snapshot 53 were the next to arrive, we could apply the same method. We use the commands corresponding to 54 and 55.
+We always discard or pop from the queue commands whose tick is <= to last server tick.
+
+Lag compensation
+
+Each time the server updates a player position, save it in a buffer with a seq number.
+Calculate when the command was excuted by Command Ex time = Current time - Latency - Interpolation time
+Restore every player position by finding the closest stored position in time for the given command execution time.
+Perform hit scan.
+

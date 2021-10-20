@@ -80,11 +80,8 @@ void BlockBuster::Client::Start()
             auto config = packet->data.config;
             logger->LogInfo("Server tick rate is " + std::to_string(config.sampleRate));
             this->serverTickRate = config.sampleRate;
-            uint64_t millisInterval = serverTickRate * 1e3;
-            logger->LogInfo("Timer duration is " + std::to_string(millisInterval));
-            this->sampleTimer = Util::Time::Timer{millisInterval};
-            this->serverTick = packet->header.tick;
             this->playerId = config.playerId;
+            this->startTime = Util::Time::GetUNIXTimeMS<uint64_t>();
 
             this->connected = true;
         }
@@ -146,14 +143,15 @@ void BlockBuster::Client::Update()
 
         HandleSDLEvents();
         if(connected)
-            UpdateNetworking();
+            RecvServerSnapshots();
 
         while(lag >= serverTickRate)
         {
+            DoUpdate(serverTickRate);
+
             if(connected)
                 SendPlayerMovement();
 
-            DoUpdate(serverTickRate);
             lag -= serverTickRate;
         }
 
@@ -171,9 +169,10 @@ void BlockBuster::Client::DoUpdate(double deltaTime)
     camController_.Update();
 }
 
-void Client::UpdateNetworking()
+void Client::RecvServerSnapshots()
 {
     host.PollAllEvents();
+    this->clientTick = serverTick; // TODO: Desyncs can occur if server snapshot packet is lost
 }
 
 void Client::SendPlayerMovement()
@@ -182,13 +181,14 @@ void Client::SendPlayerMovement()
     glm::vec3 moveDir{0.0f};
     moveDir.x = state[SDL_SCANCODE_KP_6] - state[SDL_SCANCODE_KP_4];
     moveDir.z = state[SDL_SCANCODE_KP_2] - state[SDL_SCANCODE_KP_8];
-    logger->LogInfo(std::to_string(Util::Time::GetUNIXTimeMS<uint64_t>()) + " Command sent: " + std::to_string(serverTick) + ": Move dir " + glm::to_string(moveDir));
+    logger->LogInfo(std::to_string(GetCurrentTime()) + " Command sent on server tick: " + std::to_string(serverTick) 
+        + ": Move dir " + glm::to_string(moveDir));
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
 
     Networking::Command::Header header;
     header.type = Networking::Command::Type::PLAYER_MOVEMENT;
-    header.tick = serverTick;
+    header.tick = clientTick;
 
     Networking::Command::User::PlayerMovement playerMovement;
     playerMovement.moveDir = moveDir;
@@ -200,6 +200,13 @@ void Client::SendPlayerMovement()
 
     ENet::SentPacket sentPacket{&packet, sizeof(packet), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
     host.SendPacket(serverId, 0, sentPacket);
+
+    this->clientTick++;
+}
+
+uint64_t Client::GetCurrentTime()
+{
+    return Util::Time::GetUNIXTimeMS<uint64_t>() - startTime;
 }
 
 void BlockBuster::Client::HandleSDLEvents()

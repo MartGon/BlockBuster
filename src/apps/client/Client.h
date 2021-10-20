@@ -40,8 +40,9 @@ namespace BlockBuster
         void HandleSDLEvents();
 
         // Networking
-        void UpdateNetworking();
+        void RecvServerSnapshots();
         void SendPlayerMovement();
+        uint64_t GetCurrentTime();
 
         // Rendering
         void DrawScene();
@@ -60,7 +61,7 @@ namespace BlockBuster
 
         double prevRenderTime = 0.0;
         double frameInterval = 0.0;
-        double maxFPS = 60.0;
+        double maxFPS = 15.0;
         double minFrameInterval = 0.0;
 
         // Update
@@ -77,11 +78,11 @@ namespace BlockBuster
         ENet::Host host;
         ENet::PeerId serverId = 0;
         double serverTickRate = 0.0;
-        Util::Time::Timer sampleTimer{0};
         uint8_t playerId = 0;
         uint32_t serverTick = 0;
         uint32_t clientTick = 0;
         bool connected = false;
+        uint64_t startTime = 0;
 
         // App
         bool quit = false;
