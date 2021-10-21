@@ -43,11 +43,12 @@ namespace BlockBuster
 
         // Networking
         void RecvServerSnapshots();
-        void SendPlayerMovement();
+        void UpdateNetworking();
         uint64_t GetCurrentTime();
 
-        // Game
-        void PredictPlayerMovement(Networking::Command cmd);
+        // Networking - Prediction
+        void PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId);
+        glm::vec3 MovePlayer(Networking::Command::User::PlayerMovement playerMove);
 
         // Rendering
         void DrawScene();
@@ -90,7 +91,13 @@ namespace BlockBuster
         std::unordered_map<Entity::ID, Util::Queue<Networking::Command::Server::PlayerUpdate>> snapshotHistory_{128};
 
         // Prediction
-        Util::Queue<Networking::Command> cmdHistory_{128};
+        struct Prediction
+        {
+            uint32_t cmdId;
+            Networking::Command cmd;
+            glm::vec3 pos;
+        };
+        Util::Queue<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
 

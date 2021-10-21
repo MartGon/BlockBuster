@@ -159,14 +159,17 @@ int main()
             host.Broadcast(0, epacket);
 
             // Send confirmed command to this player
-            Networking::Command::Payload ackData;
-            ackData.ackCommand = Networking::Command::Server::AckCommand{ackHistory[pair.first]};
+            if(ackHistory.find(pair.first) != ackHistory.end())
+            {
+                Networking::Command::Payload ackData;
+                ackData.ackCommand = Networking::Command::Server::AckCommand{ackHistory[pair.first]};
 
-            header.type = Networking::Command::Type::ACK_COMMAND;
-            Networking::Command ack{header, ackData};
+                header.type = Networking::Command::Type::ACK_COMMAND;
+                Networking::Command ack{header, ackData};
 
-            ENet::SentPacket apacket{&ack, sizeof(ack), 0};
-            host.SendPacket(pair.first, 0, apacket);
+                ENet::SentPacket apacket{&ack, sizeof(ack), 0};
+                host.SendPacket(pair.first, 0, apacket);
+            }
         }
 
         tickCount++;

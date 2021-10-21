@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <optional>
+#include <functional>
 #include <cstdint>
 
 namespace Util
@@ -71,6 +72,34 @@ namespace Util
             auto diff = capacity_ - prevSize;
             for(auto i = 0; i < diff; i++)
                 vector_.erase(vector_.begin());
+        }
+
+        std::vector<T> Find(std::function<bool(T)> pred)
+        {
+            std::vector<T> ret;
+            for(auto m : vector_)
+            {
+                if(pred(m))
+                    ret.push_back(m);
+            }
+
+            return ret;
+        }
+
+        std::optional<T> FindFirst(std::function<bool(T)> pred)
+        {
+            std::optional<T> ret;
+
+            for(auto m : vector_)
+            {
+                if(pred(m))
+                {
+                    ret = m;
+                    break;
+                }
+            }
+
+            return ret;
         }
 
     private:

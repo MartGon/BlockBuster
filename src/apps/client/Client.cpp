@@ -73,7 +73,7 @@ void BlockBuster::Client::Start()
         auto* packet = (Networking::Command*) ePacket.GetData();
         this->serverTick = packet->header.tick;
 
-        this->logger->LogInfo(std::to_string(this->GetCurrentTime()) + " Tick: " + std::to_string(serverTick) + " Server packet recv of size: " + std::to_string(ePacket.GetSize()) );
+        //this->logger->LogInfo(std::to_string(this->GetCurrentTime()) + " Tick: " + std::to_string(serverTick) + " Server packet recv of size: " + std::to_string(ePacket.GetSize()) );
         if(packet->header.type == Networking::Command::Type::CLIENT_CONFIG)
         {
             auto config = packet->data.config;
@@ -85,11 +85,19 @@ void BlockBuster::Client::Start()
         }
         else if(packet->header.type == Networking::Command::Type::PLAYER_POS_UPDATE)
         {
+            logger->LogInfo("Recv server snapshot for tick: " + std::to_string(packet->header.tick));
             Networking::Command::Server::PlayerUpdate playerUpdate = packet->data.playerUpdate;
             auto playerId = playerUpdate.playerId;
+
+            // Create player entries
             if(snapshotHistory_.find(playerId) == snapshotHistory_.end())
             {
                 snapshotHistory_[playerId] = Util::Queue<Networking::Command::Server::PlayerUpdate>{64};
+            }
+            if(playerTable.find(playerId) == playerTable.end())
+            {
+                Math::Transform transform{playerUpdate.pos, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}};
+                playerTable[playerId] = Entity::Player{playerId, transform};
             }
             snapshotHistory_[playerId].Push(playerUpdate);
         }
@@ -150,7 +158,7 @@ void BlockBuster::Client::Update()
             DoUpdate(serverTickRate);
 
             if(connected)
-                SendPlayerMovement();
+                UpdateNetworking();
 
             lag -= serverTickRate;
         }
@@ -167,11 +175,6 @@ bool BlockBuster::Client::Quit()
 void BlockBuster::Client::DoUpdate(double deltaTime)
 {
     camController_.Update();
-
-    for(auto pair : snapshotHistory_)
-    {
-
-    }
 }
 
 void Client::RecvServerSnapshots()
@@ -179,54 +182,33 @@ void Client::RecvServerSnapshots()
     host.PollAllEvents();
 }
 
-void Client::SendPlayerMovement()
+void Client::UpdateNetworking()
 {
-    // Update players pos
+    // Update players' pos
     for(auto pair : snapshotHistory_)
     {
         auto playerId = pair.first;
         auto playerUpdate = pair.second.Back();
-        if(playerUpdate)
+        if(playerUpdate.has_value() && playerId != this->playerId)
         {
-            if(playerTable.find(playerId) == playerTable.end())
-            {
-                Math::Transform transform{playerUpdate->pos, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}};
-                playerTable[playerId] = Entity::Player{playerId, transform};
-            }
-            else
-            {
-                auto& player = this->playerTable[playerId];
-                auto pPos = this->playerTable[playerId].transform.position;
-                auto newPos = playerUpdate->pos;
-                auto diff = glm::length(pPos - newPos);
-
-                // FIXME/TODO: Diff should be against the old pos, not the predicted one.
-                if(diff > 0.0f)
-                {
-                    logger->LogInfo("Diff! Distance diff was " + std::to_string(diff));
-                    logger->LogInfo("Predicted pos is " + glm::to_string(pPos));
-                    logger->LogInfo("New pos is " + glm::to_string(newPos));
-                }
-
-                player.transform.position = playerUpdate->pos;
-            }
+            auto& player = this->playerTable[playerId];
+            player.transform.position = playerUpdate->pos;
         }
     }
 
-    logger->LogInfo("SendingPlayerMove. Current client snapshot is: " + std::to_string(serverTick));
-    logger->LogInfo("Current cmd id is " + std::to_string(cmdId));
-
+    // Sample player input
     int8_t* state = (int8_t*)SDL_GetKeyboardState(nullptr);
     glm::vec3 moveDir{0.0f};
     moveDir.x = state[SDL_SCANCODE_KP_6] - state[SDL_SCANCODE_KP_4];
     moveDir.z = state[SDL_SCANCODE_KP_2] - state[SDL_SCANCODE_KP_8];
-    //logger->LogInfo(std::to_string(GetCurrentTime()) + " Command sent on server tick: " + std::to_string(serverTick));
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
 
+    // Send player inputs
+    auto cmdId = this->cmdId++;
     Networking::Command::Header header;
     header.type = Networking::Command::Type::PLAYER_MOVEMENT;
-    header.tick = cmdId++;
+    header.tick = cmdId;
 
     Networking::Command::User::PlayerMovement playerMovement;
     playerMovement.moveDir = moveDir;
@@ -238,7 +220,8 @@ void Client::SendPlayerMovement()
     ENet::SentPacket sentPacket{&cmd, sizeof(cmd), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
     host.SendPacket(serverId, 0, sentPacket);
 
-    PredictPlayerMovement(cmd);
+    // Prediction
+    PredictPlayerMovement(cmd, cmdId);
 }
 
 uint64_t Client::GetCurrentTime()
@@ -246,30 +229,61 @@ uint64_t Client::GetCurrentTime()
     return Util::Time::GetUNIXTimeMS<uint64_t>() - startTime;
 }
 
-void Client::PredictPlayerMovement(Networking::Command cmd)
+void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
 {
     auto& player = playerTable[playerId];
-    cmdHistory_.Push(cmd);
 
     // Discard old commands
-    while(cmdHistory_.GetSize() > 0 && cmdHistory_.Front()->header.tick <= lastAck)
+    while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmdId <= lastAck)
     {
-        auto cmd = cmdHistory_.Pop();
+        auto cmd = predictionHistory_.Pop();
+    }
+    
+    // Checking prediction errors
+    auto prediction = predictionHistory_.FindFirst([this](auto predict){
+        return predict.cmdId == this->lastAck;
+    });
+    auto recvPos = snapshotHistory_[playerId].Back();
+    if(recvPos && prediction)
+    {
+        auto newPos = recvPos->pos;
+        auto pPos = prediction->pos;
+        auto diff = glm::length(newPos - pPos);
+        // On error
+        if(diff > 0.05)
+        {
+            // Accept player pos
+            logger->LogInfo("There was a " + std::to_string(diff) + " difference for cmd " 
+                + std::to_string(this->lastAck));
+            logger->LogInfo("Pred pos " + glm::to_string(pPos));
+            logger->LogInfo("Recv pos " + glm::to_string(newPos));
+            player.transform.position = newPos;
+
+            // Run prev commands again
+            logger->LogInfo("Predicting commands ahead of cmd " + std::to_string(lastAck));
+            for(auto i = 0; i < predictionHistory_.GetSize(); i++)
+            {
+                auto predict = predictionHistory_.At(i);
+                auto move = predict->cmd.data.playerMovement;
+                MovePlayer(move);
+            }
+        }
     }
 
-    // Run new commands again
-    logger->LogInfo("Predicting commands ahead of tick " + std::to_string(lastAck));
-    for(auto i = 0; i < cmdHistory_.GetSize(); i++)
-    {
-        auto cmd = cmdHistory_.At(i);
-        //logger->LogInfo("Predicting move cmd with tick " + std::to_string(cmd->header.tick));
+    // Run predicted command for this simulation
+    auto predictedPos = MovePlayer(cmd.data.playerMovement);
+    logger->LogInfo("Predicted pos for cmd " + std::to_string(cmdId) + ": " + glm::to_string(predictedPos));
+    Prediction p{cmdId, cmd, predictedPos};
+    predictionHistory_.Push(p);
+}
 
-        const float PLAYER_SPEED = 5.f;
-        auto move = cmd->data.playerMovement;
-        auto velocity = move.moveDir * PLAYER_SPEED * (float)serverTickRate;
-        player.transform.position += velocity;
-    }
-    logger->LogInfo("After prediction player pos: " + glm::to_string(player.transform.position));
+glm::vec3 Client::MovePlayer(Networking::Command::User::PlayerMovement move)
+{
+    auto& player = playerTable[playerId];
+    const float PLAYER_SPEED = 5.f;
+    auto velocity = move.moveDir * PLAYER_SPEED * (float)serverTickRate;
+    player.transform.position += velocity;
+    return player.transform.position;
 }
 
 void BlockBuster::Client::HandleSDLEvents()
