@@ -62,7 +62,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -80,26 +80,39 @@ void BlockBuster::Client::Start()
             logger->LogInfo("Server tick rate is " + std::to_string(config.sampleRate));
             this->serverTickRate = config.sampleRate;
             this->playerId = config.playerId;
-            this->startTime = Util::Time::GetUNIXTimeMS<uint64_t>();
             this->connected = true;
+
+            this->startTime = Util::Time::GetUNIXTimeMS<uint64_t>();
+            this->startServerTick = this->serverTick;
         }
         else if(packet->header.type == Networking::Command::Type::PLAYER_POS_UPDATE)
         {
-            logger->LogInfo("Recv server snapshot for tick: " + std::to_string(packet->header.tick));
             Networking::Command::Server::PlayerUpdate playerUpdate = packet->data.playerUpdate;
             auto playerId = playerUpdate.playerId;
+            logger->LogInfo("Recv server snapshot for tick: " + std::to_string(packet->header.tick) + " p " + std::to_string(playerId));
 
             // Create player entries
-            if(snapshotHistory_.find(playerId) == snapshotHistory_.end())
-            {
-                snapshotHistory_[playerId] = Util::Queue<Networking::Command::Server::PlayerUpdate>{64};
-            }
             if(playerTable.find(playerId) == playerTable.end())
             {
                 Math::Transform transform{playerUpdate.pos, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}};
                 playerTable[playerId] = Entity::Player{playerId, transform};
             }
-            snapshotHistory_[playerId].Push(playerUpdate);
+
+            // Store snapshot. FIXME/TODO: Needs to batch player updates on server first.
+            auto now = GetCurrentTime();
+            auto snapshot = snapshotHistory.FindFirstPair([this](auto i, auto s){
+                return s.serverTick == this->serverTick;
+            });
+            if(snapshot)
+            {
+                snapshot->second.playerPositions[playerId] = playerUpdate;
+                snapshotHistory.Set(snapshot->first, snapshot->second);
+            }
+            else
+            {
+                Snapshot snapshot{now, packet->header.tick, {{playerId, playerUpdate}}};
+                snapshotHistory.Push(snapshot);
+            }
         }
         else if(packet->header.type == Networking::Command::Type::PLAYER_DISCONNECTED)
         {
@@ -107,7 +120,6 @@ void BlockBuster::Client::Start()
             logger->LogInfo("Player with id " + std::to_string(playerDisconnect.playerId) + " disconnected");
 
             playerTable.erase(playerDisconnect.playerId);
-            snapshotHistory_.erase(playerDisconnect.playerId);
         }
         else if(packet->header.type == Networking::Command::Type::ACK_COMMAND)
         {
@@ -163,6 +175,7 @@ void BlockBuster::Client::Update()
             lag -= serverTickRate;
         }
 
+        //EntityInterpolation();
         Render();
     }
 }
@@ -184,17 +197,7 @@ void Client::RecvServerSnapshots()
 
 void Client::UpdateNetworking()
 {
-    // Update players' pos
-    for(auto pair : snapshotHistory_)
-    {
-        auto playerId = pair.first;
-        auto playerUpdate = pair.second.Back();
-        if(playerUpdate.has_value() && playerId != this->playerId)
-        {
-            auto& player = this->playerTable[playerId];
-            player.transform.position = playerUpdate->pos;
-        }
-    }
+    EntityInterpolation();
 
     // Sample player input
     int8_t* state = (int8_t*)SDL_GetKeyboardState(nullptr);
@@ -243,38 +246,110 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
     auto prediction = predictionHistory_.FindFirst([this](auto predict){
         return predict.cmdId == this->lastAck;
     });
-    auto recvPos = snapshotHistory_[playerId].Back();
-    if(recvPos && prediction)
+    auto lastSnapshot = snapshotHistory.Back();
+    if(prediction && lastSnapshot.has_value())
     {
-        auto newPos = recvPos->pos;
-        auto pPos = prediction->pos;
-        auto diff = glm::length(newPos - pPos);
-        // On error
-        if(diff > 0.05)
+        if(lastSnapshot->playerPositions.find(playerId) != lastSnapshot->playerPositions.end())
         {
-            // Accept player pos
-            logger->LogInfo("There was a " + std::to_string(diff) + " difference for cmd " 
-                + std::to_string(this->lastAck));
-            logger->LogInfo("Pred pos " + glm::to_string(pPos));
-            logger->LogInfo("Recv pos " + glm::to_string(newPos));
-            player.transform.position = newPos;
-
-            // Run prev commands again
-            logger->LogInfo("Predicting commands ahead of cmd " + std::to_string(lastAck));
-            for(auto i = 0; i < predictionHistory_.GetSize(); i++)
+            auto newPos = lastSnapshot->playerPositions[playerId].pos;
+            auto pPos = prediction->pos;
+            auto diff = glm::length(newPos - pPos);
+            // On error
+            if(diff > 0.05)
             {
-                auto predict = predictionHistory_.At(i);
-                auto move = predict->cmd.data.playerMovement;
-                MovePlayer(move);
+                // Accept player pos
+                //logger->LogInfo("There was a " + std::to_string(diff) + " difference for cmd " 
+                    //+ std::to_string(this->lastAck));
+                //logger->LogInfo("Pred pos " + glm::to_string(pPos));
+                //logger->LogInfo("Recv pos " + glm::to_string(newPos));
+                player.transform.position = newPos;
+
+                // Run prev commands again
+                //logger->LogInfo("Predicting commands ahead of cmd " + std::to_string(lastAck));
+                for(auto i = 0; i < predictionHistory_.GetSize(); i++)
+                {
+                    auto predict = predictionHistory_.At(i);
+                    auto move = predict->cmd.data.playerMovement;
+                    MovePlayer(move);
+                }
             }
         }
     }
 
     // Run predicted command for this simulation
     auto predictedPos = MovePlayer(cmd.data.playerMovement);
-    logger->LogInfo("Predicted pos for cmd " + std::to_string(cmdId) + ": " + glm::to_string(predictedPos));
+    //logger->LogInfo("Predicted pos for cmd " + std::to_string(cmdId) + ": " + glm::to_string(predictedPos));
     Prediction p{cmdId, cmd, predictedPos};
     predictionHistory_.Push(p);
+}
+
+void Client::EntityInterpolation()
+{
+    auto clientTime = GetCurrentTime();
+    auto serverTickRateMs = this->serverTickRate *1e3;
+    auto windowSize = 2.0 * serverTickRateMs;
+    uint64_t renderTime = clientTime - windowSize;
+
+    if(renderTime < 0)
+        return;
+
+    // Get last snapshot before renderTime
+    auto s1 = snapshotHistory.Back();
+    auto s2i = 0;
+    for(auto i = 0; i < snapshotHistory.GetSize(); i++)
+    {
+        auto s = snapshotHistory.At(i).value();
+        if(s.arrivalTime <= renderTime)
+        {
+            s1 = s;
+            s2i = i + 1;
+        }
+        else
+            break;
+    }
+    auto s2 = snapshotHistory.At(s2i);
+
+    if(s1.has_value() && s2.has_value())
+    {        
+        // Find weights
+        auto d = s2->arrivalTime - s1->arrivalTime;
+        auto d1 = renderTime - s1->arrivalTime;
+        auto d2 = s2->arrivalTime - renderTime;
+        auto w1 = (float)d1 / (float)d;
+        auto w2 = (float)d2 / (float)d;
+
+        for(auto pair : playerTable)
+        {
+            auto playerId = pair.first;
+            if(playerId == this->playerId)
+                continue;
+            logger->LogInfo("Interpolation for player " + std::to_string(playerId) + " with s1 tick " + std::to_string(s1->serverTick));
+
+            auto pos1 = pair.second.transform.position;
+            auto pos2 = pair.second.transform.position;
+
+            auto hasS1 = s1->playerPositions.find(playerId) != s1->playerPositions.end();
+            auto hasS2 = s2->playerPositions.find(playerId) != s2->playerPositions.end();
+            if(hasS1)
+                pos1 = s1->playerPositions[playerId].pos;
+            else
+                logger->LogInfo("Could not find data S1 for player " + std::to_string(playerId));
+            if(hasS2)
+                pos2 = s2->playerPositions[playerId].pos;
+            else
+                logger->LogInfo("Could not find data S2 for player " + std::to_string(playerId));
+
+            if(hasS1 && hasS2)
+            {
+                auto smoothPos = pos1 * w1 + pos2 * w2;
+                playerTable[playerId].transform.position = smoothPos;
+            }
+        }
+    }
+    else
+    {
+        logger->LogError("There were not enough snapshots to interpolate");
+    }
 }
 
 glm::vec3 Client::MovePlayer(Networking::Command::User::PlayerMovement move)

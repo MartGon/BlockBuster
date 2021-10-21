@@ -18,7 +18,7 @@
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
 std::unordered_map<ENet::PeerId, std::map<uint32_t, glm::vec3>> simHistory;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.020;
+const double TICK_RATE = 0.050;
 
 Networking::CommandBuffer commandBuffer{60};
 

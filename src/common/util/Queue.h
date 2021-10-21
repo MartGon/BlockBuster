@@ -21,10 +21,22 @@ namespace Util
         {
             return vector_.size();
         }
+        
+        inline uint32_t Empty() const
+        {
+            return vector_.empty();
+        }
 
         inline uint32_t GetCapacity() const
         {
             return capacity_;
+        }
+
+        void Set(int32_t index, T val)
+        {
+            index = index >= 0 ? index : GetSize() + index;
+            if(index < vector_.size())
+                vector_[index] = val;
         }
 
         std::optional<T> At(int32_t index) const
@@ -95,6 +107,36 @@ namespace Util
                 if(pred(m))
                 {
                     ret = m;
+                    break;
+                }
+            }
+
+            return ret;
+        }
+
+        std::vector<std::pair<uint32_t, T>> FindPairs(std::function<bool(uint32_t, T)> pred)
+        {
+            std::vector<std::pair<uint32_t, T>> ret;
+            for(auto i = 0; i < vector_.size(); i++)
+            {
+                auto m = vector_[i];
+                if(pred(i, m))
+                    ret.push_back({i, m});
+            }
+
+            return ret;
+        }
+
+        std::optional<std::pair<uint32_t, T>> FindFirstPair(std::function<bool(uint32_t, T)> pred)
+        {
+            std::optional<std::pair<uint32_t, T>> ret;
+
+            for(auto i = 0; i < vector_.size(); i++)
+            {
+                auto m = vector_[i];
+                if(pred(i, m))
+                {
+                    ret = std::pair<uint32_t, T>{i, m};
                     break;
                 }
             }
