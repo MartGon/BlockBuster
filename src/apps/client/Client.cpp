@@ -175,7 +175,7 @@ void BlockBuster::Client::Update()
             lag -= serverTickRate;
         }
 
-        //EntityInterpolation();
+        EntityInterpolation();
         Render();
     }
 }
@@ -197,7 +197,7 @@ void Client::RecvServerSnapshots()
 
 void Client::UpdateNetworking()
 {
-    EntityInterpolation();
+    //EntityInterpolation();
 
     // Sample player input
     int8_t* state = (int8_t*)SDL_GetKeyboardState(nullptr);
@@ -314,16 +314,17 @@ void Client::EntityInterpolation()
         // Find weights
         auto d = s2->arrivalTime - s1->arrivalTime;
         auto d1 = renderTime - s1->arrivalTime;
-        auto d2 = s2->arrivalTime - renderTime;
-        auto w1 = (float)d1 / (float)d;
-        auto w2 = (float)d2 / (float)d;
+        // auto d2 = s2->arrivalTime - renderTime;
+        auto w1 = (1.0f - (float)d1 / (float)d);
+        //auto w2 = (float)d2 / (float)d;
+        auto w2 = 1.0f - w1;
 
         for(auto pair : playerTable)
         {
             auto playerId = pair.first;
             if(playerId == this->playerId)
                 continue;
-            logger->LogInfo("Interpolation for player " + std::to_string(playerId) + " with s1 tick " + std::to_string(s1->serverTick));
+            logger->LogInfo("Interpolation s1 tick " + std::to_string(s1->serverTick) + " s2 tick " + std::to_string(s2->serverTick));
 
             auto pos1 = pair.second.transform.position;
             auto pos2 = pair.second.transform.position;
@@ -342,7 +343,25 @@ void Client::EntityInterpolation()
             if(hasS1 && hasS2)
             {
                 auto smoothPos = pos1 * w1 + pos2 * w2;
-                playerTable[playerId].transform.position = smoothPos;
+                auto oldPos = playerTable[playerId].transform.position;
+                auto diff = smoothPos.x - oldPos.x;
+                auto dist = glm::length(diff);
+                logger->LogInfo("Player moved by dist " + std::to_string(dist));
+                if(diff < -0.005)
+                {
+                    logger->LogInfo("ERROR!!! Player didn't move right");
+                    //quit = true;
+                }
+                //else
+                    playerTable[playerId].transform.position = smoothPos;
+
+                logger->LogInfo("Rendering time " + std::to_string(renderTime));
+                logger->LogInfo("S1 tick " + std::to_string(s1->serverTick) + " S2 tick " + std::to_string(s2->serverTick));
+                logger->LogInfo("S1 time " + std::to_string(s1->arrivalTime) + " S2 time " + std::to_string(s2->arrivalTime));
+                logger->LogInfo("Moved from " + glm::to_string(oldPos) + " to " + glm::to_string(smoothPos));
+                logger->LogInfo("S1 pos " + glm::to_string(pos1) + " S2 pos " + glm::to_string(pos2));
+                logger->LogInfo("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
+                logger->LogInfo("D " + std::to_string(d));
             }
         }
     }

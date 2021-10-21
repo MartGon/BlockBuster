@@ -96,7 +96,7 @@ namespace BlockBuster
             uint32_t serverTick = 0;
             std::unordered_map<Entity::ID, Networking::Command::Server::PlayerUpdate> playerPositions;
         };
-        Util::Queue<Snapshot> snapshotHistory{128};
+        Util::Queue<Snapshot> snapshotHistory{16};
 
         // Networking - Prediction
         struct Prediction
