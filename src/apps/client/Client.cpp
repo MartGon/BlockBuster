@@ -175,6 +175,10 @@ void BlockBuster::Client::Update()
             lag -= serverTickRate;
         }
 
+        // TODO: Player prediction each frame. Two options
+        // 1. Change loop to use a different update rate. Send packets with same method for server tick rate.
+        // 2. Keep as is. Interpolate player pos based on frame render time and server tick rate. Timestamps on predictions? Cmdid * servertickrate.
+
         EntityInterpolation();
         Render();
     }
@@ -249,7 +253,9 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
     auto lastSnapshot = snapshotHistory.Back();
     if(prediction && lastSnapshot.has_value())
     {
-        if(lastSnapshot->playerPositions.find(playerId) != lastSnapshot->playerPositions.end())
+        auto& playerPositions = lastSnapshot->playerPositions;
+        bool hasPlayerData = playerPositions.find(playerId) != playerPositions.end();
+        if(hasPlayerData)
         {
             auto newPos = lastSnapshot->playerPositions[playerId].pos;
             auto pPos = prediction->pos;
@@ -258,14 +264,9 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
             if(diff > 0.05)
             {
                 // Accept player pos
-                //logger->LogInfo("There was a " + std::to_string(diff) + " difference for cmd " 
-                    //+ std::to_string(this->lastAck));
-                //logger->LogInfo("Pred pos " + glm::to_string(pPos));
-                //logger->LogInfo("Recv pos " + glm::to_string(newPos));
                 player.transform.position = newPos;
 
                 // Run prev commands again
-                //logger->LogInfo("Predicting commands ahead of cmd " + std::to_string(lastAck));
                 for(auto i = 0; i < predictionHistory_.GetSize(); i++)
                 {
                     auto predict = predictionHistory_.At(i);
@@ -278,13 +279,13 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
 
     // Run predicted command for this simulation
     auto predictedPos = MovePlayer(cmd.data.playerMovement);
-    //logger->LogInfo("Predicted pos for cmd " + std::to_string(cmdId) + ": " + glm::to_string(predictedPos));
     Prediction p{cmdId, cmd, predictedPos};
     predictionHistory_.Push(p);
 }
 
 void Client::EntityInterpolation()
 {
+    // Calculate render time
     auto clientTime = GetCurrentTime();
     auto serverTickRateMs = this->serverTickRate *1e3;
     auto windowSize = 2.0 * serverTickRateMs;
@@ -293,80 +294,52 @@ void Client::EntityInterpolation()
     if(renderTime < 0)
         return;
 
-    // Get last snapshot before renderTime
-    auto s1 = snapshotHistory.Back();
-    auto s2i = 0;
-    for(auto i = 0; i < snapshotHistory.GetSize(); i++)
+    // Get first snapshot after renderTime
+    auto s2p = snapshotHistory.FindFirstPair([renderTime](auto i, auto s)
     {
-        auto s = snapshotHistory.At(i).value();
-        if(s.arrivalTime <= renderTime)
-        {
-            s1 = s;
-            s2i = i + 1;
-        }
-        else
-            break;
-    }
-    auto s2 = snapshotHistory.At(s2i);
+        return s.arrivalTime > renderTime;
+    });
 
-    if(s1.has_value() && s2.has_value())
-    {        
-        // Find weights
-        auto d = s2->arrivalTime - s1->arrivalTime;
-        auto d1 = renderTime - s1->arrivalTime;
-        // auto d2 = s2->arrivalTime - renderTime;
-        auto w1 = (1.0f - (float)d1 / (float)d);
-        //auto w2 = (float)d2 / (float)d;
-        auto w2 = 1.0f - w1;
+    if(s2p.has_value())
+    {
+        // Find samples to use for interpolation
+        // Sample 1: Last one before current render time
+        // Sample 2: First one after current render time
+        auto s1 = snapshotHistory.At((int)s2p->first - 1);
+        auto s2 = s2p->second;
 
-        for(auto pair : playerTable)
-        {
-            auto playerId = pair.first;
-            if(playerId == this->playerId)
-                continue;
-            logger->LogInfo("Interpolation s1 tick " + std::to_string(s1->serverTick) + " s2 tick " + std::to_string(s2->serverTick));
+        if(s1.has_value())
+        {        
+            // Find weights
+            auto d = s2.arrivalTime - s1->arrivalTime;
+            auto d1 = renderTime - s1->arrivalTime;
+            auto w1 = (1.0f - (float)d1 / (float)d);
+            auto w2 = 1.0f - w1;
 
-            auto pos1 = pair.second.transform.position;
-            auto pos2 = pair.second.transform.position;
-
-            auto hasS1 = s1->playerPositions.find(playerId) != s1->playerPositions.end();
-            auto hasS2 = s2->playerPositions.find(playerId) != s2->playerPositions.end();
-            if(hasS1)
-                pos1 = s1->playerPositions[playerId].pos;
-            else
-                logger->LogInfo("Could not find data S1 for player " + std::to_string(playerId));
-            if(hasS2)
-                pos2 = s2->playerPositions[playerId].pos;
-            else
-                logger->LogInfo("Could not find data S2 for player " + std::to_string(playerId));
-
-            if(hasS1 && hasS2)
+            for(auto pair : playerTable)
             {
-                auto smoothPos = pos1 * w1 + pos2 * w2;
-                auto oldPos = playerTable[playerId].transform.position;
-                auto diff = smoothPos.x - oldPos.x;
-                auto dist = glm::length(diff);
-                logger->LogInfo("Player moved by dist " + std::to_string(dist));
-                if(diff < -0.005)
-                {
-                    logger->LogInfo("ERROR!!! Player didn't move right");
-                    //quit = true;
-                }
-                //else
-                    playerTable[playerId].transform.position = smoothPos;
+                auto playerId = pair.first;
+                // No need to do interpolation for player char
+                if(playerId == this->playerId)
+                    continue;
 
-                logger->LogInfo("Rendering time " + std::to_string(renderTime));
-                logger->LogInfo("S1 tick " + std::to_string(s1->serverTick) + " S2 tick " + std::to_string(s2->serverTick));
-                logger->LogInfo("S1 time " + std::to_string(s1->arrivalTime) + " S2 time " + std::to_string(s2->arrivalTime));
-                logger->LogInfo("Moved from " + glm::to_string(oldPos) + " to " + glm::to_string(smoothPos));
-                logger->LogInfo("S1 pos " + glm::to_string(pos1) + " S2 pos " + glm::to_string(pos2));
-                logger->LogInfo("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
-                logger->LogInfo("D " + std::to_string(d));
+                auto hasS1 = s1->playerPositions.find(playerId) != s1->playerPositions.end();
+                auto hasS2 = s2.playerPositions.find(playerId) != s2.playerPositions.end();
+                if(hasS1 && hasS2)
+                {
+                    auto pos1 = s1->playerPositions[playerId].pos;
+                    auto pos2 = s2.playerPositions[playerId].pos;
+                    auto smoothPos = pos1 * w1 + pos2 * w2;
+                    playerTable[playerId].transform.position = smoothPos;
+                }
             }
         }
     }
     else
     {
+        // TODO: There are two possible situations here.
+        // 1. There are not samples yet in the queue. Should check at beginning of this function
+        // 2. We lost two packets in a row. So we need to extrapolate
         logger->LogError("There were not enough snapshots to interpolate");
     }
 }
