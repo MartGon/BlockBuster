@@ -81,9 +81,6 @@ void BlockBuster::Client::Start()
             this->serverTickRate = config.sampleRate;
             this->playerId = config.playerId;
             this->connected = true;
-
-            this->startTime = Util::Time::GetUNIXTimeMS<uint64_t>();
-            this->startServerTick = this->serverTick;
         }
         else if(packet->header.type == Networking::Command::Type::PLAYER_POS_UPDATE)
         {
@@ -98,8 +95,12 @@ void BlockBuster::Client::Start()
                 playerTable[playerId] = Entity::Player{playerId, transform};
             }
 
+            // Reset offset
+            auto mostRecent = this->GetMostRecentSnapshot();
+            if(mostRecent.has_value() && packet->header.tick > mostRecent->serverTick)
+                this->offsetMillis = 0;
+
             // Store snapshot. FIXME/TODO: Needs to batch player updates on server first.
-            auto now = GetCurrentTime();
             auto snapshot = snapshotHistory.FindFirstPair([this](auto i, auto s){
                 return s.serverTick == this->serverTick;
             });
@@ -110,7 +111,7 @@ void BlockBuster::Client::Start()
             }
             else
             {
-                Snapshot snapshot{now, packet->header.tick, {{playerId, playerUpdate}}};
+                Snapshot snapshot{packet->header.tick, {{playerId, playerUpdate}}};
                 snapshotHistory.Push(snapshot);
             }
         }
@@ -133,13 +134,22 @@ void BlockBuster::Client::Start()
     auto attempts = 0;
     while(!connected && attempts < 5)
     {
-        Util::Time::SleepMS(500);
+        Util::Time::SleepMillis(500);
         logger->LogInfo("Connecting to server...");
         host.PollAllEvents();
         attempts++;
     }
 
-    if(!connected)
+    if(connected)
+    {
+        uint32_t maxTick = 0;
+        for(auto i = 0;i < snapshotHistory.GetSize();i++)
+        {
+            auto s = snapshotHistory.At(i);
+            maxTick = std::max(s->serverTick, maxTick);
+        }
+    }
+    else
     {
         logger->LogInfo("Could not connect to server. Quitting");
     }
@@ -155,7 +165,7 @@ void BlockBuster::Client::Update()
     logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate));
     while(!quit)
     {
-        auto now =  Util::Time::GetUNIXTime();
+        auto now = Util::Time::GetUNIXTime();
         frameInterval = (now - prevRenderTime);
 
         prevRenderTime = now;
@@ -172,13 +182,12 @@ void BlockBuster::Client::Update()
             if(connected)
                 UpdateNetworking();
 
-            lag -= serverTickRate;
+            lag -= (serverTickRate);
         }
 
         // TODO: Player prediction each frame. Two options
         // 1. Change loop to use a different update rate. Send packets with same method for server tick rate.
         // 2. Keep as is. Interpolate player pos based on frame render time and server tick rate. Timestamps on predictions? Cmdid * servertickrate.
-
         EntityInterpolation();
         Render();
     }
@@ -231,9 +240,34 @@ void Client::UpdateNetworking()
     PredictPlayerMovement(cmd, cmdId);
 }
 
+std::optional<Client::Snapshot> Client::GetMostRecentSnapshot()
+{
+    uint32_t maxTick = 0;
+    std::optional<Client::Snapshot> mostRecent;
+    for(auto i = 0;i < snapshotHistory.GetSize();i++)
+    {
+        auto s = snapshotHistory.At(i);
+        if(s->serverTick > maxTick)
+        {
+            maxTick = s->serverTick;
+            mostRecent = s;
+        }
+    }
+
+    return mostRecent;
+}
+
+uint64_t Client::TickToMillis(uint32_t tick)
+{
+    return (double)tick * this->serverTickRate * 1e3;
+}
+
 uint64_t Client::GetCurrentTime()
 {
-    return Util::Time::GetUNIXTimeMS<uint64_t>() - startTime;
+    auto maxTick = GetMostRecentSnapshot()->serverTick;
+    uint64_t base = TickToMillis(maxTick);
+
+    return base + this->offsetMillis;
 }
 
 void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
@@ -285,19 +319,22 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
 
 void Client::EntityInterpolation()
 {
+    offsetMillis += (uint64_t)(frameInterval * 1e3);
+
     // Calculate render time
     auto clientTime = GetCurrentTime();
-    auto serverTickRateMs = this->serverTickRate *1e3;
-    auto windowSize = 2.0 * serverTickRateMs;
+    double serverTickRateMillis = this->serverTickRate * 1e3;
+    uint64_t windowSize = 2.0 * serverTickRateMillis;
     uint64_t renderTime = clientTime - windowSize;
 
     if(renderTime < 0)
         return;
 
     // Get first snapshot after renderTime
-    auto s2p = snapshotHistory.FindFirstPair([renderTime](auto i, auto s)
+    auto s2p = snapshotHistory.FindFirstPair([this, renderTime](auto i, Snapshot s)
     {
-        return s.arrivalTime > renderTime;
+        uint64_t time = TickToMillis(s.serverTick);
+        return time > renderTime;
     });
 
     if(s2p.has_value())
@@ -311,10 +348,18 @@ void Client::EntityInterpolation()
         if(s1.has_value())
         {        
             // Find weights
-            auto d = s2.arrivalTime - s1->arrivalTime;
-            auto d1 = renderTime - s1->arrivalTime;
-            auto w1 = (1.0f - (float)d1 / (float)d);
-            auto w2 = 1.0f - w1;
+            auto t1 = TickToMillis(s1->serverTick);
+            auto t2 = TickToMillis(s2.serverTick);
+            auto d = t2 - t1;
+            auto d1 = renderTime - t1;
+            float w1 = (1.0f - (double)d1 / (double)d);
+            float w2 = 1.0f - w1;
+            
+            logger->LogDebug("RT " + std::to_string(renderTime) + " CT " + std::to_string(clientTime));
+            logger->LogDebug("T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
+            logger->LogDebug("D1 " + std::to_string(d1) + " D " + std::to_string(d));
+            logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
+            logger->LogDebug("Tick 1 " + std::to_string(s1->serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
 
             for(auto pair : playerTable)
             {
@@ -341,6 +386,12 @@ void Client::EntityInterpolation()
         // 1. There are not samples yet in the queue. Should check at beginning of this function
         // 2. We lost two packets in a row. So we need to extrapolate
         logger->LogError("There were not enough snapshots to interpolate");
+        logger->LogError("Render time " + std::to_string(renderTime));
+        for(auto i = 0; i < snapshotHistory.GetSize(); i++)
+        {
+            auto s = snapshotHistory.At(i).value();
+            logger->LogError("Snapshot at " + std::to_string(i) + " rendertime " + std::to_string(TickToMillis(s.serverTick)));
+        }
     }
 }
 
@@ -391,8 +442,8 @@ void Client::Render()
     auto renderTime = Util::Time::GetUNIXTime() - prevRenderTime;
     if(renderTime < minFrameInterval)
     {
-        auto diff = (minFrameInterval - renderTime) * 1e3;
-        Util::Time::SleepMS(diff);
+        uint64_t diff = (minFrameInterval - renderTime) * 1e3;
+        Util::Time::SleepMillis(diff);
     }
 }
 

@@ -112,7 +112,7 @@ int main()
     {
         host.PollAllEvents();
 
-        auto now = Util::Time::GetUNIXTime();
+        auto now = Util::Time::GetUNIXTimeNanos();
         std::unordered_map<ENet::PeerId, uint32_t> ackHistory;
 
         // Update
@@ -134,10 +134,6 @@ int main()
             // TODO: Save the position of the player for this tick. Slow computers will have jittery movement
             // Could use some entity interpolation on the server
         }
-
-        auto elapsed = Util::Time::GetUNIXTime() - now;
-        auto wait = (TICK_RATE - elapsed) * 1e3;
-        Util::Time::SleepMS(wait);
 
         // Send update
         // TODO: Server commands / World Snapshots should be batched and then sent to client.
@@ -171,6 +167,10 @@ int main()
                 host.SendPacket(pair.first, 0, apacket);
             }
         }
+
+        auto elapsed = Util::Time::GetUNIXTimeNanos() - now;
+        uint64_t wait = (TICK_RATE * 1e9 - elapsed);
+        Util::Time::SleepUntilNanos(wait);
 
         tickCount++;
     }

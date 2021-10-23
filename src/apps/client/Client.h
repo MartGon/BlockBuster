@@ -51,6 +51,13 @@ namespace BlockBuster
         glm::vec3 MovePlayer(Networking::Command::User::PlayerMovement playerMove);
 
         // Networking - Entity Interpolation
+        struct Snapshot
+        {
+            uint32_t serverTick = 0;
+            std::unordered_map<Entity::ID, Networking::Command::Server::PlayerUpdate> playerPositions;
+        };
+        std::optional<Snapshot> GetMostRecentSnapshot();
+        uint64_t TickToMillis(uint32_t tick);
         void EntityInterpolation();
 
         // Rendering
@@ -90,12 +97,6 @@ namespace BlockBuster
         double serverTickRate = 0.0;
         uint32_t serverTick = 0;
         bool connected = false;
-        struct Snapshot
-        {
-            uint64_t arrivalTime = 0;
-            uint32_t serverTick = 0;
-            std::unordered_map<Entity::ID, Networking::Command::Server::PlayerUpdate> playerPositions;
-        };
         Util::Queue<Snapshot> snapshotHistory{16};
 
         // Networking - Prediction
@@ -110,8 +111,7 @@ namespace BlockBuster
         uint32_t lastAck = 0;
 
         // Networking - Entity Interpolation
-        uint64_t startTime = 0;
-        uint32_t startServerTick = 0;
+        uint64_t offsetMillis = 0;
 
         // App
         bool quit = false;

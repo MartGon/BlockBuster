@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <thread>
 
 namespace Util::Time
 {
@@ -14,14 +15,46 @@ namespace Util::Time
 
     template <typename T = double>
     // Returns current time in ms
-    T GetUNIXTimeMS()
+    T GetUNIXTimeMillis()
     {
         using namespace std::chrono;
         return static_cast<T>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count() / 1e6);
     }
 
-    void Sleep(uint32_t seconds);
-    void SleepMS(uint32_t millis);
+    uint64_t GetUNIXTimeNanos();
+
+    template<typename T>
+    void Sleep(T seconds)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(seconds));
+    }
+
+    template<typename T>
+    void SleepMillis(T millis)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(millis));
+    }
+
+    template <typename T>
+    void SleepMicros(T micros)
+    {
+        std::this_thread::sleep_for(std::chrono::microseconds(micros));
+    }
+
+    template <typename T>
+    void SleepNanos(T nanos)
+    {
+        std::this_thread::sleep_for(std::chrono::nanoseconds(nanos));
+    }
+
+    template<typename T>
+    void SleepUntilNanos(T nanos)
+    {
+        auto now = std::chrono::system_clock::now();
+        using std::chrono::operator""ns;
+        auto date = now + std::chrono::nanoseconds(nanos);
+        std::this_thread::sleep_until(date);
+    }
 
     class Timer
     {
