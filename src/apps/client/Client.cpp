@@ -181,7 +181,7 @@ void BlockBuster::Client::Update()
             if(connected)
                 UpdateNetworking();
 
-            lag -= (serverTickRate);
+            lag -= serverTickRate;
         }
 
         // TODO: Player prediction each frame. Two options
@@ -269,7 +269,7 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
         if(hasPlayerData)
         {
             auto newPos = lastSnapshot->playerPositions[playerId].pos;
-            auto pPos = prediction->pos;
+            auto pPos = prediction->dest;
             auto diff = glm::length(newPos - pPos);
             // On error
             if(diff >= 0.005)
@@ -283,7 +283,7 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
                     auto predict = predictionHistory_.At(i);
                     auto move = predict->cmd.data.playerMovement;
                     auto& playerPos = playerTable[playerId].transform.position;
-                    playerPos = PredPlayerPos(playerPos, move, serverTickRate);
+                    playerPos = PredPlayerPos(playerPos, move.moveDir, serverTickRate);
                 }
             }
         }
@@ -291,43 +291,35 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
     // Get prev pos
     auto prevPos = playerTable[playerId].transform.position;
     if(auto prevPred = predictionHistory_.Back())
-        prevPos = prevPred->pos;
+        prevPos = prevPred->dest;
 
     // Run predicted command for this simulation
     auto now = Util::Time::GetUNIXTime();
-    auto predictedPos = PredPlayerPos(prevPos, cmd.data.playerMovement, serverTickRate);
-    Prediction p{cmdId, cmd, predictedPos, now};
+    auto predictedPos = PredPlayerPos(prevPos, cmd.data.playerMovement.moveDir, serverTickRate);
+    Prediction p{cmdId, cmd, prevPos, predictedPos, now};
     predictionHistory_.Push(p);
 }
 
 void Client::SmoothPlayerMovement()
 {
-    auto size = predictionHistory_.GetSize();
-    if(size >= 2)
+    auto last = predictionHistory_.Back();
+    if(last)
     {
-        auto p1 = predictionHistory_.At(size - 2);
-        auto p2 = predictionHistory_.Back();
-        if(p1 && p2)
-        {
-            auto now = Util::Time::GetUNIXTime();
-            auto renderTime = now - serverTickRate;
-            auto ws = GetWeights(p1->time, p2->time, renderTime);
-            logger->LogInfo("RT " + std::to_string(renderTime) + " Now " + std::to_string(now));
-            logger->LogInfo("P1 " + std::to_string(p1->time) + "P2 " + std::to_string(p2->time));
-            logger->LogInfo("W1 " + std::to_string(ws.x) + "W2 " + std::to_string(ws.y));
-
-            auto renderPos = ws.x * p1->pos + ws.y * p2->pos;
-            logger->LogInfo("Render pos " + glm::to_string(renderPos));
-            playerTable[playerId].transform.position = renderPos;
-        }
+        auto now = Util::Time::GetUNIXTime();
+        auto elapsed = now - last->time;
+        
+        auto oldPos = last->origin;
+        auto prevSmoothPos = playerTable[playerId].transform.position;
+        auto predPos = PredPlayerPos(oldPos, last->cmd.data.playerMovement.moveDir, elapsed);
+        playerTable[playerId].transform.position = predPos;
     }
 }
 
-glm::vec3 Client::PredPlayerPos(glm::vec3 pos, Networking::Command::User::PlayerMovement move, float deltaTime)
+glm::vec3 Client::PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, float deltaTime)
 {
     auto& player = playerTable[playerId];
     const float PLAYER_SPEED = 5.f;
-    auto velocity = move.moveDir * PLAYER_SPEED * (float)deltaTime;
+    auto velocity = moveDir * PLAYER_SPEED * (float)deltaTime;
     auto predPos = pos + velocity;
     return predPos;
 }
