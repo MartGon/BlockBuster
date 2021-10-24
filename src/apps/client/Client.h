@@ -44,11 +44,12 @@ namespace BlockBuster
         // Networking
         void RecvServerSnapshots();
         void UpdateNetworking();
-        uint64_t GetCurrentTime();
+        glm::vec2 GetWeights(double t1, double t2, double inter);
 
         // Networking - Prediction
         void PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId);
-        glm::vec3 MovePlayer(Networking::Command::User::PlayerMovement playerMove);
+        void SmoothPlayerMovement();
+        glm::vec3 PredPlayerPos(glm::vec3 pos, Networking::Command::User::PlayerMovement playerMove, float deltaTime);
 
         // Networking - Entity Interpolation
         struct Snapshot
@@ -56,6 +57,7 @@ namespace BlockBuster
             uint32_t serverTick = 0;
             std::unordered_map<Entity::ID, Networking::Command::Server::PlayerUpdate> playerPositions;
         };
+        uint64_t GetCurrentTime();
         std::optional<Snapshot> GetMostRecentSnapshot();
         uint64_t TickToMillis(uint32_t tick);
         void EntityInterpolation();
@@ -105,6 +107,7 @@ namespace BlockBuster
             uint32_t cmdId;
             Networking::Command cmd;
             glm::vec3 pos;
+            double time;
         };
         Util::Queue<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;

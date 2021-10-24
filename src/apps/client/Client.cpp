@@ -73,7 +73,6 @@ void BlockBuster::Client::Start()
         auto* packet = (Networking::Command*) ePacket.GetData();
         this->serverTick = packet->header.tick;
 
-        //this->logger->LogInfo(std::to_string(this->GetCurrentTime()) + " Tick: " + std::to_string(serverTick) + " Server packet recv of size: " + std::to_string(ePacket.GetSize()) );
         if(packet->header.type == Networking::Command::Type::CLIENT_CONFIG)
         {
             auto config = packet->data.config;
@@ -189,6 +188,7 @@ void BlockBuster::Client::Update()
         // 1. Change loop to use a different update rate. Send packets with same method for server tick rate.
         // 2. Keep as is. Interpolate player pos based on frame render time and server tick rate. Timestamps on predictions? Cmdid * servertickrate.
         EntityInterpolation();
+        SmoothPlayerMovement();
         Render();
     }
 }
@@ -210,8 +210,6 @@ void Client::RecvServerSnapshots()
 
 void Client::UpdateNetworking()
 {
-    //EntityInterpolation();
-
     // Sample player input
     int8_t* state = (int8_t*)SDL_GetKeyboardState(nullptr);
     glm::vec3 moveDir{0.0f};
@@ -238,6 +236,100 @@ void Client::UpdateNetworking()
 
     // Prediction
     PredictPlayerMovement(cmd, cmdId);
+}
+
+glm::vec2 Client::GetWeights(double t1, double t2, double i)
+{
+    auto d = t2 - t1;
+    auto d1 = i - t1;
+    float w1 = (1.0f - (double)d1 / (double)d);
+    float w2 = 1.0f - w1;
+    return glm::vec2{w1, w2};
+}
+
+void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
+{
+    auto& player = playerTable[playerId];
+
+    // Discard old commands
+    while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmdId < lastAck)
+    {
+        auto cmd = predictionHistory_.Pop();
+    }
+    
+    // Checking prediction errors
+    auto prediction = predictionHistory_.FindFirst([this](auto predict){
+        return predict.cmdId == this->lastAck;
+    });
+    auto lastSnapshot = snapshotHistory.Back();
+    if(prediction && lastSnapshot.has_value())
+    {
+        auto& playerPositions = lastSnapshot->playerPositions;
+        bool hasPlayerData = playerPositions.find(playerId) != playerPositions.end();
+        if(hasPlayerData)
+        {
+            auto newPos = lastSnapshot->playerPositions[playerId].pos;
+            auto pPos = prediction->pos;
+            auto diff = glm::length(newPos - pPos);
+            // On error
+            if(diff >= 0.005)
+            {
+                // Accept player pos
+                player.transform.position = newPos;
+
+                // Run prev commands again
+                for(auto i = 0; i < predictionHistory_.GetSize(); i++)
+                {
+                    auto predict = predictionHistory_.At(i);
+                    auto move = predict->cmd.data.playerMovement;
+                    auto& playerPos = playerTable[playerId].transform.position;
+                    playerPos = PredPlayerPos(playerPos, move, serverTickRate);
+                }
+            }
+        }
+    }
+    // Get prev pos
+    auto prevPos = playerTable[playerId].transform.position;
+    if(auto prevPred = predictionHistory_.Back())
+        prevPos = prevPred->pos;
+
+    // Run predicted command for this simulation
+    auto now = Util::Time::GetUNIXTime();
+    auto predictedPos = PredPlayerPos(prevPos, cmd.data.playerMovement, serverTickRate);
+    Prediction p{cmdId, cmd, predictedPos, now};
+    predictionHistory_.Push(p);
+}
+
+void Client::SmoothPlayerMovement()
+{
+    auto size = predictionHistory_.GetSize();
+    if(size >= 2)
+    {
+        auto p1 = predictionHistory_.At(size - 2);
+        auto p2 = predictionHistory_.Back();
+        if(p1 && p2)
+        {
+            auto now = Util::Time::GetUNIXTime();
+            auto renderTime = now - serverTickRate;
+            auto ws = GetWeights(p1->time, p2->time, renderTime);
+            logger->LogInfo("RT " + std::to_string(renderTime) + " Now " + std::to_string(now));
+            logger->LogInfo("P1 " + std::to_string(p1->time) + "P2 " + std::to_string(p2->time));
+            logger->LogInfo("W1 " + std::to_string(ws.x) + "W2 " + std::to_string(ws.y));
+
+            auto renderPos = ws.x * p1->pos + ws.y * p2->pos;
+            logger->LogInfo("Render pos " + glm::to_string(renderPos));
+            playerTable[playerId].transform.position = renderPos;
+        }
+    }
+}
+
+glm::vec3 Client::PredPlayerPos(glm::vec3 pos, Networking::Command::User::PlayerMovement move, float deltaTime)
+{
+    auto& player = playerTable[playerId];
+    const float PLAYER_SPEED = 5.f;
+    auto velocity = move.moveDir * PLAYER_SPEED * (float)deltaTime;
+    auto predPos = pos + velocity;
+    return predPos;
 }
 
 std::optional<Client::Snapshot> Client::GetMostRecentSnapshot()
@@ -268,53 +360,6 @@ uint64_t Client::GetCurrentTime()
     uint64_t base = TickToMillis(maxTick);
 
     return base + this->offsetMillis;
-}
-
-void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
-{
-    auto& player = playerTable[playerId];
-
-    // Discard old commands
-    while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmdId <= lastAck)
-    {
-        auto cmd = predictionHistory_.Pop();
-    }
-    
-    // Checking prediction errors
-    auto prediction = predictionHistory_.FindFirst([this](auto predict){
-        return predict.cmdId == this->lastAck;
-    });
-    auto lastSnapshot = snapshotHistory.Back();
-    if(prediction && lastSnapshot.has_value())
-    {
-        auto& playerPositions = lastSnapshot->playerPositions;
-        bool hasPlayerData = playerPositions.find(playerId) != playerPositions.end();
-        if(hasPlayerData)
-        {
-            auto newPos = lastSnapshot->playerPositions[playerId].pos;
-            auto pPos = prediction->pos;
-            auto diff = glm::length(newPos - pPos);
-            // On error
-            if(diff > 0.05)
-            {
-                // Accept player pos
-                player.transform.position = newPos;
-
-                // Run prev commands again
-                for(auto i = 0; i < predictionHistory_.GetSize(); i++)
-                {
-                    auto predict = predictionHistory_.At(i);
-                    auto move = predict->cmd.data.playerMovement;
-                    MovePlayer(move);
-                }
-            }
-        }
-    }
-
-    // Run predicted command for this simulation
-    auto predictedPos = MovePlayer(cmd.data.playerMovement);
-    Prediction p{cmdId, cmd, predictedPos};
-    predictionHistory_.Push(p);
 }
 
 void Client::EntityInterpolation()
@@ -350,14 +395,12 @@ void Client::EntityInterpolation()
             // Find weights
             auto t1 = TickToMillis(s1->serverTick);
             auto t2 = TickToMillis(s2.serverTick);
-            auto d = t2 - t1;
-            auto d1 = renderTime - t1;
-            float w1 = (1.0f - (double)d1 / (double)d);
-            float w2 = 1.0f - w1;
+            auto ws = GetWeights(t1, t2, renderTime);
+            auto w1 = ws.x; auto w2 = ws.y;
+
             
             logger->LogDebug("RT " + std::to_string(renderTime) + " CT " + std::to_string(clientTime));
             logger->LogDebug("T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
-            logger->LogDebug("D1 " + std::to_string(d1) + " D " + std::to_string(d));
             logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
             logger->LogDebug("Tick 1 " + std::to_string(s1->serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
 
@@ -393,15 +436,6 @@ void Client::EntityInterpolation()
             logger->LogError("Snapshot at " + std::to_string(i) + " rendertime " + std::to_string(TickToMillis(s.serverTick)));
         }
     }
-}
-
-glm::vec3 Client::MovePlayer(Networking::Command::User::PlayerMovement move)
-{
-    auto& player = playerTable[playerId];
-    const float PLAYER_SPEED = 5.f;
-    auto velocity = move.moveDir * PLAYER_SPEED * (float)serverTickRate;
-    player.transform.position += velocity;
-    return player.transform.position;
 }
 
 void BlockBuster::Client::HandleSDLEvents()
