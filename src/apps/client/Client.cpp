@@ -183,10 +183,7 @@ void BlockBuster::Client::Update()
 
             lag -= serverTickRate;
         }
-
-        // TODO: Player prediction each frame. Two options
-        // 1. Change loop to use a different update rate. Send packets with same method for server tick rate.
-        // 2. Keep as is. Interpolate player pos based on frame render time and server tick rate. Timestamps on predictions? Cmdid * servertickrate.
+.
         EntityInterpolation();
         SmoothPlayerMovement();
         Render();

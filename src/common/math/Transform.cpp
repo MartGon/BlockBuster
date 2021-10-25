@@ -21,7 +21,6 @@ glm::mat4 Math::Transform::GetTranslationMat() const
     return glm::translate(glm::mat4{1.0f}, position);
 }
 
-// TODO: This has gimbal lock issues
 glm::mat4 Math::Transform::GetRotationMat() const
 {
     glm::mat4 mat{1.0f};
