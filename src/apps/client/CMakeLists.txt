@@ -22,6 +22,7 @@ target_link_libraries(Client
 
     EnetW
     enet
+    Networking
 )
 target_include_directories(Client PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}

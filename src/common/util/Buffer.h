@@ -12,6 +12,7 @@ namespace Util
 
         Buffer();
         Buffer(uint32_t capacity);
+        Buffer(void* data, uint32_t size);
 
         Buffer(const Buffer&) = delete;
         Buffer& operator=(const Buffer&) = delete;
@@ -96,6 +97,7 @@ namespace Util
         uint32_t size = 0;
         uint32_t capacity = 0;
         unsigned char* buffer = nullptr;
+        bool owned = true;
     };
 
     // Buffer Write specializations

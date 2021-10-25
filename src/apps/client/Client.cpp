@@ -81,38 +81,34 @@ void BlockBuster::Client::Start()
             this->playerId = config.playerId;
             this->connected = true;
         }
-        else if(packet->header.type == Networking::Command::Type::PLAYER_POS_UPDATE)
+        else if(packet->header.type == Networking::Command::Type::SERVER_SNAPSHOT)
         {
-            Networking::Command::Server::PlayerUpdate playerUpdate = packet->data.playerUpdate;
-            auto playerId = playerUpdate.playerId;
-            logger->LogInfo("Recv server snapshot for tick: " + std::to_string(packet->header.tick) + " p " + std::to_string(playerId));
+            logger->LogInfo("Recv server snapshot for tick: " + std::to_string(packet->header.tick));
 
-            // Create player entries
-            if(playerTable.find(playerId) == playerTable.end())
-            {
-                Math::Transform transform{playerUpdate.pos, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}};
-                playerTable[playerId] = Entity::Player{playerId, transform};
-            }
-
-            // Reset offset
+            // Entity Interpolation - Reset offset
             auto mostRecent = this->GetMostRecentSnapshot();
             if(mostRecent.has_value() && packet->header.tick > mostRecent->serverTick)
                 this->offsetMillis = 0;
 
-            // Store snapshot. FIXME/TODO: Needs to batch player updates on server first.
-            auto snapshot = snapshotHistory.FindFirstPair([this](auto i, auto s){
-                return s.serverTick == this->serverTick;
-            });
-            if(snapshot)
+            // Process Snapshot
+            void* data = &packet->data;
+            uint32_t size = ePacket.GetSize() - sizeof(packet->header);
+            Util::Buffer buf{data, size};
+            auto reader = buf.GetReader();
+            auto s = Networking::Snapshot::FromBuffer(reader);
+            for(auto player : s.players)
             {
-                snapshot->second.playerPositions[playerId] = playerUpdate;
-                snapshotHistory.Set(snapshot->first, snapshot->second);
+                // Create player entries
+                auto playerId = player.first;
+                if(playerTable.find(playerId) == playerTable.end())
+                {
+                    Math::Transform transform{player.second.pos, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}};
+                    playerTable[playerId] = Entity::Player{playerId, transform};
+                }
             }
-            else
-            {
-                Snapshot snapshot{packet->header.tick, {{playerId, playerUpdate}}};
-                snapshotHistory.Push(snapshot);
-            }
+
+            // Store snapshot
+            snapshotHistory.Push(s);
         }
         else if(packet->header.type == Networking::Command::Type::PLAYER_DISCONNECTED)
         {
@@ -183,7 +179,7 @@ void BlockBuster::Client::Update()
 
             lag -= serverTickRate;
         }
-.
+
         EntityInterpolation();
         SmoothPlayerMovement();
         Render();
@@ -261,11 +257,11 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
     auto lastSnapshot = snapshotHistory.Back();
     if(prediction && lastSnapshot.has_value())
     {
-        auto& playerPositions = lastSnapshot->playerPositions;
+        auto& playerPositions = lastSnapshot->players;
         bool hasPlayerData = playerPositions.find(playerId) != playerPositions.end();
         if(hasPlayerData)
         {
-            auto newPos = lastSnapshot->playerPositions[playerId].pos;
+            auto newPos = lastSnapshot->players[playerId].pos;
             auto pPos = prediction->dest;
             auto diff = glm::length(newPos - pPos);
             // On error
@@ -321,10 +317,10 @@ glm::vec3 Client::PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, float deltaTim
     return predPos;
 }
 
-std::optional<Client::Snapshot> Client::GetMostRecentSnapshot()
+std::optional<Networking::Snapshot> Client::GetMostRecentSnapshot()
 {
     uint32_t maxTick = 0;
-    std::optional<Client::Snapshot> mostRecent;
+    std::optional<Networking::Snapshot> mostRecent;
     for(auto i = 0;i < snapshotHistory.GetSize();i++)
     {
         auto s = snapshotHistory.At(i);
@@ -365,7 +361,7 @@ void Client::EntityInterpolation()
         return;
 
     // Get first snapshot after renderTime
-    auto s2p = snapshotHistory.FindFirstPair([this, renderTime](auto i, Snapshot s)
+    auto s2p = snapshotHistory.FindFirstPair([this, renderTime](auto i, auto s)
     {
         uint64_t time = TickToMillis(s.serverTick);
         return time > renderTime;
@@ -400,12 +396,12 @@ void Client::EntityInterpolation()
                 if(playerId == this->playerId)
                     continue;
 
-                auto hasS1 = s1->playerPositions.find(playerId) != s1->playerPositions.end();
-                auto hasS2 = s2.playerPositions.find(playerId) != s2.playerPositions.end();
+                auto hasS1 = s1->players.find(playerId) != s1->players.end();
+                auto hasS2 = s2.players.find(playerId) != s2.players.end();
                 if(hasS1 && hasS2)
                 {
-                    auto pos1 = s1->playerPositions[playerId].pos;
-                    auto pos2 = s2.playerPositions[playerId].pos;
+                    auto pos1 = s1->players[playerId].pos;
+                    auto pos2 = s2.players[playerId].pos;
                     auto smoothPos = pos1 * w1 + pos2 * w2;
                     playerTable[playerId].transform.position = smoothPos;
                 }
@@ -511,7 +507,6 @@ void Client::DrawGUI()
             ImGui::Text("Config");
             ImGui::Separator();
             ImGui::Text("Server tick rate: %.2f ms", serverTickRate * 1e3);
-
 
             ImGui::Text("Latency");
             ImGui::Separator();

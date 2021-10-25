@@ -3,6 +3,7 @@ add_subdirectory(enetw)
 SET(SOURCES
     Command.cpp
     CommandBuffer.cpp
+    Snapshot.cpp
 )
 
 add_library(Networking ${SOURCES})

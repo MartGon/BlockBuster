@@ -22,6 +22,7 @@
 
 #include <networking/enetw/ENetW.h>
 #include <networking/Command.h>
+#include <networking/Snapshot.h>
 
 namespace BlockBuster
 {
@@ -52,13 +53,8 @@ namespace BlockBuster
         glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, float deltaTime);
 
         // Networking - Entity Interpolation
-        struct Snapshot
-        {
-            uint32_t serverTick = 0;
-            std::unordered_map<Entity::ID, Networking::Command::Server::PlayerUpdate> playerPositions;
-        };
         uint64_t GetCurrentTime();
-        std::optional<Snapshot> GetMostRecentSnapshot();
+        std::optional<Networking::Snapshot> GetMostRecentSnapshot();
         uint64_t TickToMillis(uint32_t tick);
         void EntityInterpolation();
 
@@ -99,7 +95,7 @@ namespace BlockBuster
         double serverTickRate = 0.0;
         uint32_t serverTick = 0;
         bool connected = false;
-        Util::Queue<Snapshot> snapshotHistory{16};
+        Util::Queue<Networking::Snapshot> snapshotHistory{16};
 
         // Networking - Prediction
         struct Prediction

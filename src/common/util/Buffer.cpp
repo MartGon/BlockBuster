@@ -23,6 +23,11 @@ Buffer::Buffer(uint32_t capacity) : capacity{capacity}
     buffer = new unsigned char[capacity];
 }
 
+Buffer::Buffer(void* data, uint32_t size) : buffer{(unsigned char*)data}, capacity{size}, size{size}, owned{false}
+{
+
+}
+
 Buffer::Buffer() : Buffer{MEM_BLOCK_SIZE}
 {
     
@@ -44,7 +49,9 @@ Buffer& Buffer::operator=(Buffer&& other)
 
 Buffer::~Buffer()
 {
-    delete[] buffer;
+    // TODO/FIXME: This is a hack
+    if(owned)
+        delete[] buffer;
 }
 
 void Buffer::Reserve(uint32_t newCapacity)

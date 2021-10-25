@@ -4,6 +4,7 @@
 #include <networking/enetw/ENetW.h>
 #include <networking/Command.h>
 #include <networking/CommandBuffer.h>
+#include <networking/Snapshot.h>
 
 #include <util/Time.h>
 #include <util/Random.h>
@@ -16,7 +17,6 @@
 #include <glm/gtx/string_cast.hpp>
 
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
-std::unordered_map<ENet::PeerId, std::map<uint32_t, glm::vec3>> simHistory;
 Entity::ID lastId = 0;
 const double TICK_RATE = 0.020;
 
@@ -38,8 +38,6 @@ void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMov
     const float PLAYER_SPEED = 5.f;
     auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE;
     player.transform.position += velocity;
-    
-    simHistory[peerId][playerTick] = player.transform.position;
 }
 
 int main()
@@ -135,23 +133,29 @@ int main()
             // Could use some entity interpolation on the server
         }
 
+        // Create snapshot
+        Networking::Snapshot s;
+        s.serverTick = tickCount;
+        for(auto pair : playerTable)
+        {
+            s.players[pair.second.id].pos = pair.second.transform.position;
+        }
+
         // Send update
-        // TODO: Server commands / World Snapshots should be batched and then sent to client.
         for(auto pair : playerTable)
         {
             // Broadcast this player's movement
             auto player = pair.second;
 
             Networking::Command::Header header;
-            header.type = Networking::Command::Type::PLAYER_POS_UPDATE;
+            header.type = Networking::Command::Type::SERVER_SNAPSHOT;
             header.tick = tickCount;
 
-            Networking::Command::Payload data;
-            data.playerUpdate = Networking::Command::Server::PlayerUpdate{player.id, player.transform.position};
+            auto hBuf = header.ToBuffer();
+            auto sBuf = s.ToBuffer();
+            auto buf = Util::Buffer::Concat(std::move(hBuf), std::move(sBuf));
 
-            Networking::Command command{header, data};
-
-            ENet::SentPacket epacket{&command, sizeof(command), 0};
+            ENet::SentPacket epacket{buf.GetData(), buf.GetSize(), 0};
             host.Broadcast(0, epacket);
 
             // Send confirmed command to this player
