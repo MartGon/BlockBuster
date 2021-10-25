@@ -93,8 +93,7 @@ void BlockBuster::Client::Start()
             // Process Snapshot
             void* data = &packet->data;
             uint32_t size = ePacket.GetSize() - sizeof(packet->header);
-            Util::Buffer buf{data, size};
-            auto reader = buf.GetReader();
+            Util::Buffer::Reader reader{data, size};
             auto s = Networking::Snapshot::FromBuffer(reader);
             for(auto player : s.players)
             {

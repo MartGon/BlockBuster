@@ -23,11 +23,6 @@ Buffer::Buffer(uint32_t capacity) : capacity{capacity}
     buffer = new unsigned char[capacity];
 }
 
-Buffer::Buffer(void* data, uint32_t size) : buffer{(unsigned char*)data}, capacity{size}, size{size}, owned{false}
-{
-
-}
-
 Buffer::Buffer() : Buffer{MEM_BLOCK_SIZE}
 {
     
@@ -49,9 +44,7 @@ Buffer& Buffer::operator=(Buffer&& other)
 
 Buffer::~Buffer()
 {
-    // TODO/FIXME: This is a hack
-    if(owned)
-        delete[] buffer;
+    delete[] buffer;
 }
 
 void Buffer::Reserve(uint32_t newCapacity)
@@ -119,15 +112,15 @@ Buffer Buffer::Reader::Read(uint32_t dataSize)
 
 bool Buffer::Reader::IsOver() const
 {
-    return index >= buffer->GetSize();
+    return index >= size;
 }
 
 void Buffer::Reader::Skip(uint32_t bytes)
 {
-    index = std::min(index + bytes, buffer->GetSize());
+    index = std::min(index + bytes, size);
 }
 
 Buffer::Reader Buffer::GetReader()
 {
-    return Reader{this};
+    return Reader{GetData(), GetSize()};
 }

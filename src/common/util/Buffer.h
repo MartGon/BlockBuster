@@ -12,7 +12,6 @@ namespace Util
 
         Buffer();
         Buffer(uint32_t capacity);
-        Buffer(void* data, uint32_t size);
 
         Buffer(const Buffer&) = delete;
         Buffer& operator=(const Buffer&) = delete;
@@ -71,14 +70,14 @@ namespace Util
 
         class Reader
         {
-        friend class Buffer;
         public:
+            Reader(void* buffer, uint32_t size) : buffer{buffer}, size{size} {}
             template<typename T>
             T Read()
             {
-                auto ret = buffer->ReadAt<T>(index);
+                T* ptr = reinterpret_cast<T*>((unsigned char*)buffer + index);
                 index += sizeof(T);
-                return ret;
+                return *ptr;
             }
             Buffer Read(uint32_t dataSize);
 
@@ -86,9 +85,9 @@ namespace Util
             void Skip(uint32_t bytes);
 
         private:
-            Reader(Buffer* buffer) : buffer{buffer} {}
             uint32_t index = 0;
-            Buffer* buffer;
+            uint32_t size;
+            void* buffer = nullptr;
         };
         Reader GetReader();
 
@@ -97,7 +96,6 @@ namespace Util
         uint32_t size = 0;
         uint32_t capacity = 0;
         unsigned char* buffer = nullptr;
-        bool owned = true;
     };
 
     // Buffer Write specializations
