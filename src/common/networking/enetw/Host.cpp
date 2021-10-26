@@ -116,7 +116,6 @@ void Host::Connect(Address address)
 
 void Host::SendPacket(PeerId id, uint8_t channelId, const SentPacket& packet)
 {
-    auto p = enet_packet_create(packet.data_, packet.size_, packet.flags_);
     auto& peer = GetPeer(id);
     peer.SendPacket(channelId, packet);
 }

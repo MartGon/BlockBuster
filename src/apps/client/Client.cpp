@@ -71,7 +71,6 @@ void BlockBuster::Client::Start()
     host.SetOnRecvCallback([this](auto id, auto channel, ENet::RecvPacket ePacket)
     {
         auto* packet = (Networking::Command*) ePacket.GetData();
-        this->serverTick = packet->header.tick;
 
         if(packet->header.type == Networking::Command::Type::CLIENT_CONFIG)
         {
@@ -91,9 +90,15 @@ void BlockBuster::Client::Start()
                 this->offsetMillis = 0;
 
             // Process Snapshot
-            void* data = &packet->data;
-            uint32_t size = ePacket.GetSize() - sizeof(packet->header);
-            Util::Buffer::Reader reader{data, size};
+            auto update = packet->data.snapshot;
+
+            // Update last ack
+            this->lastAck = update.lastCmd;
+            logger->LogInfo("Server ack  command: " + std::to_string(update.lastCmd));
+
+            // Update player locations
+            Util::Buffer::Reader reader{packet, ePacket.GetSize()};
+            reader.Skip(sizeof(Networking::Command));
             auto s = Networking::Snapshot::FromBuffer(reader);
             for(auto player : s.players)
             {
@@ -115,12 +120,6 @@ void BlockBuster::Client::Start()
             logger->LogInfo("Player with id " + std::to_string(playerDisconnect.playerId) + " disconnected");
 
             playerTable.erase(playerDisconnect.playerId);
-        }
-        else if(packet->header.type == Networking::Command::Type::ACK_COMMAND)
-        {
-            auto ack = packet->data.ackCommand;
-            this->lastAck = ack.commandId;
-            logger->LogInfo("Recv server ACK: " + std::to_string(this->lastAck));
         }
     });
     host.Connect(serverAddress);
@@ -244,15 +243,13 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
     auto& player = playerTable[playerId];
 
     // Discard old commands
-    while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmdId < lastAck)
+    std::optional<Prediction> prediction;
+    while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmdId <= lastAck)
     {
-        auto cmd = predictionHistory_.Pop();
+        prediction = predictionHistory_.Pop();
     }
     
     // Checking prediction errors
-    auto prediction = predictionHistory_.FindFirst([this](auto predict){
-        return predict.cmdId == this->lastAck;
-    });
     auto lastSnapshot = snapshotHistory.Back();
     if(prediction && lastSnapshot.has_value())
     {
@@ -263,19 +260,29 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
             auto newPos = lastSnapshot->players[playerId].pos;
             auto pPos = prediction->dest;
             auto diff = glm::length(newPos - pPos);
+
             // On error
             if(diff >= 0.005)
             {
+                logger->LogError("Prediction error ocurred on ack " + std::to_string(this->lastAck));
+
                 // Accept player pos
-                player.transform.position = newPos;
+                auto playerPos = newPos;
 
                 // Run prev commands again
                 for(auto i = 0; i < predictionHistory_.GetSize(); i++)
                 {
                     auto predict = predictionHistory_.At(i);
+
+                    // Re-calculate prediction
                     auto move = predict->cmd.data.playerMovement;
-                    auto& playerPos = playerTable[playerId].transform.position;
+                    auto origin = playerPos;
                     playerPos = PredPlayerPos(playerPos, move.moveDir, serverTickRate);
+
+                    // Update history
+                    predict->origin = origin;
+                    predict->dest = playerPos;
+                    predictionHistory_.Set(i, predict.value());
                 }
             }
         }

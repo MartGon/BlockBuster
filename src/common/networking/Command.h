@@ -16,7 +16,7 @@ namespace Networking
             CLIENT_CONFIG,
             SERVER_SNAPSHOT,
             PLAYER_DISCONNECTED,
-            ACK_COMMAND,
+            ACK_COMMAND, // Deprecated. Snapshot carry acks.
 
             // Client
             PLAYER_MOVEMENT,
@@ -30,8 +30,10 @@ namespace Networking
                 double sampleRate;
             };
 
-            struct Snapshot
+            struct Update
             {
+                uint32_t lastCmd;
+                uint32_t snapshotDataSize;
             };
 
             struct PlayerDisconnected
@@ -64,7 +66,7 @@ namespace Networking
         union Payload
         {
             Server::ClientConfig config;
-            Server::Snapshot snapshot;
+            Server::Update snapshot;
             Server::PlayerDisconnected playerDisconnect;
             Server::AckCommand ackCommand;
 

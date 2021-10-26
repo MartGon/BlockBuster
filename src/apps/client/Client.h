@@ -93,7 +93,6 @@ namespace BlockBuster
         ENet::PeerId serverId = 0;
         uint8_t playerId = 0;
         double serverTickRate = 0.0;
-        uint32_t serverTick = 0;
         bool connected = false;
         Util::Queue<Networking::Snapshot> snapshotHistory{16};
 
@@ -107,7 +106,6 @@ namespace BlockBuster
             double time;
         };
         Util::Queue<Prediction> predictionHistory_{128};
-        glm::vec3 nextMoveDir;
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
 

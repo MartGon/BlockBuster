@@ -17,6 +17,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
+std::unordered_map<ENet::PeerId, uint32_t> ackHistory;
 Entity::ID lastId = 0;
 const double TICK_RATE = 0.020;
 
@@ -111,7 +112,6 @@ int main()
         host.PollAllEvents();
 
         auto now = Util::Time::GetUNIXTimeNanos();
-        std::unordered_map<ENet::PeerId, uint32_t> ackHistory;
 
         // Update
         for(auto& pair : playerTable)
@@ -141,35 +141,33 @@ int main()
             s.players[pair.second.id].pos = pair.second.transform.position;
         }
 
-        // Send update
+        auto snapshotBuffer = s.ToBuffer();
+
+        // Send snapthot with ack
         for(auto pair : playerTable)
         {
-            // Broadcast this player's movement
-            auto player = pair.second;
+            Util::Buffer buffer;
 
             Networking::Command::Header header;
             header.type = Networking::Command::Type::SERVER_SNAPSHOT;
             header.tick = tickCount;
 
-            auto hBuf = header.ToBuffer();
-            auto sBuf = s.ToBuffer();
-            auto buf = Util::Buffer::Concat(std::move(hBuf), std::move(sBuf));
+            Networking::Command::Server::Update update;
+            update.lastCmd = ackHistory[pair.first];
+            update.snapshotDataSize = snapshotBuffer.GetSize();
 
-            ENet::SentPacket epacket{buf.GetData(), buf.GetSize(), 0};
-            host.Broadcast(0, epacket);
+            Networking::Command::Payload snapshotData;
+            snapshotData.snapshot = update;
 
-            // Send confirmed command to this player
-            if(ackHistory.find(pair.first) != ackHistory.end())
-            {
-                Networking::Command::Payload ackData;
-                ackData.ackCommand = Networking::Command::Server::AckCommand{ackHistory[pair.first]};
+            Networking::Command cmd{header, snapshotData};
 
-                header.type = Networking::Command::Type::ACK_COMMAND;
-                Networking::Command ack{header, ackData};
+            Util::Buffer packetBuf;
+            packetBuf.Write(cmd);
+            
+            packetBuf = Util::Buffer::Concat(std::move(packetBuf), snapshotBuffer.Clone());
 
-                ENet::SentPacket apacket{&ack, sizeof(ack), 0};
-                host.SendPacket(pair.first, 0, apacket);
-            }
+            ENet::SentPacket epacket{packetBuf.GetData(), packetBuf.GetSize(), 0};
+            host.SendPacket(pair.first, 0, epacket);
         }
 
         auto elapsed = Util::Time::GetUNIXTimeNanos() - now;

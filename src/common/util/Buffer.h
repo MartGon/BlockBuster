@@ -20,6 +20,8 @@ namespace Util
         Buffer& operator=(Buffer&& other);
         ~Buffer();
 
+        Util::Buffer Clone() const;
+
         inline uint32_t GetSize() const
         {
             return size;

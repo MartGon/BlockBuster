@@ -47,6 +47,20 @@ Buffer::~Buffer()
     delete[] buffer;
 }
 
+Buffer Buffer::Clone() const
+{
+    Util::Buffer clone;
+    delete[] clone.buffer;
+    
+    auto newBuffer = new unsigned char[size];
+    std::memcpy(newBuffer, buffer, size);
+    clone.buffer = newBuffer;
+    clone.size = size;
+    clone.capacity = size;
+    
+    return std::move(clone);
+}
+
 void Buffer::Reserve(uint32_t newCapacity)
 {
     auto newBuffer = new unsigned char[newCapacity];
