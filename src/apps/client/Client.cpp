@@ -3,6 +3,8 @@
 #include <util/Random.h>
 #include <util/Time.h>
 
+#include <math/Interpolation.h>
+
 #include <debug/Debug.h>
 
 #include <iostream>
@@ -62,7 +64,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -229,15 +231,6 @@ void Client::UpdateNetworking()
     PredictPlayerMovement(cmd, cmdId);
 }
 
-glm::vec2 Client::GetWeights(double t1, double t2, double i)
-{
-    auto d = t2 - t1;
-    auto d1 = i - t1;
-    float w1 = (1.0f - (double)d1 / (double)d);
-    float w2 = 1.0f - w1;
-    return glm::vec2{w1, w2};
-}
-
 void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
 {
     auto& player = playerTable[playerId];
@@ -327,7 +320,7 @@ std::optional<Networking::Snapshot> Client::GetMostRecentSnapshot()
 {
     uint32_t maxTick = 0;
     std::optional<Networking::Snapshot> mostRecent;
-    for(auto i = 0;i < snapshotHistory.GetSize();i++)
+    for(auto i = 0; i < snapshotHistory.GetSize(); i++)
     {
         auto s = snapshotHistory.At(i);
         if(s->serverTick > maxTick)
@@ -353,15 +346,26 @@ uint64_t Client::GetCurrentTime()
     return base + this->offsetMillis;
 }
 
-void Client::EntityInterpolation()
+uint64_t Client::GetRenderTime()
 {
-    offsetMillis += (uint64_t)(frameInterval * 1e3);
-
-    // Calculate render time
     auto clientTime = GetCurrentTime();
     double serverTickRateMillis = this->serverTickRate * 1e3;
     uint64_t windowSize = 2.0 * serverTickRateMillis;
     uint64_t renderTime = clientTime - windowSize;
+    
+    return renderTime;
+}
+
+void Client::EntityInterpolation()
+{
+    offsetMillis += (uint64_t)(frameInterval * 1e3);
+
+    if(snapshotHistory.GetSize() < 2)
+        return;
+
+    // Calculate render time
+    auto clientTime = GetCurrentTime();
+    uint64_t renderTime = GetRenderTime();
 
     if(renderTime < 0)
         return;
@@ -382,51 +386,93 @@ void Client::EntityInterpolation()
         auto s2 = s2p->second;
 
         if(s1.has_value())
-        {        
+        {   
+            // No longer need to extrapolate, we have enough samples
+            extrapolating = false;
+
             // Find weights
             auto t1 = TickToMillis(s1->serverTick);
             auto t2 = TickToMillis(s2.serverTick);
-            auto ws = GetWeights(t1, t2, renderTime);
+            auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
             auto w1 = ws.x; auto w2 = ws.y;
 
-            
             logger->LogDebug("RT " + std::to_string(renderTime) + " CT " + std::to_string(clientTime));
             logger->LogDebug("T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
             logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
             logger->LogDebug("Tick 1 " + std::to_string(s1->serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
 
-            for(auto pair : playerTable)
-            {
-                auto playerId = pair.first;
-                // No need to do interpolation for player char
-                if(playerId == this->playerId)
-                    continue;
-
-                auto hasS1 = s1->players.find(playerId) != s1->players.end();
-                auto hasS2 = s2.players.find(playerId) != s2.players.end();
-                if(hasS1 && hasS2)
-                {
-                    auto pos1 = s1->players[playerId].pos;
-                    auto pos2 = s2.players[playerId].pos;
-                    auto smoothPos = pos1 * w1 + pos2 * w2;
-                    playerTable[playerId].transform.position = smoothPos;
-                }
-            }
+            EntityInterpolation(s1.value(), s2, w1);
         }
     }
     else
     {
-        // TODO: There are two possible situations here.
-        // 1. There are not samples yet in the queue. Should check at beginning of this function
-        // 2. We lost two packets in a row. So we need to extrapolate
-        logger->LogError("There were not enough snapshots to interpolate");
-        logger->LogError("Render time " + std::to_string(renderTime));
-        for(auto i = 0; i < snapshotHistory.GetSize(); i++)
+        if(!extrapolating)
         {
-            auto s = snapshotHistory.At(i).value();
-            logger->LogError("Snapshot at " + std::to_string(i) + " rendertime " + std::to_string(TickToMillis(s.serverTick)));
+            logger->LogError("There were not enough snapshots to interpolate. Performing extrapolation instead");
+            CalculateExtrapolatedSnapshot();
+            extrapolating = true;
+        }
+
+        EntityExtrapolation();
+    }
+}
+
+void Client::EntityInterpolation(Networking::Snapshot s1, Networking::Snapshot s2, float alpha)
+{
+    for(auto pair : playerTable)
+    {
+        auto playerId = pair.first;
+        // No need to do interpolation for player char
+        if(playerId == this->playerId)
+            continue;
+
+        auto hasS1 = s1.players.find(playerId) != s1.players.end();
+        auto hasS2 = s2.players.find(playerId) != s2.players.end();
+        if(hasS1 && hasS2)
+        {
+            auto pos1 = s1.players[playerId].pos;
+            auto pos2 = s2.players[playerId].pos;
+            auto smoothPos = pos1 * alpha + pos2 * (1 - alpha);
+            playerTable[playerId].transform.position = smoothPos;
         }
     }
+}
+
+void Client::CalculateExtrapolatedSnapshot()
+{
+    auto lastIndex = snapshotHistory.GetSize() - 1;
+    auto lastSample = snapshotHistory.At(lastIndex).value();
+    auto prevSample = snapshotHistory.At(lastIndex - 1).value();
+
+    this->extrapolatedSnapshot = lastSample;
+    for(auto pair : playerTable)
+    {
+        auto lastPos = lastSample.players[pair.first].pos;
+        auto prevPos = prevSample.players[pair.first].pos;
+        auto moveDir = lastPos - prevPos;
+        auto extrapolatedPos = PredPlayerPos(lastPos, moveDir, EXTRAPOLATION_DURATION);
+
+        this->extrapolatedSnapshot.players[pair.first].pos = extrapolatedPos;
+    }
+}
+
+void Client::EntityExtrapolation()
+{
+    auto renderTime = GetRenderTime();
+    auto s1 = snapshotHistory.At(-1).value();
+    auto s2 = extrapolatedSnapshot;
+
+    // Find weights
+    auto t1 = TickToMillis(s1.serverTick);
+    uint64_t t2 = TickToMillis(s2.serverTick) + EXTRAPOLATION_DURATION * 1e3;
+    auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
+    auto w1 = ws.x; auto w2 = ws.y;
+
+    logger->LogError("ExtraPolation T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
+    logger->LogError("ExtraPolation W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
+
+    // Interpolate 
+    EntityInterpolation(s1, s2, w1);
 }
 
 void BlockBuster::Client::HandleSDLEvents()
@@ -530,9 +576,8 @@ void Client::DrawGUI()
             ImGui::Separator();
             ImGui::Text("In: %i B/s", info.incomingBandwidth);
             ImGui::Text("Out: %i B/s", info.outgoingBandwidth);
-
-            ImGui::End();
         }
+        ImGui::End();
 
         if(ImGui::Begin("Rendering Stats"))
         {
@@ -546,9 +591,8 @@ void Client::DrawGUI()
             ImGui::InputDouble("Max FPS", &maxFPS, 1.0, 5.0, "%.0f");
             minFrameInterval = 1 / maxFPS;
             ImGui::Text("Min Frame interval:");ImGui::SameLine();ImGui::Text("%.0f ms", minFrameInterval * 1e3);
-
-            ImGui::End();
         }
+        ImGui::End();
     }
     
     // Draw GUI

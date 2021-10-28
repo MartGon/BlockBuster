@@ -45,7 +45,6 @@ namespace BlockBuster
         // Networking
         void RecvServerSnapshots();
         void UpdateNetworking();
-        glm::vec2 GetWeights(double t1, double t2, double inter);
 
         // Networking - Prediction
         void PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId);
@@ -54,9 +53,13 @@ namespace BlockBuster
 
         // Networking - Entity Interpolation
         uint64_t GetCurrentTime();
+        uint64_t GetRenderTime();
         std::optional<Networking::Snapshot> GetMostRecentSnapshot();
         uint64_t TickToMillis(uint32_t tick);
         void EntityInterpolation();
+        void EntityInterpolation(Networking::Snapshot a, Networking::Snapshot b, float alpha);
+        void CalculateExtrapolatedSnapshot();
+        void EntityExtrapolation();
 
         // Rendering
         void DrawScene();
@@ -110,6 +113,9 @@ namespace BlockBuster
         uint32_t lastAck = 0;
 
         // Networking - Entity Interpolation
+        const double EXTRAPOLATION_DURATION = 0.25;
+        bool extrapolating = false;
+        Networking::Snapshot extrapolatedSnapshot;
         uint64_t offsetMillis = 0;
 
         // App

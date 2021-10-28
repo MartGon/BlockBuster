@@ -1,5 +1,6 @@
 SET(SOURCES
 
+    Interpolation.cpp
     Transform.cpp
     Math.cpp
 )
