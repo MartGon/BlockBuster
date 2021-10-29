@@ -89,6 +89,7 @@ namespace BlockBuster
 
         // Player transforms
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
+        std::unordered_map<Entity::ID, Entity::Player> prevPlayerPos;
         float PLAYER_SPEED = 2.f;
 
         // Networking
@@ -114,7 +115,6 @@ namespace BlockBuster
 
         // Networking - Entity Interpolation
         const double EXTRAPOLATION_DURATION = 0.25;
-        bool extrapolating = false;
         Networking::Snapshot extrapolatedSnapshot;
         uint64_t offsetMillis = 0;
 

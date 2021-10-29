@@ -20,6 +20,7 @@ std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
 std::unordered_map<ENet::PeerId, uint32_t> ackHistory;
 Entity::ID lastId = 0;
 const double TICK_RATE = 0.050;
+const float PLAYER_SPEED = 10.f;
 
 Networking::CommandBuffer commandBuffer{60};
 
@@ -36,7 +37,6 @@ glm::vec3 GetRandomPlayerPosition()
 void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMovement pm, uint32_t playerTick)
 {
     auto& player = playerTable[peerId];
-    const float PLAYER_SPEED = 5.f;
     auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE;
     player.transform.position += velocity;
 }

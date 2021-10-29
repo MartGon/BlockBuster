@@ -38,8 +38,13 @@
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
-int main()
+int main(int argc, char** args)
 {
+    std::string id = "";
+    if(argc > 1)
+        id = args[1];
+
+    std::string filename = std::string("./client-") + id + ".log";
     App::Configuration config{
         App::Configuration::WindowConfig{
             "Client",
@@ -56,7 +61,7 @@ int main()
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
-            "./client.log", Log::Verbosity::ERROR
+            filename, Log::Verbosity::DEBUG
         }
     };
 
@@ -79,6 +84,7 @@ int main()
     cLogger->SetVerbosity(config.log.verbosity);
     App::ServiceLocator::SetLogger(std::move(cLogger));
     
+    // Start client
     BlockBuster::Client client(config);
     client.Start();
 

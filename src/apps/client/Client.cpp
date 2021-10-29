@@ -257,7 +257,8 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
             // On error
             if(diff >= 0.005)
             {
-                logger->LogError("Prediction error ocurred on ack " + std::to_string(this->lastAck));
+                logger->LogError("Prediction: Tick " + std::to_string(lastSnapshot->serverTick) + " ACK " + std::to_string(this->lastAck));
+                logger->LogError("Prediction: D " + std::to_string(diff) + " P " + glm::to_string(pPos) + " S " + glm::to_string(newPos));
 
                 // Accept player pos
                 auto playerPos = newPos;
@@ -310,7 +311,7 @@ void Client::SmoothPlayerMovement()
 glm::vec3 Client::PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, float deltaTime)
 {
     auto& player = playerTable[playerId];
-    const float PLAYER_SPEED = 5.f;
+    const float PLAYER_SPEED = 10.f;
     auto velocity = moveDir * PLAYER_SPEED * (float)deltaTime;
     auto predPos = pos + velocity;
     return predPos;
@@ -387,9 +388,6 @@ void Client::EntityInterpolation()
 
         if(s1.has_value())
         {   
-            // No longer need to extrapolate, we have enough samples
-            extrapolating = false;
-
             // Find weights
             auto t1 = TickToMillis(s1->serverTick);
             auto t2 = TickToMillis(s2.serverTick);
@@ -406,11 +404,11 @@ void Client::EntityInterpolation()
     }
     else
     {
-        if(!extrapolating)
+        auto lastSample = GetMostRecentSnapshot();
+        if(lastSample->serverTick != extrapolatedSnapshot.serverTick)
         {
             logger->LogError("There were not enough snapshots to interpolate. Performing extrapolation instead");
             CalculateExtrapolatedSnapshot();
-            extrapolating = true;
         }
 
         EntityExtrapolation();
@@ -443,6 +441,8 @@ void Client::CalculateExtrapolatedSnapshot()
     auto lastIndex = snapshotHistory.GetSize() - 1;
     auto lastSample = snapshotHistory.At(lastIndex).value();
     auto prevSample = snapshotHistory.At(lastIndex - 1).value();
+
+    logger->LogError("Last tick recv is from " + std::to_string(lastSample.serverTick));
 
     this->extrapolatedSnapshot = lastSample;
     for(auto pair : playerTable)
@@ -525,12 +525,23 @@ void BlockBuster::Client::DrawScene()
 
     for(auto player : playerTable)
     {
+        auto playerId = player.first;
+        auto oldPos = prevPlayerPos[playerId].transform.position;
+        auto newPos = player.second.transform.position;
+        auto diff = newPos - oldPos;
+        if(glm::length(diff) > 0.05)
+        {
+            logger->LogDebug("Render: Player " + std::to_string(player.first) + " Prev " + glm::to_string(oldPos)
+            + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
+        }
+
         auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;
         shader.SetUniformMat4("transform", transform);
         shader.SetUniformVec4("color", glm::vec4{1.0f});
         cylinder.Draw(shader, drawMode);
     }
+    prevPlayerPos = playerTable;
 
     // Bind textures
     map_.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
