@@ -257,6 +257,7 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
             // On error
             if(diff >= 0.005)
             {
+                logger->LogError("Prediction: Error on prediction");
                 logger->LogError("Prediction: Tick " + std::to_string(lastSnapshot->serverTick) + " ACK " + std::to_string(this->lastAck));
                 logger->LogError("Prediction: D " + std::to_string(diff) + " P " + glm::to_string(pPos) + " S " + glm::to_string(newPos));
 
@@ -278,6 +279,10 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
                     predict->dest = playerPos;
                     predictionHistory_.Set(i, predict.value());
                 }
+
+                // Update error correction values
+                errorCorrectionDiff = pPos - newPos;
+                errorCorrectionStart = Util::Time::GetUNIXTime();
             }
         }
     }
@@ -296,22 +301,29 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
 void Client::SmoothPlayerMovement()
 {
     auto last = predictionHistory_.Back();
+    auto& renderPos = playerTable[playerId].transform.position;
     if(last)
     {
         auto now = Util::Time::GetUNIXTime();
         auto elapsed = now - last->time;
         
-        auto oldPos = last->origin;
-        auto prevSmoothPos = playerTable[playerId].transform.position;
-        auto predPos = PredPlayerPos(oldPos, last->cmd.data.playerMovement.moveDir, elapsed);
-        playerTable[playerId].transform.position = predPos;
+        auto origin = last->origin;
+        auto predPos = PredPlayerPos(origin, last->cmd.data.playerMovement.moveDir, elapsed);
+
+        // Error correction
+        double errorElapsed = now - errorCorrectionStart;
+        float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
+        glm::vec3 errorCorrection = errorCorrectionDiff * weight;
+        auto dist = glm::length(errorCorrection);
+        if(dist > 0)
+            logger->LogError("Error correction is " + glm::to_string(errorCorrection) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
+        renderPos = predPos + errorCorrection;
     }
 }
 
 glm::vec3 Client::PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, float deltaTime)
 {
     auto& player = playerTable[playerId];
-    const float PLAYER_SPEED = 10.f;
     auto velocity = moveDir * PLAYER_SPEED * (float)deltaTime;
     auto predPos = pos + velocity;
     return predPos;
@@ -359,8 +371,6 @@ uint64_t Client::GetRenderTime()
 
 void Client::EntityInterpolation()
 {
-    offsetMillis += (uint64_t)(frameInterval * 1e3);
-
     if(snapshotHistory.GetSize() < 2)
         return;
 
@@ -394,7 +404,7 @@ void Client::EntityInterpolation()
             auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
             auto w1 = ws.x; auto w2 = ws.y;
 
-            logger->LogDebug("RT " + std::to_string(renderTime) + " CT " + std::to_string(clientTime));
+            logger->LogDebug("RT " + std::to_string(renderTime) + " CT " + std::to_string(clientTime) + " OM " + std::to_string(offsetMillis));
             logger->LogDebug("T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
             logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
             logger->LogDebug("Tick 1 " + std::to_string(s1->serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
@@ -413,6 +423,8 @@ void Client::EntityInterpolation()
 
         EntityExtrapolation();
     }
+
+    offsetMillis += (uint64_t)(frameInterval * 1e3);
 }
 
 void Client::EntityInterpolation(Networking::Snapshot s1, Networking::Snapshot s2, float alpha)
@@ -522,18 +534,32 @@ void BlockBuster::Client::DrawScene()
 {
     // Draw data
     auto view = camera_.GetProjViewMat();
-
+    
     for(auto player : playerTable)
     {
+        // Start Debug
         auto playerId = player.first;
         auto oldPos = prevPlayerPos[playerId].transform.position;
         auto newPos = player.second.transform.position;
         auto diff = newPos - oldPos;
-        if(glm::length(diff) > 0.05)
+        auto distDiff = glm::length(diff);
+        if(distDiff > 0.05f)
         {
+            // TODO: This issue is caused because the server sometimes handles 2 cmds in a tick. Causing a movement which is doubled in length for other players
+            // This could be solved by batching updates on the server. Interpolation window should be changed accordingly
+            
+            auto expectedDiff = PLAYER_SPEED *  frameInterval;
             logger->LogDebug("Render: Player " + std::to_string(player.first) + " Prev " + glm::to_string(oldPos)
-            + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
+            + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff) + " Frame interval " + std::to_string(frameInterval));
+
+            auto offset = glm::abs(distDiff - expectedDiff);
+            if(offset > 0.05f)
+            {
+                logger->LogDebug("Render: Difference is bigger than expected: ");
+                logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) + " Offset " + std::to_string(offset));
+            }
         }
+        // End debug
 
         auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;

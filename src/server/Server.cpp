@@ -19,8 +19,9 @@
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
 std::unordered_map<ENet::PeerId, uint32_t> ackHistory;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.050;
-const float PLAYER_SPEED = 10.f;
+const double TICK_RATE = 0.033;
+const double UPDATE_RATE = 0.050;
+const float PLAYER_SPEED = 5.f;
 
 Networking::CommandBuffer commandBuffer{60};
 
@@ -118,6 +119,8 @@ int main()
         {
             auto peerId = pair.first;
             auto type = Networking::Command::Type::PLAYER_MOVEMENT;
+
+            auto handleCount = 0;
             while(auto command = commandBuffer.Pop(peerId, type))
             {
                 auto size = commandBuffer.GetSize(peerId, type);
@@ -127,6 +130,17 @@ int main()
 
                 logger.LogInfo("Command recv with cmd id: " + std::to_string(ackHistory[peerId]) + " on tick " + std::to_string(tickCount) + ". Buffer size: " + std::to_string(size));
                 HandleMoveCommand(peerId, command->data.playerMovement, tickCount);
+
+                handleCount++;
+            }
+
+            if(handleCount > 1)
+            {
+                logger.LogInfo("Handled " + std::to_string(handleCount) + " cmds for player " + std::to_string(pair.first) + " on tick " + std::to_string(tickCount));
+            }
+            else if(handleCount == 0)
+            {
+                logger.LogInfo("NO command handled for player " + std::to_string(pair.first) + " on tick " + std::to_string(tickCount));
             }
 
             // TODO: Save the position of the player for this tick. Slow computers will have jittery movement

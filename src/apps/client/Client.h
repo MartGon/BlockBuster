@@ -90,7 +90,7 @@ namespace BlockBuster
         // Player transforms
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerPos;
-        float PLAYER_SPEED = 2.f;
+        float PLAYER_SPEED = 5.f;
 
         // Networking
         ENet::Host host;
@@ -112,6 +112,10 @@ namespace BlockBuster
         Util::Queue<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
+
+        const double ERROR_CORRECTION_DURATION = 1.0;
+        glm::vec3 errorCorrectionDiff{0};
+        double errorCorrectionStart = 0;
 
         // Networking - Entity Interpolation
         const double EXTRAPOLATION_DURATION = 0.25;
