@@ -113,7 +113,7 @@ namespace BlockBuster
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
 
-        const double ERROR_CORRECTION_DURATION = 1.0;
+        const double ERROR_CORRECTION_DURATION = 3.0;
         glm::vec3 errorCorrectionDiff{0};
         double errorCorrectionStart = 0;
 

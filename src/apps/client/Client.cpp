@@ -281,7 +281,8 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
                 }
 
                 // Update error correction values
-                errorCorrectionDiff = pPos - newPos;
+                auto renderPos = playerTable[playerId].transform.position;
+                errorCorrectionDiff = renderPos - playerPos;
                 errorCorrectionStart = Util::Time::GetUNIXTime();
             }
         }
@@ -547,16 +548,16 @@ void BlockBuster::Client::DrawScene()
         {
             // TODO: This issue is caused because the server sometimes handles 2 cmds in a tick. Causing a movement which is doubled in length for other players
             // This could be solved by batching updates on the server. Interpolation window should be changed accordingly
-            
             auto expectedDiff = PLAYER_SPEED *  frameInterval;
             logger->LogDebug("Render: Player " + std::to_string(player.first) + " Prev " + glm::to_string(oldPos)
-            + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff) + " Frame interval " + std::to_string(frameInterval));
+                + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
 
             auto offset = glm::abs(distDiff - expectedDiff);
             if(offset > 0.05f)
             {
                 logger->LogDebug("Render: Difference is bigger than expected: ");
-                logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) + " Offset " + std::to_string(offset));
+                logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) 
+                    + " Offset " + std::to_string(offset) + " Frame interval " + std::to_string(frameInterval));
             }
         }
         // End debug
