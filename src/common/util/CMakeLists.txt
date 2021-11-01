@@ -1,7 +1,7 @@
 SET(SOURCES
     
     Buffer.cpp
-    Queue.cpp
+    CircularVector.cpp
     Random.cpp
     Result.cpp
     Time.cpp

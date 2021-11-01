@@ -16,7 +16,7 @@
 #include <game/ChunkMeshMgr.h>
 
 #include <util/Time.h>
-#include <util/Queue.h>
+#include <util/CircularVector.h>
 
 #include <entity/Player.h>
 
@@ -57,9 +57,7 @@ namespace BlockBuster
         std::optional<Networking::Snapshot> GetMostRecentSnapshot();
         uint64_t TickToMillis(uint32_t tick);
         void EntityInterpolation();
-        void EntityInterpolation(Networking::Snapshot a, Networking::Snapshot b, float alpha);
-        void CalculateExtrapolatedSnapshot();
-        void EntityExtrapolation();
+        void EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& a, const Networking::Snapshot& b, float alpha);
 
         // Rendering
         void DrawScene();
@@ -98,7 +96,7 @@ namespace BlockBuster
         uint8_t playerId = 0;
         double serverTickRate = 0.0;
         bool connected = false;
-        Util::Queue<Networking::Snapshot> snapshotHistory{16};
+        Util::CircularVector<Networking::Snapshot> snapshotHistory{16};
 
         // Networking - Prediction
         struct Prediction
@@ -109,7 +107,7 @@ namespace BlockBuster
             glm::vec3 dest;
             double time;
         };
-        Util::Queue<Prediction> predictionHistory_{128};
+        Util::CircularVector<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
 

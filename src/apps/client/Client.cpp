@@ -64,7 +64,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -114,7 +114,7 @@ void BlockBuster::Client::Start()
             }
 
             // Store snapshot
-            snapshotHistory.Push(s);
+            snapshotHistory.PushBack(s);
         }
         else if(packet->header.type == Networking::Command::Type::PLAYER_DISCONNECTED)
         {
@@ -233,13 +233,16 @@ void Client::UpdateNetworking()
 
 void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
 {
+    if(playerTable.find(playerId) == playerTable.end())
+        return;
+
     auto& player = playerTable[playerId];
 
     // Discard old commands
     std::optional<Prediction> prediction;
     while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmdId <= lastAck)
     {
-        prediction = predictionHistory_.Pop();
+        prediction = predictionHistory_.PopFront();
     }
     
     // Checking prediction errors
@@ -296,11 +299,14 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
     auto now = Util::Time::GetUNIXTime();
     auto predictedPos = PredPlayerPos(prevPos, cmd.data.playerMovement.moveDir, serverTickRate);
     Prediction p{cmdId, cmd, prevPos, predictedPos, now};
-    predictionHistory_.Push(p);
+    predictionHistory_.PushBack(p);
 }
 
 void Client::SmoothPlayerMovement()
 {
+    if(playerTable.find(playerId) == playerTable.end())
+        return;
+
     auto last = predictionHistory_.Back();
     auto& renderPos = playerTable[playerId].transform.position;
     if(last)
@@ -311,14 +317,17 @@ void Client::SmoothPlayerMovement()
         auto origin = last->origin;
         auto predPos = PredPlayerPos(origin, last->cmd.data.playerMovement.moveDir, elapsed);
 
-        // Error correction
+        // Prediction Error correction
         double errorElapsed = now - errorCorrectionStart;
         float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
         glm::vec3 errorCorrection = errorCorrectionDiff * weight;
-        auto dist = glm::length(errorCorrection);
-        if(dist > 0)
-            logger->LogError("Error correction is " + glm::to_string(errorCorrection) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
         renderPos = predPos + errorCorrection;
+
+#ifdef _DEBUG
+        auto dist = glm::length(errorCorrection);
+        if(dist > 1)
+            logger->LogError("Error correction is " + glm::to_string(errorCorrection) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
+#endif
     }
 }
 
@@ -382,110 +391,126 @@ void Client::EntityInterpolation()
     if(renderTime < 0)
         return;
 
-    // Get first snapshot after renderTime
-    auto s2p = snapshotHistory.FindFirstPair([this, renderTime](auto i, auto s)
+    // Sort by tick. This is only needed if a packet arrives late.
+    // TODO: Consider dropping unordered packets instead. Simply check against max server tick recv before pushing.
+    snapshotHistory.Sort([](Networking::Snapshot a, Networking::Snapshot b)
     {
-        uint64_t time = TickToMillis(s.serverTick);
-        return time > renderTime;
+        return a.serverTick < b.serverTick;
     });
 
-    if(s2p.has_value())
-    {
-        // Find samples to use for interpolation
-        // Sample 1: Last one before current render time
-        // Sample 2: First one after current render time
-        auto s1 = snapshotHistory.At((int)s2p->first - 1);
-        auto s2 = s2p->second;
+    for(auto pair : playerTable)
+    {   
+        auto playerId = pair.first;
 
-        if(s1.has_value())
-        {   
-            // Find weights
-            auto t1 = TickToMillis(s1->serverTick);
-            auto t2 = TickToMillis(s2.serverTick);
-            auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
-            auto w1 = ws.x; auto w2 = ws.y;
+        // No need to do interpolation for player char
+        if(playerId == this->playerId)
+            continue;
 
-            logger->LogDebug("RT " + std::to_string(renderTime) + " CT " + std::to_string(clientTime) + " OM " + std::to_string(offsetMillis));
-            logger->LogDebug("T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
-            logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
-            logger->LogDebug("Tick 1 " + std::to_string(s1->serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
-
-            EntityInterpolation(s1.value(), s2, w1);
-        }
-    }
-    else
-    {
-        auto lastSample = GetMostRecentSnapshot();
-        if(lastSample->serverTick != extrapolatedSnapshot.serverTick)
+        // Get last snapshot before renderTime
+        auto s1p = snapshotHistory.FindRevFirstPair([this, renderTime, playerId](auto i, auto s)
         {
-            logger->LogError("There were not enough snapshots to interpolate. Performing extrapolation instead");
-            CalculateExtrapolatedSnapshot();
-        }
+            uint64_t time = TickToMillis(s.serverTick);
+            bool containsPlayerData = s.players.find(playerId) != s.players.end();
+            if(!containsPlayerData)
+                logger->LogWarning("Snapshot " + std::to_string(s.serverTick) + " did not contain player data");
+            return time < renderTime && containsPlayerData;
+        });
 
-        EntityExtrapolation();
+        if(s1p.has_value())
+        {
+            // Find samples to use for interpolation
+            // Sample 1: Last one before current render time
+            // Sample 2: First one after current render time
+            auto s1 = s1p->second;
+
+            // Get next snapshot with data for this player
+            std::optional<Networking::Snapshot> s2o;
+            for(auto i = s1p->first + 1; i < snapshotHistory.GetSize(); i++)
+            {
+                auto s = snapshotHistory.At(i);
+                bool contains = s->players.find(pair.first) != s->players.end();
+                if(contains)
+                {
+                    s2o = s;
+                    break;
+                }
+            }
+
+            // We have data for this player
+            if(s2o.has_value())
+            {
+                auto s2 = s2o.value();
+
+                // Find weights
+                auto t1 = TickToMillis(s1.serverTick);
+                auto t2 = TickToMillis(s2.serverTick);
+                auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
+                auto w1 = ws.x; auto w2 = ws.y;
+
+                logger->LogDebug("Tick 1 " + std::to_string(s1.serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
+                logger->LogDebug("RT " + std::to_string(renderTime) + " CT " + std::to_string(clientTime) + " OM " + std::to_string(offsetMillis));
+                logger->LogDebug("T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
+                logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
+
+                EntityInterpolation(playerId, s1, s2, w1);
+            }
+            // We don't have enough data. We need to extrapolate
+            else
+            {
+                // Get prev snapshot with player data
+                auto prev = snapshotHistory.FindRevFirst([this, playerId, &s1](auto s)
+                {
+                    bool isPrev = s.serverTick < s1.serverTick;
+                    bool containsPlayerData = s.players.find(playerId) != s.players.end();
+                    return containsPlayerData;
+                });
+
+                if(prev.has_value())
+                {
+                    // Extrapolate snapshot
+                    auto s0 = prev.value();
+                    auto s0Pos = s0.players[playerId].pos;
+                    auto s1Pos = s1.players[playerId].pos;
+                    auto offset = s1Pos - s0Pos;
+                    auto s2Pos = PredPlayerPos(s1Pos, offset, EXTRAPOLATION_DURATION);
+                    auto s2 = Networking::Snapshot{s1.serverTick + 1, {{playerId, Networking::PlayerState{s2Pos, s0.players[playerId].rot}}}};
+
+                    // Interpolate
+                    auto t1 = TickToMillis(s1.serverTick);
+                    uint64_t t2 = TickToMillis(s1.serverTick) + EXTRAPOLATION_DURATION * 1e3;
+                    auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
+                    auto alpha = ws.x;
+                    EntityInterpolation(playerId, s1, s2, alpha);
+                }
+                // We lack data. We use the only data we have
+                else
+                {
+                    playerTable[playerId].transform.position = s1.players[playerId].pos;
+                }
+            }
+        }
+        // We don't need to render this player yet 
+        else
+        {
+
+        }
     }
 
     offsetMillis += (uint64_t)(frameInterval * 1e3);
 }
 
-void Client::EntityInterpolation(Networking::Snapshot s1, Networking::Snapshot s2, float alpha)
+void Client::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& s1, const Networking::Snapshot& s2, float alpha)
 {
-    for(auto pair : playerTable)
-    {
-        auto playerId = pair.first;
-        // No need to do interpolation for player char
-        if(playerId == this->playerId)
-            continue;
+    auto pos1 = s1.players.at(playerId).pos;
+    auto pos2 = s2.players.at(playerId).pos;
 
-        auto hasS1 = s1.players.find(playerId) != s1.players.end();
-        auto hasS2 = s2.players.find(playerId) != s2.players.end();
-        if(hasS1 && hasS2)
-        {
-            auto pos1 = s1.players[playerId].pos;
-            auto pos2 = s2.players[playerId].pos;
-            auto smoothPos = pos1 * alpha + pos2 * (1 - alpha);
-            playerTable[playerId].transform.position = smoothPos;
-        }
-    }
-}
+#ifdef _DEBUG
+    auto diff = glm::length(pos2 - pos1);
+    logger->LogDebug("P1 " + glm::to_string(pos1) + " P2 " + glm::to_string(pos2) + " D " + std::to_string(diff));
+#endif
 
-void Client::CalculateExtrapolatedSnapshot()
-{
-    auto lastIndex = snapshotHistory.GetSize() - 1;
-    auto lastSample = snapshotHistory.At(lastIndex).value();
-    auto prevSample = snapshotHistory.At(lastIndex - 1).value();
-
-    logger->LogError("Last tick recv is from " + std::to_string(lastSample.serverTick));
-
-    this->extrapolatedSnapshot = lastSample;
-    for(auto pair : playerTable)
-    {
-        auto lastPos = lastSample.players[pair.first].pos;
-        auto prevPos = prevSample.players[pair.first].pos;
-        auto moveDir = lastPos - prevPos;
-        auto extrapolatedPos = PredPlayerPos(lastPos, moveDir, EXTRAPOLATION_DURATION);
-
-        this->extrapolatedSnapshot.players[pair.first].pos = extrapolatedPos;
-    }
-}
-
-void Client::EntityExtrapolation()
-{
-    auto renderTime = GetRenderTime();
-    auto s1 = snapshotHistory.At(-1).value();
-    auto s2 = extrapolatedSnapshot;
-
-    // Find weights
-    auto t1 = TickToMillis(s1.serverTick);
-    uint64_t t2 = TickToMillis(s2.serverTick) + EXTRAPOLATION_DURATION * 1e3;
-    auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
-    auto w1 = ws.x; auto w2 = ws.y;
-
-    logger->LogError("ExtraPolation T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
-    logger->LogError("ExtraPolation W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
-
-    // Interpolate 
-    EntityInterpolation(s1, s2, w1);
+    auto smoothPos = pos1 * alpha + pos2 * (1 - alpha);
+    playerTable[playerId].transform.position = smoothPos;
 }
 
 void BlockBuster::Client::HandleSDLEvents()

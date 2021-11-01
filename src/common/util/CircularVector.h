@@ -7,12 +7,13 @@
 
 namespace Util
 {
+    // TODO: Redo using and index, instead of using std::vector::erase
     template <typename T>
-    class Queue
+    class CircularVector
     {
     public:
-        Queue() = default;
-        Queue(uint32_t capacity) : capacity_{capacity}
+        CircularVector() = default;
+        CircularVector(uint32_t capacity) : capacity_{capacity}
         {
             vector_.reserve(capacity);
         }
@@ -49,17 +50,17 @@ namespace Util
             return ret;
         }
 
-        std::optional<T> Front() const
+        inline std::optional<T> Front() const
         {
             return At(0);
         }
 
-        std::optional<T> Back() const
+        inline std::optional<T> Back() const
         {
             return At(-1);
         }
 
-        void Push(T val)
+        void PushBack(T val)
         {
             if(vector_.size() >= capacity_)
                 vector_.erase(vector_.begin());
@@ -67,7 +68,7 @@ namespace Util
             vector_.push_back(val);
         }
 
-        std::optional<T> Pop()
+        std::optional<T> PopFront()
         {
             auto ret = Front();
             if(ret)
@@ -114,6 +115,22 @@ namespace Util
             return ret;
         }
 
+        std::optional<T> FindRevFirst(std::function<bool(T)> pred)
+        {
+            std::optional<T> ret;
+
+            for(auto it = vector_.rbegin(); it != vector_.rend(); it++)
+            {
+                if(pred(*it))
+                {
+                    ret = *it;
+                    break;
+                }
+            }
+
+            return ret;
+        }
+
         std::vector<std::pair<uint32_t, T>> FindPairs(std::function<bool(uint32_t, T)> pred)
         {
             std::vector<std::pair<uint32_t, T>> ret;
@@ -142,6 +159,32 @@ namespace Util
             }
 
             return ret;
+        }
+
+        std::optional<std::pair<uint32_t, T>> FindRevFirstPair(std::function<bool(uint32_t, T)> pred)
+        {
+            std::optional<std::pair<uint32_t, T>> ret;
+
+            if(!vector_.empty())
+            {
+                for(auto i = 0; i < vector_.size(); i++)
+                {
+                    auto index = (vector_.size() - 1) - i;
+                    auto m = vector_[index];
+                    if(pred(index, m))
+                    {
+                        ret = std::pair<uint32_t, T>{index, m};
+                        break;
+                    }
+                }
+            }
+
+            return ret;
+        }
+
+        inline void Sort(std::function<bool(T, T)> pred)
+        {
+            std::sort(vector_.begin(), vector_.end(), pred);
         }
 
     private:

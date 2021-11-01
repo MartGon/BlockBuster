@@ -10,13 +10,13 @@ CommandBuffer::CommandBuffer(uint32_t capacity) : capacity_{capacity}
 std::optional<Command> CommandBuffer::Pop(ENet::PeerId peerId, Command::Type type)
 {
     auto& q = GetQueue(peerId, type);
-    return q.Pop();
+    return q.PopFront();
 }
 
 void CommandBuffer::Push(ENet::PeerId peerId, Command command)
 {
     auto& queue = GetQueue(peerId, command.header.type);
-    queue.Push(command);
+    queue.PushBack(command);
 }
 
 uint32_t CommandBuffer::GetSize(ENet::PeerId peerId, Command::Type type)
@@ -70,7 +70,7 @@ std::vector<Command> CommandBuffer::GetBy(ENet::PeerId peerId, Command::Type typ
     return commands;
 }
 
-Util::Queue<Command>& CommandBuffer::GetQueue(ENet::PeerId peerId, Command::Type type)
+Util::CircularVector<Command>& CommandBuffer::GetQueue(ENet::PeerId peerId, Command::Type type)
 {
     auto& buffer = table_[peerId];
     if(buffer.find(type) == buffer.end())

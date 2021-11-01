@@ -19,7 +19,7 @@
 std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
 std::unordered_map<ENet::PeerId, uint32_t> ackHistory;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.033;
+const double TICK_RATE = 0.050;
 const double UPDATE_RATE = 0.050;
 const float PLAYER_SPEED = 5.f;
 
@@ -38,8 +38,13 @@ glm::vec3 GetRandomPlayerPosition()
 void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMovement pm, uint32_t playerTick)
 {
     auto& player = playerTable[peerId];
-    auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE;
-    player.transform.position += velocity;
+    auto len = glm::length(pm.moveDir);
+    if(len > 0)
+    {
+        auto moveDir = glm::normalize(pm.moveDir);
+        auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE;
+        player.transform.position += velocity;
+    }
 }
 
 int main()
@@ -114,7 +119,9 @@ int main()
 
         auto now = Util::Time::GetUNIXTimeNanos();
 
-        // Update
+        // Handle client inputs
+        std::vector<ENet::PeerId> handledInput;
+        handledInput.reserve(playerTable.size());
         for(auto& pair : playerTable)
         {
             auto peerId = pair.first;
@@ -125,14 +132,21 @@ int main()
             {
                 auto size = commandBuffer.GetSize(peerId, type);
                 auto cmdId = command->header.tick;
+                if(ackHistory[peerId] < cmdId)
+                {
+                    ackHistory[peerId] = cmdId;
 
-                ackHistory[peerId] = cmdId;
+                    logger.LogInfo("Cmd id: " + std::to_string(ackHistory[peerId]) + " on tick " + std::to_string(tickCount) + " from " + std::to_string(pair.first));
+                    HandleMoveCommand(peerId, command->data.playerMovement, tickCount);
 
-                logger.LogInfo("Command recv with cmd id: " + std::to_string(ackHistory[peerId]) + " on tick " + std::to_string(tickCount) + ". Buffer size: " + std::to_string(size));
-                HandleMoveCommand(peerId, command->data.playerMovement, tickCount);
-
-                handleCount++;
+                    handleCount++;
+                }
+                else
+                    logger.LogInfo("Cmd id: " + std::to_string(ackHistory[peerId]) + " on tick " + std::to_string(tickCount) + " from " + std::to_string(pair.first) + " was duplicated");
             }
+
+            if(handleCount > 0)
+                handledInput.push_back(pair.first);
 
             if(handleCount > 1)
             {
@@ -150,9 +164,10 @@ int main()
         // Create snapshot
         Networking::Snapshot s;
         s.serverTick = tickCount;
-        for(auto pair : playerTable)
+        for(auto peerId : handledInput)
         {
-            s.players[pair.second.id].pos = pair.second.transform.position;
+            auto player = playerTable[peerId];
+            s.players[player.id].pos = player.transform.position;
         }
 
         auto snapshotBuffer = s.ToBuffer();

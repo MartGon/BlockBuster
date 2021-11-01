@@ -5,7 +5,7 @@
 #include <enetw/ENetW.h>
 
 #include <unordered_map>
-#include <util/Queue.h>
+#include <util/CircularVector.h>
 
 namespace Networking
 {
@@ -27,9 +27,9 @@ namespace Networking
 
     private:
 
-        Util::Queue<Command>& GetQueue(ENet::PeerId peerId, Command::Type type);
+        Util::CircularVector<Command>& GetQueue(ENet::PeerId peerId, Command::Type type);
 
-        using Buffer = std::unordered_map<Command::Type, Util::Queue<Command>>;
+        using Buffer = std::unordered_map<Command::Type, Util::CircularVector<Command>>;
         std::unordered_map<ENet::PeerId, Buffer> table_;
 
         uint32_t capacity_ = 0;

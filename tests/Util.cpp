@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
 
 #include <util/Buffer.h>
-#include <util/Queue.h>
+#include <util/CircularVector.h>
 
 TEST_CASE("Buffer tests")
 {
@@ -74,45 +74,45 @@ TEST_CASE("Buffer tests")
 
 TEST_CASE("Queue")
 {
-    Util::Queue<int> q{5};
+    Util::CircularVector<int> q{5};
 
     SUBCASE("Push/Pop/GetSize")
     {
         auto size = q.GetSize();
         CHECK(size == 0);
 
-        q.Push(1);
+        q.PushBack(1);
         size = q.GetSize();
         auto v = q.Front();
 
         CHECK(v == 1);
         CHECK(q.GetSize() == size);
 
-        v = q.Pop();
+        v = q.PopFront();
         CHECK(v == 1);
         CHECK(q.GetSize() == 0);
     }
     SUBCASE("Check FIFO")
     {
         for(auto i = 0; i < 5; i++)
-            q.Push(i);
+            q.PushBack(i);
 
         for(auto i = 0; q.GetSize() > 0; i++)
-            CHECK(q.Pop() == i);
+            CHECK(q.PopFront() == i);
     }
     SUBCASE("Check removal of first member after max capacity")
     {
         for(auto i = 0; i < 6; i++)
-            q.Push(i);
+            q.PushBack(i);
 
         CHECK(q.GetSize() == 5);
         for(auto i = 1; q.GetSize() > 0; i++)
-            CHECK(q.Pop() == i);
+            CHECK(q.PopFront() == i);
     }
     SUBCASE("Checking negative indices")
     {
         for(auto i = 0; i < 3; i++)
-            q.Push(i);
+            q.PushBack(i);
 
         CHECK(q.At(0) == 0);
         CHECK(q.At(-1) == 2);
