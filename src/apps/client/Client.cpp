@@ -81,6 +81,8 @@ void BlockBuster::Client::Start()
             this->serverTickRate = config.sampleRate;
             this->playerId = config.playerId;
             this->connected = true;
+
+            logger->LogInfo("We player as player " + std::to_string(this->playerId));
         }
         else if(packet->header.type == Networking::Command::Type::SERVER_SNAPSHOT)
         {

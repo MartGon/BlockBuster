@@ -16,14 +16,20 @@
 
 #include <glm/gtx/string_cast.hpp>
 
-std::unordered_map<ENet::PeerId, Entity::Player> playerTable;
-std::unordered_map<ENet::PeerId, uint32_t> ackHistory;
+struct Client
+{
+    Entity::Player player;
+    Util::CircularVector<Networking::Command> inputBuffer;
+    uint32_t lastAck = 0;
+    uint32_t cmdCount = 0;
+};
+
+std::unordered_map<ENet::PeerId, Client> clients;
 Entity::ID lastId = 0;
 const double TICK_RATE = 0.050;
 const double UPDATE_RATE = 0.050;
 const float PLAYER_SPEED = 5.f;
-
-Networking::CommandBuffer commandBuffer{60};
+const uint32_t INPUT_BUFFER_SIZE = 2;
 
 glm::vec3 GetRandomPlayerPosition()
 {
@@ -37,7 +43,7 @@ glm::vec3 GetRandomPlayerPosition()
 
 void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMovement pm, uint32_t playerTick)
 {
-    auto& player = playerTable[peerId];
+    auto& player = clients[peerId].player;
     auto len = glm::length(pm.moveDir);
     if(len > 0)
     {
@@ -65,7 +71,8 @@ int main()
         Entity::Player player;
         player.id = lastId++;
         player.transform = Math::Transform{GetRandomPlayerPosition(), glm::vec3{0.0f}, glm::vec3{1.0f}};
-        playerTable[peerId] = player;
+        clients[peerId].player = player;
+        clients[peerId].cmdCount = -INPUT_BUFFER_SIZE;
 
         // Inform client
         Networking::Command::Server::ClientConfig clientConfig;
@@ -87,13 +94,13 @@ int main()
     host.SetOnRecvCallback([&logger, &tickCount](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
         auto command = (Networking::Command*)recvPacket.GetData();
-        commandBuffer.Push(peerId, *command);
+        clients[peerId].inputBuffer.PushBack(*command);
     });
     host.SetOnDisconnectCallback([&logger, &tickCount, &host](auto peerId)
     {
         logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
-        auto player = playerTable[peerId];
-        playerTable.erase(peerId);
+        auto player = clients[peerId].player;
+        clients.erase(peerId);
 
         // Informing players
         Networking::Command::Server::PlayerDisconnected playerDisconnect;
@@ -121,42 +128,33 @@ int main()
 
         // Handle client inputs
         std::vector<ENet::PeerId> handledInput;
-        handledInput.reserve(playerTable.size());
-        for(auto& pair : playerTable)
+        handledInput.reserve(clients.size());
+        for(auto& pair : clients)
         {
             auto peerId = pair.first;
-            auto type = Networking::Command::Type::PLAYER_MOVEMENT;
-
-            auto handleCount = 0;
-            while(auto command = commandBuffer.Pop(peerId, type))
+            auto& client = pair.second;
+            
+            if(client.inputBuffer.GetSize() > 0)
             {
-                auto size = commandBuffer.GetSize(peerId, type);
-                auto cmdId = command->header.tick;
-                if(ackHistory[peerId] < cmdId)
+                // FIXME/TODO: Assume for now that packets don't arrive in incorrect order
+                //for(auto command = client.inputBuffer.PopFront(); command.has_value() && command->header.tick < client.cmdCount; command = client.inputBuffer.PopFront())
+                if(auto command = client.inputBuffer.Front(); command.has_value() && command->header.tick < client.cmdCount)
                 {
-                    ackHistory[peerId] = cmdId;
+                    auto cmdId = command->header.tick;
+                    client.lastAck = cmdId;
 
-                    logger.LogInfo("Cmd id: " + std::to_string(ackHistory[peerId]) + " on tick " + std::to_string(tickCount) + " from " + std::to_string(pair.first));
+                    logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " on cmdCount " + std::to_string(client.cmdCount) + " from " + std::to_string(pair.first));
                     HandleMoveCommand(peerId, command->data.playerMovement, tickCount);
 
-                    handleCount++;
+                    handledInput.push_back(pair.first);
+
+                    client.inputBuffer.PopFront();
                 }
                 else
-                    logger.LogInfo("Cmd id: " + std::to_string(ackHistory[peerId]) + " on tick " + std::to_string(tickCount) + " from " + std::to_string(pair.first) + " was duplicated");
-            }
+                    logger.LogInfo("No cmd handled for player " + std::to_string(pair.first) + " with cmdCount " + std::to_string(client.cmdCount));
 
-            if(handleCount > 0)
-                handledInput.push_back(pair.first);
-
-            if(handleCount > 1)
-            {
-                logger.LogInfo("Handled " + std::to_string(handleCount) + " cmds for player " + std::to_string(pair.first) + " on tick " + std::to_string(tickCount));
+                client.cmdCount++;
             }
-            else if(handleCount == 0)
-            {
-                logger.LogInfo("NO command handled for player " + std::to_string(pair.first) + " on tick " + std::to_string(tickCount));
-            }
-
             // TODO: Save the position of the player for this tick. Slow computers will have jittery movement
             // Could use some entity interpolation on the server
         }
@@ -166,15 +164,16 @@ int main()
         s.serverTick = tickCount;
         for(auto peerId : handledInput)
         {
-            auto player = playerTable[peerId];
+            auto player = clients[peerId].player;
             s.players[player.id].pos = player.transform.position;
         }
 
         auto snapshotBuffer = s.ToBuffer();
 
         // Send snapthot with ack
-        for(auto pair : playerTable)
+        for(auto pair : clients)
         {
+            auto client = pair.second;
             Util::Buffer buffer;
 
             Networking::Command::Header header;
@@ -182,7 +181,7 @@ int main()
             header.tick = tickCount;
 
             Networking::Command::Server::Update update;
-            update.lastCmd = ackHistory[pair.first];
+            update.lastCmd = client.lastAck;
             update.snapshotDataSize = snapshotBuffer.GetSize();
 
             Networking::Command::Payload snapshotData;
