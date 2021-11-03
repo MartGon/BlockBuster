@@ -74,7 +74,7 @@ TEST_CASE("Buffer tests")
 
 TEST_CASE("Queue")
 {
-    Util::CircularVector<int> q{5};
+    Util::Ring<int> q{5};
 
     SUBCASE("Push/Pop/GetSize")
     {

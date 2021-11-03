@@ -96,7 +96,7 @@ namespace BlockBuster
         uint8_t playerId = 0;
         double serverTickRate = 0.0;
         bool connected = false;
-        Util::CircularVector<Networking::Snapshot> snapshotHistory{16};
+        Util::Ring<Networking::Snapshot> snapshotHistory{16};
 
         // Networking - Prediction
         struct Prediction
@@ -107,7 +107,7 @@ namespace BlockBuster
             glm::vec3 dest;
             double time;
         };
-        Util::CircularVector<Prediction> predictionHistory_{128};
+        Util::Ring<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
 

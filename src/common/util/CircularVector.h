@@ -9,11 +9,11 @@ namespace Util
 {
     // TODO: Redo using and index, instead of using std::vector::erase
     template <typename T>
-    class CircularVector
+    class Ring
     {
     public:
-        CircularVector() = default;
-        CircularVector(uint32_t capacity) : capacity_{capacity}
+        Ring() = default;
+        Ring(uint32_t capacity) : capacity_{capacity}
         {
             vector_.reserve(capacity);
         }

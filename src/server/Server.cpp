@@ -19,14 +19,14 @@
 struct Client
 {
     Entity::Player player;
-    Util::CircularVector<Networking::Command> inputBuffer;
+    Util::Ring<Networking::Command> inputBuffer;
     uint32_t lastAck = 0;
     uint32_t cmdCount = 0;
 };
 
 std::unordered_map<ENet::PeerId, Client> clients;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.050;
+const double TICK_RATE = 0.033;
 const double UPDATE_RATE = 0.050;
 const float PLAYER_SPEED = 5.f;
 const uint32_t INPUT_BUFFER_SIZE = 2;

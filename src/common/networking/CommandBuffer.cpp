@@ -70,7 +70,7 @@ std::vector<Command> CommandBuffer::GetBy(ENet::PeerId peerId, Command::Type typ
     return commands;
 }
 
-Util::CircularVector<Command>& CommandBuffer::GetQueue(ENet::PeerId peerId, Command::Type type)
+Util::Ring<Command>& CommandBuffer::GetQueue(ENet::PeerId peerId, Command::Type type)
 {
     auto& buffer = table_[peerId];
     if(buffer.find(type) == buffer.end())
