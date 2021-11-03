@@ -138,7 +138,7 @@ int main()
             {
                 // FIXME/TODO: Assume for now that packets don't arrive in incorrect order
                 //for(auto command = client.inputBuffer.PopFront(); command.has_value() && command->header.tick < client.cmdCount; command = client.inputBuffer.PopFront())
-                if(auto command = client.inputBuffer.Front(); command.has_value() && command->header.tick < client.cmdCount)
+                if(auto command = client.inputBuffer.Front(); command.has_value() && command->header.tick == client.cmdCount)
                 {
                     auto cmdId = command->header.tick;
                     client.lastAck = cmdId;

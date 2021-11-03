@@ -64,7 +64,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -82,7 +82,7 @@ void BlockBuster::Client::Start()
             this->playerId = config.playerId;
             this->connected = true;
 
-            logger->LogInfo("We player as player " + std::to_string(this->playerId));
+            logger->LogInfo("We play as player " + std::to_string(this->playerId));
         }
         else if(packet->header.type == Networking::Command::Type::SERVER_SNAPSHOT)
         {
@@ -91,7 +91,13 @@ void BlockBuster::Client::Start()
             // Entity Interpolation - Reset offset
             auto mostRecent = this->GetMostRecentSnapshot();
             if(mostRecent.has_value() && packet->header.tick > mostRecent->serverTick)
-                this->offsetMillis = 0;
+            {
+                // This causes problems at the start, cause it starts at -50.
+                double tickMillis = serverTickRate * 1e3;
+                auto om = this->offsetMillis - tickMillis;
+                this->offsetMillis = std::min(tickMillis, std::max(om, -tickMillis));
+                logger->LogInfo("Offset millis " + std::to_string(this->offsetMillis));
+            }
 
             // Process Snapshot
             auto update = packet->data.snapshot;
@@ -100,13 +106,12 @@ void BlockBuster::Client::Start()
             this->lastAck = update.lastCmd;
             logger->LogInfo("Server ack  command: " + std::to_string(update.lastCmd));
 
-            // Update player locations
+            // Create player entries
             Util::Buffer::Reader reader{packet, ePacket.GetSize()};
             reader.Skip(sizeof(Networking::Command));
             auto s = Networking::Snapshot::FromBuffer(reader);
             for(auto player : s.players)
             {
-                // Create player entries
                 auto playerId = player.first;
                 if(playerTable.find(playerId) == playerTable.end())
                 {
@@ -137,16 +142,7 @@ void BlockBuster::Client::Start()
         attempts++;
     }
 
-    if(connected)
-    {
-        uint32_t maxTick = 0;
-        for(auto i = 0;i < snapshotHistory.GetSize();i++)
-        {
-            auto s = snapshotHistory.At(i);
-            maxTick = std::max(s->serverTick, maxTick);
-        }
-    }
-    else
+    if(!connected)
     {
         logger->LogInfo("Could not connect to server. Quitting");
     }
@@ -159,6 +155,7 @@ void BlockBuster::Client::Update()
     prevRenderTime = Util::Time::GetUNIXTime();
     double lag = serverTickRate;
 
+    this->offsetMillis = serverTickRate * 1e3 * 0.5;
     logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate));
     while(!quit)
     {
@@ -183,6 +180,8 @@ void BlockBuster::Client::Update()
         }
 
         EntityInterpolation();
+        offsetMillis += (frameInterval * 1e3);
+        logger->LogInfo("Offset millis increased to " + std::to_string(offsetMillis));
         SmoothPlayerMovement();
         Render();
     }
@@ -358,25 +357,25 @@ std::optional<Networking::Snapshot> Client::GetMostRecentSnapshot()
     return mostRecent;
 }
 
-uint64_t Client::TickToMillis(uint32_t tick)
+double Client::TickToMillis(uint32_t tick)
 {
     return (double)tick * this->serverTickRate * 1e3;
 }
 
-uint64_t Client::GetCurrentTime()
+double Client::GetCurrentTime()
 {
     auto maxTick = GetMostRecentSnapshot()->serverTick;
-    uint64_t base = TickToMillis(maxTick);
+    auto base = TickToMillis(maxTick);
 
     return base + this->offsetMillis;
 }
 
-uint64_t Client::GetRenderTime()
+double Client::GetRenderTime()
 {
     auto clientTime = GetCurrentTime();
     double serverTickRateMillis = this->serverTickRate * 1e3;
-    uint64_t windowSize = 2.0 * serverTickRateMillis;
-    uint64_t renderTime = clientTime - windowSize;
+    double windowSize = 2.0 * serverTickRateMillis;
+    double renderTime = clientTime - windowSize;
     
     return renderTime;
 }
@@ -388,7 +387,7 @@ void Client::EntityInterpolation()
 
     // Calculate render time
     auto clientTime = GetCurrentTime();
-    uint64_t renderTime = GetRenderTime();
+    double renderTime = GetRenderTime();
 
     if(renderTime < 0)
         return;
@@ -411,7 +410,7 @@ void Client::EntityInterpolation()
         // Get last snapshot before renderTime
         auto s1p = snapshotHistory.FindRevFirstPair([this, renderTime, playerId](auto i, auto s)
         {
-            uint64_t time = TickToMillis(s.serverTick);
+            double time = TickToMillis(s.serverTick);
             bool containsPlayerData = s.players.find(playerId) != s.players.end();
             if(!containsPlayerData)
                 logger->LogWarning("Snapshot " + std::to_string(s.serverTick) + " did not contain player data");
@@ -479,7 +478,7 @@ void Client::EntityInterpolation()
 
                     // Interpolate
                     auto t1 = TickToMillis(s1.serverTick);
-                    uint64_t t2 = TickToMillis(s1.serverTick) + EXTRAPOLATION_DURATION * 1e3;
+                    double t2 = TickToMillis(s1.serverTick) + EXTRAPOLATION_DURATION * 1e3;
                     auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
                     auto alpha = ws.x;
                     EntityInterpolation(playerId, s1, s2, alpha);
@@ -497,8 +496,6 @@ void Client::EntityInterpolation()
 
         }
     }
-
-    offsetMillis += (uint64_t)(frameInterval * 1e3);
 }
 
 void Client::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& s1, const Networking::Snapshot& s2, float alpha)
@@ -580,7 +577,7 @@ void BlockBuster::Client::DrawScene()
                 + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
 
             auto offset = glm::abs(distDiff - expectedDiff);
-            if(offset > 0.05f)
+            if(offset > 0.005f)
             {
                 logger->LogDebug("Render: Difference is bigger than expected: ");
                 logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) 

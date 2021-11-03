@@ -52,10 +52,10 @@ namespace BlockBuster
         glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, float deltaTime);
 
         // Networking - Entity Interpolation
-        uint64_t GetCurrentTime();
-        uint64_t GetRenderTime();
+        double GetCurrentTime();
+        double GetRenderTime();
         std::optional<Networking::Snapshot> GetMostRecentSnapshot();
-        uint64_t TickToMillis(uint32_t tick);
+        double TickToMillis(uint32_t tick);
         void EntityInterpolation();
         void EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& a, const Networking::Snapshot& b, float alpha);
 
@@ -118,7 +118,7 @@ namespace BlockBuster
         // Networking - Entity Interpolation
         const double EXTRAPOLATION_DURATION = 0.25;
         Networking::Snapshot extrapolatedSnapshot;
-        uint64_t offsetMillis = 0;
+        double offsetMillis = 0;
 
         // App
         bool quit = false;
