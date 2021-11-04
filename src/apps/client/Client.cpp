@@ -152,18 +152,14 @@ void BlockBuster::Client::Start()
 
 void BlockBuster::Client::Update()
 {
-    prevRenderTime = Util::Time::GetUNIXTime();
+    preSimulationTime = Util::Time::GetUNIXTime();
     double lag = serverTickRate;
 
     this->offsetMillis = serverTickRate * 1e3 * 0.5;
     logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate));
     while(!quit)
     {
-        auto now = Util::Time::GetUNIXTime();
-        frameInterval = (now - prevRenderTime);
-
-        prevRenderTime = now;
-        lag += frameInterval;
+        preSimulationTime = Util::Time::GetUNIXTime();
 
         HandleSDLEvents();
         if(connected)
@@ -180,10 +176,13 @@ void BlockBuster::Client::Update()
         }
 
         EntityInterpolation();
-        offsetMillis += (frameInterval * 1e3);
-        logger->LogInfo("Offset millis increased to " + std::to_string(offsetMillis));
         SmoothPlayerMovement();
         Render();
+
+        frameInterval = (Util::Time::GetUNIXTime() - preSimulationTime);
+        lag += frameInterval;
+        offsetMillis += (frameInterval * 1e3);
+        logger->LogInfo("Offset millis increased to " + std::to_string(offsetMillis));
     }
 }
 
@@ -547,7 +546,7 @@ void Client::Render()
     SDL_GL_SwapWindow(window_);
 
     // Max FPS Correction
-    auto renderTime = Util::Time::GetUNIXTime() - prevRenderTime;
+    auto renderTime = Util::Time::GetUNIXTime() - preSimulationTime;
     if(renderTime < minFrameInterval)
     {
         uint64_t diff = (minFrameInterval - renderTime) * 1e3;

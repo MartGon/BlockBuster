@@ -74,7 +74,7 @@ namespace BlockBuster
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
 
-        double prevRenderTime = 0.0;
+        double preSimulationTime = 0.0;
         double frameInterval = 0.0;
         double maxFPS = 60.0;
         double minFrameInterval = 0.0;
