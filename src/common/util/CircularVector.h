@@ -8,7 +8,8 @@
 namespace Util
 {
     // TODO: Redo using and index, instead of using std::vector::erase
-    template <typename T>
+    // TODO: Change filename to Ring
+    template <typename T, uint64_t Capacity = 64>
     class Ring
     {
     public:
@@ -189,6 +190,6 @@ namespace Util
 
     private:
         std::vector<T> vector_;
-        uint32_t capacity_ = 64;
+        uint32_t capacity_ = Capacity;
     };
 }

@@ -55,6 +55,7 @@ namespace BlockBuster
         double GetCurrentTime();
         double GetRenderTime();
         std::optional<Networking::Snapshot> GetMostRecentSnapshot();
+        // FIXME/TODO: Using double may lead to precision errors on high ticks
         double TickToMillis(uint32_t tick);
         void EntityInterpolation();
         void EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& a, const Networking::Snapshot& b, float alpha);

@@ -64,7 +64,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -296,7 +296,7 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
         prevPos = prevPred->dest;
 
     // Run predicted command for this simulation
-    auto now = Util::Time::GetUNIXTime();
+    auto now = preSimulationTime;
     auto predictedPos = PredPlayerPos(prevPos, cmd.data.playerMovement.moveDir, serverTickRate);
     Prediction p{cmdId, cmd, prevPos, predictedPos, now};
     predictionHistory_.PushBack(p);
@@ -314,8 +314,9 @@ void Client::SmoothPlayerMovement()
         auto now = Util::Time::GetUNIXTime();
         auto elapsed = now - last->time;
         
+        // FIXME/TODO: This doesn't take into the account the small jitter between frames
         auto origin = last->origin;
-        auto predPos = PredPlayerPos(origin, last->cmd.data.playerMovement.moveDir, elapsed);
+        auto predPos = PredPlayerPos(last->origin, last->cmd.data.playerMovement.moveDir, elapsed);
 
         // Prediction Error correction
         double errorElapsed = now - errorCorrectionStart;
@@ -325,7 +326,7 @@ void Client::SmoothPlayerMovement()
 
 #ifdef _DEBUG
         auto dist = glm::length(errorCorrection);
-        if(dist > 1)
+        if(dist > 0.005)
             logger->LogError("Error correction is " + glm::to_string(errorCorrection) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
 #endif
     }
@@ -490,10 +491,6 @@ void Client::EntityInterpolation()
             }
         }
         // We don't need to render this player yet 
-        else
-        {
-
-        }
     }
 }
 
@@ -569,14 +566,12 @@ void BlockBuster::Client::DrawScene()
         auto distDiff = glm::length(diff);
         if(distDiff > 0.05f)
         {
-            // TODO: This issue is caused because the server sometimes handles 2 cmds in a tick. Causing a movement which is doubled in length for other players
-            // This could be solved by batching updates on the server. Interpolation window should be changed accordingly
             auto expectedDiff = PLAYER_SPEED *  frameInterval;
             logger->LogDebug("Render: Player " + std::to_string(player.first) + " Prev " + glm::to_string(oldPos)
                 + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
 
             auto offset = glm::abs(distDiff - expectedDiff);
-            if(offset > 0.005f)
+            if(offset > 0.008f)
             {
                 logger->LogDebug("Render: Difference is bigger than expected: ");
                 logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) 

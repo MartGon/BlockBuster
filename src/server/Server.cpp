@@ -16,20 +16,28 @@
 
 #include <glm/gtx/string_cast.hpp>
 
+const uint32_t MIN_INPUT_BUFFER_SIZE = 2;
+const uint32_t MAX_INPUT_BUFFER_SIZE = 5;
+
+enum class BufferingState
+{
+    REFILLING,
+    CONSUMING
+};
+
 struct Client
 {
     Entity::Player player;
-    Util::Ring<Networking::Command> inputBuffer;
+    Util::Ring<Networking::Command, MAX_INPUT_BUFFER_SIZE> inputBuffer;
     uint32_t lastAck = 0;
-    uint32_t cmdCount = 0;
+    BufferingState state = BufferingState::REFILLING;
 };
 
 std::unordered_map<ENet::PeerId, Client> clients;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.033;
+const double TICK_RATE = 0.050;
 const double UPDATE_RATE = 0.050;
 const float PLAYER_SPEED = 5.f;
-const uint32_t INPUT_BUFFER_SIZE = 2;
 
 glm::vec3 GetRandomPlayerPosition()
 {
@@ -55,7 +63,17 @@ void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMov
 
 int main()
 {
-    Log::ConsoleLogger logger;
+    // Loggers
+    auto clogger = std::make_unique<Log::ConsoleLogger>();
+    auto flogger = std::make_unique<Log::FileLogger>();
+    std::filesystem::path logFile = "server.log";
+    flogger->OpenLogFile("server.log");
+    if(!flogger->IsOk())
+        clogger->LogError("Could not create log file " + logFile.string());
+
+    Log::ComposedLogger logger;
+    logger.AddLogger(std::move(clogger));
+    logger.AddLogger(std::move(flogger));
     logger.SetVerbosity(Log::Verbosity::DEBUG);
 
     unsigned int tickCount = 0;
@@ -72,7 +90,6 @@ int main()
         player.id = lastId++;
         player.transform = Math::Transform{GetRandomPlayerPosition(), glm::vec3{0.0f}, glm::vec3{1.0f}};
         clients[peerId].player = player;
-        clients[peerId].cmdCount = -INPUT_BUFFER_SIZE;
 
         // Inform client
         Networking::Command::Server::ClientConfig clientConfig;
@@ -93,8 +110,22 @@ int main()
     });
     host.SetOnRecvCallback([&logger, &tickCount](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
+        auto& client = clients[peerId];
         auto command = (Networking::Command*)recvPacket.GetData();
-        clients[peerId].inputBuffer.PushBack(*command);
+
+        // FIXME/TODO: Check if the packet to be push has a cmdId > lastACK. Drop really delayed packets
+        // FIXME/TODO: Sort after push. Use a prio queue. Mitigates unordered packets
+        // FIXME/TODO: Extract all redundant inputs from the packet
+        client.inputBuffer.PushBack(*command);
+        logger.LogInfo("Command arrived with cmdid " + std::to_string(command->header.tick));
+
+        // FIXME/TODO: If this happens, then the client is producing more often than the server is consuming
+        auto bufferSize = client.inputBuffer.GetSize();
+        if(bufferSize >= MAX_INPUT_BUFFER_SIZE)
+            logger.LogInfo("Max Buffer size reached." + std::to_string(bufferSize));
+
+        if(client.state == BufferingState::REFILLING && client.inputBuffer.GetSize() > MIN_INPUT_BUFFER_SIZE)
+            client.state = BufferingState::CONSUMING;
     });
     host.SetOnDisconnectCallback([&logger, &tickCount, &host](auto peerId)
     {
@@ -134,27 +165,28 @@ int main()
             auto peerId = pair.first;
             auto& client = pair.second;
             
-            if(client.inputBuffer.GetSize() > 0)
+            // FIXME/TODO: Assume for now that packets don't arrive in incorrect order
+            if(client.state == BufferingState::CONSUMING)
             {
-                // FIXME/TODO: Assume for now that packets don't arrive in incorrect order
-                //for(auto command = client.inputBuffer.PopFront(); command.has_value() && command->header.tick < client.cmdCount; command = client.inputBuffer.PopFront())
-                if(auto command = client.inputBuffer.Front(); command.has_value() && command->header.tick == client.cmdCount)
+                if(auto command = client.inputBuffer.PopFront(); command.has_value())
                 {
                     auto cmdId = command->header.tick;
                     client.lastAck = cmdId;
 
-                    logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " on cmdCount " + std::to_string(client.cmdCount) + " from " + std::to_string(pair.first));
+                    logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(pair.first));
                     HandleMoveCommand(peerId, command->data.playerMovement, tickCount);
 
                     handledInput.push_back(pair.first);
 
-                    client.inputBuffer.PopFront();
+                    logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
                 }
                 else
-                    logger.LogInfo("No cmd handled for player " + std::to_string(pair.first) + " with cmdCount " + std::to_string(client.cmdCount));
-
-                client.cmdCount++;
+                {
+                    logger.LogWarning("No cmd handled for player " + std::to_string(pair.first) + " waiting for buffer to refill ");
+                    client.state = BufferingState::REFILLING;
+                }
             }
+
             // TODO: Save the position of the player for this tick. Slow computers will have jittery movement
             // Could use some entity interpolation on the server
         }

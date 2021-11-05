@@ -8,7 +8,6 @@
 
 using namespace Rendering;
 
-// TODO: Should check the map instead of only within chunk neighbors
 Mesh ChunkMesh::GenerateChunkMesh(Game::Map::Map* map, glm::ivec3 chunkIndex)
 {
     ChunkMesh::Builder builder;
@@ -143,6 +142,7 @@ const std::unordered_map<glm::ivec3, ChunkMesh::FaceType> revOffsets = {
     { glm::ivec3{0, 0, 1}, ChunkMesh::FaceType::FRONT },
 };
 
+// TODO: Should check the map instead of only within chunk neighbors
 void ChunkMesh::Builder::AddBlockMesh(const Game::Map::Map::Chunk& chunk, glm::ivec3 pos, Game::Block const* block)
 {
     for(auto pair : offsets)   
