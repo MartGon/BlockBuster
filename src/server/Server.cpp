@@ -75,7 +75,7 @@ int main()
     logger.AddLogger(std::move(clogger));
     logger.AddLogger(std::move(flogger));
     logger.SetVerbosity(Log::Verbosity::DEBUG);
-    logger.Disable();
+
 
     unsigned int tickCount = 0;
 

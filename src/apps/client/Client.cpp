@@ -64,7 +64,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -183,7 +183,6 @@ void BlockBuster::Client::Update()
 
         EntityInterpolation();
         SmoothPlayerMovement();
-        logger->Flush();
         Render();
 
         deltaTime = (Util::Time::GetTime() - preSimulationTime);
@@ -550,7 +549,7 @@ void Client::Render()
     {
         Util::Time::Seconds diff = minFrameInterval - renderTime;
         //logger->LogInfo("Sleeping for " + std::to_string(diff.count()) + " s");
-        Util::Time::Sleep(diff);
+        //Util::Time::Sleep(diff);
     }
 }
 

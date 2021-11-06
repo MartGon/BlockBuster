@@ -9,7 +9,7 @@ HostFactory* HostFactory::Get()
     HostFactory* ptr = hostFactory_.get();
     if(ptr == nullptr)
     {
-        hostFactory_ = std::unique_ptr<HostFactory>();
+        hostFactory_ = std::unique_ptr<HostFactory>(new HostFactory);
         ptr = hostFactory_.get();
     }
 
