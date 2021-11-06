@@ -73,7 +73,7 @@ namespace Util
         class Reader
         {
         public:
-            Reader(void* buffer, uint32_t size) : buffer{buffer}, size{size} {}
+            Reader(const void* buffer, uint32_t size) : buffer{buffer}, size{size} {}
             template<typename T>
             T Read()
             {
@@ -89,7 +89,7 @@ namespace Util
         private:
             uint32_t index = 0;
             uint32_t size;
-            void* buffer = nullptr;
+            const void* buffer = nullptr;
         };
         Reader GetReader();
 

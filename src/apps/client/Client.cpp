@@ -220,27 +220,50 @@ void Client::UpdateNetworking()
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
 
-    // Send player inputs
+    // Build batched player input batch
     auto cmdId = this->cmdId++;
     Networking::Command::Header header;
-    header.type = Networking::Command::Type::PLAYER_MOVEMENT;
+    header.type = Networking::Command::Type::PLAYER_MOVEMENT_BATCH;
     header.tick = cmdId;
 
-    Networking::Command::User::PlayerMovement playerMovement;
-    playerMovement.moveDir = moveDir;
+    auto historySize = predictionHistory_.GetSize();
+    auto redundancy = std::min(3u, historySize);
+    auto amount = std::min(3u, historySize) + 1u;
+    Networking::Command::User::PlayerMovementBatch playerMovementBatch;
+    playerMovementBatch.amount = amount;
 
     Networking::Command::Payload data;
-    data.playerMovement = playerMovement;
+    data.playerMovementBatch = playerMovementBatch;
     
     Networking::Command cmd{header, data};
-    ENet::SentPacket sentPacket{&cmd, sizeof(cmd), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
+
+    // Write them to a buffer
+    Util::Buffer buf;
+    buf.Write(cmd);
+
+        // Write recent input
+    Networking::Command::User::PlayerMovement playerMovement;
+    playerMovement.reqId = cmdId;
+    playerMovement.moveDir = moveDir;
+    buf.Write(playerMovement);
+
+        // Write redudant inputs
+    for(int i = 0; i < redundancy; i++)
+    {
+        auto oldCmd = predictionHistory_.At((historySize - 1) - i);
+        buf.Write(oldCmd->cmd);
+        logger->LogInfo("Sending input with reqId " + std::to_string(oldCmd->cmd.reqId));
+    }
+
+    // Send them
+    ENet::SentPacket sentPacket{buf.GetData(), buf.GetSize(), 0};
     host.SendPacket(serverId, 0, sentPacket);
 
     // Prediction
-    PredictPlayerMovement(cmd, cmdId);
+    PredictPlayerMovement(playerMovement, cmdId);
 }
 
-void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
+void Client::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd, uint32_t cmdId)
 {
     if(playerTable.find(playerId) == playerTable.end())
         return;
@@ -249,7 +272,7 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
 
     // Discard old commands
     std::optional<Prediction> prediction;
-    while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmdId <= lastAck)
+    while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmd.reqId <= lastAck)
     {
         prediction = predictionHistory_.PopFront();
     }
@@ -282,7 +305,7 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
                     auto predict = predictionHistory_.At(i);
 
                     // Re-calculate prediction
-                    auto move = predict->cmd.data.playerMovement;
+                    auto move = predict->cmd;
                     auto origin = playerPos;
                     playerPos = PredPlayerPos(playerPos, move.moveDir, serverTickRate);
 
@@ -313,8 +336,8 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
     }
 
     // Run predicted command for this simulation
-    auto predictedPos = PredPlayerPos(prevPos, cmd.data.playerMovement.moveDir, serverTickRate);
-    Prediction p{cmdId, cmd, prevPos, predictedPos, now};
+    auto predictedPos = PredPlayerPos(prevPos, cmd.moveDir, serverTickRate);
+    Prediction p{cmd, prevPos, predictedPos, now};
     predictionHistory_.PushBack(p);
 
 #ifdef _DEBUG
@@ -334,7 +357,7 @@ void Client::SmoothPlayerMovement()
     {
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
-        auto predPos = PredPlayerPos(lastPred->origin, lastPred->cmd.data.playerMovement.moveDir, elapsed);
+        auto predPos = PredPlayerPos(lastPred->origin, lastPred->cmd.moveDir, elapsed);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;

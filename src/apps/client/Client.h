@@ -47,7 +47,7 @@ namespace BlockBuster
         void UpdateNetworking();
 
         // Networking - Prediction
-        void PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId);
+        void PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd, uint32_t cmdId);
         void SmoothPlayerMovement();
         glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Seconds deltaTime);
 
@@ -98,8 +98,7 @@ namespace BlockBuster
         // Networking - Prediction
         struct Prediction
         {
-            uint32_t cmdId;
-            Networking::Command cmd;
+            Networking::Command::User::PlayerMovement cmd;
             glm::vec3 origin;
             glm::vec3 dest;
             Util::Time::SteadyPoint time;

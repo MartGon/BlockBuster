@@ -28,7 +28,7 @@ enum class BufferingState
 struct Client
 {
     Entity::Player player;
-    Util::Ring<Networking::Command, MAX_INPUT_BUFFER_SIZE> inputBuffer;
+    Util::Ring<Networking::Command::User::PlayerMovement, MAX_INPUT_BUFFER_SIZE> inputBuffer;
     uint32_t lastAck = 0;
     BufferingState state = BufferingState::REFILLING;
 };
@@ -111,21 +111,48 @@ int main()
     host.SetOnRecvCallback([&logger, &tickCount](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
         auto& client = clients[peerId];
-        auto command = (Networking::Command*)recvPacket.GetData();
 
-        // FIXME/TODO: Check if the packet to be push has a cmdId > lastACK. Drop really delayed packets
-        // FIXME/TODO: Sort after push. Use a prio queue. Mitigates unordered packets
-        // FIXME/TODO: Extract all redundant inputs from the packet
-        client.inputBuffer.PushBack(*command);
-        logger.LogInfo("Command arrived with cmdid " + std::to_string(command->header.tick));
+        Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
+        auto command = reader.Read<Networking::Command>();
 
-        // FIXME/TODO: If this happens, then the client is producing more often than the server is consuming
-        auto bufferSize = client.inputBuffer.GetSize();
-        if(bufferSize >= MAX_INPUT_BUFFER_SIZE)
-            logger.LogInfo("Max Buffer size reached." + std::to_string(bufferSize));
+        if(command.header.type == Networking::Command::PLAYER_MOVEMENT_BATCH)
+        {
+            auto inputs = command.data.playerMovementBatch.amount;
+            for(int i = 0; i < inputs; i++)
+            {
+                auto move = reader.Read<Networking::Command::User::PlayerMovement>();
+                auto cmdId = move.reqId;
+                logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId));
 
-        if(client.state == BufferingState::REFILLING && client.inputBuffer.GetSize() > MIN_INPUT_BUFFER_SIZE)
-            client.state = BufferingState::CONSUMING;
+                // Check if we already have this input
+                auto found = client.inputBuffer.FindFirst([cmdId](auto input)
+                {
+                    return input.reqId == cmdId;
+                });
+
+                if(!found.has_value())
+                {
+                    if(cmdId > client.lastAck)
+                        client.inputBuffer.PushBack(move);
+                    // This packet is either duplicated or it arrived really late
+                    else
+                        logger.LogWarning("Command with cmdid " + std::to_string(cmdId) + " dropped. Last ack " + std::to_string(client.lastAck));
+
+                    // Sort to mitigate unordered packets
+                    client.inputBuffer.Sort([](auto a, auto b){
+                        return a.reqId < b.reqId;
+                    });
+
+                    // FIXME/TODO: If this happens, then the client is producing more often than the server is consuming
+                    auto bufferSize = client.inputBuffer.GetSize();
+                    if(bufferSize >= MAX_INPUT_BUFFER_SIZE)
+                        logger.LogInfo("Max Buffer size reached." + std::to_string(bufferSize));
+
+                    if(client.state == BufferingState::REFILLING && client.inputBuffer.GetSize() > MIN_INPUT_BUFFER_SIZE)
+                        client.state = BufferingState::CONSUMING;
+                }
+            }
+        }
     });
     host.SetOnDisconnectCallback([&logger, &tickCount, &host](auto peerId)
     {
@@ -163,16 +190,15 @@ int main()
             auto peerId = pair.first;
             auto& client = pair.second;
             
-            // FIXME/TODO: Assume for now that packets don't arrive in incorrect order
             if(client.state == BufferingState::CONSUMING)
             {
                 if(auto command = client.inputBuffer.PopFront(); command.has_value())
                 {
-                    auto cmdId = command->header.tick;
+                    auto cmdId = command->reqId;
                     client.lastAck = cmdId;
 
                     logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(pair.first));
-                    HandleMoveCommand(peerId, command->data.playerMovement, tickCount);
+                    HandleMoveCommand(peerId, command.value(), tickCount);
 
                     logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
                 }
@@ -228,7 +254,7 @@ int main()
 
         auto elapsed = Util::Time::GetTime() - now;
         auto wait = Util::Time::Seconds{TICK_RATE} - elapsed;
-        logger.LogInfo("Job done. Sleeping during " + std::to_string(Util::Time::Seconds{wait}.count()));
+        //logger.LogInfo("Job done. Sleeping during " + std::to_string(Util::Time::Seconds{wait}.count()));
         logger.Flush();
         Util::Time::Sleep(wait);
 
