@@ -37,7 +37,7 @@ namespace BlockBuster
         
     private:
 
-        void DoUpdate(double deltaTime);
+        void DoUpdate(Util::Time::Seconds deltaTime);
 
         // Input
         void HandleSDLEvents();
@@ -49,14 +49,14 @@ namespace BlockBuster
         // Networking - Prediction
         void PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId);
         void SmoothPlayerMovement();
-        glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, float deltaTime);
+        glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Seconds deltaTime);
 
         // Networking - Entity Interpolation
-        double GetCurrentTime();
-        double GetRenderTime();
+        Util::Time::Seconds GetCurrentTime();
+        Util::Time::Seconds GetRenderTime();
         std::optional<Networking::Snapshot> GetMostRecentSnapshot();
         // FIXME/TODO: Using double may lead to precision errors on high ticks
-        double TickToTime(uint32_t tick);
+        Util::Time::Seconds TickToTime(uint32_t tick);
         void EntityInterpolation();
         void EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& a, const Networking::Snapshot& b, float alpha);
 
@@ -75,13 +75,10 @@ namespace BlockBuster
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
 
-        double preSimulationTime = 0.0;
-        double frameInterval = 0.0;
+        Util::Time::SteadyPoint preSimulationTime;
+        Util::Time::Seconds frameInterval;
+        Util::Time::Seconds minFrameInterval;
         double maxFPS = 60.0;
-        double minFrameInterval = 0.0;
-
-        // Updates
-        const double UPDATE_RATE = 0.020;
 
         // Controls
         ::App::Client::CameraController camController_;
@@ -95,7 +92,7 @@ namespace BlockBuster
         ENet::Host host;
         ENet::PeerId serverId = 0;
         uint8_t playerId = 0;
-        double serverTickRate = 0.0;
+        Util::Time::Seconds serverTickRate{0.0};
         bool connected = false;
         Util::Ring<Networking::Snapshot> snapshotHistory{16};
 
@@ -106,20 +103,20 @@ namespace BlockBuster
             Networking::Command cmd;
             glm::vec3 origin;
             glm::vec3 dest;
-            double time;
+            Util::Time::SteadyPoint time;
         };
         Util::Ring<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
 
-        const double ERROR_CORRECTION_DURATION = 3.0;
+        const Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0};
         glm::vec3 errorCorrectionDiff{0};
-        double errorCorrectionStart = 0;
+        Util::Time::SteadyPoint errorCorrectionStart;
 
         // Networking - Entity Interpolation
-        const double EXTRAPOLATION_DURATION = 0.25;
+        const Util::Time::Seconds EXTRAPOLATION_DURATION{0.25};
         Networking::Snapshot extrapolatedSnapshot;
-        double offsetTime = 0;
+        Util::Time::Seconds offsetTime{0};
 
         // App
         bool quit = false;

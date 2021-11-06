@@ -53,7 +53,7 @@ int main(int argc, char** args)
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
             App::Configuration::WindowMode::WINDOW,
-            false,
+            true,
             60,
             glm::radians(60.0f)
         },

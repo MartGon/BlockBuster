@@ -155,7 +155,7 @@ int main()
     {
         host.PollAllEvents();
 
-        auto now = Util::Time::GetUNIXTime();
+        auto now = Util::Time::GetTime();
 
         // Handle client inputs
         for(auto& pair : clients)
@@ -226,9 +226,9 @@ int main()
             host.SendPacket(pair.first, 0, epacket);
         }
 
-        auto elapsed = Util::Time::GetUNIXTime() - now;
-        double wait = TICK_RATE - elapsed;
-        logger.LogInfo("Job done. Sleeping during " + std::to_string(wait));
+        auto elapsed = Util::Time::GetTime() - now;
+        auto wait = Util::Time::Seconds{TICK_RATE} - elapsed;
+        logger.LogInfo("Job done. Sleeping during " + std::to_string(Util::Time::Seconds{wait}.count()));
         Util::Time::Sleep(wait);
 
         tickCount++;

@@ -78,7 +78,7 @@ void BlockBuster::Client::Start()
         {
             auto config = packet->data.config;
             logger->LogInfo("Server tick rate is " + std::to_string(config.sampleRate));
-            this->serverTickRate = config.sampleRate;
+            this->serverTickRate = Util::Time::Seconds(config.sampleRate);
             this->playerId = config.playerId;
             this->connected = true;
 
@@ -94,7 +94,7 @@ void BlockBuster::Client::Start()
             {
                 auto om = this->offsetTime - this->serverTickRate;
                 this->offsetTime = std::min(serverTickRate, std::max(om, -serverTickRate));
-                logger->LogInfo("Offset millis " + std::to_string(this->offsetTime));
+                logger->LogInfo("Offset millis " + std::to_string(this->offsetTime.count()));
             }
 
             // Process Snapshot
@@ -134,7 +134,7 @@ void BlockBuster::Client::Start()
     auto attempts = 0;
     while(!connected && attempts < 5)
     {
-        Util::Time::SleepMillis(500);
+        Util::Time::Sleep(Util::Time::Millis{500});
         logger->LogInfo("Connecting to server...");
         host.PollAllEvents();
         attempts++;
@@ -150,14 +150,14 @@ void BlockBuster::Client::Start()
 
 void BlockBuster::Client::Update()
 {
-    preSimulationTime = Util::Time::GetUNIXTime();
-    double lag = serverTickRate;
+    preSimulationTime = Util::Time::GetTime();
+    auto lag = serverTickRate;
 
     this->offsetTime = serverTickRate * 0.5;
-    logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate));
+    logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate.count()));
     while(!quit)
     {
-        preSimulationTime = Util::Time::GetUNIXTime();
+        preSimulationTime = Util::Time::GetTime();
 
         HandleSDLEvents();
         if(connected)
@@ -177,10 +177,10 @@ void BlockBuster::Client::Update()
         SmoothPlayerMovement();
         Render();
 
-        frameInterval = (Util::Time::GetUNIXTime() - preSimulationTime);
+        frameInterval = (Util::Time::GetTime() - preSimulationTime);
         lag += frameInterval;
         offsetTime += frameInterval;
-        logger->LogInfo("Offset millis increased to " + std::to_string(offsetTime));
+        logger->LogInfo("Offset millis increased to " + std::to_string(offsetTime.count()));
     }
 }
 
@@ -189,7 +189,7 @@ bool BlockBuster::Client::Quit()
     return quit;
 }
 
-void BlockBuster::Client::DoUpdate(double deltaTime)
+void BlockBuster::Client::DoUpdate(Util::Time::Seconds deltaTime)
 {
     camController_.Update();
 }
@@ -284,7 +284,7 @@ void Client::PredictPlayerMovement(Networking::Command cmd, uint32_t cmdId)
                 // Update error correction values
                 auto renderPos = playerTable[playerId].transform.position;
                 errorCorrectionDiff = renderPos - playerPos;
-                errorCorrectionStart = Util::Time::GetUNIXTime();
+                errorCorrectionStart = Util::Time::GetTime();
             }
         }
     }
@@ -309,14 +309,14 @@ void Client::SmoothPlayerMovement()
     auto& renderPos = playerTable[playerId].transform.position;
     if(lastPred)
     {
-        auto now = Util::Time::GetUNIXTime();
-        auto elapsed = now - lastPred->time;
+        auto now = Util::Time::GetTime();
+        Util::Time::Seconds elapsed = now - lastPred->time;
         
         auto origin = lastPred->origin;
         auto predPos = PredPlayerPos(lastPred->origin, lastPred->cmd.data.playerMovement.moveDir, elapsed);
 
         // Prediction Error correction
-        double errorElapsed = now - errorCorrectionStart;
+        auto errorElapsed = now - errorCorrectionStart;
         float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
         glm::vec3 errorCorrection = errorCorrectionDiff * weight;
         renderPos = predPos + errorCorrection;
@@ -329,10 +329,10 @@ void Client::SmoothPlayerMovement()
     }
 }
 
-glm::vec3 Client::PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, float deltaTime)
+glm::vec3 Client::PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Seconds deltaTime)
 {
     auto& player = playerTable[playerId];
-    auto velocity = moveDir * PLAYER_SPEED * (float)deltaTime;
+    auto velocity = moveDir * PLAYER_SPEED * (float)deltaTime.count();
     auto predPos = pos + velocity;
     return predPos;
 }
@@ -354,12 +354,12 @@ std::optional<Networking::Snapshot> Client::GetMostRecentSnapshot()
     return mostRecent;
 }
 
-double Client::TickToTime(uint32_t tick)
+Util::Time::Seconds Client::TickToTime(uint32_t tick)
 {
-    return (double)tick * this->serverTickRate;
+    return tick * this->serverTickRate;
 }
 
-double Client::GetCurrentTime()
+Util::Time::Seconds Client::GetCurrentTime()
 {
     auto maxTick = GetMostRecentSnapshot()->serverTick;
     auto base = TickToTime(maxTick);
@@ -367,11 +367,11 @@ double Client::GetCurrentTime()
     return base + this->offsetTime;
 }
 
-double Client::GetRenderTime()
+Util::Time::Seconds Client::GetRenderTime()
 {
     auto clientTime = GetCurrentTime();
-    double windowSize = 2.0 * this->serverTickRate;
-    double renderTime = clientTime - windowSize;
+    auto windowSize = 2.0 * this->serverTickRate;
+    auto renderTime = clientTime - windowSize;
     
     return renderTime;
 }
@@ -383,7 +383,7 @@ void Client::EntityInterpolation()
 
     // Calculate render time
     auto clientTime = GetCurrentTime();
-    double renderTime = GetRenderTime();
+    auto renderTime = GetRenderTime();
 
     // Sort by tick. This is only needed if a packet arrives late.
     // TODO: Consider dropping unordered packets instead. Simply check against max server tick recv before pushing.
@@ -395,7 +395,7 @@ void Client::EntityInterpolation()
     // Get last snapshot before renderTime
     auto s1p = snapshotHistory.FindRevFirstPair([this, renderTime](auto i, auto s)
     {
-        double time = TickToTime(s.serverTick);
+        auto time = TickToTime(s.serverTick);
         return time < renderTime;
     });
     
@@ -413,12 +413,12 @@ void Client::EntityInterpolation()
             // Find weights
             auto t1 = TickToTime(s1.serverTick);
             auto t2 = TickToTime(s2.serverTick);
-            auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
+            auto ws = Math::Interpolation::GetWeights(t1.count(), t2.count(), renderTime.count());
             auto w1 = ws.x; auto w2 = ws.y;
 
             logger->LogDebug("Tick 1 " + std::to_string(s1.serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
-            logger->LogDebug("RT " + std::to_string(renderTime) + " CT " + std::to_string(clientTime) + " OT " + std::to_string(offsetTime));
-            logger->LogDebug("T1 " + std::to_string(t1) + " T2 " + std::to_string(t2));
+            logger->LogDebug("RT " + std::to_string(renderTime.count()) + " CT " + std::to_string(clientTime.count()) + " OT " + std::to_string(offsetTime.count()));
+            logger->LogDebug("T1 " + std::to_string(t1.count()) + " T2 " + std::to_string(t2.count()));
             logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
 
             for(auto pair : playerTable)
@@ -464,8 +464,8 @@ void Client::EntityInterpolation()
 
                     // Interpolate
                     auto t1 = TickToTime(s1.serverTick);
-                    double t2 = TickToTime(s1.serverTick) + EXTRAPOLATION_DURATION;
-                    auto ws = Math::Interpolation::GetWeights(t1, t2, renderTime);
+                    auto t2 = TickToTime(s1.serverTick) + EXTRAPOLATION_DURATION;
+                    auto ws = Math::Interpolation::GetWeights(t1.count(), t2.count(), renderTime.count());
                     auto alpha = ws.x;
                     EntityInterpolation(playerId, s1, exS, alpha);
                 }
@@ -523,11 +523,11 @@ void Client::Render()
     SDL_GL_SwapWindow(window_);
 
     // Max FPS Correction
-    auto renderTime = Util::Time::GetUNIXTime() - preSimulationTime;
+    auto renderTime = Util::Time::GetTime() - preSimulationTime;
     if(renderTime < minFrameInterval)
     {
-        double diff = minFrameInterval - renderTime;
-        logger->LogInfo("Sleeping for " + std::to_string(diff) + " s");
+        Util::Time::Seconds diff = minFrameInterval - renderTime;
+        logger->LogInfo("Sleeping for " + std::to_string(diff.count()) + " s");
         Util::Time::Sleep(diff);
     }
 }
@@ -547,7 +547,7 @@ void BlockBuster::Client::DrawScene()
         auto distDiff = glm::length(diff);
         if(distDiff > 0.05f)
         {
-            auto expectedDiff = PLAYER_SPEED *  minFrameInterval;
+            auto expectedDiff = PLAYER_SPEED *  minFrameInterval.count();
             logger->LogDebug("Render: Player " + std::to_string(player.first) + " Prev " + glm::to_string(oldPos)
                 + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
 
@@ -556,7 +556,7 @@ void BlockBuster::Client::DrawScene()
             {
                 logger->LogDebug("Render: Difference is bigger than expected: ");
                 logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) 
-                    + " Offset " + std::to_string(offset) + " Frame interval " + std::to_string(frameInterval));
+                    + " Offset " + std::to_string(offset) + " Frame interval " + std::to_string(frameInterval.count()));
             }
         }
         // End debug
@@ -595,7 +595,7 @@ void Client::DrawGUI()
 
             ImGui::Text("Config");
             ImGui::Separator();
-            ImGui::Text("Server tick rate: %.2f ms", serverTickRate * 1e3);
+            ImGui::Text("Server tick rate: %.2f ms", serverTickRate.count());
 
             ImGui::Text("Latency");
             ImGui::Separator();
@@ -620,14 +620,14 @@ void Client::DrawGUI()
         {
             ImGui::Text("Latency");
             ImGui::Separator();
-            uint64_t frameIntervalMs = frameInterval * 1e3;
+            uint64_t frameIntervalMs = frameInterval.count() * 1e3;
             ImGui::Text("Frame interval (delta time):");ImGui::SameLine();ImGui::Text("%lu ms", frameIntervalMs);
-            uint64_t fps = 1.0 / frameInterval;
+            uint64_t fps = 1.0 / frameInterval.count();
             ImGui::Text("FPS: %lu", fps);
 
             ImGui::InputDouble("Max FPS", &maxFPS, 1.0, 5.0, "%.0f");
-            minFrameInterval = 1.0 / maxFPS;
-            ImGui::Text("Min Frame interval:");ImGui::SameLine();ImGui::Text("%f ms", minFrameInterval);
+            minFrameInterval = Util::Time::Seconds(1.0 / maxFPS);
+            ImGui::Text("Min Frame interval:");ImGui::SameLine();ImGui::Text("%f ms", minFrameInterval.count());
         }
         ImGui::End();
     }
