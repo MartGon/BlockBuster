@@ -155,11 +155,9 @@ int main()
     {
         host.PollAllEvents();
 
-        auto now = Util::Time::GetUNIXTimeNanos();
+        auto now = Util::Time::GetUNIXTime();
 
         // Handle client inputs
-        std::vector<ENet::PeerId> handledInput;
-        handledInput.reserve(clients.size());
         for(auto& pair : clients)
         {
             auto peerId = pair.first;
@@ -175,8 +173,6 @@ int main()
 
                     logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(pair.first));
                     HandleMoveCommand(peerId, command->data.playerMovement, tickCount);
-
-                    handledInput.push_back(pair.first);
 
                     logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
                 }
@@ -194,9 +190,9 @@ int main()
         // Create snapshot
         Networking::Snapshot s;
         s.serverTick = tickCount;
-        for(auto peerId : handledInput)
+        for(auto pair : clients)
         {
-            auto player = clients[peerId].player;
+            auto player = pair.second.player;
             s.players[player.id].pos = player.transform.position;
         }
 
@@ -230,9 +226,10 @@ int main()
             host.SendPacket(pair.first, 0, epacket);
         }
 
-        auto elapsed = Util::Time::GetUNIXTimeNanos() - now;
-        uint64_t wait = (TICK_RATE * 1e9 - elapsed);
-        Util::Time::SleepUntilNanos(wait);
+        auto elapsed = Util::Time::GetUNIXTime() - now;
+        double wait = TICK_RATE - elapsed;
+        logger.LogInfo("Job done. Sleeping during " + std::to_string(wait));
+        Util::Time::Sleep(wait);
 
         tickCount++;
     }

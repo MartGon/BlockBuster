@@ -56,7 +56,7 @@ namespace BlockBuster
         double GetRenderTime();
         std::optional<Networking::Snapshot> GetMostRecentSnapshot();
         // FIXME/TODO: Using double may lead to precision errors on high ticks
-        double TickToMillis(uint32_t tick);
+        double TickToTime(uint32_t tick);
         void EntityInterpolation();
         void EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& a, const Networking::Snapshot& b, float alpha);
 
@@ -119,7 +119,7 @@ namespace BlockBuster
         // Networking - Entity Interpolation
         const double EXTRAPOLATION_DURATION = 0.25;
         Networking::Snapshot extrapolatedSnapshot;
-        double offsetMillis = 0;
+        double offsetTime = 0;
 
         // App
         bool quit = false;
