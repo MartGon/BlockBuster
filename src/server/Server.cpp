@@ -35,7 +35,7 @@ struct Client
 
 std::unordered_map<ENet::PeerId, Client> clients;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.050;
+const double TICK_RATE = 0.020;
 const double UPDATE_RATE = 0.050;
 const float PLAYER_SPEED = 5.f;
 
@@ -75,6 +75,7 @@ int main()
     logger.AddLogger(std::move(clogger));
     logger.AddLogger(std::move(flogger));
     logger.SetVerbosity(Log::Verbosity::DEBUG);
+    logger.Disable();
 
     unsigned int tickCount = 0;
 

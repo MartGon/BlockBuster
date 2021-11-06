@@ -16,6 +16,7 @@ add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD=1)
 # Add compile defines
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     add_compile_definitions(_DEBUG=1)
+    add_compile_definitions(_LOG=1)
 endif()
 
 find_package(OpenGL REQUIRED)

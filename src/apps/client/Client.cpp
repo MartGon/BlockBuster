@@ -152,6 +152,8 @@ void BlockBuster::Client::Start()
     }
 
     quit = !connected;
+
+    logger->Disable();
 }
 
 void BlockBuster::Client::Update()
