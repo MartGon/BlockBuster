@@ -77,7 +77,7 @@ int main(int argc, char** args)
         cLogger->AddLogger(std::move(filelogger));
     else
     {
-        std::string msg = "Could not open log file: " + std::string(config.log.logFile) + '\n';
+        std::string msg = "Could not open log file: " + config.log.logFile.string() + '\n';
         cLogger->LogError(msg);
     }
 

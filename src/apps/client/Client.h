@@ -1,3 +1,4 @@
+#pragma once
 
 #include <app/App.h>
 
@@ -15,7 +16,7 @@
 #include <game/CameraController.h>
 #include <game/ChunkMeshMgr.h>
 
-#include <util/Time.h>
+#include <util/BBTime.h>
 #include <util/CircularVector.h>
 
 #include <entity/Player.h>

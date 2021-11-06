@@ -6,7 +6,7 @@
 #include <networking/CommandBuffer.h>
 #include <networking/Snapshot.h>
 
-#include <util/Time.h>
+#include <util/BBTime.h>
 #include <util/Random.h>
 
 #include <entity/Player.h>
