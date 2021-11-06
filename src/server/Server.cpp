@@ -229,6 +229,7 @@ int main()
         auto elapsed = Util::Time::GetTime() - now;
         auto wait = Util::Time::Seconds{TICK_RATE} - elapsed;
         logger.LogInfo("Job done. Sleeping during " + std::to_string(Util::Time::Seconds{wait}.count()));
+        logger.Flush();
         Util::Time::Sleep(wait);
 
         tickCount++;

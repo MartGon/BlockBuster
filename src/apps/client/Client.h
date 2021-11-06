@@ -54,8 +54,6 @@ namespace BlockBuster
         // Networking - Entity Interpolation
         Util::Time::Seconds GetCurrentTime();
         Util::Time::Seconds GetRenderTime();
-        std::optional<Networking::Snapshot> GetMostRecentSnapshot();
-        // FIXME/TODO: Using double may lead to precision errors on high ticks
         Util::Time::Seconds TickToTime(uint32_t tick);
         void EntityInterpolation();
         void EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& a, const Networking::Snapshot& b, float alpha);
@@ -76,7 +74,8 @@ namespace BlockBuster
         int drawMode = GL_FILL;
 
         Util::Time::SteadyPoint preSimulationTime;
-        Util::Time::Seconds frameInterval;
+        Util::Time::Seconds simulationLag;
+        Util::Time::Seconds deltaTime;
         Util::Time::Seconds minFrameInterval;
         double maxFPS = 60.0;
 
