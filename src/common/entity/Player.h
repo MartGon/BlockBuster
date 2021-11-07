@@ -9,5 +9,6 @@ namespace Entity
     {
         ID id;
         Math::Transform transform;
+        bool onDmg = false;
     };
 }

@@ -5,6 +5,7 @@
 
 namespace Util::Time
 {
+    using Nanos = std::chrono::duration<double, std::nano>;
     using Millis = std::chrono::duration<double, std::milli>;
     using Seconds = std::chrono::duration<double>;
 

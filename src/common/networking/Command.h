@@ -21,6 +21,7 @@ namespace Networking
             // Client
             PLAYER_MOVEMENT,
             PLAYER_MOVEMENT_BATCH,
+            PLAYER_SHOT,
         };
 
         struct Server
@@ -60,6 +61,13 @@ namespace Networking
                 uint32_t reqId;
                 glm::vec3 moveDir;
             };
+
+            struct PlayerShot
+            {
+                glm::vec3 origin;
+                glm::vec3 dir;
+                double clientTime;
+            };
         };
 
         struct Header
@@ -79,6 +87,7 @@ namespace Networking
 
             User::PlayerMovement playerMovement;
             User::PlayerMovementBatch playerMovementBatch;
+            User::PlayerShot playerShot;
         };
 
         Header header;

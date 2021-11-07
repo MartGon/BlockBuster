@@ -2,10 +2,14 @@
 out vec4 fragColor;
 
 uniform vec4 color;
+uniform bool dmg;
 
 in vec3 tColor;
 
 void main()
 {
-    fragColor = vec4(tColor, 1);
+    if(dmg)
+        fragColor = color;
+    else
+        fragColor = vec4(tColor, 1);
 }

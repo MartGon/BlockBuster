@@ -39,6 +39,7 @@ void BlockBuster::Client::Start()
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(2.f, 4.f, 32, 1);
+    cube = Rendering::Primitive::GenerateCube();
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
@@ -64,7 +65,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -103,22 +104,26 @@ void BlockBuster::Client::Start()
             // Update last ack
             this->lastAck = update.lastCmd;
             logger->LogInfo("Server ack command: " + std::to_string(update.lastCmd));
-
-            // Create player entries
+            
             Util::Buffer::Reader reader{packet, ePacket.GetSize()};
             reader.Skip(sizeof(Networking::Command));
             auto s = Networking::Snapshot::FromBuffer(reader);
-            for(auto player : s.players)
+            for(auto& [playerId, player] : s.players)
             {
-                auto playerId = player.first;
+                // Create player entries
                 if(playerTable.find(playerId) == playerTable.end())
                 {
-                    Math::Transform transform{player.second.pos, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}};
+                    Math::Transform transform{player.pos, glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
                     Entity::Player player{playerId, transform};
                     playerTable[playerId] = player;
                     prevPlayerPos[playerId] = player;
                 }
-            }
+
+                // Update dmg status
+                playerTable[playerId].onDmg = player.onDmg;
+                if(player.onDmg)
+                    logger->LogInfo("Player is on dmg " + std::to_string(playerId));
+            }            
 
             // Store snapshot
             snapshotHistory.PushBack(s);
@@ -223,6 +228,9 @@ void Client::UpdateNetworking()
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
 
+    auto mouseState = SDL_GetMouseState(nullptr, nullptr);
+    auto click = mouseState & SDL_BUTTON_RIGHT;
+
     // Build batched player input batch
     auto cmdId = this->cmdId++;
     Networking::Command::Header header;
@@ -264,6 +272,41 @@ void Client::UpdateNetworking()
 
     // Prediction
     PredictPlayerMovement(playerMovement, cmdId);
+
+    // Player shots
+    if(click)
+    {
+        logger->LogInfo("Player is clicking");
+        auto ray = Rendering::ScreenToWorldRay(camera_, GetMousePos(), GetWindowSize());
+        logger->LogInfo("Shooting from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.dest));
+
+        for(auto [id, player] : playerTable)
+        {
+            auto collision = Collisions::RayAABBIntersection(ray, player.transform.GetTransformMat());
+            if(collision.intersects)
+            {
+                logger->LogInfo("It collides with player " + std::to_string(id));
+                logger->LogInfo("Player was at " + glm::to_string(player.transform.position));
+                logger->LogInfo("Command time is " + std::to_string(GetRenderTime().count()));
+            }
+        }
+
+        Networking::Command::Header header;
+        header.type = Networking::Command::PLAYER_SHOT;
+
+        Networking::Command::User::PlayerShot playerShot;
+        playerShot.origin = ray.origin;
+        playerShot.dir = ray.dest;
+        playerShot.clientTime = GetRenderTime().count();
+
+        Networking::Command::Payload payload;
+        payload.playerShot = playerShot;
+
+        Networking::Command cmd{header, payload};
+
+        ENet::SentPacket sentPacket{&cmd, sizeof(cmd), 0};
+        host.SendPacket(serverId, 0, sentPacket);
+    }
 }
 
 void Client::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd, uint32_t cmdId)
@@ -591,8 +634,9 @@ void BlockBuster::Client::DrawScene()
         auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;
         shader.SetUniformMat4("transform", transform);
-        shader.SetUniformVec4("color", glm::vec4{1.0f});
-        cylinder.Draw(shader, drawMode);
+        shader.SetUniformVec4("color", glm::vec4{1.0f, 0.0f, 0.0f, 1.0f});
+        shader.SetUniformInt("dmg", player.second.onDmg);
+        cube.Draw(shader, drawMode);
     }
     prevPlayerPos = playerTable;
 

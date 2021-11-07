@@ -9,6 +9,10 @@
 #include <util/BBTime.h>
 #include <util/Random.h>
 
+#include <collisions/Collisions.h>
+
+#include <math/Interpolation.h>
+
 #include <entity/Player.h>
 
 #include <vector>
@@ -25,12 +29,22 @@ enum class BufferingState
     CONSUMING
 };
 
+struct ShotCommand
+{
+    Networking::Command::User::PlayerShot playerShot;
+    Util::Time::SteadyPoint arrivalTime;
+};
+
 struct Client
 {
     Entity::Player player;
     Util::Ring<Networking::Command::User::PlayerMovement, MAX_INPUT_BUFFER_SIZE> inputBuffer;
+    Util::Ring<ShotCommand, MAX_INPUT_BUFFER_SIZE> shotBuffer;
     uint32_t lastAck = 0;
     BufferingState state = BufferingState::REFILLING;
+
+    bool isAI = false;
+    glm::vec3 targetPos;
 };
 
 std::unordered_map<ENet::PeerId, Client> clients;
@@ -38,18 +52,20 @@ Entity::ID lastId = 0;
 const Util::Time::Seconds TICK_RATE{0.050};
 const float PLAYER_SPEED = 5.f;
 unsigned int tickCount = 0;
+Util::Ring<Networking::Snapshot, 30> history; 
 
-glm::vec3 GetRandomPlayerPosition()
+glm::vec3 GetRandomPos()
 {
     glm::vec3 pos;
     pos.x = Util::Random::Uniform(-7.0f, 7.0f);
     pos.y = 4.15f;
-    pos.z = Util::Random::Uniform(-7.0f, 7.0f);
+    //pos.z = Util::Random::Uniform(-7.0f, 7.0f);
+    pos.z = -7.0f;
 
     return pos;
 }
 
-void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMovement pm, uint32_t playerTick)
+void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMovement pm)
 {
     auto& player = clients[peerId].player;
     auto len = glm::length(pm.moveDir);
@@ -88,7 +104,7 @@ int main()
         // Add player to table
         Entity::Player player;
         player.id = lastId++;
-        player.transform = Math::Transform{GetRandomPlayerPosition(), glm::vec3{0.0f}, glm::vec3{1.0f}};
+        player.transform = Math::Transform{GetRandomPos(), glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
         clients[peerId].player = player;
 
         // Inform client
@@ -143,7 +159,6 @@ int main()
                         return a.reqId < b.reqId;
                     });
 
-                    // FIXME/TODO: If this happens, then the client is producing more often than the server is consuming
                     auto bufferSize = client.inputBuffer.GetSize();
                     if(bufferSize >= MAX_INPUT_BUFFER_SIZE)
                         logger.LogInfo("Max Buffer size reached." + std::to_string(bufferSize));
@@ -152,6 +167,12 @@ int main()
                         client.state = BufferingState::CONSUMING;
                 }
             }
+        }
+        else if(command.header.type == Networking::Command::PLAYER_SHOT)
+        {
+            auto playerShot = command.data.playerShot;
+            ShotCommand sc{playerShot, Util::Time::GetTime()};
+            client.shotBuffer.PushBack(sc);
         }
     });
     host.SetOnDisconnectCallback([&logger, &host](auto peerId)
@@ -177,6 +198,15 @@ int main()
         host.Broadcast(0, sentPacket);
     });
 
+    // Create AI players
+    Client ai;
+    ai.isAI = true;
+    Entity::Player player;
+    ai.player.id = 200;
+    ai.player.transform = Math::Transform{GetRandomPos(), glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
+    ai.targetPos = GetRandomPos();
+    clients[200] = ai;
+
     // Server loop
     Util::Time::Seconds deltaTime{0};
     Util::Time::Seconds lag{0};
@@ -188,42 +218,126 @@ int main()
         auto preSimulationTime = Util::Time::GetTime();
 
         // Handle client inputs
-        for(auto& pair : clients)
+        for(auto& [peerId, client] : clients)
         {
-            auto peerId = pair.first;
-            auto& client = pair.second;
-            
-            if(client.state == BufferingState::CONSUMING)
+            if(!client.isAI)
             {
-                if(auto command = client.inputBuffer.PopFront(); command.has_value())
+                if(client.state == BufferingState::CONSUMING)
                 {
-                    auto cmdId = command->reqId;
-                    client.lastAck = cmdId;
+                    // Consume movement commands
+                    if(auto command = client.inputBuffer.PopFront())
+                    {
+                        auto cmdId = command->reqId;
+                        client.lastAck = cmdId;
 
-                    logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(pair.first));
-                    HandleMoveCommand(peerId, command.value(), tickCount);
+                        logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
+                        HandleMoveCommand(peerId, command.value());
 
-                    logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
-                }
-                else
-                {
-                    logger.LogWarning("No cmd handled for player " + std::to_string(pair.first) + " waiting for buffer to refill ");
-                    client.state = BufferingState::REFILLING;
+                        logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
+                    }
+                    else
+                    {
+                        logger.LogWarning("No cmd handled for player " + std::to_string(peerId) + " waiting for buffer to refill ");
+                        client.state = BufferingState::REFILLING;
+                    }
+
+                    // Consume shoot commands
+                    if(auto sc = client.shotBuffer.PopFront())
+                    {
+                        // Calculate command time
+                        auto arrivalTime = sc->arrivalTime;
+                        auto peerInfo = host.GetPeerInfo(peerId);
+                        auto rtt = Util::Time::Millis(peerInfo.roundTripTimeMs);
+                        
+                        Util::Time::Seconds now = tickCount * TICK_RATE;
+                        Util::Time::Seconds lerp = TICK_RATE * 2.0;
+                        Util::Time::Seconds commandTime = now - (rtt / 2.0) - lerp;
+                        commandTime = Util::Time::Seconds(sc->playerShot.clientTime);
+                        logger.LogInfo("Command time is " + std::to_string(commandTime.count()));
+
+                        // Find first snapshot before commandTime
+                        auto s1p = history.FindRevFirstPair([commandTime](auto i, Networking::Snapshot s)
+                        {
+                            Util::Time::Seconds sT = s.serverTick * TICK_RATE;
+                            return sT < commandTime;
+                        });
+
+                        if(s1p.has_value())
+                        {
+                            auto s2o = history.At(s1p->first + 1);
+                            if(s2o.has_value())
+                            {
+                                // Samples to use for interpolation
+                                // S1 last sample before commandTime
+                                // S2 first sample after commandTime
+                                auto s1 = s1p->second;
+                                auto s2 = s2o.value();
+
+                                // Find weights
+                                Util::Time::Seconds t1 = s1.serverTick * TICK_RATE;
+                                Util::Time::Seconds t2 = s2.serverTick * TICK_RATE;
+                                auto ws = Math::Interpolation::GetWeights(t1.count(), t2.count(), commandTime.count());
+                                auto alpha = ws.x;
+
+                                // Perform interpolation and shot
+                                auto shot = &sc->playerShot;
+                                logger.LogInfo("Handling player shot from " + glm::to_string(shot->origin) + " to " + glm::to_string(shot->dir));
+                                Collisions::Ray ray{shot->origin, shot->dir};
+                                for(auto& [id, client] : clients)
+                                {
+                                    auto playerId = client.player.id;
+                                    bool s1HasData = s1.players.find(playerId) != s1.players.end();
+                                    bool s2HasData = s2.players.find(playerId) != s2.players.end();
+
+                                    auto pos1 = s1.players.at(playerId).pos;
+                                    auto pos2 = s2.players.at(playerId).pos;
+                                    auto smoothPos = pos1 * alpha + pos2 * (1 - alpha);
+
+                                    auto rewoundTrans = client.player.transform;
+                                    rewoundTrans.position = smoothPos;
+                                    auto collision = Collisions::RayAABBIntersection(ray, rewoundTrans.GetTransformMat());
+                                    if(collision.intersects)
+                                    {
+                                        client.player.onDmg = true;
+                                        logger.LogInfo("Shot from player " + std::to_string(id) + " has hit player " + std::to_string(client.player.id));
+                                        logger.LogInfo("Player was at " + glm::to_string(smoothPos));
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
+            else
+            {
+                auto origin = client.player.transform.position;
+                auto dest = client.targetPos;
+                auto move = dest - origin;
+                auto dist = glm::length(move);
 
-            // TODO: Save the position of the player for this tick. Slow computers will have jittery movement
-            // Could use some entity interpolation on the server
+                auto stepDist = PLAYER_SPEED * (float)TICK_RATE.count();
+                if(dist > stepDist)
+                {
+                    auto dir = glm::normalize(move);
+                    Networking::Command::User::PlayerMovement pm{0, dir};
+                    HandleMoveCommand(peerId, pm);
+                }
+                else
+                    client.targetPos = GetRandomPos();
+            }
         }
 
         // Create snapshot
         Networking::Snapshot s;
         s.serverTick = tickCount;
-        for(auto pair : clients)
+        for(auto& [id, client] : clients)
         {
-            auto player = pair.second.player;
+            auto& player = client.player;
             s.players[player.id].pos = player.transform.position;
+            s.players[player.id].onDmg = player.onDmg;
+            client.player.onDmg = false;
         }
+        history.PushBack(s);
 
         auto snapshotBuffer = s.ToBuffer();
 
@@ -252,7 +366,8 @@ int main()
             packetBuf = Util::Buffer::Concat(std::move(packetBuf), snapshotBuffer.Clone());
 
             ENet::SentPacket epacket{packetBuf.GetData(), packetBuf.GetSize(), 0};
-            host.SendPacket(pair.first, 0, epacket);
+            if(!client.isAI)
+                host.SendPacket(pair.first, 0, epacket);
         }
 
         // Increase tick

@@ -12,6 +12,7 @@ namespace Networking
     {
         glm::vec3 pos;
         glm::vec2 rot;
+        bool onDmg;
     };
 
     struct Snapshot
