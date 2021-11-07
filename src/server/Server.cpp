@@ -35,9 +35,9 @@ struct Client
 
 std::unordered_map<ENet::PeerId, Client> clients;
 Entity::ID lastId = 0;
-const double TICK_RATE = 0.020;
-const double UPDATE_RATE = 0.050;
+const Util::Time::Seconds TICK_RATE{0.050};
 const float PLAYER_SPEED = 5.f;
+unsigned int tickCount = 0;
 
 glm::vec3 GetRandomPlayerPosition()
 {
@@ -56,7 +56,7 @@ void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMov
     if(len > 0)
     {
         auto moveDir = glm::normalize(pm.moveDir);
-        auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE;
+        auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE.count();
         player.transform.position += velocity;
     }
 }
@@ -76,13 +76,12 @@ int main()
     logger.AddLogger(std::move(flogger));
     logger.SetVerbosity(Log::Verbosity::DEBUG);
 
-
-    unsigned int tickCount = 0;
-
+    // Networking setup
     auto hostFactory = ENet::HostFactory::Get();
     auto localhost = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
     auto host = hostFactory->CreateHost(localhost, 4, 2);
-    host.SetOnConnectCallback([&logger, &tickCount, &host](auto peerId)
+    logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));
+    host.SetOnConnectCallback([&logger, &host](auto peerId)
     {
         logger.LogInfo("Connected with peer " + std::to_string(peerId));
 
@@ -95,7 +94,7 @@ int main()
         // Inform client
         Networking::Command::Server::ClientConfig clientConfig;
         clientConfig.playerId = player.id;
-        clientConfig.sampleRate = TICK_RATE;
+        clientConfig.sampleRate = TICK_RATE.count();
 
         Networking::Command::Header header;
         header.tick = tickCount;
@@ -109,7 +108,7 @@ int main()
         ENet::SentPacket sentPacket{&packet, sizeof(packet), ENET_PACKET_FLAG_RELIABLE};
         host.SendPacket(peerId, 0, sentPacket);
     });
-    host.SetOnRecvCallback([&logger, &tickCount](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
+    host.SetOnRecvCallback([&logger](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
         auto& client = clients[peerId];
 
@@ -155,7 +154,7 @@ int main()
             }
         }
     });
-    host.SetOnDisconnectCallback([&logger, &tickCount, &host](auto peerId)
+    host.SetOnDisconnectCallback([&logger, &host](auto peerId)
     {
         logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
         auto player = clients[peerId].player;
@@ -178,12 +177,15 @@ int main()
         host.Broadcast(0, sentPacket);
     });
 
-    logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));    
+    // Server loop
+    Util::Time::Seconds deltaTime{0};
+    Util::Time::Seconds lag{0};
+    auto nextTickDate = Util::Time::GetTime() + TICK_RATE;
     while(true)
     {
         host.PollAllEvents();
 
-        auto now = Util::Time::GetTime();
+        auto preSimulationTime = Util::Time::GetTime();
 
         // Handle client inputs
         for(auto& pair : clients)
@@ -225,7 +227,7 @@ int main()
 
         auto snapshotBuffer = s.ToBuffer();
 
-        // Send snapthot with ack
+        // Send snapshot with acks
         for(auto pair : clients)
         {
             auto client = pair.second;
@@ -253,13 +255,29 @@ int main()
             host.SendPacket(pair.first, 0, epacket);
         }
 
-        auto elapsed = Util::Time::GetTime() - now;
-        auto wait = Util::Time::Seconds{TICK_RATE} - elapsed;
-        //logger.LogInfo("Job done. Sleeping during " + std::to_string(Util::Time::Seconds{wait}.count()));
+        // Increase tick
+        tickCount++;
+
+        // Flush logs
         logger.Flush();
+
+        // Sleep until next tick
+        auto preSleepTime = Util::Time::GetTime();
+        auto elapsed = preSleepTime - preSimulationTime;
+        auto wait = TICK_RATE - elapsed - lag;
         Util::Time::Sleep(wait);
 
-        tickCount++;
+        // Calculate sleep lag
+        auto afterSleepTime = Util::Time::GetTime();
+        Util::Time::Seconds simulationTime = afterSleepTime - preSimulationTime;
+
+        // Calculate how far behind the server is
+        lag = afterSleepTime - nextTickDate;
+        logger.LogInfo("Server tick took " + std::to_string(simulationTime.count()) + " s");
+        logger.LogInfo("Server delay " + std::to_string(lag.count()));
+
+        // Update next tick date
+        nextTickDate += TICK_RATE;
     }
 
     logger.LogInfo("Server shutdown");
