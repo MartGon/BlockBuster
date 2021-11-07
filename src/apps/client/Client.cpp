@@ -65,7 +65,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;

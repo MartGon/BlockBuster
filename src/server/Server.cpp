@@ -179,6 +179,8 @@ int main()
             Util::Time::Seconds now = tickCount * TICK_RATE;
             Util::Time::Seconds lerp = TICK_RATE * 2.0;
             Util::Time::Seconds commandTime = now - (rtt / 2.0) - lerp;
+            // FIXME/TODO: Rtt calculation by enet isn't very reliable until some time has passed since the connection started
+            // An average is calculated according to the sent and recv packets. When we were using reliable packets, it converged way earlier.
             commandTime = Util::Time::Seconds(playerShot.clientTime);
 
             ShotCommand sc{playerShot, commandTime};
