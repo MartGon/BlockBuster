@@ -32,7 +32,7 @@ enum class BufferingState
 struct ShotCommand
 {
     Networking::Command::User::PlayerShot playerShot;
-    Util::Time::SteadyPoint arrivalTime;
+    Util::Time::Seconds commandTime;
 };
 
 struct Client
@@ -124,7 +124,7 @@ int main()
         ENet::SentPacket sentPacket{&packet, sizeof(packet), ENET_PACKET_FLAG_RELIABLE};
         host.SendPacket(peerId, 0, sentPacket);
     });
-    host.SetOnRecvCallback([&logger](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
+    host.SetOnRecvCallback([&logger, &host](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
     {   
         auto& client = clients[peerId];
 
@@ -171,7 +171,17 @@ int main()
         else if(command.header.type == Networking::Command::PLAYER_SHOT)
         {
             auto playerShot = command.data.playerShot;
-            ShotCommand sc{playerShot, Util::Time::GetTime()};
+
+            // Calculate command time
+            auto peerInfo = host.GetPeerInfo(peerId);
+            auto rtt = Util::Time::Millis(peerInfo.roundTripTimeMs);
+            
+            Util::Time::Seconds now = tickCount * TICK_RATE;
+            Util::Time::Seconds lerp = TICK_RATE * 2.0;
+            Util::Time::Seconds commandTime = now - (rtt / 2.0) - lerp;
+            commandTime = Util::Time::Seconds(playerShot.clientTime);
+
+            ShotCommand sc{playerShot, commandTime};
             client.shotBuffer.PushBack(sc);
         }
     });
@@ -244,15 +254,8 @@ int main()
                     // Consume shoot commands
                     if(auto sc = client.shotBuffer.PopFront())
                     {
-                        // Calculate command time
-                        auto arrivalTime = sc->arrivalTime;
-                        auto peerInfo = host.GetPeerInfo(peerId);
-                        auto rtt = Util::Time::Millis(peerInfo.roundTripTimeMs);
-                        
-                        Util::Time::Seconds now = tickCount * TICK_RATE;
-                        Util::Time::Seconds lerp = TICK_RATE * 2.0;
-                        Util::Time::Seconds commandTime = now - (rtt / 2.0) - lerp;
-                        commandTime = Util::Time::Seconds(sc->playerShot.clientTime);
+                        auto commandTime = sc->commandTime;
+                        //commandTime = Util::Time::Seconds(sc->playerShot.clientTime);
                         logger.LogInfo("Command time is " + std::to_string(commandTime.count()));
 
                         // Find first snapshot before commandTime

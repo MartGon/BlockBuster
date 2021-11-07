@@ -9,6 +9,8 @@ namespace Util::Time
     using Millis = std::chrono::duration<double, std::milli>;
     using Seconds = std::chrono::duration<double>;
 
+    template<typename Duration>
+    using Point = std::chrono::time_point<std::chrono::steady_clock, Duration>;
     using SteadyPoint = std::chrono::steady_clock::time_point;
     using SteadyDuration = std::chrono::steady_clock::duration;
     SteadyPoint GetTime();
