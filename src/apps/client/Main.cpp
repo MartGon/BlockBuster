@@ -68,6 +68,7 @@ int main(int argc, char** args)
     // Init logger
     auto cLogger = std::make_unique<Log::ComposedLogger>();
     auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
+    consoleLogger->Disable();
     cLogger->AddLogger(std::move(consoleLogger));
     
     auto filelogger = std::make_unique<Log::FileLogger>();

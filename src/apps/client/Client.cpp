@@ -64,7 +64,7 @@ void BlockBuster::Client::Start()
     }
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
+    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8082).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -114,7 +114,9 @@ void BlockBuster::Client::Start()
                 if(playerTable.find(playerId) == playerTable.end())
                 {
                     Math::Transform transform{player.second.pos, glm::vec3{0.0f}, glm::vec3{0.5f, 1.0f, 0.5f}};
-                    playerTable[playerId] = Entity::Player{playerId, transform};
+                    Entity::Player player{playerId, transform};
+                    playerTable[playerId] = player;
+                    prevPlayerPos[playerId] = player;
                 }
             }
 
@@ -152,8 +154,6 @@ void BlockBuster::Client::Start()
     }
 
     quit = !connected;
-
-    logger->Disable();
 }
 
 void BlockBuster::Client::Update()
@@ -162,6 +162,8 @@ void BlockBuster::Client::Update()
     simulationLag = serverTickRate;
 
     this->offsetTime = serverTickRate * 0.5;
+    this->predOffset = serverTickRate;
+    
     logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate.count()));
     while(!quit)
     {
@@ -228,8 +230,8 @@ void Client::UpdateNetworking()
     header.tick = cmdId;
 
     auto historySize = predictionHistory_.GetSize();
-    auto redundancy = std::min(3u, historySize);
-    auto amount = std::min(3u, historySize) + 1u;
+    auto redundancy = std::min(redundantInputs, historySize);
+    auto amount = redundancy + 1u;
     Networking::Command::User::PlayerMovementBatch playerMovementBatch;
     playerMovementBatch.amount = amount;
 
@@ -298,7 +300,7 @@ void Client::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd
                 logger->LogError("Prediction: D " + std::to_string(diff) + " P " + glm::to_string(pPos) + " S " + glm::to_string(newPos));
 
                 // Accept player pos
-                auto playerPos = newPos;
+                auto realPos = newPos;
 
                 // Run prev commands again
                 for(auto i = 0; i < predictionHistory_.GetSize(); i++)
@@ -307,18 +309,18 @@ void Client::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd
 
                     // Re-calculate prediction
                     auto move = predict->cmd;
-                    auto origin = playerPos;
-                    playerPos = PredPlayerPos(playerPos, move.moveDir, serverTickRate);
+                    auto origin = realPos;
+                    realPos = PredPlayerPos(realPos, move.moveDir, serverTickRate);
 
                     // Update history
                     predict->origin = origin;
-                    predict->dest = playerPos;
+                    predict->dest = realPos;
                     predictionHistory_.Set(i, predict.value());
                 }
 
                 // Update error correction values
                 auto renderPos = playerTable[playerId].transform.position;
-                errorCorrectionDiff = renderPos - playerPos;
+                errorCorrectionDiff = renderPos - realPos;
                 errorCorrectionStart = Util::Time::GetTime();
             }
         }
@@ -340,6 +342,7 @@ void Client::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd
     auto predictedPos = PredPlayerPos(prevPos, cmd.moveDir, serverTickRate);
     Prediction p{cmd, prevPos, predictedPos, now};
     predictionHistory_.PushBack(p);
+    predOffset = predOffset - serverTickRate;
 
 #ifdef _DEBUG
     auto dist = glm::length(predictedPos - prevPos);
@@ -358,7 +361,8 @@ void Client::SmoothPlayerMovement()
     {
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
-        auto predPos = PredPlayerPos(lastPred->origin, lastPred->cmd.moveDir, elapsed);
+        predOffset += deltaTime;
+        auto predPos = PredPlayerPos(lastPred->origin, lastPred->cmd.moveDir, predOffset);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;

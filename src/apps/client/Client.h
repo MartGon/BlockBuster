@@ -94,6 +94,7 @@ namespace BlockBuster
         uint8_t playerId = 0;
         Util::Time::Seconds serverTickRate{0.0};
         bool connected = false;
+        const uint32_t redundantInputs = 3;
         Util::Ring<Networking::Snapshot> snapshotHistory{16};
 
         // Networking - Prediction
@@ -107,6 +108,7 @@ namespace BlockBuster
         Util::Ring<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
+        Util::Time::Seconds predOffset{0};
 
         const Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0};
         glm::vec3 errorCorrectionDiff{0};
