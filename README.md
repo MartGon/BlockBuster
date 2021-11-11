@@ -4,7 +4,7 @@
 *Block Buster Editor* is the map editor for the upcoming voxel first-person shooter *Block Buster*. With this tool, blocks and ramps can be placed to create interesting shooter maps.
 The first design goal of this program is simplicity. However, it also offers powerful utilities to ease and speed up the creation process.
 
-## GIFs
+## Tools
 
 ### Place Tool
 # ![place](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true)
@@ -88,4 +88,8 @@ By using Test Mode, you can check how your map feels from the perspective of a p
 |Mouse Left|Turn Left|
 |Mouse Right|Turn Right|
 
-## Maps
+## Screenshots
+
+# ![bridge](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Bridge.png?raw=true)
+# ![door-e](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Door.png?raw=true)
+# ![door](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Door-E.png?raw=true)
