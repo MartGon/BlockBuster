@@ -2,7 +2,7 @@
 <h2> Description </h2>
 <p> 
     <em>Block Buster Editor</em> is the Map Editor for the upcoming voxel first-person shooter <em>Block Buster</em>. With this tool, blocks and ramps can be placed to create interesting shooter maps.
-    The first design goal of this program is simplicity to use, but it also offers powerful utilities to ease and speed up the creation process.
+    The first design goal of this program is simplicity. However, it also offers powerful utilities to ease and speed up the creation process.
 </p>
 <h2> Tools </h2>
 <table>
@@ -10,23 +10,374 @@
     
     <tr>
         <td colspan="2" style="text-align: center;">
-            <strong>Basic Tools<strong>
-        </strong></strong></td>
+            <h3>Basic Tools</h3>
+        </td>
     </tr>
     
     <tr>
-        <td>
+        <td style="width: 50%;">
             <strong>Place</strong>
             <p>
-            With this tool you can place block or ramps on the map. To do so, simply left click on one of the faces of a block/ramp that has already been placed on the map.
+            With this tool you can place blocks or ramps on the map. To do so, simply left click on one of the faces of a block/ramp that has already been placed on the map.
             You can also remove existing blocks with this tool by right clicking on them.
             </p>
         </td>
-        <td>
-            <img src="https://i.gyazo.com/2ec2ecb901897fc97a32c4725e0a599c.mp4">
+        <td style="width: 50%;">
+            <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 50%;">
+            <strong>Paint</strong>
+            <p>
+            The paint tool can be used to change the color or a texture of an existing block. 
+            Use left click to paint a block. Use right click on a block to use its color/texture for painting.
+            </p>
+
+            <p>
+            You can use your own textures, but they need to meet specific criteria:
+                <ul>
+                    <li>All textures need to be a square of the same size. </li>
+                    <li>All textures need to have the same number of color channels (RGB/RGBA). </li>
+                </ul>
+            </p>
+
+            TODO: CHANGE GIF
+        </td>
+        <td style="width: 50%;">
+            <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/paint.gif?raw=true" width="320" height="240">
+        </td>
+    </tr>
+    <tr>
+        <td style="width: 50%;">
+            <strong>Rotate</strong>
+            <p>
+            Using this tool, you will be able to rotate ramps that have been already placed on the map.
+            Use left click to rotate the ramp, use right click to rotate on the opposite direction.
+            </p>
+        </td>
+        <td style="width: 50%;">
+            <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/rotate.gif?raw=true" width="320" height="240">
         </td>
     </tr>
     
-    
 </tbody>
+</table>
+
+<div style="margin-top: 30px;"></div>
+
+<table>
+<tr>
+    <td colspan="2" style="text-align: center;">
+        <h3>Advanced Tools</h3>
+    </td>
+</tr>
+
+<tr>
+    <td colspan="2" style="text-align: center;">
+        <strong>Select</strong>
+        <p style="text-align: left;">
+            The select tool is a powerful utility that can be used to apply an operation to multiple blocks at a time.
+            The blocks that will be affected are marked by the yellow cursor.
+        </p>
+        <strong>Select Sub tools</strong>
+    </td>
+</tr>
+
+<tr>
+    <td style="width: 50%;">
+        <strong>Move Cursor</strong>
+        <p>
+        The selection cursor can be moved by using the arrow keys on the numpad. It can also be moved by clicking on a block.
+        </p>
+    </td>
+    <td style="width: 50%;">
+        <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+    </td>
+</tr>
+
+<tr>
+    <td style="width: 50%;">
+        <strong>Resize Cursor</strong>
+        <p>
+        You can change the scale of the cursor by using the arrow keys on the numpad while holding the Ctrl key.
+        </p>
+    </td>
+    <td style="width: 50%;">
+        <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+    </td>
+</tr>
+
+<tr>
+    <td style="width: 50%;">
+        <strong>Move Selection</strong>
+        <p>
+        After clicking the move selection button, the blocks that were inside the cursor will follow the cursor movements. Click the button
+        again to stop moving the blocks.
+        </p>
+    </td>
+    <td style="width: 50%;">
+        <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+    </td>
+</tr>
+
+<tr>
+    <td style="width: 50%;">
+        <strong>Edit Selection</strong>
+        <p>
+        In the edit selection sub menu you can choose between the typical edit operations: copying, pasting, cutting, etc.
+        </p>
+    </td>
+    <td style="width: 50%;">
+        <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+    </td>
+</tr>
+
+<tr>
+    <td style="width: 50%;">
+        <strong>Rotate Selection</strong>
+        <p>
+       The rotate selection sub menu can be used to rotate the blocks that are inside the cursor.
+        </p>
+    </td>
+    <td style="width: 50%;">
+        <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+    </td>
+</tr>
+
+<tr>
+    <td style="width: 50%;">
+        <strong>Mirror Selection</strong>
+        <p>
+       In the rotate selection sub menu you can also find the mirroring selection utility. This tool should be handy in order to create symmetric maps or 
+       sections of it.
+        </p>
+    </td>
+    <td style="width: 50%;">
+        <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+    </td>
+</tr>
+
+<tr>
+    <td style="width: 50%;">
+        <strong>Fill Selection</strong>
+        <p>
+        You can fill, replace or paint all the blocks inside the cursor by using the fill selection sub menu.
+        </p>
+    </td>
+    <td style="width: 50%;">
+        <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+    </td>
+</tr>
+
+</table>
+
+<h2>Keybinds</h2>
+
+<p>
+You can find a more extensive list of keybinds on the editor itself. Check <strong>Help Menu -> Keyboard Shortcut Reference</strong>.
+</p>
+
+<table style="width: 50%;">
+    <tr>
+        <td colspan="2" style="text-align: center;">
+            <h3>Camera</h3>
+        </td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <strong>Movement</strong>
+        </td>
+    </tr>
+    <tr>
+        <th style="width: 40%;">Key</th><th style="width: 0%;">Action</th>
+    </tr>
+    <tr>
+        <th style="text-align: left;">W</th><td>Move Forward</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">S</th><td>Move Backward</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">A</th><td>Strafe Left</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">D</th><td>Strafe Right</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Q</th><td>Move Up</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">E</th><td>Move Down</td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <strong>Rotation</strong>
+        </td>
+    </tr>
+    <tr>
+        <th >Key</th><th>Action</th>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Up Arrow</th><td>Pitch up</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Down Arrow</th><td>Pitch down</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Left Arrow</th><td>Turn Left</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Right Arrow</th><td>Turn Right</td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <strong>Modes</strong>
+        </td>
+    </tr>
+    <tr>
+        <th>Key</th><th>Action</th>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Middle Mouse Button (Hold)</th><td>Use FPS camera</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">F</th><td>Toggle FPS camera</td>
+    </tr>
+</table>
+
+<table style="width: 50%;">
+    <tr>
+        <td colspan="2" style="text-align: center;">
+            <h3>Select Tool</h3>
+        </td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <strong>Cursor Movement</strong>
+        </td>
+    </tr>
+    <tr>
+        <th style="width: 40%;">Key</th><th style="width: 0%;">Action</th>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Numpad 8</th><td>Move on +Z</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Numpad 2</th><td>Move on -Z</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Numpad 4</th><td>Move on -X</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Numpad 6</th><td>Move on +X</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Numpad 7</th><td>Move on +Y</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Numpad 9</th><td>Move on -Y</td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <strong>Cursor Scaling</strong>
+        </td>
+    </tr>
+    <tr>
+        <th style="width: 40%;">Key</th><th style="width: 0%;">Action</th>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Ctrl + Numpad 8</th><td>Scale on +Z</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Ctrl + Numpad 2</th><td>Scale on -Z</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Ctrl + Numpad 4</th><td>Scale on -X</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Ctrl + Numpad 6</th><td>Scale on +X</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Ctrl + Numpad 7</th><td>Scale on +Y</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Ctrl + Numpad 9</th><td>Scale on -Y</td>
+    </tr>
+</table>
+
+<table style="width: 50%;">
+    <tr>
+        <td colspan="2" style="text-align: center;">
+            <h3>Test Mode</h3>
+        </td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <p>
+                By using Test Mode, you can check how your map feels from the perspective of a player.
+                While on test mode, you will be affected by gravity, so be wary!
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <strong>Modes</strong>
+        </td>
+    </tr>
+    <tr>
+        <th>Key</th><th>Action</th>
+    </tr>
+    <tr>
+        <th style="text-align: left;">P</th><td>Toggle Editor/Test mode</td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <strong>Player Movement</strong>
+        </td>
+    </tr>
+    <tr>
+        <th style="width: 40%;">Key</th><th style="width: 0%;">Action</th>
+    </tr>
+    <tr>
+        <th style="text-align: left;">W</th><td>Move Forward</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">S</th><td>Move Backward</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">A</th><td>Strafe Left</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">D</th><td>Strafe Right</td>
+    </tr>
+
+    <tr>
+        <td colspan="2" style="text-align: left;">
+            <strong>Rotation</strong>
+        </td>
+    </tr>
+    <tr>
+        <th >Key</th><th>Action</th>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Mouse Up</th><td>Pitch up</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Mouse Down</th><td>Pitch down</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Mouse Left</th><td>Turn Left</td>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Mouse Right</th><td>Turn Right</td>
+    </tr>
 </table>
