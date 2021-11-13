@@ -1279,4 +1279,6 @@ void BlockBuster::Editor::Editor::GUI()
     // Draw GUI
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    int scissor_box[4] = { 0, 0, this->config.window.resolutionW, this->config.window.resolutionH };
+    ImGui_ImplOpenGL3_RestoreState(scissor_box);
 }

@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 
 #include <filesystem>
+#include <unordered_map>
+#include <optional>
 
 namespace GL
 {
@@ -29,6 +31,8 @@ namespace GL
 
     private:
 
+        GLint GetCachedLoc(const std::string& name);
+
         unsigned int LoadShader(const std::filesystem::path& shader, unsigned int type);
         void CheckCompileErrors(unsigned int shader, std::string type);
 
@@ -36,5 +40,6 @@ namespace GL
         void CheckLinkErrors(unsigned int shader);
 
         unsigned int handle_ = 0;
+        std::unordered_map<std::string, GLint> locationCache;
     };
 }

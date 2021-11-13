@@ -51,25 +51,36 @@ void GL::Shader::Use()
 void GL::Shader::SetUniformMat4(const std::string& name, const glm::mat4& mat)
 {
     Use();
-    auto location = glGetUniformLocation(handle_, name.c_str());
+    auto location = GetCachedLoc(name);
     glUniformMatrix4fv(location, 1, false, glm::value_ptr(mat));
 }
 
 void GL::Shader::SetUniformVec4(const std::string& name, const glm::vec4& vec)
 {
     Use();
-    auto location = glGetUniformLocation(handle_, name.c_str());
+    auto location = GetCachedLoc(name);
     glUniform4fv(location, 1, glm::value_ptr(vec));
 }
 
 void GL::Shader::SetUniformInt(const std::string& name, int a)
 {
     Use();
-    auto location = glGetUniformLocation(handle_, name.c_str());
+    auto location = GetCachedLoc(name);
     glUniform1i(location, a);
 }
 
 // Private
+
+GLint GL::Shader::GetCachedLoc(const std::string& name)
+{
+    GLint loc;
+    if (locationCache.find(name) == locationCache.end())
+        locationCache[name] = glGetUniformLocation(handle_, name.c_str());
+
+    loc = locationCache[name];
+
+    return loc;
+}
 
 unsigned int GL::Shader::LoadShader(const std::filesystem::path& shader, unsigned int shaderType)
 {

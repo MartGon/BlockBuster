@@ -39,6 +39,10 @@ void BlockBuster::Editor::Editor::Start()
     glEnable(GL_CULL_FACE);
     glEnable(GL_MULTISAMPLE);
 
+   
+    chunkShader.SetUniformInt("textureArray", 0);
+    chunkShader.SetUniformInt("colorArray", 1);
+
     // Camera
     int width, height;
     SDL_GetWindowSize(window_, &width, &height);
@@ -74,9 +78,7 @@ void BlockBuster::Editor::Editor::Update()
 
     // Setup texture arrays
     project.map.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
-    chunkShader.SetUniformInt("textureArray", 0);
     project.map.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
-    chunkShader.SetUniformInt("colorArray", 1);
 
     // Draw new Map System Cubes
     project.map.Draw(chunkShader, camera.GetProjViewMat());
