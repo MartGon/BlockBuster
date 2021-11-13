@@ -233,6 +233,9 @@ Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
         savedPos = project.cursorPos;
         cursor.scale = project.cursorScale;
 
+        // Blockscale
+        blockScale = project.map.GetBlockScale();
+
         res = Util::CreateSuccess<bool>(true);
     }
     

@@ -20,6 +20,7 @@ Map& Map::operator=(Map&& other)
     std::swap(cPalette, other.cPalette);
 
     // This is not moved, still points to the same location
+    chunkMeshMgr_.SetBlockScale(blockScale);
     chunkMeshMgr_.Reset();
     chunkMeshMgr_.Update();
     
