@@ -313,7 +313,8 @@ namespace BlockBuster
             Game::RotType selectRotType = Game::RotType::ROT_90;
             std::string selectRotErrorText;
 
-            // GUI
+            // GUIGL
+            GL::VertexArray gui_vao;
             PopUpState state = PopUpState::NONE;
             TabState tabState = TabState::TOOLS_TAB;
             bool onError = false;

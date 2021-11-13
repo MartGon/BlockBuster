@@ -106,6 +106,11 @@ namespace GL
             return eboSize_;
         }
 
+        inline GLuint GetHandle() const
+        {
+            return handle_;
+        }
+
     private:
         unsigned int handle_ = 0;
         std::vector<Buffer<Vertex>> vbos_;
