@@ -51,7 +51,7 @@ void BlockBuster::Editor::Editor::Start()
     cameraController = ::App::Client::CameraController{&camera, {window_, io_}, ::App::Client::CameraMode::EDITOR};
     
     // World
-    mapsFolder = GetConfigOption("MapsFolder", ".");
+    mapsFolder = GetConfigOption("MapsFolder", "./maps/");
     auto mapName = GetConfigOption("Map", "");
     bool mapLoaded = false;
     if(!mapName.empty() && mapName.size() < 16)

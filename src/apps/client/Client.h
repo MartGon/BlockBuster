@@ -81,6 +81,9 @@ namespace BlockBuster
         Util::Time::Seconds minFrameInterval;
         double maxFPS = 60.0;
 
+        // GUI
+        GL::VertexArray guiVao;
+
         // Controls
         ::App::Client::CameraController camController_;
 
