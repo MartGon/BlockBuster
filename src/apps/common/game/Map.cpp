@@ -28,7 +28,10 @@ Map& Map::operator=(Map&& other)
 
 void Map::SetBlockScale(float scale)
 {
+    this->changed = true;
+
     this->blockScale = scale;
+    chunkMeshMgr_.SetBlockScale(scale);
 }
 
 float Map::GetBlockScale() const
@@ -106,7 +109,7 @@ void Map::DrawChunkBorders(GL::Shader& shader, Rendering::Mesh& cubeMesh, const 
 
 bool Map::MapChanged() const
 {
-    bool changed = false;
+    auto changed = this->changed;
     for(auto pair : changedChunks)
         changed = changed || pair.second;
 
@@ -117,6 +120,7 @@ void Map::CommitChanges()
 {
     for(auto& pair : changedChunks)
         pair.second = false;
+    changed = false;
 }
 
 Util::Buffer Map::ToBuffer()

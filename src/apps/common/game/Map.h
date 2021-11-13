@@ -47,6 +47,7 @@ namespace App::Client
         void CommitChanges();
 
         float blockScale = 2.0;
+        bool changed = false;
         Game::Map::Map map_;
 
         Rendering::ChunkMesh::Manager chunkMeshMgr_{&map_};

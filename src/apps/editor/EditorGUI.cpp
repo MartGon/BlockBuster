@@ -650,7 +650,7 @@ void BlockBuster::Editor::Editor::HelpShortCutWindow()
             ImGui::BulletText("Mouse Up - Pitch up");
             ImGui::BulletText("Mouse Down - Pitch down");
             ImGui::BulletText("Mouse Left - Turn left");
-            ImGui::BulletText("Mouse Right - Pitch right");
+            ImGui::BulletText("Mouse Right - Turn right");
             
 
             ImGui::EndTable();
