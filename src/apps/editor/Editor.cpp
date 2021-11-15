@@ -1373,10 +1373,11 @@ void BlockBuster::Editor::Editor::SetBlockDisplay(Game::Display display)
 void BlockBuster::Editor::Editor::SetUnsaved(bool unsaved)
 {
     this->unsaved = unsaved;
+    std::string mapName = std::strlen(fileName) > 0 ? fileName : "New Map";
     if(unsaved)
-        RenameMainWindow(fileName + std::string("*"));
+        RenameMainWindow(mapName + std::string("*"));
     else
-        RenameMainWindow(fileName);
+        RenameMainWindow(mapName);
 }
 
 void BlockBuster::Editor::Editor::Exit()

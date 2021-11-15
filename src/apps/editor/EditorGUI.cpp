@@ -15,9 +15,11 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
     bool onPopUp = state == params.popUpState;
     if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
-        bool accept = ImGui::InputText("File name", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        bool accept = ImGui::InputText("File name", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsNoBlank);
+        bool empty = std::strlen(params.textBuffer) <= 0;
+
         Util::Result<bool> res = Util::CreateSuccess<bool>(true);
-        if(ImGui::Button("Accept") || accept)
+        if((ImGui::Button("Accept") || accept) && !empty)
         {
             res = params.onAccept();
 
@@ -212,9 +214,15 @@ void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
 
         if(ImGui::Button("Save"))
         {
-            SaveProject();
             ClosePopUp();
-            onWarningExit();
+
+            if(std::strlen(fileName) > 0)
+            {
+                SaveProject();
+                onWarningExit();
+            }
+            else
+                OpenPopUp(PopUpState::SAVE_AS);
         }
         ImGui::SameLine();
 
