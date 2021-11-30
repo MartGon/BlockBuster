@@ -52,7 +52,7 @@ int main(int argc, char* args[])
             glm::radians(60.0f)
         },
         App::Configuration::OpenGLConfig{
-            4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, "./shaders/"
+            3, 0, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, "./shaders/"
         },
         App::Configuration::LogConfig{
             "./editor.log", Log::Verbosity::ERROR
