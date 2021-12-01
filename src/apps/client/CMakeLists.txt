@@ -23,6 +23,7 @@ target_link_libraries(Client
     EnetW
     enet
     Networking
+    nlohmann_json::nlohmann_json
 )
 target_include_directories(Client PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -30,6 +31,7 @@ target_include_directories(Client PUBLIC
     ${DEPS_FOLDER} 
     ${DEPS_FOLDER}/imgui
     ${DEPS_FOLDER}/enet/include
+    ${DEPS_FOLDER}/json/include
     ${COMMON_DIR} 
     ${APPS_COMMON_DIR}
 )

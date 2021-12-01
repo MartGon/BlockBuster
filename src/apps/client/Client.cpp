@@ -6,6 +6,7 @@
 #include <math/Interpolation.h>
 
 #include <debug/Debug.h>
+#include <nlohmann/json.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -159,6 +160,10 @@ void BlockBuster::Client::Start()
     }
 
     quit = !connected;
+
+    nlohmann::json json { 
+        {"a", "Value"}
+    };
 }
 
 void BlockBuster::Client::Update()
