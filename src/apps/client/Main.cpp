@@ -61,14 +61,14 @@ int main(int argc, char** args)
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
-            filename, Log::Verbosity::DEBUG
+            filename, Log::Verbosity::INFO
         }
     };
 
     // Init logger
     auto cLogger = std::make_unique<Log::ComposedLogger>();
     auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
-    consoleLogger->Disable();
+    //consoleLogger->Disable();
     cLogger->AddLogger(std::move(consoleLogger));
     
     auto filelogger = std::make_unique<Log::FileLogger>();

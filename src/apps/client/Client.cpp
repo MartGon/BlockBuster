@@ -7,6 +7,7 @@
 
 #include <debug/Debug.h>
 #include <nlohmann/json.hpp>
+#include <httplib/httplib.h>
 
 #include <iostream>
 #include <algorithm>
@@ -145,25 +146,43 @@ void BlockBuster::Client::Start()
     });
     host.Connect(serverAddress);
 
-    auto attempts = 0;
-    while(!connected && attempts < 5)
+    // Testing connection to matchmaking server
+    httplib::Client client{"localhost:3030"};
+    nlohmann::json body{{"username", "Defu"}};
+    std::string bodyStr = nlohmann::to_string(body);
+
+    auto res = client.Post("/login", bodyStr.c_str(), bodyStr.size(), "application/json");
+    if(res)
     {
-        Util::Time::Sleep(Util::Time::Millis{500});
-        logger->LogInfo("Connecting to server...");
-        host.PollAllEvents();
-        attempts++;
+        auto value = res.value();
+        auto body = value.body;
+        logger->LogInfo("Response: " + body);
+
+        // Connect to server
+        auto attempts = 0;
+        while(!connected && attempts < 5)
+        {
+            Util::Time::Sleep(Util::Time::Millis{500});
+            logger->LogInfo("Connecting to server...");
+            host.PollAllEvents();
+            attempts++;
+        }
+
+        if(!connected)
+        {
+            logger->LogInfo("Could not connect to server. Quitting");
+        }
+
+        quit = !connected;
+    }
+    else
+    {
+        auto errorCode = res.error();
+        logger->LogError("Could not connet to match-making server. Error Code: ");
+        quit = true;
     }
 
-    if(!connected)
-    {
-        logger->LogInfo("Could not connect to server. Quitting");
-    }
-
-    quit = !connected;
-
-    nlohmann::json json { 
-        {"a", "Value"}
-    };
+    logger->Flush();
 }
 
 void BlockBuster::Client::Update()
