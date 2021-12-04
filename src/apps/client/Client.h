@@ -25,10 +25,14 @@
 #include <networking/Command.h>
 #include <networking/Snapshot.h>
 
+#include <GameState.h>
+
 namespace BlockBuster
 {
     class Client : public App::App
     {
+    friend class GameState;
+    friend class MainMenu;
     public:
         Client(::App::Configuration config);
 
@@ -63,6 +67,9 @@ namespace BlockBuster
         void DrawScene();
         void DrawGUI();
         void Render();
+
+        // GameState
+        std::unique_ptr<GameState> gameState;
 
         // Scene
         ::App::Client::Map map_;

@@ -2,6 +2,7 @@ SET(SOURCES
 
     Client.cpp
     Main.cpp
+    GameState.cpp
 )
 
 add_executable(Client ${SOURCES})
