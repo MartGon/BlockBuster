@@ -17,14 +17,4 @@ namespace BlockBuster
     protected:
         Client* client_;
     };
-
-    class MainMenu : public GameState
-    {
-    public:
-        MainMenu(Client* client);
-        
-        void Update() override;
-
-    private:
-    };
 }
