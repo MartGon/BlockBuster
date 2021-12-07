@@ -42,8 +42,6 @@ namespace BlockBuster
         bool Quit() override;
         
     private:
-
-        
         std::unique_ptr<GameState> state;
 
         // App

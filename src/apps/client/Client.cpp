@@ -13,6 +13,7 @@
 #include <algorithm>
 
 #include <GameState/InGame.h>
+#include <GameState/MainMenu.h>
 
 using namespace BlockBuster;
 
@@ -22,7 +23,7 @@ Client::Client(::App::Configuration config) : App{config}
 
 void Client::Start()
 {
-    state = std::make_unique<InGame>(this);
+    state = std::make_unique<MainMenu>(this);
     state->Start();
 }
 
