@@ -2,11 +2,22 @@
 
 #include <Client.h>
 
+#include <httplib/httplib.h>
+#include <nlohmann/json.hpp>
+
+#include <imgui/imgui_internal.h>
+
 using namespace BlockBuster;
 
 MainMenu::MainMenu(Client* client)  : GameState{client}
 {
 
+}
+
+MainMenu::~MainMenu()
+{
+    if(reqThread.joinable())
+        reqThread.join();
 }
 
 void MainMenu::Start()
@@ -18,6 +29,46 @@ void MainMenu::Update()
 {
     HandleSDLEvents();
     Render();
+}
+
+void MainMenu::Login()
+{
+    this->client_->logger->LogDebug("Login with rest service");
+
+    connecting = true;
+
+    if(reqThread.joinable())
+        reqThread.join();
+
+    reqThread = std::thread{
+        [this](){
+            httplib::Client client{"127.0.0.1", 3030};
+
+            nlohmann::json body{{"username", this->username}};
+            std::string bodyStr = nlohmann::to_string(body);
+
+            auto res = client.Post("/login", bodyStr.c_str(), bodyStr.size(), "application/json");
+            if(res)
+            {
+                auto value = res.value();
+                auto body = value.body;
+                client_->logger->LogInfo("Response: " + body);
+            }
+            else
+            {
+                auto errorCode = res.error();
+                client_->logger->LogError("Could not connet to match-making server. Error Code: ");
+            }
+
+            client_->logger->Flush();
+
+            Util::Time::Sleep(Util::Time::Seconds{3});
+
+            this->mutex.lock();
+            this->connecting = false;
+            this->mutex.unlock();
+        }
+    };
 }
 
 void MainMenu::HandleSDLEvents()
@@ -63,8 +114,29 @@ void MainMenu::DrawGUI()
     auto flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
     if(ImGui::Begin("Block Buster", nullptr, flags))
     {
-        ImGui::InputText("Username", username, 16);
-        ImGui::Button("Login");
+        mutex.lock();
+        auto itFlags = connecting ? ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None;
+        ImGui::InputText("Username", username, 16, itFlags);
+
+        auto winWidth = ImGui::GetWindowWidth();
+        auto buttonWidth = ImGui::CalcTextSize("Login").x + 8;
+        ImGui::SetCursorPosX(winWidth / 2.0f - buttonWidth / 2.0f);
+
+        auto enabled = connecting;
+        if(enabled)
+            ImGui::PushDisabled();
+
+        if(ImGui::Button("Login"))
+        {
+            Login();
+        }
+
+        if(enabled)
+            ImGui::PopDisabled();
+        
+        if(connecting)
+            ImGui::Text("%s", "Connecting...");
+        mutex.unlock();
     }
     ImGui::End();
     

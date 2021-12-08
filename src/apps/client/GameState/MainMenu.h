@@ -4,6 +4,9 @@
 
 #include <gl/VertexArray.h>
 
+#include <thread>
+#include <mutex>
+
 namespace BlockBuster
 {
     class Client;
@@ -12,11 +15,15 @@ namespace BlockBuster
     {
     public:
         MainMenu(Client* client);
+        ~MainMenu();
         
         void Start() override;
         void Update() override;
 
     private:
+
+        // REST service
+        void Login();
 
         // Inputs
         void HandleSDLEvents();
@@ -31,5 +38,8 @@ namespace BlockBuster
 
         // Login
         char username[16];
+        std::thread reqThread;
+        std::mutex mutex;
+        bool connecting = false;
     };
 }
