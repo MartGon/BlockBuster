@@ -17,7 +17,7 @@
 #include <game/ChunkMeshMgr.h>
 
 #include <util/BBTime.h>
-#include <util/CircularVector.h>
+#include <util/Ring.h>
 
 #include <entity/Player.h>
 

@@ -5,7 +5,7 @@
 #include <enetw/ENetW.h>
 
 #include <unordered_map>
-#include <util/CircularVector.h>
+#include <util/Ring.h>
 
 namespace Networking
 {

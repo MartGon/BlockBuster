@@ -4,8 +4,14 @@
 
 #include <gl/VertexArray.h>
 
+#include <util/Ring.h>
+
+#include <httplib/httplib.h>
+#include <nlohmann/json.hpp>
+
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 namespace BlockBuster
 {
@@ -22,7 +28,20 @@ namespace BlockBuster
 
     private:
 
+        //#### Function Members ####\\
         // REST service
+        enum class MMEndpoint
+        {
+            LOGIN
+        };
+        struct MMResponse
+        {
+            MMEndpoint endpoint;
+            httplib::Response httpRes;
+        };
+
+        std::optional<MMResponse> PollRestResponse();
+        void HandleRestResponses();
         void Login();
 
         // Inputs
@@ -32,14 +51,19 @@ namespace BlockBuster
         void Render();
         void DrawGUI();
 
-        //#### Members ####\\
+        //#### Data Members ####\\
         // GUI
         GL::VertexArray guiVao;
 
+        // Rest Service
+        std::mutex reqMutex;
+        Util::Ring<MMResponse, 16> responses;
+
         // Login
-        char username[16];
+        char inputUsername[16];
         std::thread reqThread;
-        std::mutex mutex;
-        bool connecting = false;
+        std::atomic_bool connecting = false;
+        std::string userId;
+        std::string user;
     };
 }

@@ -2,9 +2,6 @@
 
 #include <Client.h>
 
-#include <httplib/httplib.h>
-#include <nlohmann/json.hpp>
-
 #include <imgui/imgui_internal.h>
 
 using namespace BlockBuster;
@@ -22,13 +19,43 @@ MainMenu::~MainMenu()
 
 void MainMenu::Start()
 {
-    username[0] = '\0';
+    inputUsername[0] = '\0';
 }
 
 void MainMenu::Update()
 {
+    HandleRestResponses();
     HandleSDLEvents();
     Render();
+}
+
+void MainMenu::HandleRestResponses()
+{
+    while(auto res = PollRestResponse())
+    {
+        auto response = res.value();
+        switch (response.endpoint)
+        {
+        case MMEndpoint::LOGIN:
+        {
+            auto body = response.httpRes.body;
+            client_->logger->LogInfo("Response: " + body);
+
+            break;
+        }
+        default:
+            break;
+        }
+    }
+}
+
+std::optional<MainMenu::MMResponse> MainMenu::PollRestResponse()
+{
+    this->reqMutex.lock();
+    auto ret = this->responses.PopFront();
+    this->reqMutex.unlock();
+
+    return ret;
 }
 
 void MainMenu::Login()
@@ -44,29 +71,28 @@ void MainMenu::Login()
         [this](){
             httplib::Client client{"127.0.0.1", 3030};
 
-            nlohmann::json body{{"username", this->username}};
+            nlohmann::json body{{"username", this->inputUsername}};
             std::string bodyStr = nlohmann::to_string(body);
 
             auto res = client.Post("/login", bodyStr.c_str(), bodyStr.size(), "application/json");
             if(res)
             {
                 auto value = res.value();
-                auto body = value.body;
-                client_->logger->LogInfo("Response: " + body);
+
+                this->reqMutex.lock();
+                this->responses.PushBack(MMResponse{MMEndpoint::LOGIN, value});
+                this->reqMutex.unlock();
             }
             else
             {
                 auto errorCode = res.error();
                 client_->logger->LogError("Could not connet to match-making server. Error Code: ");
+                Util::Time::Sleep(Util::Time::Seconds{3});
             }
 
-            client_->logger->Flush();
+            client_->logger->Flush();            
 
-            Util::Time::Sleep(Util::Time::Seconds{3});
-
-            this->mutex.lock();
             this->connecting = false;
-            this->mutex.unlock();
         }
     };
 }
@@ -114,15 +140,14 @@ void MainMenu::DrawGUI()
     auto flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
     if(ImGui::Begin("Block Buster", nullptr, flags))
     {
-        mutex.lock();
         auto itFlags = connecting ? ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None;
-        ImGui::InputText("Username", username, 16, itFlags);
+        ImGui::InputText("Username", inputUsername, 16, itFlags);
 
         auto winWidth = ImGui::GetWindowWidth();
         auto buttonWidth = ImGui::CalcTextSize("Login").x + 8;
         ImGui::SetCursorPosX(winWidth / 2.0f - buttonWidth / 2.0f);
 
-        auto enabled = connecting;
+        auto enabled = connecting.load();
         if(enabled)
             ImGui::PushDisabled();
 
@@ -136,7 +161,6 @@ void MainMenu::DrawGUI()
         
         if(connecting)
             ImGui::Text("%s", "Connecting...");
-        mutex.unlock();
     }
     ImGui::End();
     

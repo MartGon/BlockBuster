@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
 
 #include <util/Buffer.h>
-#include <util/CircularVector.h>
+#include <util/Ring.h>
 
 TEST_CASE("Buffer tests")
 {

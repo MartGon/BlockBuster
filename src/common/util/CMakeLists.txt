@@ -1,7 +1,7 @@
 SET(SOURCES
     
     Buffer.cpp
-    CircularVector.cpp
+    Ring.cpp
     Random.cpp
     Result.cpp
     Time.cpp
