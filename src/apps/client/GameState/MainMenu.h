@@ -37,12 +37,13 @@ namespace BlockBuster
         struct MMResponse
         {
             MMEndpoint endpoint;
-            httplib::Response httpRes;
+            httplib::Result httpRes;
         };
 
         std::optional<MMResponse> PollRestResponse();
         void HandleRestResponses();
         void Login();
+        void Request(std::string endpoint, nlohmann::json body);
 
         // Inputs
         void HandleSDLEvents();

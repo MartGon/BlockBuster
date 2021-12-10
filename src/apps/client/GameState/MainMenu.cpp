@@ -31,20 +31,30 @@ void MainMenu::Update()
 
 void MainMenu::HandleRestResponses()
 {
-    while(auto res = PollRestResponse())
+    while(auto mmRes = PollRestResponse())
     {
-        auto response = res.value();
-        switch (response.endpoint)
+        auto mmResponse = std::move(mmRes.value());
+        if(mmResponse.httpRes)
         {
-        case MMEndpoint::LOGIN:
-        {
-            auto body = response.httpRes.body;
-            client_->logger->LogInfo("Response: " + body);
+            switch (mmResponse.endpoint)
+            {
+            case MMEndpoint::LOGIN:
+            {
+                auto value = mmResponse.httpRes.value();
+                auto body = value.body;
+                client_->logger->LogInfo("Response: " + body);
+                client_->logger->Flush();
 
-            break;
+                break;
+            }
+            default:
+                break;
+            }
         }
-        default:
-            break;
+        else
+        {
+            auto errorCode = mmResponse.httpRes.error();
+            client_->logger->LogError("Could not connet to match-making server. Error Code: ");
         }
     }
 }
@@ -63,34 +73,32 @@ void MainMenu::Login()
     this->client_->logger->LogDebug("Login with rest service");
 
     connecting = true;
+    nlohmann::json body{{"username", this->inputUsername}};
+
+    if(reqThread.joinable())
+        reqThread.join();
+
+    Request("/login", body);
+}
+
+void MainMenu::Request(std::string endpoint, nlohmann::json body)
+{
+    connecting = true;
 
     if(reqThread.joinable())
         reqThread.join();
 
     reqThread = std::thread{
-        [this](){
+        [this, body, endpoint](){
             httplib::Client client{"127.0.0.1", 3030};
 
-            nlohmann::json body{{"username", this->inputUsername}};
             std::string bodyStr = nlohmann::to_string(body);
-
-            auto res = client.Post("/login", bodyStr.c_str(), bodyStr.size(), "application/json");
-            if(res)
-            {
-                auto value = res.value();
-
-                this->reqMutex.lock();
-                this->responses.PushBack(MMResponse{MMEndpoint::LOGIN, value});
-                this->reqMutex.unlock();
-            }
-            else
-            {
-                auto errorCode = res.error();
-                client_->logger->LogError("Could not connet to match-making server. Error Code: ");
-                Util::Time::Sleep(Util::Time::Seconds{3});
-            }
-
-            client_->logger->Flush();            
+            auto res = client.Post(endpoint.c_str(), bodyStr.c_str(), bodyStr.size(), "application/json");
+            auto response = MMResponse{MMEndpoint::LOGIN, std::move(res)};
+            this->reqMutex.lock();
+            this->responses.PushBack(std::move(response));
+            this->reqMutex.unlock();
+            Util::Time::Sleep(Util::Time::Seconds{1});  
 
             this->connecting = false;
         }

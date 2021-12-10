@@ -61,7 +61,7 @@ namespace Util
             return At(-1);
         }
 
-        void PushBack(T val)
+        void PushBack(const T& val)
         {
             if(vector_.size() >= capacity_)
                 vector_.erase(vector_.begin());
@@ -69,11 +69,22 @@ namespace Util
             vector_.push_back(val);
         }
 
+        void PushBack(T&& val)
+        {
+            if(vector_.size() >= capacity_)
+                vector_.erase(vector_.begin());
+
+            vector_.push_back(std::move(val));
+        }
+
         std::optional<T> PopFront()
         {
-            auto ret = Front();
-            if(ret)
+            std::optional<T> ret;
+            if(!vector_.empty())
+            {
+                ret = std::move(*vector_.begin());
                 vector_.erase(vector_.begin());
+            }
 
             return ret;
         }
