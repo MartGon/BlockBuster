@@ -23,6 +23,7 @@ target_link_libraries(Client
     BlockBuster 
     App
     Game
+    GUI
 
     EnetW
     enet

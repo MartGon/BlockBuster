@@ -8,7 +8,6 @@ using namespace BlockBuster;
 
 MainMenu::MainMenu(Client* client)  : GameState{client}
 {
-
 }
 
 MainMenu::~MainMenu()
@@ -20,6 +19,10 @@ MainMenu::~MainMenu()
 void MainMenu::Start()
 {
     inputUsername[0] = '\0';
+
+    // Set default name
+    popUp.SetTitle("Connecting");
+    popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 }
 
 void MainMenu::Update()
@@ -41,8 +44,17 @@ void MainMenu::HandleRestResponses()
             case MMEndpoint::LOGIN:
             {
                 auto value = mmResponse.httpRes.value();
-                auto body = value.body;
-                client_->logger->LogInfo("Response: " + body);
+                auto bodyStr = value.body;
+                nlohmann::json body = nlohmann::json::parse(bodyStr);
+
+                popUp.SetTitle("Login succesful");
+                popUp.SetText("Your username is " + std::string(body["username"]));
+                popUp.SetButtonVisible(true);
+                popUp.SetButtonCallback([this](){
+                    this->client_->logger->LogInfo("Button pressed. Opening server browser");
+                });
+
+                client_->logger->LogInfo("Response: " + bodyStr);
                 client_->logger->Flush();
 
                 break;
@@ -54,6 +66,9 @@ void MainMenu::HandleRestResponses()
         else
         {
             auto errorCode = mmResponse.httpRes.error();
+            popUp.SetText("Could not connect to server");
+            popUp.SetButtonVisible(true);
+
             client_->logger->LogError("Could not connet to match-making server. Error Code: ");
         }
     }
@@ -85,6 +100,12 @@ void MainMenu::Request(std::string endpoint, nlohmann::json body)
 {
     connecting = true;
 
+    // Raise pop up
+    popUp.SetTitle("Login connection");
+    popUp.SetText("Connnecting to match making server");
+    popUp.SetVisible(true);
+    popUp.SetButtonVisible(false);
+
     if(reqThread.joinable())
         reqThread.join();
 
@@ -95,10 +116,11 @@ void MainMenu::Request(std::string endpoint, nlohmann::json body)
             std::string bodyStr = nlohmann::to_string(body);
             auto res = client.Post(endpoint.c_str(), bodyStr.c_str(), bodyStr.size(), "application/json");
             auto response = MMResponse{MMEndpoint::LOGIN, std::move(res)};
+            Util::Time::Sleep(Util::Time::Seconds{1});  
+
             this->reqMutex.lock();
             this->responses.PushBack(std::move(response));
             this->reqMutex.unlock();
-            Util::Time::Sleep(Util::Time::Seconds{1});  
 
             this->connecting = false;
         }
@@ -155,8 +177,8 @@ void MainMenu::DrawGUI()
         auto buttonWidth = ImGui::CalcTextSize("Login").x + 8;
         ImGui::SetCursorPosX(winWidth / 2.0f - buttonWidth / 2.0f);
 
-        auto enabled = connecting.load();
-        if(enabled)
+        auto disabled = popUp.IsVisible();
+        if(disabled)
             ImGui::PushDisabled();
 
         if(ImGui::Button("Login"))
@@ -164,14 +186,13 @@ void MainMenu::DrawGUI()
             Login();
         }
 
-        if(enabled)
+        if(disabled)
             ImGui::PopDisabled();
-        
-        if(connecting)
-            ImGui::Text("%s", "Connecting...");
+
+        popUp.Draw();
     }
     ImGui::End();
-    
+
     // Draw GUI
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), guiVao.GetHandle());

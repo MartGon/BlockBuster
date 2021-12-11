@@ -3,7 +3,7 @@
 #include <GameState/GameState.h>
 
 #include <gl/VertexArray.h>
-
+#include <gui/PopUp.h>
 #include <util/Ring.h>
 
 #include <httplib/httplib.h>
@@ -55,6 +55,7 @@ namespace BlockBuster
         //#### Data Members ####\\
         // GUI
         GL::VertexArray guiVao;
+        GUI::PopUp popUp;
 
         // Rest Service
         std::mutex reqMutex;
