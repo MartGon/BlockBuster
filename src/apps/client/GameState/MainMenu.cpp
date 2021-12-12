@@ -37,40 +37,11 @@ void MainMenu::HandleRestResponses()
     while(auto mmRes = PollRestResponse())
     {
         auto mmResponse = std::move(mmRes.value());
-        if(mmResponse.httpRes)
-        {
-            switch (mmResponse.endpoint)
-            {
-            case MMEndpoint::LOGIN:
-            {
-                auto value = mmResponse.httpRes.value();
-                auto bodyStr = value.body;
-                nlohmann::json body = nlohmann::json::parse(bodyStr);
-
-                popUp.SetTitle("Login succesful");
-                popUp.SetText("Your username is " + std::string(body["username"]));
-                popUp.SetButtonVisible(true);
-                popUp.SetButtonCallback([this](){
-                    this->client_->logger->LogInfo("Button pressed. Opening server browser");
-                });
-
-                client_->logger->LogInfo("Response: " + bodyStr);
-                client_->logger->Flush();
-
-                break;
-            }
-            default:
-                break;
-            }
-        }
+        auto httpRes = std::move(mmResponse.httpRes);
+        if(httpRes)
+            mmResponse.onSuccess(httpRes.value());
         else
-        {
-            auto errorCode = mmResponse.httpRes.error();
-            popUp.SetText("Could not connect to server");
-            popUp.SetButtonVisible(true);
-
-            client_->logger->LogError("Could not connet to match-making server. Error Code: ");
-        }
+            mmResponse.onError(httpRes.error());
     }
 }
 
@@ -87,35 +58,53 @@ void MainMenu::Login()
 {
     this->client_->logger->LogDebug("Login with rest service");
 
-    connecting = true;
-    nlohmann::json body{{"username", this->inputUsername}};
-
-    if(reqThread.joinable())
-        reqThread.join();
-
-    Request("/login", body);
-}
-
-void MainMenu::Request(std::string endpoint, nlohmann::json body)
-{
-    connecting = true;
-
     // Raise pop up
     popUp.SetTitle("Login connection");
     popUp.SetText("Connnecting to match making server");
     popUp.SetVisible(true);
     popUp.SetButtonVisible(false);
 
+    nlohmann::json body{{"username", this->inputUsername}};
+    auto onSuccess = [this](httplib::Response& res){
+        auto bodyStr = res.body;
+        nlohmann::json body = nlohmann::json::parse(bodyStr);
+
+        popUp.SetTitle("Login succesful");
+        popUp.SetText("Your username is " + std::string(body["username"]));
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            this->client_->logger->LogInfo("Button pressed. Opening server browser");
+        });
+
+        client_->logger->LogInfo("Response: " + bodyStr);
+        client_->logger->Flush();
+    };
+
+    auto onError = [this](httplib::Error error){
+        popUp.SetText("Could not connect to server");
+        popUp.SetButtonVisible(true);
+
+        client_->logger->LogError("Could not connet to match-making server. Error Code: ");
+    };
+    Request("/login", body, onSuccess, onError);
+}
+
+void MainMenu::Request(std::string endpoint, nlohmann::json body, 
+    std::function<void(httplib::Response&)> onSuccess,
+    std::function<void(httplib::Error)> onError)
+{
+    connecting = true;
+
     if(reqThread.joinable())
         reqThread.join();
 
     reqThread = std::thread{
-        [this, body, endpoint](){
+        [this, body, endpoint, onSuccess, onError](){
             httplib::Client client{"127.0.0.1", 3030};
 
             std::string bodyStr = nlohmann::to_string(body);
             auto res = client.Post(endpoint.c_str(), bodyStr.c_str(), bodyStr.size(), "application/json");
-            auto response = MMResponse{MMEndpoint::LOGIN, std::move(res)};
+            auto response = MMResponse{std::move(res), onSuccess, onError};
             Util::Time::Sleep(Util::Time::Seconds{1});  
 
             this->reqMutex.lock();

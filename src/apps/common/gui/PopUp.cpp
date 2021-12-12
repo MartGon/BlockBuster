@@ -10,7 +10,10 @@ void PopUp::Draw()
     {
         ImGui::Text("%s", text.c_str());
 
-        if(isButtonVisible && ImGui::Button("Ok"))
+        auto winWidth = ImGui::GetWindowWidth();
+        auto buttonWidth = ImGui::CalcTextSize("Accept").x + 8;
+        ImGui::SetCursorPosX(winWidth / 2.0f - buttonWidth / 2.0f);
+        if(isButtonVisible && ImGui::Button("Accept"))
         {
             isVisible = false;
 

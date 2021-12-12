@@ -12,6 +12,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <functional>
 
 namespace BlockBuster
 {
@@ -30,20 +31,17 @@ namespace BlockBuster
 
         //#### Function Members ####\\
         // REST service
-        enum class MMEndpoint
-        {
-            LOGIN
-        };
         struct MMResponse
         {
-            MMEndpoint endpoint;
             httplib::Result httpRes;
+            std::function<void(httplib::Response&)> onSuccess;
+            std::function<void(httplib::Error)> onError;
         };
 
         std::optional<MMResponse> PollRestResponse();
         void HandleRestResponses();
         void Login();
-        void Request(std::string endpoint, nlohmann::json body);
+        void Request(std::string endpoint, nlohmann::json body, std::function<void(httplib::Response&)> onSuccess, std::function<void(httplib::Error)> onError);
 
         // Inputs
         void HandleSDLEvents();
@@ -59,12 +57,12 @@ namespace BlockBuster
 
         // Rest Service
         std::mutex reqMutex;
+        std::thread reqThread;
+        std::atomic_bool connecting = false;
         Util::Ring<MMResponse, 16> responses;
 
         // Login
         char inputUsername[16];
-        std::thread reqThread;
-        std::atomic_bool connecting = false;
         std::string userId;
         std::string user;
     };
