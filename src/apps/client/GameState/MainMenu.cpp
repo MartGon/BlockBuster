@@ -89,6 +89,37 @@ void MainMenu::Login()
     Request("/login", body, onSuccess, onError);
 }
 
+void MainMenu::ListGames()
+{
+    GetLogger()->LogInfo("Requesting list of games");
+
+    nlohmann::json body;
+    auto onSuccess = [this](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("List of games updated successfully");
+
+        auto bodyStr = res.body;
+        auto body = nlohmann::json::parse(bodyStr);
+
+        auto games = body.at("games");
+        this->games.clear();
+        for(auto game : games)
+            this->games.push_back(game);
+    };
+
+    auto onError = [this](httplib::Error error){
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+    Request("/list_games", body, onSuccess, onError);
+}
+
 void MainMenu::Request(std::string endpoint, nlohmann::json body, 
     std::function<void(httplib::Response&)> onSuccess,
     std::function<void(httplib::Error)> onError)
@@ -224,6 +255,26 @@ void MainMenu::ServerBrowserWindow()
 
             ImGui::TableHeadersRow();
 
+            for(auto game : games)
+            {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                auto name = std::string(game["name"]);
+                ImGui::Text("%s", name.c_str());
+
+                ImGui::TableNextColumn();
+                ImGui::Text("Map");
+
+                ImGui::TableNextColumn();
+                ImGui::Text("Mode");
+
+                ImGui::TableNextColumn();
+                ImGui::Text("Players");
+
+                ImGui::TableNextColumn();
+                ImGui::Text("Ping");
+            }
+
             ImGui::EndTable();
         }
 
@@ -232,6 +283,13 @@ void MainMenu::ServerBrowserWindow()
         ImGui::Button("Connect");
         ImGui::SameLine();
         ImGui::Button("Filters");
+        ImGui::SameLine();
+
+
+        if(ImGui::Button("Update"))
+        {
+            ListGames();
+        }
     }
     if(!show)
         GetLogger()->LogInfo("No show");

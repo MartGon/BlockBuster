@@ -41,6 +41,7 @@ namespace BlockBuster
         std::optional<MMResponse> PollRestResponse();
         void HandleRestResponses();
         void Login();
+        void ListGames();
         void Request(std::string endpoint, nlohmann::json body, std::function<void(httplib::Response&)> onSuccess, std::function<void(httplib::Error)> onError);
 
         // Inputs
@@ -69,5 +70,16 @@ namespace BlockBuster
         char inputUsername[16];
         std::string userId;
         std::string user;
+
+        // List Games
+        struct Game{
+            std::string name;
+            std::string map;
+            std::string mode;
+            uint8_t players;
+            uint8_t maxPlayers;
+            uint16_t ping;
+        };
+        std::vector<nlohmann::json> games;
     };
 }
