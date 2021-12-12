@@ -56,7 +56,7 @@ std::optional<MainMenu::MMResponse> MainMenu::PollRestResponse()
 
 void MainMenu::Login()
 {
-    this->client_->logger->LogDebug("Login with rest service");
+    GetLogger()->LogDebug("Login with rest service");
 
     // Raise pop up
     popUp.SetTitle("Login connection");
@@ -73,18 +73,18 @@ void MainMenu::Login()
         popUp.SetText("Your username is " + std::string(body["username"]));
         popUp.SetButtonVisible(true);
         popUp.SetButtonCallback([this](){
-            this->client_->logger->LogInfo("Button pressed. Opening server browser");
+            GetLogger()->LogInfo("Button pressed. Opening server browser");
         });
 
-        client_->logger->LogInfo("Response: " + bodyStr);
-        client_->logger->Flush();
+        GetLogger()->LogInfo("Response: " + bodyStr);
+        GetLogger()->Flush();
     };
 
     auto onError = [this](httplib::Error error){
         popUp.SetText("Could not connect to server");
         popUp.SetButtonVisible(true);
 
-        client_->logger->LogError("Could not connet to match-making server. Error Code: ");
+        GetLogger()->LogError("Could not connet to match-making server. Error Code: ");
     };
     Request("/login", body, onSuccess, onError);
 }
@@ -154,6 +154,18 @@ void MainMenu::DrawGUI()
     ImGui_ImplSDL2_NewFrame(client_->window_);
     ImGui::NewFrame();
 
+    ServerBrowserWindow();
+
+    // Draw GUI
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), guiVao.GetHandle());
+    auto windowSize = client_->GetWindowSize();
+    int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
+    ImGui_ImplOpenGL3_RestoreState(scissor_box);
+}
+
+void MainMenu::LoginWindow()
+{
     auto displaySize = client_->io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
     auto flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
@@ -181,11 +193,48 @@ void MainMenu::DrawGUI()
         popUp.Draw();
     }
     ImGui::End();
+}
 
-    // Draw GUI
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), guiVao.GetHandle());
-    auto windowSize = client_->GetWindowSize();
-    int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
-    ImGui_ImplOpenGL3_RestoreState(scissor_box);
+void MainMenu::ServerBrowserWindow()
+{
+    auto displaySize = ImGui::GetIO().DisplaySize;
+    
+    // Size
+    ImGui::SetNextWindowSize(ImVec2{displaySize.x * 0.7f, displaySize.y * 0.5f}, ImGuiCond_Always);
+
+    // Centered
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+    bool show = true;
+    if(ImGui::Begin("Server Browser", &show, flags))
+    {
+        auto winSize = ImGui::GetWindowSize();
+
+        auto tableSize = ImVec2{winSize.x * 0.975f, winSize.y * 0.8f};
+        auto tFlags = ImGuiTableFlags_None;
+        ImGui::SetCursorPosX((winSize.x - tableSize.x) / 2.f);
+        if(ImGui::BeginTable("#Server Table", 5, tFlags, tableSize))
+        {
+            ImGui::TableSetupColumn("Name");
+            ImGui::TableSetupColumn("Map");
+            ImGui::TableSetupColumn("Mode");
+            ImGui::TableSetupColumn("Players");
+            ImGui::TableSetupColumn("Ping");
+
+            ImGui::TableHeadersRow();
+
+            ImGui::EndTable();
+        }
+
+        ImGui::Button("Create Game");
+        ImGui::SameLine();
+        ImGui::Button("Connect");
+        ImGui::SameLine();
+        ImGui::Button("Filters");
+    }
+    if(!show)
+        GetLogger()->LogInfo("No show");
+
+    ImGui::End();
 }

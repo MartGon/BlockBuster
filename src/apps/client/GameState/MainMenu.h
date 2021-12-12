@@ -50,6 +50,10 @@ namespace BlockBuster
         void Render();
         void DrawGUI();
 
+        // GUI
+        void LoginWindow();
+        void ServerBrowserWindow();
+
         //#### Data Members ####\\
         // GUI
         GL::VertexArray guiVao;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mglogger/MGLogger.h>
+
 namespace BlockBuster
 {
     class Client;
@@ -15,6 +17,9 @@ namespace BlockBuster
         virtual void Shutdown(){};
 
     protected:
+
+        Log::Logger* GetLogger();
+
         Client* client_;
     };
 }
