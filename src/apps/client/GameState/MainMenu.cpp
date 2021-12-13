@@ -120,6 +120,43 @@ void MainMenu::ListGames()
     Request("/list_games", body, onSuccess, onError);
 }
 
+void MainMenu::JoinGame(std::string gameId)
+{
+    GetLogger()->LogInfo("Joining game " + gameId);
+
+    // Show connecting pop up
+    popUp.SetVisible(true);
+    popUp.SetCloseable(true);
+    popUp.SetTitle("Connecting");
+    popUp.SetText("Joining game...");
+    popUp.SetButtonVisible(false);
+
+    nlohmann::json body;
+    body["player_id"] = userId;
+    body["game_id"] = gameId;
+
+    auto onSuccess = [this, gameId](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfullly joined game " + gameId);
+
+        // Open game info window
+        popUp.SetVisible(false);
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+    Request("/join_game", body, onSuccess, onError);
+}
+
 void MainMenu::Request(std::string endpoint, nlohmann::json body, 
     std::function<void(httplib::Response&)> onSuccess,
     std::function<void(httplib::Error)> onError)
@@ -185,7 +222,9 @@ void MainMenu::DrawGUI()
     ImGui_ImplSDL2_NewFrame(client_->window_);
     ImGui::NewFrame();
 
+    //LoginWindow()
     ServerBrowserWindow();
+    popUp.Draw();
 
     // Draw GUI
     ImGui::Render();
@@ -220,8 +259,6 @@ void MainMenu::LoginWindow()
 
         if(disabled)
             ImGui::PopDisabled();
-
-        popUp.Draw();
     }
     ImGui::End();
 }
@@ -243,7 +280,7 @@ void MainMenu::ServerBrowserWindow()
         auto winSize = ImGui::GetWindowSize();
 
         auto tableSize = ImVec2{winSize.x * 0.975f, winSize.y * 0.8f};
-        auto tFlags = ImGuiTableFlags_None;
+        auto tFlags = ImGuiTableFlags_None | ImGuiTableFlags_ScrollY;
         ImGui::SetCursorPosX((winSize.x - tableSize.x) / 2.f);
         if(ImGui::BeginTable("#Server Table", 5, tFlags, tableSize))
         {
@@ -258,9 +295,16 @@ void MainMenu::ServerBrowserWindow()
             for(auto game : games)
             {
                 ImGui::TableNextRow();
-                ImGui::TableNextColumn();
+                auto gameId = std::string(game["id"]);
                 auto name = std::string(game["name"]);
-                ImGui::Text("%s", name.c_str());
+
+                ImGui::TableNextColumn();
+                auto selectFlags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick;
+                if(ImGui::Selectable(name.c_str(), false, selectFlags))
+                {
+                    if(ImGui::IsMouseDoubleClicked(ImGuiMouseButton_::ImGuiMouseButton_Left))
+                        JoinGame(gameId);
+                }
 
                 ImGui::TableNextColumn();
                 ImGui::Text("Map");

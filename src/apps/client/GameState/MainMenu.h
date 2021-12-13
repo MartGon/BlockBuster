@@ -42,6 +42,7 @@ namespace BlockBuster
         void HandleRestResponses();
         void Login();
         void ListGames();
+        void JoinGame(std::string gameId);
         void Request(std::string endpoint, nlohmann::json body, std::function<void(httplib::Response&)> onSuccess, std::function<void(httplib::Error)> onError);
 
         // Inputs
