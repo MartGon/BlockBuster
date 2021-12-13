@@ -21,6 +21,16 @@ namespace GUI
             isVisible = visible;
         }
 
+        inline bool IsCloseable() const
+        {
+            return isCloseable;
+        }
+
+        inline void SetCloseable(bool closeable)
+        {
+            isCloseable = closeable;
+        }
+
         inline void SetButtonVisible(bool visible)
         {
             isButtonVisible = visible;
@@ -53,6 +63,7 @@ namespace GUI
         ImGuiWindowFlags flags = ImGuiWindowFlags_None;
         bool isButtonVisible = false;
         bool isVisible = false;
+        bool isCloseable = false;
         std::string title;
         std::string text;
         std::function<void()> onButtonPress;
