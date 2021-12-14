@@ -157,6 +157,37 @@ void MainMenu::JoinGame(std::string gameId)
     Request("/join_game", body, onSuccess, onError);
 }
 
+void MainMenu::CreateGame(std::string name)
+{
+    nlohmann::json body;
+    body["name"] = name;
+
+    auto onSuccess = [this, name](httplib::Response& res)
+    {
+        /*
+        auto bodyStr = res.body;
+        auto body = nlohmann::json::parse(bodyStr);
+        auto gameId = std::string(body["id"]);
+        */
+        GetLogger()->LogInfo("Succesfullly created game: " + name);
+
+        // Open game info window -- Like joining a game
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+    Request("/create_game", body, onSuccess, onError);
+}
+
 void MainMenu::Request(std::string endpoint, nlohmann::json body, 
     std::function<void(httplib::Response&)> onSuccess,
     std::function<void(httplib::Error)> onError)
@@ -223,7 +254,8 @@ void MainMenu::DrawGUI()
     ImGui::NewFrame();
 
     //LoginWindow()
-    ServerBrowserWindow();
+    //ServerBrowserWindow();
+    CreateGameWindow();
     popUp.Draw();
 
     // Draw GUI
@@ -337,6 +369,32 @@ void MainMenu::ServerBrowserWindow()
     }
     if(!show)
         GetLogger()->LogInfo("No show");
+
+    ImGui::End();
+}
+
+void MainMenu::CreateGameWindow()
+{
+    auto displaySize = ImGui::GetIO().DisplaySize;
+    
+    // Size
+    //ImGui::SetNextWindowSize(ImVec2{displaySize.x * 0.7f, displaySize.y * 0.5f}, ImGuiCond_Always);
+
+    // Centered
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
+    bool show = true;
+    if(ImGui::Begin("Create Game", &show, flags))
+    {
+        auto textFlags = ImGuiInputTextFlags_None;
+        ImGui::InputText("Name", gameName, 32, textFlags);
+
+        if(ImGui::Button("Create Game"))
+        {
+            CreateGame(gameName);
+        }
+    }
 
     ImGui::End();
 }

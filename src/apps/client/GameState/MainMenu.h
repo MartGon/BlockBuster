@@ -43,6 +43,7 @@ namespace BlockBuster
         void Login();
         void ListGames();
         void JoinGame(std::string gameId);
+        void CreateGame(std::string name);
         void Request(std::string endpoint, nlohmann::json body, std::function<void(httplib::Response&)> onSuccess, std::function<void(httplib::Error)> onError);
 
         // Inputs
@@ -55,6 +56,7 @@ namespace BlockBuster
         // GUI
         void LoginWindow();
         void ServerBrowserWindow();
+        void CreateGameWindow();
 
         //#### Data Members ####\\
         // GUI
@@ -82,5 +84,8 @@ namespace BlockBuster
             uint16_t ping;
         };
         std::vector<nlohmann::json> games;
+
+        // Create Game
+        char gameName[32];
     };
 }
