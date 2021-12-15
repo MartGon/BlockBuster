@@ -49,6 +49,8 @@ void BlockBuster::Editor::Editor::Start()
     camera.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)width / (float)height);
     camera.SetParam(Rendering::Camera::Param::FOV, config.window.fov);
     cameraController = ::App::Client::CameraController{&camera, {window_, io_}, ::App::Client::CameraMode::EDITOR};
+    cameraController.moveSpeed = std::stof(GetConfigOption("camMoveSpeed", "0.25"));
+    cameraController.rotSpeed = std::stof(GetConfigOption("camRotSpeed", "0.017"));
     
     // World
     mapsFolder = GetConfigOption("MapsFolder", "./maps/");
@@ -101,6 +103,8 @@ void BlockBuster::Editor::Editor::Shutdown()
     config.options["Map"] = std::string(fileName);
     config.options["MapsFolder"] = mapsFolder.string();
     config.options["showCursor"] = std::to_string(cursor.show);
+    config.options["camMoveSpeed"] = std::to_string(cameraController.moveSpeed);
+    config.options["camRotSpeed"] = std::to_string(cameraController.rotSpeed);
 }
 
 // #### Rendering #### \\
