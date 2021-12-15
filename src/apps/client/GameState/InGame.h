@@ -73,6 +73,7 @@ namespace BlockBuster
         GL::Shader shader;
         GL::Shader chunkShader;
         Rendering::Mesh cylinder;
+        Rendering::Mesh sphere;
         Rendering::Mesh cube;
         Rendering::Camera camera_;
         int drawMode = GL_FILL;

@@ -43,6 +43,7 @@ void InGame::Start()
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(2.f, 4.f, 32, 1);
+    sphere = Rendering::Primitive::GenerateSphere(1.0f);
     cube = Rendering::Primitive::GenerateCube();
 
     // Camera

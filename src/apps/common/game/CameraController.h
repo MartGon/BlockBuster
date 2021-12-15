@@ -35,6 +35,8 @@ namespace App::Client
             return mode_;
         }
 
+        float moveSpeed = 0.25f;
+        float rotSpeed = glm::radians(1.0f);
         
     private:
 
@@ -45,8 +47,5 @@ namespace App::Client
         CameraMode mode_;
         Rendering::Camera* camera_;
         CameraContext context_;
-
-        float CAMERA_MOVE_SPEED = 0.25f;
-        float CAMERA_ROT_SPEED = glm::radians(1.0f);
     };
 }

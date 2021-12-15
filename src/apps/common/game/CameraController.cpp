@@ -55,16 +55,16 @@ void CameraController::UpdateEditorCamera()
     float pitch = 0.0f;
     float yaw = 0.0f;
     if(state[SDL_SCANCODE_UP])
-        pitch += -CAMERA_ROT_SPEED;
+        pitch += -rotSpeed;
     if(state[SDL_SCANCODE_DOWN])
-        pitch += CAMERA_ROT_SPEED;
+        pitch += rotSpeed;
 
     if(state[SDL_SCANCODE_LEFT])
-        yaw += CAMERA_ROT_SPEED;
+        yaw += rotSpeed;
     if(state[SDL_SCANCODE_RIGHT])
-        yaw += -CAMERA_ROT_SPEED;
+        yaw += -rotSpeed;
     
-    cameraRot.x = glm::max(glm::min(cameraRot.x + pitch, glm::pi<float>() - CAMERA_ROT_SPEED), CAMERA_ROT_SPEED);
+    cameraRot.x = glm::max(glm::min(cameraRot.x + pitch, glm::pi<float>() - rotSpeed), rotSpeed);
     cameraRot.y = Math::OverflowSumFloat(cameraRot.y, yaw, 0.0f, glm::two_pi<float>());
     camera_->SetRotation(cameraRot.x, cameraRot.y);
     
@@ -87,7 +87,7 @@ void CameraController::UpdateEditorCamera()
     if(state[SDL_SCANCODE_E])
         moveDir.y -= 1;
            
-    auto offset = glm::length(moveDir) > 0.0f ? (glm::normalize(moveDir) * CAMERA_MOVE_SPEED) : moveDir;
+    auto offset = glm::length(moveDir) > 0.0f ? (glm::normalize(moveDir) * moveSpeed) : moveDir;
     cameraPos += offset;
     camera_->SetPos(cameraPos);
 }
@@ -103,8 +103,8 @@ void CameraController::UpdateFPSCameraRotation(const SDL_MouseMotionEvent& motio
     auto pitch = cameraRot.x;
     auto yaw = cameraRot.y;
 
-    pitch = glm::max(glm::min(pitch + motion.yrel * CAMERA_ROT_SPEED  / 10.0f, glm::pi<float>() - CAMERA_ROT_SPEED), CAMERA_ROT_SPEED);
-    yaw = yaw - motion.xrel * CAMERA_ROT_SPEED / 10.0f;
+    pitch = glm::max(glm::min(pitch + motion.yrel * rotSpeed  / 10.0f, glm::pi<float>() - rotSpeed), rotSpeed);
+    yaw = yaw - motion.xrel * rotSpeed / 10.0f;
     camera_->SetRotation(pitch, yaw);
 }
 
@@ -131,7 +131,7 @@ void CameraController::UpdateFPSCameraMovement()
     if(state[SDL_SCANCODE_E])
         moveDir.y += -1.0f;
 
-    auto offset = glm::length(moveDir) > 0.0f ? (glm::normalize(moveDir) * CAMERA_MOVE_SPEED) : moveDir;
+    auto offset = glm::length(moveDir) > 0.0f ? (glm::normalize(moveDir) * moveSpeed) : moveDir;
     cameraPos += offset;
     camera_->SetPos(cameraPos);
 }

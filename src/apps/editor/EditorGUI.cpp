@@ -1179,35 +1179,32 @@ void BlockBuster::Editor::Editor::GUI()
                 if(ImGui::IsItemActive())
                     tabState = TabState::OPTIONS_TAB;
 
-                ImGui::Text("Editor");
-                ImGui::Separator();
-
+                if(ImGui::CollapsingHeader("Editor"))
+                {
+                    ImGui::Text("Select Tool - Cursor Display");
+                    ImGui::SameLine();
+                    ImGui::RadioButton("Single Block", &cursor.mode, CursorMode::SCALED);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("Multiple Blocks", &cursor.mode, CursorMode::BLOCKS);
+                    ImGui::Checkbox("Show cursor (Place/Rotate/Paint Tools)", &cursor.show);
+                }
+                if(ImGui::CollapsingHeader("Camera"))
+                {
+                    ImGui::SliderFloat("Movement speed", &cameraController.moveSpeed, 0.05f, 2.f);
+                    ImGui::SliderFloat("Rotation speed", &cameraController.rotSpeed, glm::radians(0.25f), glm::radians(4.0f));
+                }
+                if(ImGui::CollapsingHeader("Player Mode"))
+                {
+                    ImGui::SliderFloat("Player speed", &player.speed, 0.01, 1);
+                    ImGui::SliderFloat("Player gravity", &player.gravitySpeed, -0.05, -1);
+                    ImGui::SliderFloat("Player height", &player.height, 0.25, 5);
+                }
+                /*
                 if(ImGui::SliderFloat("Block Scale", &blockScale, 1, 5))
                 {
                     project.map.SetBlockScale(blockScale);
                 };
-
-                ImGui::Text("Select Tool - Cursor Display");
-                ImGui::SameLine();
-                ImGui::RadioButton("Single Block", &cursor.mode, CursorMode::SCALED);
-                ImGui::SameLine();
-                ImGui::RadioButton("Multiple Blocks", &cursor.mode, CursorMode::BLOCKS);
-
-                ImGui::Checkbox("Show cursor", &cursor.show);
-
-                ImGui::Text("Player Mode");
-                ImGui::Separator();
-
-                if(ImGui::SliderFloat("Player speed", &player.speed, 0.01, 1))
-                {
-                }
-
-                ImGui::SliderFloat("Player gravity", &player.gravitySpeed, -0.05, -1);
-
-                if(ImGui::SliderFloat("Player height", &player.height, 0.25, 5))
-                {
-
-                }
+                */
 
                 ImGui::EndTabItem();
             }
