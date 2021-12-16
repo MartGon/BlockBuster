@@ -102,9 +102,9 @@ void MainMenu::ListGames()
         auto body = nlohmann::json::parse(bodyStr);
 
         auto games = body.at("games");
-        this->games.clear();
+        this->gamesList.clear();
         for(auto game : games)
-            this->games.push_back(game);
+            this->gamesList.push_back(game);
     };
 
     auto onError = [this](httplib::Error error){
@@ -255,7 +255,8 @@ void MainMenu::DrawGUI()
 
     //LoginWindow()
     //ServerBrowserWindow();
-    CreateGameWindow();
+    //CreateGameWindow();
+    GameWindow();
     popUp.Draw();
 
     // Draw GUI
@@ -321,10 +322,11 @@ void MainMenu::ServerBrowserWindow()
             ImGui::TableSetupColumn("Mode");
             ImGui::TableSetupColumn("Players");
             ImGui::TableSetupColumn("Ping");
+            ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
 
             ImGui::TableHeadersRow();
-
-            for(auto game : games)
+            
+            for(auto game : gamesList)
             {
                 ImGui::TableNextRow();
                 auto gameId = std::string(game["id"]);
@@ -393,6 +395,92 @@ void MainMenu::CreateGameWindow()
         if(ImGui::Button("Create Game"))
         {
             CreateGame(gameName);
+        }
+    }
+
+    ImGui::End();
+}
+
+void MainMenu::GameWindow()
+{
+    auto displaySize = ImGui::GetIO().DisplaySize;
+    
+    // Size
+    auto windowSize = ImVec2{displaySize.x * 0.7f, displaySize.y * 0.75f};
+    //ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+    // Centered
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+
+    //TODO: Check if current game has value, should go back in that case
+
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+    flags = ImGuiWindowFlags_None;
+    bool show = true;
+    if(ImGui::Begin("Game", &show, flags))
+    {
+        windowSize = ImGui::GetWindowSize();
+
+        auto layoutFlags = ImGuiTableFlags_None;
+        auto layoutSize = ImVec2{windowSize.x * 0.975f, windowSize.y * 1.0f};
+        if(ImGui::BeginTable("#Layout", 2, layoutFlags))
+        {
+            // Columns Setup
+            auto colFlags = ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthFixed;
+            float leftColSize = layoutSize.x * 0.65f;
+            ImGui::TableSetupColumn("#PlayerTable", colFlags, leftColSize);
+            float rightColSize = 1.0f - leftColSize;
+            ImGui::TableSetupColumn("#Game info", colFlags, rightColSize);
+
+            // Player Table
+            ImGui::TableNextColumn();
+            auto playerTableFlags = ImGuiTableFlags_None | ImGuiTableFlags_ScrollY;
+            auto playerTableSize = ImVec2{leftColSize * 0.975f, layoutSize.y * 0.5f};
+            if(ImGui::BeginTable("Player List", 2, playerTableFlags, playerTableSize))
+            {   
+                float lvlSize = playerTableSize.x * 0.1f;
+                ImGui::TableSetupColumn("Lvl", colFlags, lvlSize);
+                float playerNameSize = 1.0f - lvlSize;
+                ImGui::TableSetupColumn("Player Name", colFlags, playerNameSize);
+                ImGui::TableSetupScrollFreeze(0, 1); // Freeze first row;
+
+                ImGui::TableHeadersRow();
+
+                for(auto i = 0 ; i < 8; i++)
+                {
+                    // Lvl Col
+                    ImGui::TableNextColumn();
+                    ImGui::Text("25");
+
+                    // Player Name 
+                    ImGui::TableNextColumn();
+                    ImGui::Text("Defu, The Slayer");
+                }
+            
+                ImGui::EndTable();
+            }
+
+            // Map info
+            ImGui::TableNextColumn();
+            ImGui::Text("Right");
+
+            // Chat window
+            ImGui::TableNextColumn();
+            auto inputLineSize = ImGui::CalcTextSize("Type ");
+
+            ImGui::Text("Chat Window");
+            auto chatFlags = ImGuiInputTextFlags_ReadOnly;
+            auto height = ImGui::GetCursorPosY();
+            ImVec2 chatSize{playerTableSize.x, (windowSize.y - height) - inputLineSize.y * 2.0f};
+            ImGui::InputTextMultiline("##Chat Window", chat, 4096, chatSize, chatFlags);
+
+            auto chatLineFlags = ImGuiInputTextFlags_EnterReturnsTrue;
+            ImGui::Text("Type"); ImGui::SameLine(); 
+            ImGui::PushItemWidth(playerTableSize.x - inputLineSize.x);
+            ImGui::InputText("##Type", chatLine, 128, chatLineFlags);
+            ImGui::PopItemWidth();
+
+            ImGui::EndTable();
         }
     }
 

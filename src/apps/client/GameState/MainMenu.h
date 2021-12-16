@@ -57,6 +57,7 @@ namespace BlockBuster
         void LoginWindow();
         void ServerBrowserWindow();
         void CreateGameWindow();
+        void GameWindow();
 
         //#### Data Members ####\\
         // GUI
@@ -69,13 +70,16 @@ namespace BlockBuster
         std::atomic_bool connecting = false;
         Util::Ring<MMResponse, 16> responses;
 
+        // GUI - Windows
+
         // Login
         char inputUsername[16];
         std::string userId;
         std::string user;
 
-        // List Games
+        // Server Browser
         struct Game{
+            std::string id;
             std::string name;
             std::string map;
             std::string mode;
@@ -83,7 +87,21 @@ namespace BlockBuster
             uint8_t maxPlayers;
             uint16_t ping;
         };
-        std::vector<nlohmann::json> games;
+        std::vector<nlohmann::json> gamesList;
+
+        // Game
+        struct PlayerInfo
+        {
+            std::string playerName;
+        };
+        struct GameDetails
+        {
+            Game game;
+            std::vector<PlayerInfo> playersInfo;
+        };
+        std::optional<GameDetails> currentGame;
+        char chat[4096];
+        char chatLine[128];
 
         // Create Game
         char gameName[32];
