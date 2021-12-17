@@ -99,7 +99,7 @@ namespace BlockBuster
             Game game;
             std::vector<PlayerInfo> playersInfo;
         };
-        std::optional<GameDetails> currentGame;
+        std::optional<nlohmann::json> currentGame;
         char chat[4096];
         char chatLine[128];
 

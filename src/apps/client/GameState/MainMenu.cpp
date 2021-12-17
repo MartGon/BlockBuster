@@ -407,15 +407,14 @@ void MainMenu::GameWindow()
     
     // Size
     auto windowSize = ImVec2{displaySize.x * 0.7f, displaySize.y * 0.75f};
-    //ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
     // Centered
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
     //TODO: Check if current game has value, should go back in that case
 
-    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
-    flags = ImGuiWindowFlags_None;
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar;
     bool show = true;
     if(ImGui::Begin("Game", &show, flags))
     {
@@ -446,6 +445,7 @@ void MainMenu::GameWindow()
 
                 ImGui::TableHeadersRow();
 
+                // Print player's info
                 for(auto i = 0 ; i < 8; i++)
                 {
                     // Lvl Col
@@ -462,7 +462,25 @@ void MainMenu::GameWindow()
 
             // Map info
             ImGui::TableNextColumn();
-            ImGui::Text("Right");
+            ImGui::Text("Map: Kobra");
+
+            ImVec2 imgSize{0, layoutSize.y * 0.5f};
+            //ImGui::Image()
+            ImGui::Dummy(imgSize);
+            ImGui::Text("Game Info");
+
+            auto gitFlags = 0;
+            ImVec2 gitSize{layoutSize.x - leftColSize, 0};
+            if(ImGui::BeginTable("Game Info", 2, gitFlags, gitSize))
+            {
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", "Map");
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", "Kobra");
+
+                ImGui::EndTable();
+            }
 
             // Chat window
             ImGui::TableNextColumn();
@@ -471,7 +489,8 @@ void MainMenu::GameWindow()
             ImGui::Text("Chat Window");
             auto chatFlags = ImGuiInputTextFlags_ReadOnly;
             auto height = ImGui::GetCursorPosY();
-            ImVec2 chatSize{playerTableSize.x, (windowSize.y - height) - inputLineSize.y * 2.0f};
+            float marginSize = 4.0f;
+            ImVec2 chatSize{playerTableSize.x, (layoutSize.y - height) - inputLineSize.y * 2.0f - marginSize};
             ImGui::InputTextMultiline("##Chat Window", chat, 4096, chatSize, chatFlags);
 
             auto chatLineFlags = ImGuiInputTextFlags_EnterReturnsTrue;
