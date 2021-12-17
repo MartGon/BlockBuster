@@ -54,21 +54,29 @@ namespace BlockBuster
         void DrawGUI();
 
         // GUI
+        enum class GUIState{
+            LOGIN,
+            SERVER_BROWSER,
+            CREATE_GAME,
+            GAME,
+        };
+        void SwitchGUIState(GUIState state);
         void LoginWindow();
         void ServerBrowserWindow();
         void CreateGameWindow();
         void GameWindow();
 
         //#### Data Members ####\\
-        // GUI
-        GL::VertexArray guiVao;
-        GUI::PopUp popUp;
-
         // Rest Service
         std::mutex reqMutex;
         std::thread reqThread;
         std::atomic_bool connecting = false;
         Util::Ring<MMResponse, 16> responses;
+
+        // GUI
+        GL::VertexArray guiVao;
+        GUI::PopUp popUp;
+        GUIState guiState = GUIState::LOGIN;
 
         // GUI - Windows
 

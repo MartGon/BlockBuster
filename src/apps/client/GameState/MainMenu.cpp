@@ -74,6 +74,8 @@ void MainMenu::Login()
         popUp.SetButtonVisible(true);
         popUp.SetButtonCallback([this](){
             GetLogger()->LogInfo("Button pressed. Opening server browser");
+
+            SwitchGUIState(GUIState::SERVER_BROWSER);
         });
 
         GetLogger()->LogInfo("Response: " + bodyStr);
@@ -140,6 +142,8 @@ void MainMenu::JoinGame(std::string gameId)
         GetLogger()->LogInfo("Succesfullly joined game " + gameId);
 
         // Open game info window
+        SwitchGUIState(GUIState::GAME);
+
         popUp.SetVisible(false);
     };
 
@@ -253,10 +257,31 @@ void MainMenu::DrawGUI()
     ImGui_ImplSDL2_NewFrame(client_->window_);
     ImGui::NewFrame();
 
-    //LoginWindow()
-    //ServerBrowserWindow();
-    //CreateGameWindow();
-    GameWindow();
+    switch (guiState)
+    {
+        case GUIState::LOGIN:
+        {
+            LoginWindow();
+            break;
+        }
+        case GUIState::SERVER_BROWSER:
+        {
+            ServerBrowserWindow();
+            break;
+        }
+        case GUIState::GAME:
+        {
+            GameWindow();
+            break;
+        }
+        case GUIState::CREATE_GAME:
+        {
+            CreateGameWindow();
+            break;
+        }
+        default:
+            break;
+    }
     popUp.Draw();
 
     // Draw GUI
@@ -267,6 +292,22 @@ void MainMenu::DrawGUI()
     ImGui_ImplOpenGL3_RestoreState(scissor_box);
 }
 
+void MainMenu::SwitchGUIState(GUIState guiState)
+{
+    this->guiState = guiState;
+
+    // OnEnterState
+    switch (guiState)
+    {
+    case GUIState::SERVER_BROWSER:
+        ListGames();
+        break;
+    
+    default:
+        break;
+    }
+}
+
 void MainMenu::LoginWindow()
 {
     auto displaySize = client_->io_->DisplaySize;
@@ -274,8 +315,9 @@ void MainMenu::LoginWindow()
     auto flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
     if(ImGui::Begin("Block Buster", nullptr, flags))
     {
-        auto itFlags = connecting ? ImGuiInputTextFlags_::ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None;
-        ImGui::InputText("Username", inputUsername, 16, itFlags);
+        int itFlags = connecting ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None;
+        itFlags |= ImGuiInputTextFlags_EnterReturnsTrue;
+        bool enter = ImGui::InputText("Username", inputUsername, 16, itFlags);
 
         auto winWidth = ImGui::GetWindowWidth();
         auto buttonWidth = ImGui::CalcTextSize("Login").x + 8;
@@ -285,7 +327,7 @@ void MainMenu::LoginWindow()
         if(disabled)
             ImGui::PushDisabled();
 
-        if(ImGui::Button("Login"))
+        if(ImGui::Button("Login") || enter)
         {
             Login();
         }
@@ -356,7 +398,10 @@ void MainMenu::ServerBrowserWindow()
             ImGui::EndTable();
         }
 
-        ImGui::Button("Create Game");
+        if(ImGui::Button("Create Game"))
+        {
+            SwitchGUIState(GUIState::CREATE_GAME);
+        }
         ImGui::SameLine();
         ImGui::Button("Connect");
         ImGui::SameLine();
@@ -369,8 +414,9 @@ void MainMenu::ServerBrowserWindow()
             ListGames();
         }
     }
+    // User clicked on the X button. Go back to login page
     if(!show)
-        GetLogger()->LogInfo("No show");
+        SwitchGUIState(GUIState::LOGIN);
 
     ImGui::End();
 }
@@ -395,8 +441,13 @@ void MainMenu::CreateGameWindow()
         if(ImGui::Button("Create Game"))
         {
             CreateGame(gameName);
+
+            SwitchGUIState(GUIState::GAME);
         }
     }
+    // User clicked on the X button. Go back
+    if(!show)
+        SwitchGUIState(GUIState::SERVER_BROWSER);
 
     ImGui::End();
 }
@@ -501,6 +552,12 @@ void MainMenu::GameWindow()
 
             ImGui::EndTable();
         }
+    }
+    // User clicked on the X button. Go back
+    if(!show)
+    {
+        // LeaveGame();
+        SwitchGUIState(GUIState::SERVER_BROWSER);
     }
 
     ImGui::End();
