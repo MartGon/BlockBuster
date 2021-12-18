@@ -1,5 +1,5 @@
 
-#include <GameState/MainMenu.h>
+#include <GameState/MainMenu/MainMenu.h>
 
 #include <Client.h>
 

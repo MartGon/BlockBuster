@@ -4,7 +4,8 @@ SET(SOURCES
     Main.cpp
 
     GameState/GameState.cpp
-    GameState/MainMenu.cpp
+    GameState/MainMenu/MainMenu.cpp
+    GameState/MainMenu/MenuState.cpp
     GameState/InGame.cpp
 )
 

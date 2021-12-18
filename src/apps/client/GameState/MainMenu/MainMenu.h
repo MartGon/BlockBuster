@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GameState/GameState.h>
+#include <GameState/MainMenu/MenuState.h>
 
 #include <gl/VertexArray.h>
 #include <gui/PopUp.h>
@@ -20,6 +21,11 @@ namespace BlockBuster
 
     class MainMenu : public GameState
     {
+    friend class MenuState::Login;
+    friend class MenuState::ServerBrowser;
+    friend class MenuState::CreateGame;
+    friend class MenuState::Lobby;
+
     public:
         MainMenu(Client* client);
         ~MainMenu();
@@ -31,6 +37,7 @@ namespace BlockBuster
 
         //#### Function Members ####\\
         // REST service
+        // TODO: Create HTTP async client class
         struct MMResponse
         {
             httplib::Result httpRes;
@@ -40,7 +47,7 @@ namespace BlockBuster
 
         std::optional<MMResponse> PollRestResponse();
         void HandleRestResponses();
-        void Login();
+        void Login(std::string userName);
         void ListGames();
         void JoinGame(std::string gameId);
         void CreateGame(std::string name);
@@ -54,17 +61,7 @@ namespace BlockBuster
         void DrawGUI();
 
         // GUI
-        enum class GUIState{
-            LOGIN,
-            SERVER_BROWSER,
-            CREATE_GAME,
-            GAME,
-        };
-        void SwitchGUIState(GUIState state);
-        void LoginWindow();
-        void ServerBrowserWindow();
-        void CreateGameWindow();
-        void GameWindow();
+        void SetState(std::unique_ptr<MenuState::Base> menuState_);
 
         //#### Data Members ####\\
         // Rest Service
@@ -76,12 +73,10 @@ namespace BlockBuster
         // GUI
         GL::VertexArray guiVao;
         GUI::PopUp popUp;
-        GUIState guiState = GUIState::LOGIN;
+        std::unique_ptr<MenuState::Base> menuState_;
 
         // GUI - Windows
-
         // Login
-        char inputUsername[16];
         std::string userId;
         std::string user;
 
@@ -108,10 +103,5 @@ namespace BlockBuster
             std::vector<PlayerInfo> playersInfo;
         };
         std::optional<nlohmann::json> currentGame;
-        char chat[4096];
-        char chatLine[128];
-
-        // Create Game
-        char gameName[32];
     };
 }
