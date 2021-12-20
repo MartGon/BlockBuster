@@ -2,7 +2,6 @@ add_subdirectory(enetw)
 
 SET(SOURCES
     Command.cpp
-    CommandBuffer.cpp
     Snapshot.cpp
 )
 

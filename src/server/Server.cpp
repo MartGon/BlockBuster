@@ -3,11 +3,11 @@
 
 #include <networking/enetw/ENetW.h>
 #include <networking/Command.h>
-#include <networking/CommandBuffer.h>
 #include <networking/Snapshot.h>
 
 #include <util/BBTime.h>
 #include <util/Random.h>
+#include <util/Ring.h>
 
 #include <collisions/Collisions.h>
 

@@ -6,8 +6,8 @@
 #include <gl/VertexArray.h>
 #include <gui/PopUp.h>
 #include <util/Ring.h>
+#include <http/AsyncClient.h>
 
-#include <httplib/httplib.h>
 #include <nlohmann/json.hpp>
 
 #include <thread>
@@ -45,13 +45,10 @@ namespace BlockBuster
             std::function<void(httplib::Error)> onError;
         };
 
-        std::optional<MMResponse> PollRestResponse();
-        void HandleRestResponses();
         void Login(std::string userName);
         void ListGames();
         void JoinGame(std::string gameId);
         void CreateGame(std::string name);
-        void Request(std::string endpoint, nlohmann::json body, std::function<void(httplib::Response&)> onSuccess, std::function<void(httplib::Error)> onError);
 
         // Inputs
         void HandleSDLEvents();
@@ -65,10 +62,7 @@ namespace BlockBuster
 
         //#### Data Members ####\\
         // Rest Service
-        std::mutex reqMutex;
-        std::thread reqThread;
-        std::atomic_bool connecting = false;
-        Util::Ring<MMResponse, 16> responses;
+        HTTP::AsyncClient httpClient;
 
         // GUI
         GL::VertexArray guiVao;

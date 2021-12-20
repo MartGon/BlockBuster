@@ -22,7 +22,7 @@ void Login::Update()
     auto flags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
     if(ImGui::Begin("Block Buster", nullptr, flags))
     {
-        int itFlags = mainMenu_->connecting ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None;
+        int itFlags = mainMenu_->httpClient.IsConnecting() ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None;
         itFlags |= ImGuiInputTextFlags_EnterReturnsTrue;
         bool enter = ImGui::InputText("Username", inputUsername, 16, itFlags);
 

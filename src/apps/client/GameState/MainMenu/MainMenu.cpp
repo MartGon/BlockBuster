@@ -6,14 +6,12 @@
 
 using namespace BlockBuster;
 
-MainMenu::MainMenu(Client* client)  : GameState{client}
+MainMenu::MainMenu(Client* client)  : GameState{client}, httpClient{"localhost", 3030}
 {
 }
 
 MainMenu::~MainMenu()
 {
-    if(reqThread.joinable())
-        reqThread.join();
 }
 
 void MainMenu::Start()
@@ -27,31 +25,9 @@ void MainMenu::Start()
 
 void MainMenu::Update()
 {
-    HandleRestResponses();
+    httpClient.HandleResponses();
     HandleSDLEvents();
     Render();
-}
-
-void MainMenu::HandleRestResponses()
-{
-    while(auto mmRes = PollRestResponse())
-    {
-        auto mmResponse = std::move(mmRes.value());
-        auto httpRes = std::move(mmResponse.httpRes);
-        if(httpRes)
-            mmResponse.onSuccess(httpRes.value());
-        else
-            mmResponse.onError(httpRes.error());
-    }
-}
-
-std::optional<MainMenu::MMResponse> MainMenu::PollRestResponse()
-{
-    this->reqMutex.lock();
-    auto ret = this->responses.PopFront();
-    this->reqMutex.unlock();
-
-    return ret;
 }
 
 void MainMenu::Login(std::string userName)
@@ -88,7 +64,7 @@ void MainMenu::Login(std::string userName)
 
         GetLogger()->LogError("Could not connet to match-making server. Error Code: ");
     };
-    Request("/login", body, onSuccess, onError);
+    httpClient.Request("/login", nlohmann::to_string(body), onSuccess, onError);
 }
 
 void MainMenu::ListGames()
@@ -119,7 +95,7 @@ void MainMenu::ListGames()
         });
     };
 
-    Request("/list_games", body, onSuccess, onError);
+    httpClient.Request("/list_games", nlohmann::to_string(body), onSuccess, onError);
 }
 
 void MainMenu::JoinGame(std::string gameId)
@@ -158,7 +134,7 @@ void MainMenu::JoinGame(std::string gameId)
         });
     };
 
-    Request("/join_game", body, onSuccess, onError);
+    httpClient.Request("/join_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
 void MainMenu::CreateGame(std::string name)
@@ -189,34 +165,7 @@ void MainMenu::CreateGame(std::string name)
         });
     };
 
-    Request("/create_game", body, onSuccess, onError);
-}
-
-void MainMenu::Request(std::string endpoint, nlohmann::json body, 
-    std::function<void(httplib::Response&)> onSuccess,
-    std::function<void(httplib::Error)> onError)
-{
-    connecting = true;
-
-    if(reqThread.joinable())
-        reqThread.join();
-
-    reqThread = std::thread{
-        [this, body, endpoint, onSuccess, onError](){
-            httplib::Client client{"127.0.0.1", 3030};
-
-            std::string bodyStr = nlohmann::to_string(body);
-            auto res = client.Post(endpoint.c_str(), bodyStr.c_str(), bodyStr.size(), "application/json");
-            auto response = MMResponse{std::move(res), onSuccess, onError};
-            Util::Time::Sleep(Util::Time::Seconds{1});  
-
-            this->reqMutex.lock();
-            this->responses.PushBack(std::move(response));
-            this->reqMutex.unlock();
-
-            this->connecting = false;
-        }
-    };
+    httpClient.Request("/create_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
 void MainMenu::HandleSDLEvents()

@@ -7,5 +7,6 @@ add_subdirectory(math)
 add_subdirectory(networking)
 add_subdirectory(collisions)
 add_subdirectory(entity)
+add_subdirectory(http)
 
 #add_subdirectory(gl)
