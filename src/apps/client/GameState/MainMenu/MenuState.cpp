@@ -274,8 +274,7 @@ void Lobby::Update()
     // User clicked on the X button. Go back
     if(!show)
     {
-        // LeaveGame();
-        mainMenu_->SetState(std::make_unique<MenuState::ServerBrowser>(mainMenu_));
+        mainMenu_->LeaveGame();
     }
 
     ImGui::End();

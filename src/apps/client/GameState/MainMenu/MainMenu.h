@@ -37,18 +37,11 @@ namespace BlockBuster
 
         //#### Function Members ####\\
         // REST service
-        // TODO: Create HTTP async client class
-        struct MMResponse
-        {
-            httplib::Result httpRes;
-            std::function<void(httplib::Response&)> onSuccess;
-            std::function<void(httplib::Error)> onError;
-        };
-
         void Login(std::string userName);
         void ListGames();
         void JoinGame(std::string gameId);
         void CreateGame(std::string name);
+        void LeaveGame();
 
         // Inputs
         void HandleSDLEvents();

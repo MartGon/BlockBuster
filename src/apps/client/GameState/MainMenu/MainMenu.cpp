@@ -8,6 +8,7 @@ using namespace BlockBuster;
 
 MainMenu::MainMenu(Client* client)  : GameState{client}, httpClient{"localhost", 3030}
 {
+
 }
 
 MainMenu::~MainMenu()
@@ -168,6 +169,42 @@ void MainMenu::CreateGame(std::string name)
     httpClient.Request("/create_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
+void MainMenu::LeaveGame()
+{
+    // Show connecting pop up
+    popUp.SetVisible(true);
+    popUp.SetCloseable(true);
+    popUp.SetTitle("Connecting");
+    popUp.SetText("Leaving game...");
+    popUp.SetButtonVisible(false);
+
+    nlohmann::json body;
+    body["player_id"] = userId;
+
+    auto onSuccess = [this](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfullly left game");
+
+        // Open game info window
+        SetState(std::make_unique<MenuState::ServerBrowser>(this));
+
+        popUp.SetVisible(false);
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+    httpClient.Request("/leave_game", nlohmann::to_string(body), onSuccess, onError);
+}
+
 void MainMenu::HandleSDLEvents()
 {
     SDL_Event e;
@@ -219,6 +256,8 @@ void MainMenu::DrawGUI()
 
 void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)
 {
+    this->menuState_->OnExit();
+
     this->menuState_ = std::move(menuState);
 
     this->menuState_->OnEnter();
