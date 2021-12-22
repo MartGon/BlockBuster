@@ -45,6 +45,8 @@ void MainMenu::Login(std::string userName)
     auto onSuccess = [this](httplib::Response& res){
         auto bodyStr = res.body;
         nlohmann::json body = nlohmann::json::parse(bodyStr);
+        this->userId = body["id"];
+        this->user = body["username"];
 
         popUp.SetTitle("Login succesful");
         popUp.SetText("Your username is " + std::string(body["username"]));
@@ -77,7 +79,7 @@ void MainMenu::ListGames()
     {
         GetLogger()->LogInfo("List of games updated successfully");
 
-        auto bodyStr = res.body;
+        auto bodyStr = res.body;        
         auto body = nlohmann::json::parse(bodyStr);
 
         auto games = body.at("games");
@@ -127,6 +129,7 @@ void MainMenu::JoinGame(std::string gameId)
     auto onSuccess = [this, gameId](httplib::Response& res)
     {
         GetLogger()->LogInfo("Succesfullly joined game " + gameId);
+        GetLogger()->LogInfo("Result " + res.body);
 
         // Open game info window
         SetState(std::make_unique<MenuState::Lobby>(this));
