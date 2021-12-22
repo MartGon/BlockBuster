@@ -82,8 +82,18 @@ void MainMenu::ListGames()
 
         auto games = body.at("games");
         this->gamesList.clear();
-        for(auto game : games)
-            this->gamesList.push_back(game);
+        for(auto& game : games)
+        {
+            GameInfo gameInfo;
+            gameInfo.id = game.at("id").get<std::string>();
+            gameInfo.name = game.at("name").get<std::string>();
+            gameInfo.map = game.at("map").get<std::string>();
+            gameInfo.mode = game.at("mode").get<std::string>();
+            gameInfo.maxPlayers = game.at("max_players").get<uint8_t>();
+            gameInfo.players = game.at("players").get<uint8_t>();
+            gameInfo.ping = game.at("ping").get<uint16_t>();
+            this->gamesList.push_back(gameInfo);
+        }
     };
 
     auto onError = [this](httplib::Error error){

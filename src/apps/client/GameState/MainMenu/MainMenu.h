@@ -68,7 +68,7 @@ namespace BlockBuster
         std::string user;
 
         // Server Browser
-        struct Game{
+        struct GameInfo{
             std::string id;
             std::string name;
             std::string map;
@@ -77,7 +77,7 @@ namespace BlockBuster
             uint8_t maxPlayers;
             uint16_t ping;
         };
-        std::vector<nlohmann::json> gamesList;
+        std::vector<GameInfo> gamesList;
 
         // Game
         struct PlayerInfo
@@ -86,7 +86,7 @@ namespace BlockBuster
         };
         struct GameDetails
         {
-            Game game;
+            GameInfo game;
             std::vector<PlayerInfo> playersInfo;
         };
         std::optional<nlohmann::json> currentGame;

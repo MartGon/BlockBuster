@@ -85,8 +85,8 @@ void ServerBrowser::Update()
             for(auto game : mainMenu_->gamesList)
             {
                 ImGui::TableNextRow();
-                auto gameId = std::string(game["id"]);
-                auto name = std::string(game["name"]);
+                auto gameId = game.id;
+                auto name = game.name;
 
                 ImGui::TableNextColumn();
                 auto selectFlags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick;
@@ -97,16 +97,17 @@ void ServerBrowser::Update()
                 }
 
                 ImGui::TableNextColumn();
-                ImGui::Text("Map");
+                ImGui::Text("%s", game.map.c_str());
 
                 ImGui::TableNextColumn();
-                ImGui::Text("Mode");
+                ImGui::Text("%s", game.mode.c_str());
 
                 ImGui::TableNextColumn();
-                ImGui::Text("Players");
+                auto players = std::to_string(game.players) + "/" + std::to_string(game.maxPlayers);
+                ImGui::Text("%s", players.c_str());
 
                 ImGui::TableNextColumn();
-                ImGui::Text("Ping");
+                ImGui::Text("%i", game.ping);
             }
 
             ImGui::EndTable();
