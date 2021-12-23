@@ -182,11 +182,17 @@ void Lobby::Update()
     // Centered
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
-    //TODO: Check if current game has value, should go back in that's not the case
-
-    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar;
+    // CurrentGame should have a value, in order to operate correctly
     bool show = true;
-    if(ImGui::Begin("Game", &show, flags))
+    if(!mainMenu_->currentGame.has_value())
+    {
+        mainMenu_->GetLogger()->LogError("Current game didn't have a value. Returning to server browser");
+        show = false;
+    }
+
+    MainMenu::GameDetails gameDetails = mainMenu_->currentGame.value();
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar;
+    if(ImGui::Begin(gameDetails.game.name.c_str(), &show, flags))
     {
         windowSize = ImGui::GetWindowSize();
 
@@ -205,52 +211,45 @@ void Lobby::Update()
             ImGui::TableNextColumn();
             auto playerTableFlags = ImGuiTableFlags_None | ImGuiTableFlags_ScrollY;
             auto playerTableSize = ImVec2{leftColSize * 0.975f, layoutSize.y * 0.5f};
-            if(ImGui::BeginTable("Player List", 2, playerTableFlags, playerTableSize))
+            if(ImGui::BeginTable("Player List", 3, playerTableFlags, playerTableSize))
             {   
-                float lvlSize = playerTableSize.x * 0.1f;
+                float lvlSize = 0.1f * playerTableSize.x;
+                float readySize = 0.3f * playerTableSize.x;
+                float playerNameSize = playerTableSize.x - lvlSize - readySize;
                 ImGui::TableSetupColumn("Lvl", colFlags, lvlSize);
-                float playerNameSize = 1.0f - lvlSize;
                 ImGui::TableSetupColumn("Player Name", colFlags, playerNameSize);
+                ImGui::TableSetupColumn("Status", colFlags, readySize);
                 ImGui::TableSetupScrollFreeze(0, 1); // Freeze first row;
 
                 ImGui::TableHeadersRow();
 
                 // Print player's info
-                for(auto i = 0 ; i < 8; i++)
+                for(auto playerInfo : mainMenu_->currentGame->playersInfo)
                 {
                     // Lvl Col
                     ImGui::TableNextColumn();
                     ImGui::Text("25");
 
-                    // Player Name 
                     ImGui::TableNextColumn();
-                    ImGui::Text("Defu, The Slayer");
+                    ImGui::Text("%s", playerInfo.playerName.c_str());
+
+                    ImGui::TableNextColumn();
+                    // TODO: This can be host, as well
+                    std::string ready = playerInfo.isReady ? "Ready" : "Not ready";
+                    ImGui::Text("%s", ready.c_str());
                 }
             
                 ImGui::EndTable();
             }
 
-            // Map info
+            // Map Picture
+            auto gameInfo = gameDetails.game;
             ImGui::TableNextColumn();
             ImGui::Text("Map: Kobra");
 
             ImVec2 imgSize{0, layoutSize.y * 0.5f};
             //ImGui::Image()
             ImGui::Dummy(imgSize);
-            ImGui::Text("Game Info");
-
-            auto gitFlags = 0;
-            ImVec2 gitSize{layoutSize.x - leftColSize, 0};
-            if(ImGui::BeginTable("Game Info", 2, gitFlags, gitSize))
-            {
-                ImGui::TableNextColumn();
-                ImGui::Text("%s", "Map");
-
-                ImGui::TableNextColumn();
-                ImGui::Text("%s", "Kobra");
-
-                ImGui::EndTable();
-            }
 
             // Chat window
             ImGui::TableNextColumn();
@@ -268,6 +267,43 @@ void Lobby::Update()
             ImGui::PushItemWidth(playerTableSize.x - inputLineSize.x);
             ImGui::InputText("##Type", chatLine, 128, chatLineFlags);
             ImGui::PopItemWidth();
+
+            // Map Info
+            ImGui::TableNextColumn();
+            ImGui::Text("Game Info");
+            auto gitFlags = 0;
+            ImVec2 gitSize{layoutSize.x - leftColSize, 0};
+            if(ImGui::BeginTable("Game Info", 2, gitFlags, gitSize))
+            {
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", "Name");
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", gameInfo.name.c_str());
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", "Map");
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", gameInfo.map.c_str());
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", "Mode");
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", gameInfo.mode.c_str());
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", "Max Players");
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%i", gameInfo.maxPlayers);
+
+                ImGui::TableNextColumn();
+                ImGui::Button("Ready");
+
+                ImGui::EndTable();
+            }
 
             ImGui::EndTable();
         }

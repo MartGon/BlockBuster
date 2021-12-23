@@ -86,14 +86,7 @@ void MainMenu::ListGames()
         this->gamesList.clear();
         for(auto& game : games)
         {
-            GameInfo gameInfo;
-            gameInfo.id = game.at("id").get<std::string>();
-            gameInfo.name = game.at("name").get<std::string>();
-            gameInfo.map = game.at("map").get<std::string>();
-            gameInfo.mode = game.at("mode").get<std::string>();
-            gameInfo.maxPlayers = game.at("max_players").get<uint8_t>();
-            gameInfo.players = game.at("players").get<uint8_t>();
-            gameInfo.ping = game.at("ping").get<uint16_t>();
+            auto gameInfo = GameInfo::FromJson(game);
             this->gamesList.push_back(gameInfo);
         }
     };
@@ -130,6 +123,12 @@ void MainMenu::JoinGame(std::string gameId)
     {
         GetLogger()->LogInfo("Succesfullly joined game " + gameId);
         GetLogger()->LogInfo("Result " + res.body);
+
+        auto body = nlohmann::json::parse(res.body);
+        auto gameDetails = GameDetails::FromJson(body);
+
+        // Set current game
+        currentGame = gameDetails;
 
         // Open game info window
         SetState(std::make_unique<MenuState::Lobby>(this));
@@ -197,6 +196,8 @@ void MainMenu::LeaveGame()
     auto onSuccess = [this](httplib::Response& res)
     {
         GetLogger()->LogInfo("Succesfullly left game");
+
+        // TODO: Handle game full errors, game doesn't exist, etc.
 
         // Open game info window
         SetState(std::make_unique<MenuState::ServerBrowser>(this));

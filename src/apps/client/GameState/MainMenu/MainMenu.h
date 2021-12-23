@@ -76,6 +76,19 @@ namespace BlockBuster
             uint8_t players;
             uint8_t maxPlayers;
             uint16_t ping;
+
+            static GameInfo FromJson(nlohmann::json game)
+            {
+                GameInfo gameInfo;
+                gameInfo.id = game.at("id").get<std::string>();
+                gameInfo.name = game.at("name").get<std::string>();
+                gameInfo.map = game.at("map").get<std::string>();
+                gameInfo.mode = game.at("mode").get<std::string>();
+                gameInfo.maxPlayers = game.at("max_players").get<uint8_t>();
+                gameInfo.players = game.at("players").get<uint8_t>();
+                gameInfo.ping = game.at("ping").get<uint16_t>();
+                return gameInfo;
+            }
         };
         std::vector<GameInfo> gamesList;
 
@@ -83,12 +96,36 @@ namespace BlockBuster
         struct PlayerInfo
         {
             std::string playerName;
+            bool isReady;
+
+            static PlayerInfo FromJson(nlohmann::json json)
+            {
+                PlayerInfo playerInfo;
+                playerInfo.playerName = json.at("name").get<std::string>();
+                playerInfo.isReady = json.at("ready").get<bool>();
+                return playerInfo;
+            }
         };
         struct GameDetails
         {
             GameInfo game;
             std::vector<PlayerInfo> playersInfo;
+
+            static GameDetails FromJson(nlohmann::json json)
+            {
+                GameDetails gameDetails;
+                gameDetails.game = GameInfo::FromJson(json.at("game_info"));
+                
+                auto players = json.at("players").get<nlohmann::json::array_t>();
+                for(auto& player : players)
+                {
+                    auto playerInfo = PlayerInfo::FromJson(player);
+                    gameDetails.playersInfo.push_back(playerInfo);
+                }
+
+                return gameDetails;
+            }
         };
-        std::optional<nlohmann::json> currentGame;
+        std::optional<GameDetails> currentGame;
     };
 }
