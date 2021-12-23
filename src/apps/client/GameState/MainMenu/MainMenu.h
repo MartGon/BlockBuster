@@ -31,6 +31,7 @@ namespace BlockBuster
         ~MainMenu();
         
         void Start() override;
+        void Shutdown() override;
         void Update() override;
 
     private:

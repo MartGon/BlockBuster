@@ -24,6 +24,13 @@ void MainMenu::Start()
     popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 }
 
+void MainMenu::Shutdown()
+{
+    // Call LeaveGame and wait for it
+    if(currentGame)
+        LeaveGame();
+}
+
 void MainMenu::Update()
 {
     httpClient.HandleResponses();
@@ -201,6 +208,9 @@ void MainMenu::LeaveGame()
 
         // Open game info window
         SetState(std::make_unique<MenuState::ServerBrowser>(this));
+
+        // Remove current game;
+        this->currentGame.reset();
 
         popUp.SetVisible(false);
     };

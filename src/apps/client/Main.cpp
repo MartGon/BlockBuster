@@ -93,6 +93,7 @@ int main(int argc, char** args)
     {
         client.Update();
     }
+    client.Shutdown();
 
     return 0;
 }

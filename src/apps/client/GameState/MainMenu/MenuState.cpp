@@ -152,6 +152,7 @@ void CreateGame::Update()
     bool show = true;
     if(ImGui::Begin("Create Game", &show, flags))
     {
+        // TODO: Add the rest of the fields: map, mode, max_players, etc.
         auto textFlags = ImGuiInputTextFlags_None;
         ImGui::InputText("Name", gameName, 32, textFlags);
 

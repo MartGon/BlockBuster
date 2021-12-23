@@ -38,6 +38,7 @@ namespace BlockBuster
         Client(::App::Configuration config);
 
         void Start() override;
+        void Shutdown() override;
         void Update() override;
         bool Quit() override;
         

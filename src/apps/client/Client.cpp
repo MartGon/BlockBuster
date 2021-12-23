@@ -27,6 +27,11 @@ void Client::Start()
     state->Start();
 }
 
+void Client::Shutdown()
+{
+    state->Shutdown();
+}
+
 void Client::Update()
 {
     state->Update();
