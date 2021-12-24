@@ -152,15 +152,37 @@ void CreateGame::Update()
     bool show = true;
     if(ImGui::Begin("Create Game", &show, flags))
     {
-        // TODO: Add the rest of the fields: map, mode, max_players, etc.
         auto textFlags = ImGuiInputTextFlags_None;
         ImGui::InputText("Name", gameName, 32, textFlags);
 
+        auto comboFlags = ImGuiComboFlags_None;
+        if(ImGui::BeginCombo("Map", map, comboFlags))
+        {   
+            bool selected = std::strcmp("Kobra", map) == 0;
+            if(ImGui::Selectable("Kobra", selected))
+            {
+                std::strcpy(map, "Kobra");
+            }
+            ImGui::EndCombo();
+        }
+
+        if(ImGui::BeginCombo("Mode", mode, comboFlags))
+        {
+            bool selected = std::strcmp("DeathMatch", mode) == 0;
+            if(ImGui::Selectable("DeathMatch", selected))
+            {
+                std::strcpy(mode, "DeathMatch");
+            }
+            ImGui::EndCombo();
+        }
+
+        auto sliderFlags = ImGuiSliderFlags_::ImGuiSliderFlags_None;
+        ImGui::SliderInt("Max players", &maxPlayers, 2, 16, "%i", sliderFlags);
+
         if(ImGui::Button("Create Game"))
         {
-            mainMenu_->CreateGame(gameName);
-
-            mainMenu_->SetState(std::make_unique<MenuState::Lobby>(mainMenu_));
+            // TODO: Change map and mode
+            mainMenu_->CreateGame(gameName, "Kobra", "DeathMatch", maxPlayers);
         }
     }
     // User clicked on the X button. Go back

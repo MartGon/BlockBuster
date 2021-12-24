@@ -41,7 +41,7 @@ namespace BlockBuster
         void Login(std::string userName);
         void ListGames();
         void JoinGame(std::string gameId);
-        void CreateGame(std::string name);
+        void CreateGame(std::string name, std::string map, std::string mode, uint8_t max_players);
         void LeaveGame();
 
         // Inputs

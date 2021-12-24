@@ -117,7 +117,7 @@ void MainMenu::JoinGame(std::string gameId)
 
     // Show connecting pop up
     popUp.SetVisible(true);
-    popUp.SetCloseable(true);
+    popUp.SetCloseable(false);
     popUp.SetTitle("Connecting");
     popUp.SetText("Joining game...");
     popUp.SetButtonVisible(false);
@@ -157,19 +157,35 @@ void MainMenu::JoinGame(std::string gameId)
     httpClient.Request("/join_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
-void MainMenu::CreateGame(std::string name)
+void MainMenu::CreateGame(std::string name, std::string map, std::string mode, uint8_t max_players)
 {
+    // Create request body
     nlohmann::json body;
     body["name"] = name;
+    body["player_id"] = userId;
+    body["map"] = map;
+    body["mode"] = mode;
+    body["max_players"] = max_players;
+
+    // Show connecting pop up
+    popUp.SetVisible(true);
+    popUp.SetCloseable(false);
+    popUp.SetTitle("Connecting");
+    popUp.SetText("Creating game...");
+    popUp.SetButtonVisible(false);
 
     auto onSuccess = [this, name](httplib::Response& res)
     {
-        /*
-        auto bodyStr = res.body;
-        auto body = nlohmann::json::parse(bodyStr);
-        auto gameId = std::string(body["id"]);
-        */
-        GetLogger()->LogInfo("Succesfullly created game: " + name);
+        auto body = nlohmann::json::parse(res.body);
+        auto gameDetails = GameDetails::FromJson(body);
+
+        // Set current game
+        currentGame = gameDetails;
+
+        // Open game info window
+        SetState(std::make_unique<MenuState::Lobby>(this));
+
+        popUp.SetVisible(false);
 
         // Open game info window -- Like joining a game
     };
