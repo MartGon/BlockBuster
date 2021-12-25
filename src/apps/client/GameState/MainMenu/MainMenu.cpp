@@ -72,7 +72,7 @@ void MainMenu::Login(std::string userName)
         popUp.SetText("Could not connect to server");
         popUp.SetButtonVisible(true);
 
-        GetLogger()->LogError("Could not connet to match-making server. Error Code: ");
+        GetLogger()->LogError("Could not connet to match-making server. Error Code: " + httplib::to_string(error));
     };
     httpClient.Request("/login", nlohmann::to_string(body), onSuccess, onError);
 }
@@ -131,6 +131,8 @@ void MainMenu::JoinGame(std::string gameId)
         GetLogger()->LogInfo("Succesfullly joined game " + gameId);
         GetLogger()->LogInfo("Result " + res.body);
 
+        // TODO: Handle game full errors, game doesn't exist, etc.
+
         auto body = nlohmann::json::parse(res.body);
         auto gameDetails = GameDetails::FromJson(body);
 
@@ -182,12 +184,10 @@ void MainMenu::CreateGame(std::string name, std::string map, std::string mode, u
         // Set current game
         currentGame = gameDetails;
 
-        // Open game info window
+        // Open Lobby
         SetState(std::make_unique<MenuState::Lobby>(this));
 
         popUp.SetVisible(false);
-
-        // Open game info window -- Like joining a game
     };
 
     auto onError = [this](httplib::Error err)
@@ -220,8 +220,6 @@ void MainMenu::LeaveGame()
     {
         GetLogger()->LogInfo("Succesfullly left game");
 
-        // TODO: Handle game full errors, game doesn't exist, etc.
-
         // Open game info window
         SetState(std::make_unique<MenuState::ServerBrowser>(this));
 
@@ -243,6 +241,50 @@ void MainMenu::LeaveGame()
     };
 
     httpClient.Request("/leave_game", nlohmann::to_string(body), onSuccess, onError);
+}
+
+void MainMenu::UpdateGame()
+{
+    if(!currentGame.has_value())
+        return;
+
+    nlohmann::json body;
+    body["game_id"] = currentGame->game.id;
+
+    auto onSuccess = [this](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfully left game");
+        GetLogger()->LogInfo("Result " + res.body);
+
+        // TODO: Handle game doesn't exist, etc.
+
+        auto body = nlohmann::json::parse(res.body);
+        auto gameDetails = GameDetails::FromJson(body);
+
+        // Check if we are still in game. Keep updating in that case
+        if(currentGame.has_value())
+        {
+            // Set current game
+            currentGame = gameDetails;
+
+            // Call again
+            UpdateGame();
+        }
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        auto errorCode = static_cast<int>(err);
+        GetLogger()->LogError("Could not update game with id " + this->currentGame->game.id + ". Error Code: " + std::to_string(errorCode));
+
+        // Timeout on read. Call again
+        if(err == httplib::Error::Read)
+        {
+            UpdateGame();
+        }
+    };
+
+    httpClient.Request("/update_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
 void MainMenu::HandleSDLEvents()

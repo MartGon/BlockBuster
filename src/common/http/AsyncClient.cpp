@@ -8,11 +8,11 @@ void AsyncClient::Request(const std::string& path, const std::string& body, Resp
 {
     connecting = true;
 
-    if(reqThread.joinable())
-        reqThread.join();
-
     reqThread = std::thread{
         [this, body, path, respHandler, errHandler](){
+
+            httplib::Client client{address, port};
+            client.set_read_timeout(timeout);
 
             auto res = client.Post(path.c_str(), body.c_str(), body.size(), "application/json");
             auto response = Response{std::move(res), respHandler, errHandler};
@@ -25,6 +25,7 @@ void AsyncClient::Request(const std::string& path, const std::string& body, Resp
             this->connecting = false;
         }
     };
+    reqThread.detach();
 }
 
 void AsyncClient::HandleResponses()

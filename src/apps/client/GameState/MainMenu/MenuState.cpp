@@ -194,6 +194,11 @@ void CreateGame::Update()
 
 // #### GAME #### \\
 
+void Lobby::OnEnter()
+{
+    mainMenu_->UpdateGame();
+}
+
 void Lobby::Update()
 {
     auto displaySize = ImGui::GetIO().DisplaySize;

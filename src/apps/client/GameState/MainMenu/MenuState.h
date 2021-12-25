@@ -57,6 +57,7 @@ namespace BlockBuster
         public:
             Lobby(MainMenu* mainMenu) : Base(mainMenu){}
 
+            void OnEnter() override;
             void Update() override;
         private:
             char chat[4096] = "\0";
