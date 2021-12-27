@@ -253,7 +253,7 @@ void MainMenu::UpdateGame()
 
     auto onSuccess = [this](httplib::Response& res)
     {
-        GetLogger()->LogInfo("Succesfully left game");
+        GetLogger()->LogInfo("Succesfully updated game");
         GetLogger()->LogInfo("Result " + res.body);
 
         // TODO: Handle game doesn't exist, etc.
@@ -285,6 +285,29 @@ void MainMenu::UpdateGame()
     };
 
     httpClient.Request("/update_game", nlohmann::to_string(body), onSuccess, onError);
+}
+
+void MainMenu::ToggleReady()
+{
+    if(!currentGame.has_value())
+        return;
+
+    nlohmann::json body;
+    body["player_id"] = userId;
+
+    auto onSuccess = [this](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfully set ready state");
+        GetLogger()->LogInfo("Result " + res.body);
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        auto errorCode = static_cast<int>(err);
+        GetLogger()->LogError("Could not toggle ready. Error Code: " + std::to_string(errorCode));
+    };
+
+    httpClient.Request("/toggle_ready", nlohmann::to_string(body), onSuccess, onError);
 }
 
 void MainMenu::HandleSDLEvents()

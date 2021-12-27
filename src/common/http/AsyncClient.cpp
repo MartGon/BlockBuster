@@ -16,7 +16,7 @@ void AsyncClient::Request(const std::string& path, const std::string& body, Resp
 
             auto res = client.Post(path.c_str(), body.c_str(), body.size(), "application/json");
             auto response = Response{std::move(res), respHandler, errHandler};
-            Util::Time::Sleep(Util::Time::Seconds{1});  
+            Util::Time::Sleep(Util::Time::Seconds{0.25});  
 
             this->reqMutex.lock();
             this->responses.PushBack(std::move(response));

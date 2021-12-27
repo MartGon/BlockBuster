@@ -44,6 +44,7 @@ namespace BlockBuster
         void CreateGame(std::string name, std::string map, std::string mode, uint8_t max_players);
         void LeaveGame();
         void UpdateGame();
+        void ToggleReady();
 
         // Inputs
         void HandleSDLEvents();

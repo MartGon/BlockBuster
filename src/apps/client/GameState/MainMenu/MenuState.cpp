@@ -328,7 +328,10 @@ void Lobby::Update()
                 ImGui::Text("%i", gameInfo.maxPlayers);
 
                 ImGui::TableNextColumn();
-                ImGui::Button("Ready");
+                if(ImGui::Button("Ready"))
+                {
+                    mainMenu_->ToggleReady();
+                }
 
                 ImGui::EndTable();
             }
