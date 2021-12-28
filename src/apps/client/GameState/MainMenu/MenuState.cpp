@@ -262,9 +262,13 @@ void Lobby::Update()
                     ImGui::Text("%s", playerInfo.playerName.c_str());
 
                     ImGui::TableNextColumn();
-                    // TODO: This can be host, as well
-                    std::string ready = playerInfo.isReady ? "Ready" : "Not ready";
-                    ImGui::Text("%s", ready.c_str());
+                    
+                    std::string status;
+                    if(playerInfo.isHost)
+                        status = "Host";
+                    else
+                        status = playerInfo.isReady ? "Ready" : "Not ready";
+                    ImGui::Text("%s", status.c_str());
                 }
             
                 ImGui::EndTable();

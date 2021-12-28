@@ -100,12 +100,14 @@ namespace BlockBuster
         {
             std::string playerName;
             bool isReady;
+            bool isHost;
 
             static PlayerInfo FromJson(nlohmann::json json)
             {
                 PlayerInfo playerInfo;
                 playerInfo.playerName = json.at("name").get<std::string>();
                 playerInfo.isReady = json.at("ready").get<bool>();
+                playerInfo.isHost = json.at("host").get<bool>();
                 return playerInfo;
             }
         };

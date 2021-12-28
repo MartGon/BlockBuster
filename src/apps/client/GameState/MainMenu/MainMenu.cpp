@@ -131,18 +131,32 @@ void MainMenu::JoinGame(std::string gameId)
         GetLogger()->LogInfo("Succesfullly joined game " + gameId);
         GetLogger()->LogInfo("Result " + res.body);
 
-        // TODO: Handle game full errors, game doesn't exist, etc.
+        if(res.status == 200)
+        {
+            auto body = nlohmann::json::parse(res.body);
+            auto gameDetails = GameDetails::FromJson(body);
 
-        auto body = nlohmann::json::parse(res.body);
-        auto gameDetails = GameDetails::FromJson(body);
+            // Set current game
+            currentGame = gameDetails;
 
-        // Set current game
-        currentGame = gameDetails;
+            // Open game info window
+            SetState(std::make_unique<MenuState::Lobby>(this));
 
-        // Open game info window
-        SetState(std::make_unique<MenuState::Lobby>(this));
+            popUp.SetVisible(false);
+        }
+        else
+        {
+            // Handle game full errors, game doesn't exist, etc.
+            std::string msg = res.body;
 
-        popUp.SetVisible(false);
+            popUp.SetVisible(true);
+            popUp.SetText(msg);
+            popUp.SetTitle("Error");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
+        }
     };
 
     auto onError = [this](httplib::Error err)
@@ -253,22 +267,28 @@ void MainMenu::UpdateGame()
 
     auto onSuccess = [this](httplib::Response& res)
     {
-        GetLogger()->LogInfo("Succesfully updated game");
-        GetLogger()->LogInfo("Result " + res.body);
+        GetLogger()->LogInfo("[Update Game]Result " + res.body);
 
-        // TODO: Handle game doesn't exist, etc.
-
-        auto body = nlohmann::json::parse(res.body);
-        auto gameDetails = GameDetails::FromJson(body);
-
-        // Check if we are still in game. Keep updating in that case
-        if(currentGame.has_value())
+        if(res.status == 200)
         {
-            // Set current game
-            currentGame = gameDetails;
+            GetLogger()->LogInfo("Succesfully updated game");
+            auto body = nlohmann::json::parse(res.body);
+            auto gameDetails = GameDetails::FromJson(body);
 
-            // Call again
-            UpdateGame();
+            // Check if we are still in game. Keep updating in that case
+            if(currentGame.has_value())
+            {
+                // Set current game
+                currentGame = gameDetails;
+
+                // Call again
+                UpdateGame();
+            }
+        }
+        // Handle game doesn't exist, etc.
+        else
+        {
+            GetLogger()->LogError("[Update Game]: Game didn't exist");
         }
     };
 
