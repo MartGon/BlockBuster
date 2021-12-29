@@ -43,8 +43,9 @@ namespace BlockBuster
         void JoinGame(std::string gameId);
         void CreateGame(std::string name, std::string map, std::string mode, uint8_t max_players);
         void LeaveGame();
-        void UpdateGame();
         void ToggleReady();
+        void SendChatMsg(std::string msg);
+        void UpdateGame();
 
         // Inputs
         void HandleSDLEvents();
@@ -79,6 +80,7 @@ namespace BlockBuster
             uint8_t players;
             uint8_t maxPlayers;
             uint16_t ping;
+            std::vector<std::string> chat;
 
             static GameInfo FromJson(nlohmann::json game)
             {
@@ -90,6 +92,14 @@ namespace BlockBuster
                 gameInfo.maxPlayers = game.at("max_players").get<uint8_t>();
                 gameInfo.players = game.at("players").get<uint8_t>();
                 gameInfo.ping = game.at("ping").get<uint16_t>();
+
+                auto chatMsgs = game.at("chat").get<nlohmann::json::array_t>();
+                for(auto msg : chatMsgs)
+                {
+                    auto str = msg.get<std::string>();
+                    gameInfo.chat.push_back(str);
+                }
+                
                 return gameInfo;
             }
         };

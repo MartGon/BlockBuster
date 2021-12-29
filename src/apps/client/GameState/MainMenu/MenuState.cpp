@@ -192,7 +192,7 @@ void CreateGame::Update()
     ImGui::End();
 }
 
-// #### GAME #### \\
+// #### LOBBY #### \\
 
 void Lobby::OnEnter()
 {
@@ -292,12 +292,26 @@ void Lobby::Update()
             auto height = ImGui::GetCursorPosY();
             float marginSize = 4.0f;
             ImVec2 chatSize{playerTableSize.x, (layoutSize.y - height) - inputLineSize.y * 2.0f - marginSize};
-            ImGui::InputTextMultiline("##Chat Window", chat, 4096, chatSize, chatFlags);
+            
+            char* chatPtr = this->chat;
+            for(auto line : gameInfo.chat)
+            {
+                // TODO: Check for buffer overflow
+                // TODO: This is copied EVERY FRAME
+                strcpy(chatPtr, line.c_str());
+                chatPtr += line.size();
+            }
+
+            ImGui::InputTextMultiline("##Chat Window", this->chat, 256, chatSize, chatFlags);
 
             auto chatLineFlags = ImGuiInputTextFlags_EnterReturnsTrue;
             ImGui::Text("Type"); ImGui::SameLine(); 
             ImGui::PushItemWidth(playerTableSize.x - inputLineSize.x);
-            ImGui::InputText("##Type", chatLine, 128, chatLineFlags);
+            if(ImGui::InputText("##Type", chatLine, 128, chatLineFlags))
+            {
+                mainMenu_->SendChatMsg(chatLine);
+                chatLine[0] = '\0';
+            }
             ImGui::PopItemWidth();
 
             // Map Info

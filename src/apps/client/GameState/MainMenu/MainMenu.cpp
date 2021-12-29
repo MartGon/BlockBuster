@@ -257,6 +257,53 @@ void MainMenu::LeaveGame()
     httpClient.Request("/leave_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
+void MainMenu::ToggleReady()
+{
+    if(!currentGame.has_value())
+        return;
+
+    nlohmann::json body;
+    body["player_id"] = userId;
+
+    auto onSuccess = [this](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfully set ready state");
+        GetLogger()->LogInfo("Result " + res.body);
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        auto errorCode = static_cast<int>(err);
+        GetLogger()->LogError("Could not toggle ready. Error Code: " + std::to_string(errorCode));
+    };
+
+    httpClient.Request("/toggle_ready", nlohmann::to_string(body), onSuccess, onError);
+}
+
+void MainMenu::SendChatMsg(std::string msg)
+{
+    if(!currentGame.has_value())
+        return;
+
+    nlohmann::json body;
+    body["player_id"] = userId;
+    body["msg"] = msg;
+
+    auto onSuccess = [this](httplib::Response& res)
+    {
+        if(res.status == 200)
+            GetLogger()->LogInfo("Succesfully sent chat msg");
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        auto errorCode = static_cast<int>(err);
+        GetLogger()->LogError("Could not send chat msg. Error Code: " + std::to_string(errorCode));
+    };
+
+    httpClient.Request("/send_chat_msg", nlohmann::to_string(body), onSuccess, onError);
+}
+
 void MainMenu::UpdateGame()
 {
     if(!currentGame.has_value())
@@ -307,28 +354,7 @@ void MainMenu::UpdateGame()
     httpClient.Request("/update_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
-void MainMenu::ToggleReady()
-{
-    if(!currentGame.has_value())
-        return;
 
-    nlohmann::json body;
-    body["player_id"] = userId;
-
-    auto onSuccess = [this](httplib::Response& res)
-    {
-        GetLogger()->LogInfo("Succesfully set ready state");
-        GetLogger()->LogInfo("Result " + res.body);
-    };
-
-    auto onError = [this](httplib::Error err)
-    {
-        auto errorCode = static_cast<int>(err);
-        GetLogger()->LogError("Could not toggle ready. Error Code: " + std::to_string(errorCode));
-    };
-
-    httpClient.Request("/toggle_ready", nlohmann::to_string(body), onSuccess, onError);
-}
 
 void MainMenu::HandleSDLEvents()
 {
