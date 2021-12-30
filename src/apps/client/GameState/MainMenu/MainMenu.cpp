@@ -27,7 +27,7 @@ void MainMenu::Start()
 void MainMenu::Shutdown()
 {
     // Call LeaveGame and wait for it
-    if(currentGame)
+    if(lobby)
         LeaveGame();
 }
 
@@ -259,7 +259,7 @@ void MainMenu::LeaveGame()
 
 void MainMenu::ToggleReady()
 {
-    if(!currentGame.has_value())
+    if(!lobby)
         return;
 
     nlohmann::json body;
@@ -282,7 +282,7 @@ void MainMenu::ToggleReady()
 
 void MainMenu::SendChatMsg(std::string msg)
 {
-    if(!currentGame.has_value())
+    if(!lobby)
         return;
 
     nlohmann::json body;
@@ -306,7 +306,8 @@ void MainMenu::SendChatMsg(std::string msg)
 
 void MainMenu::UpdateGame()
 {
-    if(!currentGame.has_value())
+    // Only update current game while in lobby
+    if(lobby && lobby->updatePending)
         return;
 
     nlohmann::json body;
@@ -314,6 +315,9 @@ void MainMenu::UpdateGame()
 
     auto onSuccess = [this](httplib::Response& res)
     {
+        if(lobby)
+            lobby->updatePending = false;
+            
         GetLogger()->LogInfo("[Update Game]Result " + res.body);
 
         if(res.status == 200)
@@ -322,11 +326,14 @@ void MainMenu::UpdateGame()
             auto body = nlohmann::json::parse(res.body);
             auto gameDetails = GameDetails::FromJson(body);
 
-            // Check if we are still in game. Keep updating in that case
-            if(currentGame.has_value())
+            // Check if we are still in lobby. Keep updating in that case
+            if(lobby)
             {
                 // Set current game
                 currentGame = gameDetails;
+
+                // Update chat
+                lobby->OnGameInfoUpdate();
 
                 // Call again
                 UpdateGame();
@@ -341,6 +348,7 @@ void MainMenu::UpdateGame()
 
     auto onError = [this](httplib::Error err)
     {
+        lobby->updatePending = false;
         auto errorCode = static_cast<int>(err);
         GetLogger()->LogError("Could not update game with id " + this->currentGame->game.id + ". Error Code: " + std::to_string(errorCode));
 
@@ -351,6 +359,7 @@ void MainMenu::UpdateGame()
         }
     };
 
+    lobby->updatePending = true;
     httpClient.Request("/update_game", nlohmann::to_string(body), onSuccess, onError);
 }
 

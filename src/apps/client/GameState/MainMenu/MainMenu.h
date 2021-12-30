@@ -105,7 +105,7 @@ namespace BlockBuster
         };
         std::vector<GameInfo> gamesList;
 
-        // Game
+        // Lobby
         struct PlayerInfo
         {
             std::string playerName;
@@ -142,5 +142,6 @@ namespace BlockBuster
             }
         };
         std::optional<GameDetails> currentGame;
+        MenuState::Lobby* lobby = nullptr;
     };
 }

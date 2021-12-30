@@ -196,7 +196,30 @@ void CreateGame::Update()
 
 void Lobby::OnEnter()
 {
+    mainMenu_->lobby = this;
+    OnGameInfoUpdate();
     mainMenu_->UpdateGame();
+}
+
+void Lobby::OnExit()
+{
+    mainMenu_->lobby = nullptr;
+}
+
+void Lobby::OnGameInfoUpdate()
+{
+    auto chatData = mainMenu_->currentGame->game.chat;
+    char* chatPtr = this->chat;
+    for(auto it = chatData.begin(); it != chatData.end(); it++)
+    {
+        auto lineSize = it->size();
+        auto size = chatPtr - this->chat + lineSize;
+        if(size < 4096 /*Chat Size*/)
+        {
+            strcpy(chatPtr, it->c_str());
+            chatPtr += lineSize;
+        }
+    }
 }
 
 void Lobby::Update()
@@ -292,15 +315,6 @@ void Lobby::Update()
             auto height = ImGui::GetCursorPosY();
             float marginSize = 4.0f;
             ImVec2 chatSize{playerTableSize.x, (layoutSize.y - height) - inputLineSize.y * 2.0f - marginSize};
-            
-            char* chatPtr = this->chat;
-            for(auto line : gameInfo.chat)
-            {
-                // TODO: Check for buffer overflow
-                // TODO: This is copied EVERY FRAME
-                strcpy(chatPtr, line.c_str());
-                chatPtr += line.size();
-            }
 
             ImGui::InputTextMultiline("##Chat Window", this->chat, 256, chatSize, chatFlags);
 

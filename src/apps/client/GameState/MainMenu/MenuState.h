@@ -58,8 +58,14 @@ namespace BlockBuster
             Lobby(MainMenu* mainMenu) : Base(mainMenu){}
 
             void OnEnter() override;
+            void OnExit() override;
             void Update() override;
+            
+            void OnGameInfoUpdate();
+
+            bool updatePending = false;
         private:
+            
             char chat[4096] = "\0";
             char chatLine[128] = "\0";
         };
