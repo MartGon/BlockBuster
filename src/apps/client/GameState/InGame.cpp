@@ -85,6 +85,9 @@ void InGame::Start()
             auto config = packet->data.config;
             client_->logger->LogInfo("Server tick rate is " + std::to_string(config.sampleRate));
             this->serverTickRate = Util::Time::Seconds(config.sampleRate);
+
+            this->offsetTime = serverTickRate * 0.5;
+            this->predOffset = serverTickRate;
             this->playerId = config.playerId;
             this->connected = true;
 
@@ -149,52 +152,28 @@ void InGame::Start()
     });
     host.Connect(serverAddress);
 
-    // Testing connection to matchmaking server
-    httplib::Client client{"localhost:3030"};
-    nlohmann::json body{{"username", "Defu"}};
-    std::string bodyStr = nlohmann::to_string(body);
-
-    auto res = client.Post("/login", bodyStr.c_str(), bodyStr.size(), "application/json");
-    if(res)
+    // Connect to server
+    auto attempts = 0;
+    while(!connected && attempts < 5)
     {
-        auto value = res.value();
-        auto body = value.body;
-        client_->logger->LogInfo("Response: " + body);
-
-        // Connect to server
-        auto attempts = 0;
-        while(!connected && attempts < 5)
-        {
-            Util::Time::Sleep(Util::Time::Millis{500});
-            client_->logger->LogInfo("Connecting to server...");
-            host.PollAllEvents();
-            attempts++;
-        }
-
-        if(!connected)
-        {
-            client_->logger->LogInfo("Could not connect to server. Quitting");
-        }
-
-        client_->quit = !connected;
-    }
-    else
-    {
-        auto errorCode = res.error();
-        client_->logger->LogError("Could not connet to match-making server. Error Code: ");
-        client_->quit = true;
+        Util::Time::Sleep(Util::Time::Millis{500});
+        client_->logger->LogInfo("Connecting to server...");
+        host.PollAllEvents();
+        attempts++;
     }
 
+    if(!connected)
+    {
+        client_->logger->LogInfo("Could not connect to server. Quitting");
+    }
+
+    client_->quit = !connected;
     client_->logger->Flush();
 }
 
 void InGame::Update()
 {
-    preSimulationTime = Util::Time::GetTime();
     simulationLag = serverTickRate;
-
-    this->offsetTime = serverTickRate * 0.5;
-    this->predOffset = serverTickRate;
     
     client_->logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate.count()));
     while(!client_->quit)
