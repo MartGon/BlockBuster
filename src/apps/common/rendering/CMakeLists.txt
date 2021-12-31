@@ -4,6 +4,7 @@ SET(SOURCES
     Mesh.cpp
     Primitive.cpp
     Rendering.cpp
+    Model.cpp
 )
 
 

@@ -46,6 +46,20 @@ void InGame::Start()
     sphere = Rendering::Primitive::GenerateSphere(1.0f);
     cube = Rendering::Primitive::GenerateCube();
 
+    // Craft PlayerModel
+    auto upCubeT = Math::Transform{glm::vec3{0.0f, 0.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.5f, 1.0f}};
+    Rendering::Painting painting;
+    painting.type = Rendering::PaintingType::COLOR;
+    painting.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
+    auto sm1 = Rendering::SubModel{upCubeT, painting, Rendering::Primitive::GenerateCube(), &shader};
+    playerModel.AddSubModel(std::move(sm1));
+
+    auto downCubeT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.5f, 1.0f}};
+    painting.color = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f};
+    auto sm2 = Rendering::SubModel{downCubeT, painting, Rendering::Primitive::GenerateCube(), &shader};
+    playerModel.AddSubModel(std::move(sm2));
+    
+
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
     camera_.SetTarget(glm::vec3{0});
@@ -635,9 +649,10 @@ void InGame::DrawScene()
         auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;
         shader.SetUniformMat4("transform", transform);
-        shader.SetUniformVec4("color", glm::vec4{1.0f, 0.0f, 0.0f, 1.0f});
+        shader.SetUniformVec4("color", glm::vec4{0.0f, 0.0f, 1.0f, 1.0f});
         shader.SetUniformInt("dmg", player.second.onDmg);
-        cube.Draw(shader, drawMode);
+        //cube.Draw(shader, drawMode);
+        playerModel.Draw(transform);
     }
     prevPlayerPos = playerTable;
 

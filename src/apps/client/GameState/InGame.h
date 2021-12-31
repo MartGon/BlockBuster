@@ -8,6 +8,7 @@
 
 #include <rendering/Camera.h>
 #include <rendering/Mesh.h>
+#include <rendering/Model.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
 
@@ -75,6 +76,7 @@ namespace BlockBuster
         Rendering::Mesh cylinder;
         Rendering::Mesh sphere;
         Rendering::Mesh cube;
+        Rendering::Model playerModel;
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
 

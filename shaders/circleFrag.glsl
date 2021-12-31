@@ -1,15 +1,17 @@
 #version 330 core
+
+in vec3 tColor;
 out vec4 fragColor;
 
 uniform vec4 color;
 uniform bool dmg;
 
-in vec3 tColor;
+const vec4 red = vec4(1, 0, 0, 1);
 
 void main()
 {
     if(dmg)
-        fragColor = color;
+        fragColor = red;
     else
-        fragColor = vec4(tColor, 1);
+        fragColor = color;
 }
