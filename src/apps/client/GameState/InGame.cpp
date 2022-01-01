@@ -46,7 +46,7 @@ void InGame::Start()
     sphere = Rendering::Primitive::GenerateSphere(1.0f);
     cube = Rendering::Primitive::GenerateCube();
 
-    // Craft PlayerModel
+    // Craft PlayerModel - Implement Blender design
     auto upCubeT = Math::Transform{glm::vec3{0.0f, 0.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.5f, 1.0f}};
     Rendering::Painting painting;
     painting.type = Rendering::PaintingType::COLOR;
