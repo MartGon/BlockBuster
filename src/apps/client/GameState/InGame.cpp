@@ -58,7 +58,6 @@ void InGame::Start()
     painting.color = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f};
     auto sm2 = Rendering::SubModel{downCubeT, painting, Rendering::Primitive::GenerateCube(), &shader};
     playerModel.AddSubModel(std::move(sm2));
-    
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
