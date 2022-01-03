@@ -42,9 +42,19 @@ namespace Rendering
         Model(Model&&) = default;
         Model& operator=(Model&&) = default;
 
-        inline void AddSubModel(SubModel&& submodel)
+        inline uint32_t AddSubModel(SubModel&& submodel)
         {
             meshes.push_back(std::move(submodel));
+            return meshes.size() - 1;
+        }
+
+        inline SubModel* GetSubModel(int index)
+        {
+            SubModel* sm = nullptr;
+            if(index >= 0 && index < meshes.size())
+                sm = &meshes.at(index);
+
+            return sm;
         }
 
         void Draw(glm::mat4& tMat);

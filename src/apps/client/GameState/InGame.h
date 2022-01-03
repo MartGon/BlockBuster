@@ -97,6 +97,14 @@ namespace BlockBuster
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerPos;
         float PLAYER_SPEED = 5.f;
 
+        //TODO: Move this to its own class. 
+        // Player Model
+        uint32_t modelId = -1;
+        float sliderPrecision = 10.0f;
+        glm::vec3 modelOffset{0.0f};
+        glm::vec3 modelScale{1.0f};
+        glm::vec3 rotation{0.0f};
+
         // Networking
         ENet::Host host;
         ENet::PeerId serverId = 0;

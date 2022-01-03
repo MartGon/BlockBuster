@@ -1,6 +1,9 @@
 # TODO - General
 
-- Implement Blender Model (Body, Weapons, Wheels, etc.)
+- Implement Blender Model
+    - Body
+    - Weapon
+    - Wheels
 - Show weapon in first person camera
 - Muzzle Flash effect on weapon.
 - Player movement animation (wheels steer to movement direction)
@@ -22,6 +25,7 @@
     - Drop weapons. (Rectangle with a texture with weapon icon)
     - Pick up weapons
     - Recoil (Optional)
+    - Grenades (Optional)
 - Respawn System
     - Add respawns from Editor.
     - Server respawn system. Need to send packets to clients

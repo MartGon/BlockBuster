@@ -47,17 +47,31 @@ void InGame::Start()
     cube = Rendering::Primitive::GenerateCube();
 
     // Craft PlayerModel - Implement Blender design
-    auto upCubeT = Math::Transform{glm::vec3{0.0f, 0.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.5f, 1.0f}};
+    auto bodyT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
     Rendering::Painting painting;
     painting.type = Rendering::PaintingType::COLOR;
-    painting.color = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-    auto sm1 = Rendering::SubModel{upCubeT, painting, Rendering::Primitive::GenerateCube(), &shader};
+    const auto blue = glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}; 
+    painting.color = blue;
+    auto sm1 = Rendering::SubModel{bodyT, painting, Rendering::Primitive::GenerateCube(), &shader};
     playerModel.AddSubModel(std::move(sm1));
 
-    auto downCubeT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.5f, 1.0f}};
-    painting.color = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f};
-    auto sm2 = Rendering::SubModel{downCubeT, painting, Rendering::Primitive::GenerateCube(), &shader};
-    playerModel.AddSubModel(std::move(sm2));
+    auto neckT = Math::Transform{glm::vec3{0.0f, 1.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{0.75f, 0.5f, 0.75f}};
+    auto neckMesh = Rendering::Primitive::GenerateCylinder(1.0f, 1.0f, 16);
+    painting.color = glm::vec4{glm::vec3{0.0f}, 1.0f};
+    auto neckSM = Rendering::SubModel{neckT, painting, std::move(neckMesh), &shader};
+    playerModel.AddSubModel(std::move(neckSM));
+
+    auto headT = Math::Transform{glm::vec3{0.0f, 1.625f, -0.30f}, glm::vec3{0.0f}, glm::vec3{1.5f, 0.75f, 0.9f}};
+    auto headMesh = Rendering::Primitive::GenerateCube();
+    painting.color = blue;
+    auto headSM = Rendering::SubModel{headT, painting, std::move(headMesh), &shader};
+    playerModel.AddSubModel(std::move(headSM));
+
+    auto headBackT = Math::Transform{glm::vec3{0.0f, 1.625f, 0.525f}, glm::vec3{0.0f}, glm::vec3{1.5f, 0.75f, 0.75f}};
+    auto headBackMesh = Rendering::Primitive::GenerateSlope();
+    painting.color = blue;
+    auto headBackSM = Rendering::SubModel{headBackT, painting, std::move(headBackMesh), &shader};
+    playerModel.AddSubModel(std::move(headBackSM));
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
@@ -134,7 +148,7 @@ void InGame::Start()
                 // Create player entries
                 if(playerTable.find(playerId) == playerTable.end())
                 {
-                    Math::Transform transform{player.pos, glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
+                    Math::Transform transform{player.pos, glm::vec3{0.0f}, glm::vec3{1.f, 1.0f, 1.f}};
                     Entity::Player player{playerId, transform};
                     playerTable[playerId] = player;
                     prevPlayerPos[playerId] = player;
@@ -616,6 +630,15 @@ void InGame::Render()
 
 void InGame::DrawScene()
 {
+    // TODO: Remove
+    // Edit player model
+    if(auto sm = playerModel.GetSubModel(modelId))
+    {
+        sm->transform.position = modelOffset;
+        sm->transform.scale = modelScale;
+        sm->transform.rotation = rotation;
+    }
+
     // Draw data
     auto view = camera_.GetProjViewMat();
     
@@ -714,6 +737,15 @@ void InGame::DrawGUI()
             ImGui::InputDouble("Max FPS", &maxFPS, 1.0, 5.0, "%.0f");
             minFrameInterval = Util::Time::Seconds(1.0 / maxFPS);
             ImGui::Text("Min Frame interval:");ImGui::SameLine();ImGui::Text("%f ms", minFrameInterval.count());
+        }
+        ImGui::End();
+
+        if(ImGui::Begin("Transform"))
+        {
+            ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Rotation", &rotation.x, -sliderPrecision, sliderPrecision);
+            ImGui::InputFloat("Precision", &sliderPrecision);
         }
         ImGui::End();
     }
