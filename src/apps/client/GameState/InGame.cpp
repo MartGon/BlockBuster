@@ -47,6 +47,8 @@ void InGame::Start()
     cube = Rendering::Primitive::GenerateCube();
 
     // Craft PlayerModel - Implement Blender design
+
+    // Upper Body
     auto bodyT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
     Rendering::Painting painting;
     painting.type = Rendering::PaintingType::COLOR;
@@ -72,6 +74,13 @@ void InGame::Start()
     painting.color = blue;
     auto headBackSM = Rendering::SubModel{headBackT, painting, std::move(headBackMesh), &shader};
     playerModel.AddSubModel(std::move(headBackSM));
+
+    // Wheels
+    auto wheelSlope1T = Math::Transform{glm::vec3{0.0f, 1.625f, 0.525f}, glm::vec3{0.0f}, glm::vec3{1.5f, 0.75f, 0.75f}};
+    auto wheelSlope1Mesh = Rendering::Primitive::GenerateSlope();
+    painting.color = blue;
+    auto headBackSM = Rendering::SubModel{headBackT, painting, std::move(headBackMesh), &shader};
+    modelId = playerModel.AddSubModel(std::move(headBackSM));
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
