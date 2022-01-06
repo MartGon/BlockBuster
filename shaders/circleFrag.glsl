@@ -13,5 +13,7 @@ void main()
     if(dmg)
         fragColor = red;
     else
+    {
         fragColor = color;
+    }
 }

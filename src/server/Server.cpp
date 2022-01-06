@@ -58,7 +58,7 @@ glm::vec3 GetRandomPos()
 {
     glm::vec3 pos;
     pos.x = Util::Random::Uniform(-7.0f, 7.0f);
-    pos.y = 4.15f;
+    pos.y = 5.15f;
     //pos.z = Util::Random::Uniform(-7.0f, 7.0f);
     pos.z = -7.0f;
 
@@ -88,7 +88,7 @@ int main()
         clogger->LogError("Could not create log file " + logFile.string());
 
     Log::ComposedLogger logger;
-    logger.AddLogger(std::move(clogger));
+    //logger.AddLogger(std::move(clogger));
     logger.AddLogger(std::move(flogger));
     logger.SetVerbosity(Log::Verbosity::DEBUG);
 

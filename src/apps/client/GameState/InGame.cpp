@@ -46,13 +46,14 @@ void InGame::Start()
     sphere = Rendering::Primitive::GenerateSphere(1.0f);
     cube = Rendering::Primitive::GenerateCube();
 
-    // Craft PlayerModel - Implement Blender design
+    // BEGIN Craft PlayerModel - Implement Blender design
 
     // Upper Body
     auto bodyT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
     Rendering::Painting painting;
     painting.type = Rendering::PaintingType::COLOR;
-    const auto blue = glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}; 
+    const auto blue = glm::vec4{0.065f, 0.072f, 0.8f, 1.0f};
+    const auto lightBlue = glm::vec4{0.130f, 0.142f, 0.8f, 1.0f};
     painting.color = blue;
     auto sm1 = Rendering::SubModel{bodyT, painting, Rendering::Primitive::GenerateCube(), &shader};
     playerModel.AddSubModel(std::move(sm1));
@@ -76,11 +77,39 @@ void InGame::Start()
     playerModel.AddSubModel(std::move(headBackSM));
 
     // Wheels
-    auto wheelSlope1T = Math::Transform{glm::vec3{0.0f, 1.625f, 0.525f}, glm::vec3{0.0f}, glm::vec3{1.5f, 0.75f, 0.75f}};
-    auto wheelSlope1Mesh = Rendering::Primitive::GenerateSlope();
-    painting.color = blue;
-    auto headBackSM = Rendering::SubModel{headBackT, painting, std::move(headBackMesh), &shader};
-    modelId = playerModel.AddSubModel(std::move(headBackSM));
+        // Back wheel
+    auto wheelSlopeT = Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f}, glm::vec3{0.0f}, glm::vec3{1.985f, 1.25f, 2.0f}};
+    auto wheelSlopeMesh = Rendering::Primitive::GenerateSlope();
+    painting.color = lightBlue;
+    auto wSlopeM = Rendering::SubModel{wheelSlopeT, painting, std::move(wheelSlopeMesh), &shader};
+    modelId = playerModel.AddSubModel(std::move(wSlopeM));
+
+        // Front Wheel
+    auto fWheelSlopeT = Math::Transform{glm::vec3{0.0f, -1.0f, -1.0f}, glm::vec3{0.0f, 180.0f, 0.0f}, glm::vec3{1.985f, 1.25f, 2.0f}};
+    auto fWheelSlopeMesh = Rendering::Primitive::GenerateSlope();
+    painting.color = lightBlue;
+    auto fWSlopeM = Rendering::SubModel{fWheelSlopeT, painting, std::move(fWheelSlopeMesh), &shader};
+    modelId = playerModel.AddSubModel(std::move(fWSlopeM));
+
+        // Down cube
+    auto wheelCubeT = Math::Transform{glm::vec3{0.0f, -1.75f, -0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{2.0f, 0.25f, 4.0f}};
+    auto wheelCubeMesh = Rendering::Primitive::GenerateCube();
+    painting.color = lightBlue;
+    auto wheelCubeModel = Rendering::SubModel{wheelCubeT, painting, std::move(wheelCubeMesh), &shader};
+    modelId = playerModel.AddSubModel(std::move(wheelCubeModel));
+
+    // Wheels
+    for(int i = 0; i < 4; i++)
+    {
+        auto zOffset = -1.5f + i;
+        auto wheelT = Math::Transform{glm::vec3{0.0f, -2.0f, zOffset}, glm::vec3{0.0f, 0.0f, 90.0f}, glm::vec3{0.5f, 1.95f, 0.5f}};
+        auto wheelMesh = Rendering::Primitive::GenerateCylinder(1.0f, 1.0f, 16.0f);
+        painting.color = glm::vec4{glm::vec3{0.15f}, 1.0f};
+        auto wheelModel = Rendering::SubModel{wheelT, painting, std::move(wheelMesh), &shader};
+        modelId = playerModel.AddSubModel(std::move(wheelModel));
+    }
+
+    // END Player Model
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
@@ -639,15 +668,6 @@ void InGame::Render()
 
 void InGame::DrawScene()
 {
-    // TODO: Remove
-    // Edit player model
-    if(auto sm = playerModel.GetSubModel(modelId))
-    {
-        sm->transform.position = modelOffset;
-        sm->transform.scale = modelScale;
-        sm->transform.rotation = rotation;
-    }
-
     // Draw data
     auto view = camera_.GetProjViewMat();
     
@@ -751,10 +771,29 @@ void InGame::DrawGUI()
 
         if(ImGui::Begin("Transform"))
         {
+            if(ImGui::InputInt("Model ID", (int*)&modelId))
+            {
+                if(auto sm = playerModel.GetSubModel(modelId))
+                {
+                    modelOffset = sm->transform.position;
+                    modelScale = sm->transform.scale;
+                    rotation = sm->transform.rotation;
+                }
+            }
             ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Rotation", &rotation.x, -sliderPrecision, sliderPrecision);
             ImGui::InputFloat("Precision", &sliderPrecision);
+            if(ImGui::Button("Apply"))
+            {
+                // Edit player model
+                if(auto sm = playerModel.GetSubModel(modelId))
+                {
+                    sm->transform.position = modelOffset;
+                    sm->transform.scale = modelScale;
+                    sm->transform.rotation = rotation;
+                }
+            }
         }
         ImGui::End();
     }
