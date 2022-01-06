@@ -3,8 +3,8 @@
 - Implement Blender Model
     - Body - DONE
     - Wheels - DONE
-    - Weapon
-    - Use pointers to meshes, instead of meshes
+    - Weapon - DONE
+    - Use pointers to meshes, instead of meshes - DONE
 - Show weapon in first person camera
 - Muzzle Flash effect on weapon.
 - Player movement animation (wheels steer to movement direction)

@@ -26,7 +26,7 @@ namespace Rendering
     {
         Math::Transform transform;
         Painting painting;
-        Rendering::Mesh mesh;
+        Rendering::Mesh* mesh;
         GL::Shader* shader = nullptr;
     };
 

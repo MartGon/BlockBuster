@@ -76,6 +76,7 @@ namespace BlockBuster
         Rendering::Mesh cylinder;
         Rendering::Mesh sphere;
         Rendering::Mesh cube;
+        Rendering::Mesh slope;
         Rendering::Model playerModel;
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
