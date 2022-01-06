@@ -82,21 +82,21 @@ void InGame::Start()
     auto wheelSlopeMesh = Rendering::Primitive::GenerateSlope();
     painting.color = lightBlue;
     auto wSlopeM = Rendering::SubModel{wheelSlopeT, painting, std::move(wheelSlopeMesh), &shader};
-    modelId = playerModel.AddSubModel(std::move(wSlopeM));
+    playerModel.AddSubModel(std::move(wSlopeM));
 
         // Front Wheel
     auto fWheelSlopeT = Math::Transform{glm::vec3{0.0f, -1.0f, -1.0f}, glm::vec3{0.0f, 180.0f, 0.0f}, glm::vec3{1.985f, 1.25f, 2.0f}};
     auto fWheelSlopeMesh = Rendering::Primitive::GenerateSlope();
     painting.color = lightBlue;
     auto fWSlopeM = Rendering::SubModel{fWheelSlopeT, painting, std::move(fWheelSlopeMesh), &shader};
-    modelId = playerModel.AddSubModel(std::move(fWSlopeM));
+    playerModel.AddSubModel(std::move(fWSlopeM));
 
         // Down cube
     auto wheelCubeT = Math::Transform{glm::vec3{0.0f, -1.75f, -0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{2.0f, 0.25f, 4.0f}};
     auto wheelCubeMesh = Rendering::Primitive::GenerateCube();
     painting.color = lightBlue;
     auto wheelCubeModel = Rendering::SubModel{wheelCubeT, painting, std::move(wheelCubeMesh), &shader};
-    modelId = playerModel.AddSubModel(std::move(wheelCubeModel));
+    playerModel.AddSubModel(std::move(wheelCubeModel));
 
     // Wheels
     for(int i = 0; i < 4; i++)
@@ -106,7 +106,23 @@ void InGame::Start()
         auto wheelMesh = Rendering::Primitive::GenerateCylinder(1.0f, 1.0f, 16.0f);
         painting.color = glm::vec4{glm::vec3{0.15f}, 1.0f};
         auto wheelModel = Rendering::SubModel{wheelT, painting, std::move(wheelMesh), &shader};
-        modelId = playerModel.AddSubModel(std::move(wheelModel));
+        playerModel.AddSubModel(std::move(wheelModel));
+    }
+
+    // Weapon
+    for(int i = -1; i < 2; i += 2)
+    {
+        auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, 0.625f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
+        auto armMesh = Rendering::Primitive::GenerateCube();
+        painting.color = lightBlue;
+        auto armModel = Rendering::SubModel{armT, painting, std::move(armMesh), &shader};
+        playerModel.AddSubModel(std::move(armModel));
+
+        auto cannonT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, -0.775f}, glm::vec3{90.0f, 0.0f, 0.0f}, glm::vec3{0.25f, 2.5f, 0.25f}};
+        auto cannonMesh = Rendering::Primitive::GenerateCylinder(1.0f, 1.0f, 16.0f);
+        painting.color = glm::vec4{glm::vec3{0.15f}, 1.0f};
+        auto cannonModel = Rendering::SubModel{cannonT, painting, std::move(cannonMesh), &shader};
+        modelId = playerModel.AddSubModel(std::move(cannonModel));
     }
 
     // END Player Model

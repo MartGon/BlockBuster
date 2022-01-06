@@ -1,9 +1,10 @@
 # TODO - General
 
 - Implement Blender Model
-    - Body
+    - Body - DONE
+    - Wheels - DONE
     - Weapon
-    - Wheels
+    - Use pointers to meshes, instead of meshes
 - Show weapon in first person camera
 - Muzzle Flash effect on weapon.
 - Player movement animation (wheels steer to movement direction)
@@ -42,7 +43,10 @@
     - Capture the flag (Later, needs Editor)
     - King of the hill (Later, needs Editor)
 
-## Match making server
+## TODO - Maintenance
+ - Rewrite Networking module
+
+## TODO - Match making server
 
 - Launch Game server by pressing StartGame on Client. Tell other clients.
 - Client uploads map. Using button on server browser view. Combobox with maps on Map folder.
