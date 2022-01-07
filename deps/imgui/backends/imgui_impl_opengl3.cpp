@@ -525,6 +525,7 @@ void ImGui_ImplOpenGL3_RestoreState(int scissor_box[4])
     glScissor(scissor_box[0], scissor_box[1], (GLsizei)scissor_box[2], (GLsizei)scissor_box[3]);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_STENCIL_TEST);
 }
 
 bool ImGui_ImplOpenGL3_CreateFontsTexture()

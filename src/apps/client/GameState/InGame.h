@@ -78,6 +78,7 @@ namespace BlockBuster
         Rendering::Mesh cube;
         Rendering::Mesh slope;
         Rendering::Model playerModel;
+        Rendering::Model fpsModel;
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
 
@@ -104,7 +105,8 @@ namespace BlockBuster
         float sliderPrecision = 2.0f;
         glm::vec3 modelOffset{0.0f};
         glm::vec3 modelScale{1.0f};
-        glm::vec3 rotation{0.0f};
+        glm::vec3 modelRot{0.0f};
+        Math::Transform fpsModelTransform;
 
         // Networking
         ENet::Host host;

@@ -27,6 +27,7 @@ void InGame::Start()
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_STENCIL_TEST);
 
     // Shaders
     // Load shaders
@@ -117,6 +118,22 @@ void InGame::Start()
         modelId = playerModel.AddSubModel(std::move(cannonModel));
     }
     // END Player Model
+
+    // BEGIN fpsModel
+    fpsModelTransform = Math::Transform{glm::vec3{0.0f, -1.25f, -2.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
+    for(int i = -1; i < 2; i += 2)
+    {
+        auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, 0.625f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
+        painting.color = lightBlue;
+        auto armModel = Rendering::SubModel{armT, painting, &cube, &shader};
+        fpsModel.AddSubModel(std::move(armModel));
+
+        auto cannonT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, -0.775f}, glm::vec3{90.0f, 0.0f, 0.0f}, glm::vec3{0.25f, 2.5f, 0.25f}};
+        painting.color = glm::vec4{glm::vec3{0.15f}, 1.0f};
+        auto cannonModel = Rendering::SubModel{cannonT, painting, &cylinder, &shader};
+        modelId = fpsModel.AddSubModel(std::move(cannonModel));
+    }
+    // END fpsModel
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
@@ -655,10 +672,10 @@ void InGame::Render()
 {
     // Clear Buffer
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     DrawScene();
-    DrawGUI();
+    //DrawGUI();
 
     // Swap buffers
     SDL_GL_SwapWindow(client_->window_);
@@ -675,9 +692,20 @@ void InGame::Render()
 
 void InGame::DrawScene()
 {
+    // Draw fpsModel
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    auto t = fpsModelTransform.GetTransformMat();
+    auto proj = camera_.GetProjMat();
+    auto transform = proj * t;
+    shader.SetUniformMat4("tranform", transform);
+    fpsModel.Draw(transform);
+
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilMask(0x00); 
+
     // Draw data
     auto view = camera_.GetProjViewMat();
-    
     for(auto player : playerTable)
     {
         // Start Debug
@@ -780,25 +808,37 @@ void InGame::DrawGUI()
         {
             if(ImGui::InputInt("Model ID", (int*)&modelId))
             {
-                if(auto sm = playerModel.GetSubModel(modelId))
+                if(auto sm = fpsModel.GetSubModel(modelId))
                 {
                     modelOffset = sm->transform.position;
                     modelScale = sm->transform.scale;
-                    rotation = sm->transform.rotation;
+                    modelRot = sm->transform.rotation;
+                }
+                else if(modelId == 4)
+                {
+                    modelOffset = fpsModelTransform.position;
+                    modelScale = fpsModelTransform.scale;
+                    modelRot = fpsModelTransform.rotation;
                 }
             }
             ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Rotation", &rotation.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
             ImGui::InputFloat("Precision", &sliderPrecision);
             if(ImGui::Button("Apply"))
             {
                 // Edit player model
-                if(auto sm = playerModel.GetSubModel(modelId))
+                if(auto sm = fpsModel.GetSubModel(modelId))
                 {
                     sm->transform.position = modelOffset;
                     sm->transform.scale = modelScale;
-                    sm->transform.rotation = rotation;
+                    sm->transform.rotation = modelRot;
+                }
+                else if(modelId == 4)
+                {
+                    fpsModelTransform.position = modelOffset;
+                    fpsModelTransform.scale = modelScale;
+                    fpsModelTransform.rotation = modelRot;
                 }
             }
         }
