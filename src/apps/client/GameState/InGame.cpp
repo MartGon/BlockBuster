@@ -28,12 +28,15 @@ void InGame::Start()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glEnable(GL_STENCIL_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
     // Shaders
     // Load shaders
     try{
         shader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "circleVertex.glsl", "circleFrag.glsl");
         chunkShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
+        quadShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -42,15 +45,26 @@ void InGame::Start()
         return;
     }
 
+    // Textures
+    try{
+        flashTexture = GL::Texture::FromFolder(TEXTURES_DIR, "flash.png");
+        flashTexture.Load();
+    }
+    catch(const std::runtime_error& e)
+    {
+        this->client_->logger->LogError(e.what());
+    }
+
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
     sphere = Rendering::Primitive::GenerateSphere(1.0f);
+    quad = Rendering::Primitive::GenerateQuad();
     cube = Rendering::Primitive::GenerateCube();
     slope = Rendering::Primitive::GenerateSlope();
 
     // Models
-    playerAvatar.Start(shader);
-    fpsAvatar.Start(shader);
+    playerAvatar.Start(shader, quadShader, flashTexture);
+    fpsAvatar.Start(shader, quadShader, flashTexture);
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
@@ -592,7 +606,7 @@ void InGame::Render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     DrawScene();
-    //DrawGUI();
+    DrawGUI();
 
     // Swap buffers
     SDL_GL_SwapWindow(client_->window_);
@@ -609,8 +623,17 @@ void InGame::Render()
 
 void InGame::DrawScene()
 {
-    // Draw data
+    // Bind textures
+    map_.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
+    chunkShader.SetUniformInt("textureArray", 0);
+    map_.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
+    chunkShader.SetUniformInt("colorArray", 1);
+
+    // Draw map
     auto view = camera_.GetProjViewMat();
+    map_.Draw(chunkShader, view);
+
+    // Draw players
     for(auto player : playerTable)
     {
         // Start Debug
@@ -645,15 +668,6 @@ void InGame::DrawScene()
         playerAvatar.Draw(transform);
     }
     prevPlayerPos = playerTable;
-
-    // Bind textures
-    map_.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
-    chunkShader.SetUniformInt("textureArray", 0);
-    map_.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
-    chunkShader.SetUniformInt("colorArray", 1);
-
-    // Draw map
-    map_.Draw(chunkShader, view);
 
     // Draw fpsModel, always rendered
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -717,13 +731,12 @@ void InGame::DrawGUI()
         {
             if(ImGui::InputInt("Model ID", (int*)&modelId))
             {
-                /*
-                if(auto sm = playerAvatar.armsModel.GetSubModel(modelId))
+                if(auto sm = fpsAvatar.armsModel.GetSubModel(modelId))
                 {
                     modelOffset = sm->transform.position;
                     modelScale = sm->transform.scale;
                     modelRot = sm->transform.rotation;
-                }*/
+                }
             }
             ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
@@ -732,13 +745,13 @@ void InGame::DrawGUI()
             if(ImGui::Button("Apply"))
             {
                 // Edit player model
-                /*
-                if(auto sm = playerAvatar.armsModel.GetSubModel(modelId))
+                
+                if(auto sm = fpsAvatar.armsModel.GetSubModel(modelId))
                 {
                     sm->transform.position = modelOffset;
                     sm->transform.scale = modelScale;
                     sm->transform.rotation = modelRot;
-                }*/
+                }
             }
         }
         ImGui::End();

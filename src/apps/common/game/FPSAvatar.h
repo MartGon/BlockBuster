@@ -7,19 +7,19 @@ namespace Game
     class FPSAvatar
     {
     public:
-        void Start(GL::Shader& modelShader);
+        void Start(GL::Shader& modelShader, GL::Shader& quadShader, GL::Texture& texture);
         void Draw(const glm::mat4& projMat);
-
-    private:
-
-        void InitModel(GL::Shader& modelShader);
-
-        // Base Meshes
-        Rendering::Mesh cube;
-        Rendering::Mesh cylinder;
 
         // Models
         Rendering::Model armsModel;
+    private:
+
+        void InitModel(GL::Shader& modelShader, GL::Shader& quadShader, GL::Texture& texture);
+
+        // Base Meshes
+        Rendering::Mesh quad;
+        Rendering::Mesh cube;
+        Rendering::Mesh cylinder;
 
         // Pos
         const Math::Transform transform{glm::vec3{0.0f, -1.25f, -2.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};

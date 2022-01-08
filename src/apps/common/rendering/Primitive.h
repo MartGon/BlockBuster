@@ -5,7 +5,8 @@
 namespace Rendering
 {
     namespace Primitive
-    {
+    {   
+        Rendering::Mesh GenerateQuad();
         Rendering::Mesh GenerateCube();
         Rendering::Mesh GenerateSlope();
         Rendering::Mesh GenerateCircle(float radius, unsigned int samples = 20);

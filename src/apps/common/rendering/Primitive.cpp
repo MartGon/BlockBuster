@@ -5,6 +5,36 @@
 
 using namespace Rendering;
 
+Rendering::Mesh Primitive::GenerateQuad()
+{
+    Rendering::Mesh quad;
+    GL::VertexArray& vao = quad.GetVAO();
+    vao.GenVBO(std::vector<float>{
+        -0.5, 0.5, 0, // LeftUp
+        -0.5, -0.5, 0, // LeftDown
+        0.5, 0.5, 0, // Right Up
+        0.5, -0.5, 0 // Right Down
+    }, 3);
+    vao.GenVBO(std::vector<float>{
+        0.0, 0.0, 1.0, 
+        0.0, 0.0, 1.0, 
+        0.0, 0.0, 1.0, 
+        0.0, 0.0, 1.0,
+    }, 3);
+    vao.GenVBO(std::vector<float>{
+        0.0f, 1.0f,
+        0.0f, 0.0f,
+        1.0f, 1.0f,
+        1.0f, 0.0f,
+    }, 2);
+    vao.SetIndices(std::vector<unsigned int>{
+        0, 1, 2,
+        3, 2, 1,
+    });
+
+    return quad;
+}
+
 Rendering::Mesh Primitive::GenerateCube()
 {
     Rendering::Mesh cube;

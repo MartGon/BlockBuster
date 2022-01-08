@@ -14,6 +14,7 @@ namespace GL
 
         static Texture FromFolder(const std::filesystem::path& folderPath, const std::string& textureName);
 
+        Texture() = default;
         Texture(const std::filesystem::path& imagePath);
         ~Texture();
 
@@ -49,9 +50,7 @@ namespace GL
         
             const std::filesystem::path path_;
         };
-
-
-
+        
     private:
 
         std::filesystem::path path_;

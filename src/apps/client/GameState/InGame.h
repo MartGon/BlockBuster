@@ -73,17 +73,30 @@ namespace BlockBuster
         ::App::Client::Map map_;
 
         // Rendering
+            // Shaders
         GL::Shader shader;
         GL::Shader chunkShader;
+        GL::Shader quadShader;
+
+            // Textures
+        GL::Texture flashTexture;
+
+            // Meshes
+        Rendering::Mesh quad;
         Rendering::Mesh cylinder;
         Rendering::Mesh sphere;
         Rendering::Mesh cube;
         Rendering::Mesh slope;
+
+            // Models
         Game::PlayerAvatar playerAvatar;
         Game::FPSAvatar fpsAvatar;
+
+            // Camera
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
 
+            // Metrics
         Util::Time::SteadyPoint preSimulationTime;
         Util::Time::Seconds simulationLag;
         Util::Time::Seconds deltaTime;

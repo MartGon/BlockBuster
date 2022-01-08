@@ -7,7 +7,7 @@
     - Use pointers to meshes, instead of meshes - DONE
     - Move to its own class - DONE
 - Show weapon in first person camera - DONE
-    - Move to its own class 
+    - Move to its own class - DONE
 - Muzzle Flash effect on weapon.
 - Player movement animation (wheels steer to movement direction)
 - Player rotation animation (Upper body rotation, weapons pitch up and down)

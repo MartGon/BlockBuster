@@ -4,24 +4,27 @@
 
 using namespace Game;
 
-void PlayerAvatar::Start(GL::Shader& shader)
+void PlayerAvatar::Start(GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     // Meshes. TODO: Use pointers/references to these instances.
+    quad = Rendering::Primitive::GenerateQuad();
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
     cube = Rendering::Primitive::GenerateCube();
     slope = Rendering::Primitive::GenerateSlope();
 
-    InitModel(shader);
+    InitModel(shader, quadShader, texture);
 }
 
 void PlayerAvatar::Draw(const glm::mat4& tMat)
 {
     bodyModel.Draw(tMat);
     wheelsModel.Draw(tMat);
+    glDisable(GL_CULL_FACE);
     armsModel.Draw(tMat);
+    glEnable(GL_CULL_FACE);
 }
 
-void PlayerAvatar::InitModel(GL::Shader& shader)
+void PlayerAvatar::InitModel(GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     // Upper Body
     auto bodyT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
@@ -81,6 +84,7 @@ void PlayerAvatar::InitModel(GL::Shader& shader)
     for(int i = -1; i < 2; i += 2)
     {
         auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, 0.625f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
+        painting.type = Rendering::PaintingType::COLOR;
         painting.color = lightBlue;
         auto armModel = Rendering::SubModel{armT, painting, &cube, &shader};
         armsModel.AddSubModel(std::move(armModel));
@@ -89,5 +93,11 @@ void PlayerAvatar::InitModel(GL::Shader& shader)
         painting.color = glm::vec4{glm::vec3{0.15f}, 1.0f};
         auto cannonModel = Rendering::SubModel{cannonT, painting, &cylinder, &shader};
         armsModel.AddSubModel(std::move(cannonModel));
+
+        auto flashT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, -2.125f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{3.f}};
+        painting.type = Rendering::PaintingType::TEXTURE;
+        painting.texture = &texture;
+        auto flashModel = Rendering::SubModel{flashT, painting, &quad, &quadShader};
+        armsModel.AddSubModel(std::move(flashModel));
     }
 }
