@@ -1,20 +1,21 @@
 #pragma once 
 
 #include <rendering/Model.h>
+#include <rendering/RenderMgr.h>
 
 namespace Game
 {
     class FPSAvatar
     {
     public:
-        void Start(GL::Shader& modelShader, GL::Shader& quadShader, GL::Texture& texture);
+        void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
         void Draw(const glm::mat4& projMat);
 
         // Models
-        Rendering::Model armsModel;
+        Rendering::Model* armsModel;
     private:
 
-        void InitModel(GL::Shader& modelShader, GL::Shader& quadShader, GL::Texture& texture);
+        void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
 
         // Base Meshes
         Rendering::Mesh quad;

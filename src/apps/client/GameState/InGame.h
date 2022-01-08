@@ -73,6 +73,9 @@ namespace BlockBuster
         ::App::Client::Map map_;
 
         // Rendering
+            // Mgr
+        Rendering::RenderMgr renderMgr;
+
             // Shaders
         GL::Shader shader;
         GL::Shader chunkShader;

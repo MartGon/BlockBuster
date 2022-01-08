@@ -63,8 +63,8 @@ void InGame::Start()
     slope = Rendering::Primitive::GenerateSlope();
 
     // Models
-    playerAvatar.Start(shader, quadShader, flashTexture);
-    fpsAvatar.Start(shader, quadShader, flashTexture);
+    playerAvatar.Start(renderMgr, shader, quadShader, flashTexture);
+    fpsAvatar.Start(renderMgr, shader, quadShader, flashTexture);
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
@@ -662,8 +662,6 @@ void InGame::DrawScene()
 
         auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;
-        //shader.SetUniformMat4("transform", transform);
-        //shader.SetUniformVec4("color", glm::vec4{0.0f, 0.0f, 1.0f, 1.0f});
         shader.SetUniformInt("dmg", player.second.onDmg);
         playerAvatar.Draw(transform);
     }
@@ -673,6 +671,8 @@ void InGame::DrawScene()
     glClear(GL_DEPTH_BUFFER_BIT);
     auto proj = camera_.GetProjMat();
     fpsAvatar.Draw(proj);
+
+    renderMgr.Render(camera_);
 }
 
 void InGame::DrawGUI()
@@ -731,7 +731,7 @@ void InGame::DrawGUI()
         {
             if(ImGui::InputInt("Model ID", (int*)&modelId))
             {
-                if(auto sm = fpsAvatar.armsModel.GetSubModel(modelId))
+                if(auto sm = fpsAvatar.armsModel->GetSubModel(modelId))
                 {
                     modelOffset = sm->transform.position;
                     modelScale = sm->transform.scale;
@@ -746,7 +746,7 @@ void InGame::DrawGUI()
             {
                 // Edit player model
                 
-                if(auto sm = fpsAvatar.armsModel.GetSubModel(modelId))
+                if(auto sm = fpsAvatar.armsModel->GetSubModel(modelId))
                 {
                     sm->transform.position = modelOffset;
                     sm->transform.scale = modelScale;

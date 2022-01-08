@@ -15,6 +15,7 @@ namespace Rendering
     struct Painting
     {
         PaintingType type;
+        bool hasAlpha = false;
         union
         {
             glm::vec4 color;
@@ -30,10 +31,12 @@ namespace Rendering
         GL::Shader* shader = nullptr;
     };
 
+    class RenderMgr;
+
     class Model
     {
+    friend class RenderMgr;
     public:
-        Model() = default;
         ~Model() = default;
 
         Model(const Model&) = delete;
@@ -57,9 +60,11 @@ namespace Rendering
             return sm;
         }
 
-        void Draw(const glm::mat4& tMat);
+        void Draw(const glm::mat4& tMat, uint8_t flags = 0);
 
     private:
+        Model() = default;
         std::vector<SubModel> meshes;
+        RenderMgr* mgr;
     };
 }
