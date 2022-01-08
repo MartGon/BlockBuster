@@ -50,26 +50,7 @@ void InGame::Start()
 
     // Models
     playerAvatar.Start(shader);
-
-    // BEGIN fpsModel
-    Rendering::Painting painting;
-    painting.type = Rendering::PaintingType::COLOR;
-    const auto blue = glm::vec4{0.065f, 0.072f, 0.8f, 1.0f};
-    const auto lightBlue = glm::vec4{0.130f, 0.142f, 0.8f, 1.0f};
-    fpsModelTransform = Math::Transform{glm::vec3{0.0f, -1.25f, -2.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
-    for(int i = -1; i < 2; i += 2)
-    {
-        auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, 0.625f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
-        painting.color = lightBlue;
-        auto armModel = Rendering::SubModel{armT, painting, &cube, &shader};
-        fpsModel.AddSubModel(std::move(armModel));
-
-        auto cannonT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, -0.775f}, glm::vec3{90.0f, 0.0f, 0.0f}, glm::vec3{0.25f, 2.5f, 0.25f}};
-        painting.color = glm::vec4{glm::vec3{0.15f}, 1.0f};
-        auto cannonModel = Rendering::SubModel{cannonT, painting, &cylinder, &shader};
-        modelId = fpsModel.AddSubModel(std::move(cannonModel));
-    }
-    // END fpsModel
+    fpsAvatar.Start(shader);
 
     // Camera
     camera_.SetPos(glm::vec3{0, 8, 16});
@@ -676,11 +657,8 @@ void InGame::DrawScene()
 
     // Draw fpsModel, always rendered
     glClear(GL_DEPTH_BUFFER_BIT);
-    auto t = fpsModelTransform.GetTransformMat();
     auto proj = camera_.GetProjMat();
-    auto transform = proj * t;
-    shader.SetUniformMat4("tranform", transform);
-    fpsModel.Draw(transform);
+    fpsAvatar.Draw(proj);
 }
 
 void InGame::DrawGUI()
@@ -739,18 +717,13 @@ void InGame::DrawGUI()
         {
             if(ImGui::InputInt("Model ID", (int*)&modelId))
             {
-                if(auto sm = fpsModel.GetSubModel(modelId))
+                /*
+                if(auto sm = playerAvatar.armsModel.GetSubModel(modelId))
                 {
                     modelOffset = sm->transform.position;
                     modelScale = sm->transform.scale;
                     modelRot = sm->transform.rotation;
-                }
-                else if(modelId == 4)
-                {
-                    modelOffset = fpsModelTransform.position;
-                    modelScale = fpsModelTransform.scale;
-                    modelRot = fpsModelTransform.rotation;
-                }
+                }*/
             }
             ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
@@ -759,18 +732,13 @@ void InGame::DrawGUI()
             if(ImGui::Button("Apply"))
             {
                 // Edit player model
-                if(auto sm = fpsModel.GetSubModel(modelId))
+                /*
+                if(auto sm = playerAvatar.armsModel.GetSubModel(modelId))
                 {
                     sm->transform.position = modelOffset;
                     sm->transform.scale = modelScale;
                     sm->transform.rotation = modelRot;
-                }
-                else if(modelId == 4)
-                {
-                    fpsModelTransform.position = modelOffset;
-                    fpsModelTransform.scale = modelScale;
-                    fpsModelTransform.rotation = modelRot;
-                }
+                }*/
             }
         }
         ImGui::End();

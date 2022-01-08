@@ -5,8 +5,9 @@
     - Wheels - DONE
     - Weapon - DONE
     - Use pointers to meshes, instead of meshes - DONE
-    - Move to its own class
+    - Move to its own class - DONE
 - Show weapon in first person camera - DONE
+    - Move to its own class 
 - Muzzle Flash effect on weapon.
 - Player movement animation (wheels steer to movement direction)
 - Player rotation animation (Upper body rotation, weapons pitch up and down)
@@ -19,15 +20,20 @@
     - Reload/Overheat
     - Spread
     - Sound (OpenAL)
-    - Weapons (Choose 2 or more)
+    - Weapons (Choose 2 or more) (Optional)
+        - Assault rifle (basic) (Mandatory)
         - Shotgun 
-        - Assault rifle (basic)
         - Long Range rifle (battle rifle)
         - Sniper
-    - Drop weapons. (Rectangle with a texture with weapon icon)
-    - Pick up weapons
+    - Drop weapons. (Rectangle with a texture with weapon icon) (Optional)
+    - Pick up weapons (Optional)
     - Recoil (Optional)
     - Grenades (Optional)
+- Power Up System
+    - Health Packs
+    - Invisibility
+    - No overheat, extra rate of fire
+    - No spread
 - Respawn System
     - Add respawns from Editor.
     - Server respawn system. Need to send packets to clients

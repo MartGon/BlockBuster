@@ -6,7 +6,7 @@ using namespace Game;
 
 void PlayerAvatar::Start(GL::Shader& shader)
 {
-    // Meshes
+    // Meshes. TODO: Use pointers/references to these instances.
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
     cube = Rendering::Primitive::GenerateCube();
     slope = Rendering::Primitive::GenerateSlope();

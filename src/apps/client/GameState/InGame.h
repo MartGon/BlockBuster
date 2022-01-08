@@ -17,6 +17,7 @@
 #include <game/CameraController.h>
 #include <game/ChunkMeshMgr.h>
 #include <game/PlayerAvatar.h>
+#include <game/FPSAvatar.h>
 
 #include <util/BBTime.h>
 #include <util/Ring.h>
@@ -78,9 +79,8 @@ namespace BlockBuster
         Rendering::Mesh sphere;
         Rendering::Mesh cube;
         Rendering::Mesh slope;
-        Rendering::Model playerModel;
         Game::PlayerAvatar playerAvatar;
-        Rendering::Model fpsModel;
+        Game::FPSAvatar fpsAvatar;
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
 
@@ -108,7 +108,6 @@ namespace BlockBuster
         glm::vec3 modelOffset{0.0f};
         glm::vec3 modelScale{1.0f};
         glm::vec3 modelRot{0.0f};
-        Math::Transform fpsModelTransform;
 
         // Networking
         ENet::Host host;
