@@ -57,7 +57,7 @@ namespace Rendering
             return sm;
         }
 
-        void Draw(glm::mat4& tMat);
+        void Draw(const glm::mat4& tMat);
 
     private:
         std::vector<SubModel> meshes;

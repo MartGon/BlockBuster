@@ -1,6 +1,7 @@
 SET(SOURCES
 
     PlayerController.cpp
+    PlayerAvatar.cpp
     CameraController.cpp
     Map.cpp
     ServiceLocator.cpp

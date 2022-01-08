@@ -2,7 +2,7 @@
 
 using namespace Rendering;
 
-void Model::Draw(glm::mat4& tMat)
+void Model::Draw(const glm::mat4& tMat)
 {
     for(auto& submodel : meshes)
     {
