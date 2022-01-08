@@ -692,18 +692,6 @@ void InGame::Render()
 
 void InGame::DrawScene()
 {
-    // Draw fpsModel
-    glStencilFunc(GL_ALWAYS, 1, 0xFF);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    auto t = fpsModelTransform.GetTransformMat();
-    auto proj = camera_.GetProjMat();
-    auto transform = proj * t;
-    shader.SetUniformMat4("tranform", transform);
-    fpsModel.Draw(transform);
-
-    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-    glStencilMask(0x00); 
-
     // Draw data
     auto view = camera_.GetProjViewMat();
     for(auto player : playerTable)
@@ -750,6 +738,14 @@ void InGame::DrawScene()
 
     // Draw map
     map_.Draw(chunkShader, view);
+
+    // Draw fpsModel, always rendered
+    glClear(GL_DEPTH_BUFFER_BIT);
+    auto t = fpsModelTransform.GetTransformMat();
+    auto proj = camera_.GetProjMat();
+    auto transform = proj * t;
+    shader.SetUniformMat4("tranform", transform);
+    fpsModel.Draw(transform);
 }
 
 void InGame::DrawGUI()

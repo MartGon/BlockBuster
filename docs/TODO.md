@@ -5,6 +5,7 @@
     - Wheels - DONE
     - Weapon - DONE
     - Use pointers to meshes, instead of meshes - DONE
+    - Move to its own class
 - Show weapon in first person camera - DONE
 - Muzzle Flash effect on weapon.
 - Player movement animation (wheels steer to movement direction)
