@@ -10,7 +10,7 @@
     - Move to its own class - DONE
 - Muzzle Flash effect on weapon.
     - Sort transparent quads by distance. Draw the ones on the back first. Use a RendererManager with delayed calls. - DONE
-- Player movement animation (wheels steer to movement direction)
+- Player movement animation (wheels steer to movement direction) - DONE
 - Player rotation animation (Upper body rotation, weapons pitch up and down)
 - Player shooting animation (Weapons move back and forth, muzzle flash)
 - Player movement collision box (Ignore wheels, use a rectangle)

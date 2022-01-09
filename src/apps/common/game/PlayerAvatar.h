@@ -11,6 +11,10 @@ namespace Game
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
         void Draw(const glm::mat4& tMat);
         
+        void SteerWheels(glm::vec3 moveDir);
+
+        Math::Transform wTransform;
+
     private:
         void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
 

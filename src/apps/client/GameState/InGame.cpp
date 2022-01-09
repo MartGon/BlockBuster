@@ -447,6 +447,9 @@ glm::vec3 InGame::PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Se
     auto& player = playerTable[playerId];
     auto velocity = moveDir * PLAYER_SPEED * (float)deltaTime.count();
     auto predPos = pos + velocity;
+
+    playerAvatar.SteerWheels(moveDir);
+
     return predPos;
 }
 
@@ -732,9 +735,9 @@ void InGame::DrawGUI()
             {
                 if(auto sm = fpsAvatar.armsModel->GetSubModel(modelId))
                 {
-                    modelOffset = sm->transform.position;
-                    modelScale = sm->transform.scale;
-                    modelRot = sm->transform.rotation;
+                    modelOffset = playerAvatar.wTransform.position;
+                    modelScale =  playerAvatar.wTransform.scale;
+                    modelRot =  playerAvatar.wTransform.rotation;
                 }
             }
             ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
@@ -744,12 +747,11 @@ void InGame::DrawGUI()
             if(ImGui::Button("Apply"))
             {
                 // Edit player model
-                
                 if(auto sm = fpsAvatar.armsModel->GetSubModel(modelId))
                 {
-                    sm->transform.position = modelOffset;
-                    sm->transform.scale = modelScale;
-                    sm->transform.rotation = modelRot;
+                    playerAvatar.wTransform.position = modelOffset;
+                    playerAvatar.wTransform.scale = modelScale;
+                    playerAvatar.wTransform.rotation = modelRot;
                 }
             }
         }

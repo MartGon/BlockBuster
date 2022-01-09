@@ -18,10 +18,23 @@ void PlayerAvatar::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL
 void PlayerAvatar::Draw(const glm::mat4& tMat)
 {
     bodyModel->Draw(tMat);
-    wheelsModel->Draw(tMat);
+
+    auto wheelsT = wTransform.GetTransformMat();
+    auto wtMat = tMat * wheelsT;
+    wheelsModel->Draw(wtMat);
+
+    // Draw arms. Disable culling for muzzle flash quad
     glDisable(GL_CULL_FACE);
     armsModel->Draw(tMat, Rendering::RenderMgr::NO_FACE_CULLING);
     glEnable(GL_CULL_FACE);
+}
+
+void PlayerAvatar::SteerWheels(glm::vec3 moveDir /*, float facingAngle*/)
+{
+    // TODO: This should be the angle between the facing vector and the default wheel vector.
+    // In other words, It should be different according to the facing dir.
+    auto yaw = glm::degrees(glm::atan(-moveDir.z, moveDir.x));
+    wTransform.rotation.y = yaw + 90;
 }
 
 void PlayerAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
