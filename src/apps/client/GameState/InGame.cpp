@@ -668,7 +668,6 @@ void InGame::DrawScene()
     prevPlayerPos = playerTable;
 
     // Draw fpsModel, always rendered
-    glClear(GL_DEPTH_BUFFER_BIT);
     auto proj = camera_.GetProjMat();
     fpsAvatar.Draw(proj);
 

@@ -18,7 +18,7 @@ void FPSAvatar::Draw(const glm::mat4& projMat)
 {
     auto t = transform.GetTransformMat();
     auto tMat = projMat * t;
-    armsModel->Draw(tMat, Rendering::RenderMgr::CLEAR_DEPTH_BUFFER);
+    armsModel->Draw(tMat, Rendering::RenderMgr::IGNORE_DEPTH);
 }
 
 void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)

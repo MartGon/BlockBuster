@@ -46,7 +46,7 @@ void RenderMgr::DrawList(std::vector<DrawReq>* list)
 
 void RenderMgr::AddDrawReq(AlphaType alphaType, DrawReq dr)
 {
-    if(dr.renderFlags & RenderMgr::RenderFlags::CLEAR_DEPTH_BUFFER)
+    if(dr.renderFlags & RenderMgr::RenderFlags::IGNORE_DEPTH)
         ignoreDepthReqs.push_back(dr);
     else
     {

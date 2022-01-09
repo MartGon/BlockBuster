@@ -13,7 +13,7 @@ namespace Rendering
         {
             NONE = 0,
             NO_FACE_CULLING = 1,
-            CLEAR_DEPTH_BUFFER = 2,
+            IGNORE_DEPTH = 2,
         };
 
         Model* CreateModel();
