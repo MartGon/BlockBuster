@@ -117,9 +117,9 @@ namespace BlockBuster
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerPos;
         float PLAYER_SPEED = 5.f;
 
-        //TODO: Move this to its own class. 
+        //TODO: DEBUG. Remove on final version
         // Player Model
-        uint32_t modelId = -1;
+        uint32_t modelId = 0;
         float sliderPrecision = 2.0f;
         glm::vec3 modelOffset{0.0f};
         glm::vec3 modelScale{1.0f};

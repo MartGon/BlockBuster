@@ -143,7 +143,7 @@ namespace BlockBuster
             void RemoveSelection();
             void CutSelection();
             void PasteSelection();
-            // TODO: Change this to use Util::Result
+            // TODO: Change this to use Util::Result / Oktal::Result
             Result RotateSelection(Game::RotationAxis axis, Game::RotType rotType);
             Result MirrorSelection(MirrorPlane plane);
             void FillSelection();

@@ -733,11 +733,11 @@ void InGame::DrawGUI()
         {
             if(ImGui::InputInt("Model ID", (int*)&modelId))
             {
-                if(auto sm = fpsAvatar.armsModel->GetSubModel(modelId))
+                if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
                 {
-                    modelOffset = playerAvatar.wTransform.position;
-                    modelScale =  playerAvatar.wTransform.scale;
-                    modelRot =  playerAvatar.wTransform.rotation;
+                    modelOffset = playerAvatar.aTransform.position;
+                    modelScale =  playerAvatar.aTransform.scale;
+                    modelRot =  playerAvatar.aTransform.rotation;
                 }
             }
             ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
@@ -747,11 +747,11 @@ void InGame::DrawGUI()
             if(ImGui::Button("Apply"))
             {
                 // Edit player model
-                if(auto sm = fpsAvatar.armsModel->GetSubModel(modelId))
+                if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
                 {
-                    playerAvatar.wTransform.position = modelOffset;
-                    playerAvatar.wTransform.scale = modelScale;
-                    playerAvatar.wTransform.rotation = modelRot;
+                    playerAvatar.aTransform.position = modelOffset;
+                    playerAvatar.aTransform.scale = modelScale;
+                    playerAvatar.aTransform.rotation = modelRot;
                 }
             }
         }

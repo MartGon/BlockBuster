@@ -12,8 +12,11 @@ namespace Game
         void Draw(const glm::mat4& tMat);
         
         void SteerWheels(glm::vec3 moveDir);
+        void RotateArms(float pitch);
 
         Math::Transform wTransform;
+        Math::Transform aTransform{glm::vec3{0.0f, 0.2f, 0.625f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
+        Rendering::Model* armsModel;
 
     private:
         void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
@@ -21,7 +24,6 @@ namespace Game
         // Models
         Rendering::Model* bodyModel;
         Rendering::Model* wheelsModel;
-        Rendering::Model* armsModel;
 
         // Base Meshes
         Rendering::Mesh quad;

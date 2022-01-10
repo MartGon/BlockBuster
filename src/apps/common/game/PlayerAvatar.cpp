@@ -25,7 +25,9 @@ void PlayerAvatar::Draw(const glm::mat4& tMat)
 
     // Draw arms. Disable culling for muzzle flash quad
     glDisable(GL_CULL_FACE);
-    armsModel->Draw(tMat, Rendering::RenderMgr::NO_FACE_CULLING);
+    auto armsT = aTransform.GetTransformMat();
+    auto atMat = tMat * armsT;
+    armsModel->Draw(atMat, Rendering::RenderMgr::NO_FACE_CULLING);
     glEnable(GL_CULL_FACE);
 }
 
@@ -35,6 +37,11 @@ void PlayerAvatar::SteerWheels(glm::vec3 moveDir /*, float facingAngle*/)
     // In other words, It should be different according to the facing dir.
     auto yaw = glm::degrees(glm::atan(-moveDir.z, moveDir.x));
     wTransform.rotation.y = yaw + 90;
+}
+
+void PlayerAvatar::RotateArms(float pitch)
+{
+    aTransform.rotation.x = pitch;
 }
 
 void PlayerAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
@@ -101,19 +108,19 @@ void PlayerAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader
     // Weapon
     for(int i = -1; i < 2; i += 2)
     {
-        auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, 0.625f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
+        auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
         painting.type = Rendering::PaintingType::COLOR;
         painting.color = lightBlue;
         painting.hasAlpha = false;
         auto armModel = Rendering::SubModel{armT, painting, &cube, &shader};
         armsModel->AddSubModel(std::move(armModel));
 
-        auto cannonT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, -0.775f}, glm::vec3{90.0f, 0.0f, 0.0f}, glm::vec3{0.25f, 2.5f, 0.25f}};
+        auto cannonT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.0f, -1.4f}, glm::vec3{90.0f, 0.0f, 0.0f}, glm::vec3{0.25f, 2.5f, 0.25f}};
         painting.color = glm::vec4{glm::vec3{0.15f}, 1.0f};
         auto cannonModel = Rendering::SubModel{cannonT, painting, &cylinder, &shader};
         armsModel->AddSubModel(std::move(cannonModel));
 
-        auto flashT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, -2.125f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{3.f}};
+        auto flashT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.0f, -2.75f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{3.f}};
         painting.type = Rendering::PaintingType::TEXTURE;
         painting.hasAlpha = true;
         painting.texture = &texture;
