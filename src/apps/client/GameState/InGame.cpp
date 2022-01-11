@@ -667,6 +667,12 @@ void InGame::DrawScene()
         auto transform = view * t;
         shader.SetUniformInt("dmg", player.second.onDmg);
         playerAvatar.Draw(transform);
+
+        // Draw player hitbox
+        Math::Transform boxTf{modelOffset, modelRot, modelScale};
+        auto mat = transform * Entity::PlayerHitBox::head.GetTransformMat();
+        shader.SetUniformMat4("transform", mat);
+        cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
     }
     prevPlayerPos = playerTable;
 
