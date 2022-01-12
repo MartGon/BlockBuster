@@ -7,8 +7,8 @@ namespace Entity
     struct PlayerHitBox
     {
         static const Math::Transform head;
-        Math::Transform body;
-        Math::Transform wheels;
+        static const Math::Transform body;
+        static const Math::Transform wheels; // This one should rotate with the wheels
     };
 
     using ID = uint8_t;
@@ -18,6 +18,8 @@ namespace Entity
         Math::Transform transform;
         bool onDmg = false;
 
+        glm::vec3 lastMoveDir;
 
+        bool IsHitByRay();
     };
 }

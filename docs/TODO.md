@@ -14,7 +14,7 @@
 - Player rotation animation (Upper body rotation, weapons pitch up and down)
 - Player shooting animation (Weapons move back and forth, muzzle flash)
 - Player movement collision box (Ignore wheels, use a rectangle)
-- Player shooting collision box (Use rectangles fors wheels and body)
+- Player shooting collision box (Use rectangles fors wheels and body) - DONE
 - Weapon system 
     - Player Health
     - Player Death
