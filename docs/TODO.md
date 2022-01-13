@@ -8,10 +8,12 @@
     - Move to its own class - DONE
 - Show weapon in first person camera - DONE
     - Move to its own class - DONE
-- Muzzle Flash effect on weapon.
+- Muzzle Flash effect on weapon. - DONE
     - Sort transparent quads by distance. Draw the ones on the back first. Use a RendererManager with delayed calls. - DONE
 - Player movement animation (wheels steer to movement direction) - DONE
 - Player rotation animation (Upper body rotation, weapons pitch up and down)
+    - Body rotation
+    - Arms rotation - DONE
 - Player shooting animation (Weapons move back and forth, muzzle flash)
 - Player movement collision box (Ignore wheels, use a rectangle)
 - Player shooting collision box (Use rectangles fors wheels and body) - DONE
@@ -38,7 +40,7 @@
 - Respawn System
     - Add respawns from Editor.
     - Server respawn system. Need to send packets to clients
-- Weapon Spawn System
+- Weapon Spawn System (Optional)
     - Add weapon spawns from Editor. (Floating rectangles with basic animation)
     - Timer for respawns
 - Client HUD (Freetype)

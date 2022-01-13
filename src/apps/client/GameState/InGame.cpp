@@ -670,7 +670,7 @@ void InGame::DrawScene()
 
         // Draw player hitbox
         Math::Transform boxTf{modelOffset, modelRot, modelScale};
-        auto mat = transform * Entity::PlayerHitBox::wheels.GetTransformMat();
+        auto mat = transform * boxTf.GetTransformMat();
         shader.SetUniformMat4("transform", mat);
         cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
     }
