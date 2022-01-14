@@ -12,6 +12,14 @@ namespace Game
 {
     namespace Map
     {
+        struct Respawn
+        {
+            glm::vec3 pos;
+            float orientation;
+
+            // enum Team team;
+        }; 
+
         class Map
         {
         public:
