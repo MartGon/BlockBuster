@@ -1,6 +1,7 @@
 #pragma once
 
 #include <math/Transform.h>
+#include <Weapon.h>
 
 namespace Entity
 {
@@ -21,6 +22,8 @@ namespace Entity
         bool onDmg = false;
 
         glm::vec3 lastMoveDir;
+
+        Weapon* weapon = nullptr;
 
         bool IsHitByRay();
     };
