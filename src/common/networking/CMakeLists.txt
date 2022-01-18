@@ -9,6 +9,7 @@ add_library(Networking ${SOURCES})
 target_link_libraries(Networking 
     Util 
     EnetW
+    Entity
 
     enet 
 )

@@ -1,4 +1,4 @@
-#include <Player.h>
+#include <entity/Player.h>
 
 using namespace Entity;
 
@@ -9,3 +9,8 @@ const Math::Transform PlayerHitBox::wheels{glm::vec3{0.0f, -1.75f, 0.0f}, glm::v
 
 // Player move collision boxes
 const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f, 4.5f, 2.0f}};
+
+// Player stats
+
+const float Player::MAX_HEALTH = 100.0f;
+const float Player::MAX_SHIELD = 300.0f;

@@ -9,7 +9,7 @@ target_include_directories(BlockBusterTests PUBLIC
     ${CMAKE_SOURCE_DIR}/src/common/
 )
 target_link_libraries(BlockBusterTests
-    BlockBuster
+    Entity
     Math
     Util
     

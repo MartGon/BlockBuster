@@ -20,7 +20,7 @@ target_link_libraries(Editor
     GL 
     Rendering 
     Math 
-    BlockBuster 
+    Entity 
     App
     Game
     

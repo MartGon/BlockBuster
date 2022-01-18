@@ -7,13 +7,13 @@ SET(SOURCES
 )
 
 
-add_library(BlockBuster ${SOURCES})
-target_link_libraries(BlockBuster 
+add_library(Entity ${SOURCES})
+target_link_libraries(Entity 
     Math
     
     Debug
 )
-target_include_directories(BlockBuster PUBLIC include 
+target_include_directories(Entity PUBLIC include 
     ${DEPS_FOLDER} 
     ${CMAKE_CURRENT_SOURCE_DIR} 
     ${COMMON_DIR}

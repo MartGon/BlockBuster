@@ -1,6 +1,6 @@
 
-#include <Block.h>
-#include <Map.h>
+#include <entity/Block.h>
+#include <entity/Map.h>
 #include <collisions/Collisions.h>
 
 namespace Game

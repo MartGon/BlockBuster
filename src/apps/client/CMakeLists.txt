@@ -21,7 +21,7 @@ target_link_libraries(Client
     GL 
     Rendering 
     Math 
-    BlockBuster 
+    Entity 
     App
     Game
     GUI

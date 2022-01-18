@@ -25,7 +25,7 @@ target_link_libraries(Game
     Rendering
     Collisions 
     Math
-    BlockBuster
+    Entity
 
     Log
 )

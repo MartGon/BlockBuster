@@ -1,7 +1,7 @@
 #pragma once
 
 #include <math/Transform.h>
-#include <Weapon.h>
+#include <entity/Weapon.h>
 
 namespace Entity
 {
@@ -22,8 +22,8 @@ namespace Entity
         bool onDmg = false;
 
             // State
-        const float MAX_SHIELD = 300.0f;
-        const float MAX_HEALTH = 100.0f;
+        static const float MAX_SHIELD;
+        static const float MAX_HEALTH;
         float shield = MAX_SHIELD;
         float health = MAX_HEALTH;
 
