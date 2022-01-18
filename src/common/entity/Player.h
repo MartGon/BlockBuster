@@ -21,6 +21,12 @@ namespace Entity
         Math::Transform transform;
         bool onDmg = false;
 
+            // State
+        const float MAX_SHIELD = 300.0f;
+        const float MAX_HEALTH = 100.0f;
+        float shield = MAX_SHIELD;
+        float health = MAX_HEALTH;
+
         glm::vec3 lastMoveDir;
 
         Weapon* weapon = nullptr;
