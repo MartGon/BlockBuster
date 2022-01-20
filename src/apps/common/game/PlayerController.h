@@ -6,6 +6,7 @@
 
 #include <entity/Block.h>
 #include <entity/Map.h>
+#include <game/FPSAvatar.h>
 
 #include <vector>
 
@@ -25,6 +26,8 @@ namespace AppGame
         float speed = 0.1f;
         float height = 2.0f;
         float gravitySpeed = -0.4f;
+
+        Game::FPSAvatar fpsAvatar* = nullptr;
 
     private:
         glm::vec3 prevPos;
