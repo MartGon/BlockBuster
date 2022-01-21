@@ -27,7 +27,7 @@ namespace AppGame
         float height = 2.0f;
         float gravitySpeed = -0.4f;
 
-        Game::FPSAvatar fpsAvatar* = nullptr;
+        Game::FPSAvatar* fpsAvatar = nullptr;
 
     private:
         glm::vec3 prevPos;

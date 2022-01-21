@@ -30,5 +30,11 @@ namespace Game
         Rendering::Mesh cube;
         Rendering::Mesh slope;
         Rendering::Mesh cylinder;
+
+                // Base Meshes
+        Rendering::Mesh* quadPtr = nullptr;
+        Rendering::Mesh* cubePtr = nullptr;
+        Rendering::Mesh* slopePtr = nullptr;
+        Rendering::Mesh* cylinderPtr = nullptr;
     };
 }
