@@ -12,6 +12,11 @@ namespace Game
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
         void Draw(const glm::mat4& projMat);
 
+        // TODO: Separate in left and right arm
+        // TODO: Add bool enabled to submodel, to enable/disable flashbang
+        // TODO: Implement Idle/Shoot animation
+        // TODO: Keep var tracking last shooting arm, toggle after each shot. 
+
         // Models
         Rendering::Model* armsModel;
     private:
