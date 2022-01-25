@@ -1,4 +1,6 @@
 #include <Transform.h>
+#include <Interpolation.h>
+
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -39,4 +41,12 @@ glm::mat4 Math::Transform::GetScaleMat() const
 glm::mat4 Math::Transform::GetTransformMat() const
 {
     return  GetTranslationMat() * GetRotationMat() * GetScaleMat();
+}
+
+Math::Transform Math::Interpolate(Math::Transform a, Math::Transform b, float alpha)
+{
+    auto pos = Math::Interpolation::Interpolate(a.position, b.position, alpha);
+    auto scale = Math::Interpolation::Interpolate(a.scale, b.scale, alpha);
+
+    return Math::Transform{pos, a.rotation, scale};
 }

@@ -13,4 +13,10 @@ namespace Math::Interpolation
         float w2 = 1.0f - w1;
         return glm::vec2{w1, w2};
     }
+
+    template<typename T>
+    T Interpolate(T left, T right, float alpha)
+    {
+        return left * alpha + right * (1.0f - alpha);
+    }
 }

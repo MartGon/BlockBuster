@@ -2,6 +2,7 @@
 
 #include <rendering/Model.h>
 #include <rendering/RenderMgr.h>
+#include <animation/Animation.h>
 
 namespace Game
 {

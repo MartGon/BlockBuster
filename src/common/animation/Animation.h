@@ -1,7 +1,10 @@
 #pragma once 
 
-#include <Transform.h>
 #include <vector>
+#include <optional>
+
+#include <math/Transform.h>
+#include <util/Timer.h>
 
 namespace Animation
 {
@@ -9,7 +12,7 @@ namespace Animation
     // TODO: In fact, it could a T that supports the interpolation concept/trait
     struct Sample
     {
-        Math::Transform* val = nullptr;
+        Math::Transform val;
     };
 
     struct KeyFrame
@@ -18,6 +21,8 @@ namespace Animation
         uint32_t frame;
     };
 
+    // REQUIREMENT: First keyframe must have frame = 0
+    // REQUIREMENT: Keyframes must be sorted from lower to higher frame
     struct Clip
     {
         float fps = 60.0f;
@@ -28,18 +33,47 @@ namespace Animation
     {
     public:
 
-        // TODO: Implement these
-        void SetClip(Clip* clip);
+        inline void SetClip(Clip* clip)
+        {
+            this->clip = clip;
+        }
 
-        void Play();
-        void Pause();
-        void Reset();
+        inline void SetTarget(Math::Transform* target)
+        {
+            this->target = target;
+        }
+
+        inline void Play()
+        {
+            timer.Start();
+        }
+
+        inline void Pause()
+        {
+            timer.Pause();
+        }
+
+        void Reset()
+        {
+            isDone = false;
+            timer.Reset();
+            timer.Pause();
+        }
         
-        void Update();
+        void Update(Util::Time::Seconds secs);
 
     private:
-        bool isPaused = true;
+
+        uint32_t GetCurrentFrame() const;
+        bool IsDone(uint32_t curFrame);
+        uint32_t GetKeyFrameIndex(uint32_t curFrame) const;
+
+        uint32_t GetClipLastFrame() const;
+        
+        bool isLooping = false;
+        bool isDone = false;
         Clip* clip = nullptr;
-        uint32_t currentFrame = 0;
+        Math::Transform* target = nullptr;
+        Util::Timer timer;
     };
 }

@@ -22,4 +22,6 @@ namespace Math
 
         glm::mat4 GetTransformMat() const;
     };
+
+    Transform Interpolate(Transform a, Transform b, float alpha);
 }
