@@ -64,6 +64,8 @@ void InGame::Start()
 
     // Models
     playerAvatar.Start(renderMgr, shader, quadShader, flashTexture);
+    
+    fpsAvatar.SetMeshes(quad, cube, cylinder);
     fpsAvatar.Start(renderMgr, shader, quadShader, flashTexture);
 
     // Camera

@@ -61,6 +61,6 @@ uint32_t Player::GetKeyFrameIndex(uint32_t curFrame) const
         }
     }
 
-    assertm(index != -1, "KeyFrame index was 0");
+    assertm(index != -1, "KeyFrame index was -1");
     return index;
 }
