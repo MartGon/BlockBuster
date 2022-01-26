@@ -19,7 +19,8 @@ target_link_libraries(Client
     Threads::Threads 
     Collisions 
     GL 
-    Rendering 
+    Rendering
+    Animation
     Math 
     Entity 
     App

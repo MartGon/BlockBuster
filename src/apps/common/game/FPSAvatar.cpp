@@ -7,6 +7,7 @@ using namespace Game;
 void FPSAvatar::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     InitModel(renderMgr, shader, quadShader, texture);
+    InitAnimations();
 }
 
 void FPSAvatar::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder)
@@ -19,7 +20,8 @@ void FPSAvatar::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Renderin
 void FPSAvatar::Draw(const glm::mat4& projMat)
 {
     auto t = transform.GetTransformMat();
-    auto tMat = projMat * t;
+    auto pt = idlePivot.GetTransformMat();
+    auto tMat = projMat * t * pt;
     leftArm->Draw(tMat, Rendering::RenderMgr::IGNORE_DEPTH);
     rightArm->Draw(tMat, Rendering::RenderMgr::IGNORE_DEPTH);
 }
@@ -55,4 +57,23 @@ void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, G
         auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader};
         arm->AddSubModel(std::move(flashModel));
     }
+}
+
+void FPSAvatar::InitAnimations()
+{
+    // Idle animation
+    Math::Transform t1{glm::vec3{0.0f, -0.05f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
+    Animation::KeyFrame f1{Animation::Sample{t1}, 0};
+    Math::Transform t2{glm::vec3{0.0f, 0.05f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
+    Animation::KeyFrame f2{Animation::Sample{t2}, 60};
+    Animation::KeyFrame f3{Animation::Sample{t1}, 120};
+    idle.keyFrames = {f1, f2, f3};
+
+    // Shoot animation
+
+    // Set idle clip
+    animPlayer.SetClip(&idle);
+    animPlayer.SetTarget(&idlePivot);
+    animPlayer.isLooping = true;
+    animPlayer.Play();
 }

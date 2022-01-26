@@ -64,7 +64,7 @@ void InGame::Start()
 
     // Models
     playerAvatar.Start(renderMgr, shader, quadShader, flashTexture);
-    
+
     fpsAvatar.SetMeshes(quad, cube, cylinder);
     fpsAvatar.Start(renderMgr, shader, quadShader, flashTexture);
 
@@ -232,6 +232,7 @@ void InGame::Update()
 void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 {
     camController_.Update();
+    fpsAvatar.animPlayer.Update(deltaTime);
 }
 
 void InGame::RecvServerSnapshots()
@@ -748,9 +749,9 @@ void InGame::DrawGUI()
                     modelRot =  playerAvatar.aTransform.rotation;
                 }
             }
-            ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Offset", &fpsAvatar.idlePivot.position.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Scale", &fpsAvatar.idlePivot.scale.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Rotation", &fpsAvatar.idlePivot.rotation.x, -sliderPrecision, sliderPrecision);
             ImGui::InputFloat("Precision", &sliderPrecision);
             if(ImGui::Button("Apply"))
             {

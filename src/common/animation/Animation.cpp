@@ -4,6 +4,7 @@
 
 #include <debug/Debug.h>
 
+
 using namespace Animation;
 
 void Player::Update(Util::Time::Seconds secs)
@@ -24,6 +25,7 @@ void Player::Update(Util::Time::Seconds secs)
     else if(isLooping)
     {
         Reset();
+        timer.Start();
     }
 }
 
@@ -38,7 +40,7 @@ uint32_t Player::GetCurrentFrame() const
 
 bool Player::IsDone(uint32_t curFrame)
 {
-    return isDone = curFrame > GetClipLastFrame();
+    return isDone = curFrame >= GetClipLastFrame();
 }
 
 uint32_t Player::GetClipLastFrame() const

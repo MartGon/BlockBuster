@@ -25,8 +25,8 @@ namespace Animation
     // REQUIREMENT: Keyframes must be sorted from lower to higher frame
     struct Clip
     {
-        float fps = 60.0f;
         std::vector<KeyFrame> keyFrames;
+        float fps = 60.0f;
     };
 
     class Player
@@ -62,6 +62,8 @@ namespace Animation
         
         void Update(Util::Time::Seconds secs);
 
+        bool isLooping = false;
+
     private:
 
         uint32_t GetCurrentFrame() const;
@@ -70,7 +72,6 @@ namespace Animation
 
         uint32_t GetClipLastFrame() const;
         
-        bool isLooping = false;
         bool isDone = false;
         Clip* clip = nullptr;
         Math::Transform* target = nullptr;
