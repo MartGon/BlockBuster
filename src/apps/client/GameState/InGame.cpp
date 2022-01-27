@@ -508,7 +508,7 @@ void InGame::EntityInterpolation()
             // Find weights
             auto t1 = TickToTime(s1.serverTick);
             auto t2 = TickToTime(s2.serverTick);
-            auto ws = Math::Interpolation::GetWeights(t1.count(), t2.count(), renderTime.count());
+            auto ws = Math::GetWeights(t1.count(), t2.count(), renderTime.count());
             auto w1 = ws.x; auto w2 = ws.y;
 
             client_->logger->LogDebug("Tick 1 " + std::to_string(s1.serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
@@ -560,7 +560,7 @@ void InGame::EntityInterpolation()
                     // Interpolate
                     auto t1 = TickToTime(s1.serverTick);
                     auto t2 = TickToTime(s1.serverTick) + EXTRAPOLATION_DURATION;
-                    auto ws = Math::Interpolation::GetWeights(t1.count(), t2.count(), renderTime.count());
+                    auto ws = Math::GetWeights(t1.count(), t2.count(), renderTime.count());
                     auto alpha = ws.x;
                     EntityInterpolation(playerId, s1, exS, alpha);
                 }

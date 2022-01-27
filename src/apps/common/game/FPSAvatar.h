@@ -16,7 +16,6 @@ namespace Game
         Animation::Player animPlayer;
         Math::Transform idlePivot;
 
-        // TODO: Add bool enabled to submodel, to enable/disable flashbang
         // TODO: Implement Shoot animation
         // TODO: Keep var tracking last shooting arm, toggle after each shot. 
     private:
@@ -32,6 +31,8 @@ namespace Game
         // Models
         Rendering::Model* leftArm;
         Rendering::Model* rightArm;
+        Rendering::SubModel* leftFlash;
+        Rendering::SubModel* rightFlash;
 
         // Animations
         Animation::Clip idle;

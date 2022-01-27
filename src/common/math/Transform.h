@@ -21,7 +21,7 @@ namespace Math
         glm::mat4 GetScaleMat() const;
 
         glm::mat4 GetTransformMat() const;
-    };
 
-    Transform Interpolate(Transform a, Transform b, float alpha);
+        static Transform Interpolate(Transform a, Transform b, float alpha);
+    };
 }

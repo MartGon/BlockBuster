@@ -9,7 +9,7 @@ using namespace Animation;
 
 void Player::Update(Util::Time::Seconds secs)
 {
-    if(!clip || !target)
+    if(!clip)
         return;
 
     timer.Update(secs);
@@ -19,14 +19,39 @@ void Player::Update(Util::Time::Seconds secs)
         auto index = GetKeyFrameIndex(curFrame);
         auto k1 = clip->keyFrames[index];
         auto k2 = clip->keyFrames[index + 1];
-        auto w = Math::Interpolation::GetWeights(k1.frame, k2.frame, curFrame);
-        *target = Math::Interpolate(k1.sample.val, k2.sample.val, w.x);
+        auto w = Math::GetWeights(k1.frame, k2.frame, curFrame);
+
+        auto s = Interpolate(k1.sample, k2.sample, w.x);
+        ApplySample(s);
     }
     else if(isLooping)
     {
         Reset();
         timer.Start();
     }
+}
+
+Sample Animation::Interpolate(Sample s1, Sample s2, float alpha)
+{
+    Sample s;
+
+    // Interpolate floats
+    for(auto [k, f] : s1.floats)
+    {  
+        auto f1 = f;
+        if(s2.floats.find(k) != s2.floats.end())
+        {
+            auto f2 = s2.floats[k];
+            auto val = Math::Interpolate(f1, f2, alpha);
+
+            s.floats[k] = val;
+        }
+    }
+
+    // Use s1 bools
+    s.bools = s1.bools;
+
+    return s;
 }
 
 uint32_t Player::GetCurrentFrame() const
@@ -65,4 +90,22 @@ uint32_t Player::GetKeyFrameIndex(uint32_t curFrame) const
 
     assertm(index != -1, "KeyFrame index was -1");
     return index;
+}
+
+template <typename T>
+static void ApplyParams(std::unordered_map<std::string, T*>& targets, std::unordered_map<std::string, T>& refs)
+{
+    for(auto& [k, value] : targets)
+    {
+        if(refs.find(k) != refs.end())
+        {
+            *value = refs[k];
+        }
+    }
+}
+
+void Player::ApplySample(Sample s1)
+{
+    ApplyParams(fTargets, s1.floats);
+    ApplyParams(bTargets, s1.bools);
 }

@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-namespace Math::Interpolation
+namespace Math
 {
     template <typename T>
     glm::vec2 GetWeights(T left, T right, T mid)

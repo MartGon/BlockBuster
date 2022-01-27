@@ -43,10 +43,10 @@ glm::mat4 Math::Transform::GetTransformMat() const
     return  GetTranslationMat() * GetRotationMat() * GetScaleMat();
 }
 
-Math::Transform Math::Interpolate(Math::Transform a, Math::Transform b, float alpha)
+Math::Transform Math::Transform::Interpolate(Math::Transform a, Math::Transform b, float alpha)
 {
-    auto pos = Math::Interpolation::Interpolate(a.position, b.position, alpha);
-    auto scale = Math::Interpolation::Interpolate(a.scale, b.scale, alpha);
+    auto pos = Math::Interpolate(a.position, b.position, alpha);
+    auto scale = Math::Interpolate(a.scale, b.scale, alpha);
 
     return Math::Transform{pos, a.rotation, scale};
 }

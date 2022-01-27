@@ -281,7 +281,7 @@ int main()
                                 // Find weights
                                 Util::Time::Seconds t1 = s1.serverTick * TICK_RATE;
                                 Util::Time::Seconds t2 = s2.serverTick * TICK_RATE;
-                                auto ws = Math::Interpolation::GetWeights(t1.count(), t2.count(), commandTime.count());
+                                auto ws = Math::GetWeights(t1.count(), t2.count(), commandTime.count());
                                 auto alpha = ws.x;
 
                                 // Perform interpolation and shot

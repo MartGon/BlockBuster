@@ -36,7 +36,8 @@ void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, G
 
     for(int i = -1; i < 2; i += 2)
     {
-        auto arm = i == -1 ? leftArm : rightArm;
+        bool isLeft = i == -1;
+        auto arm = isLeft ? leftArm : rightArm;
 
         Rendering::Painting painting;
         painting.type = Rendering::PaintingType::COLOR;
@@ -55,25 +56,32 @@ void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, G
         painting.texture = &texture;
         painting.hasAlpha = true;
         auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false};
-        arm->AddSubModel(std::move(flashModel));
+        auto fid = arm->AddSubModel(std::move(flashModel));
+        auto flash = isLeft ? &leftFlash : &rightFlash; 
+        *flash = arm->GetSubModel(fid);
     }
 }
 
 void FPSAvatar::InitAnimations()
 {
     // Idle animation
-    Math::Transform t1{glm::vec3{0.0f, -0.05f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
-    Animation::KeyFrame f1{Animation::Sample{t1}, 0};
-    Math::Transform t2{glm::vec3{0.0f, 0.05f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
-    Animation::KeyFrame f2{Animation::Sample{t2}, 60};
-    Animation::KeyFrame f3{Animation::Sample{t1}, 120};
+    Animation::Sample s1{
+        {{"yPos", -0.05f}}
+    };
+    Animation::KeyFrame f1{s1, 0};    
+    Animation::Sample s2{
+        {{"yPos", 0.05f}}
+    };
+    Animation::KeyFrame f2{s2, 60};
+    Animation::KeyFrame f3{s1, 120};
     idle.keyFrames = {f1, f2, f3};
 
     // Shoot animation
 
     // Set idle clip
     animPlayer.SetClip(&idle);
-    animPlayer.SetTarget(&idlePivot);
+    animPlayer.SetTargetFloat("yPos", &idlePivot.position.y);
+    animPlayer.SetTargetBool("flash", &leftFlash->enabled);
     animPlayer.isLooping = true;
     animPlayer.Play();
 }
