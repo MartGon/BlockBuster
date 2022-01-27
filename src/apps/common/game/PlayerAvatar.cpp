@@ -124,7 +124,7 @@ void PlayerAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader
         painting.type = Rendering::PaintingType::TEXTURE;
         painting.hasAlpha = true;
         painting.texture = &texture;
-        auto flashModel = Rendering::SubModel{flashT, painting, &quad, &quadShader};
+        auto flashModel = Rendering::SubModel{flashT, painting, &quad, &quadShader, false};
         armsModel->AddSubModel(std::move(flashModel));
     }
 }

@@ -17,7 +17,7 @@ namespace Game
         Math::Transform idlePivot;
 
         // TODO: Add bool enabled to submodel, to enable/disable flashbang
-        // TODO: Implement Idle/Shoot animation
+        // TODO: Implement Shoot animation
         // TODO: Keep var tracking last shooting arm, toggle after each shot. 
     private:
 

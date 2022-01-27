@@ -29,6 +29,7 @@ namespace Rendering
         Painting painting;
         Rendering::Mesh* mesh;
         GL::Shader* shader = nullptr;
+        bool enabled = true;
     };
 
     class RenderMgr;

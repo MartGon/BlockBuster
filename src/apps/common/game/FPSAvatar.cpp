@@ -54,7 +54,7 @@ void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, G
         painting.type = Rendering::PaintingType::TEXTURE;
         painting.texture = &texture;
         painting.hasAlpha = true;
-        auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader};
+        auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false};
         arm->AddSubModel(std::move(flashModel));
     }
 }
