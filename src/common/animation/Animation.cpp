@@ -99,7 +99,8 @@ static void ApplyParams(std::unordered_map<std::string, T*>& targets, std::unord
     {
         if(refs.find(k) != refs.end())
         {
-            *value = refs[k];
+            if(value)
+                *value = refs[k];
         }
     }
 }

@@ -13,6 +13,8 @@ namespace Game
         void SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder); // NOTE: This should be called before Start
         void Draw(const glm::mat4& projMat);
 
+        void PlayShootAnimation();
+
         Animation::Player animPlayer;
         Math::Transform idlePivot;
 
@@ -36,7 +38,7 @@ namespace Game
 
         // Animations
         Animation::Clip idle;
-        
+        Animation::Clip shoot;
 
         // Pos
         const Math::Transform transform{glm::vec3{0.0f, -1.25f, -2.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};

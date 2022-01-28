@@ -26,6 +26,16 @@ void FPSAvatar::Draw(const glm::mat4& projMat)
     rightArm->Draw(tMat, Rendering::RenderMgr::IGNORE_DEPTH);
 }
 
+void FPSAvatar::PlayShootAnimation()
+{
+    animPlayer.SetClip(&shoot);
+    animPlayer.Reset();
+    animPlayer.Play();
+    animPlayer.isLooping = false;
+
+    // TODO: Set callback on Done, return to idle animation
+}
+
 void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     leftArm = renderMgr.CreateModel();
@@ -77,11 +87,42 @@ void FPSAvatar::InitAnimations()
     idle.keyFrames = {f1, f2, f3};
 
     // Shoot animation
+    Animation::Sample sS1{
+        {{"zPos", 0.00f}},
+        {
+            {"left-flash", true},
+            {"right-flash", true}
+        },
+    };
+    Animation::KeyFrame sF1{sS1, 0};
+    Animation::Sample sS2{
+        {{"zPos", 0.10f}},
+        {
+            {"left-flash", false},
+            {"right-flash", false}
+        }
+    };
+    Animation::KeyFrame sF2{sS2, 6};
+
+    Animation::Sample sS3{
+        {{"zPos", 0.00f}},
+        {
+            {"left-flash", false},
+            {"right-flash", false}
+        }
+    };
+    Animation::KeyFrame sF3{sS3, 20};
+    shoot.keyFrames = {sF1, sF2, sF3};
+    shoot.fps = 60;
 
     // Set idle clip
     animPlayer.SetClip(&idle);
     animPlayer.SetTargetFloat("yPos", &idlePivot.position.y);
-    animPlayer.SetTargetBool("flash", &leftFlash->enabled);
     animPlayer.isLooping = true;
     animPlayer.Play();
+
+    // Set shot clip params
+    animPlayer.SetTargetFloat("zPos", &idlePivot.position.z);
+    animPlayer.SetTargetBool("left-flash", &leftFlash->enabled);
+    animPlayer.SetTargetBool("right-flash", &rightFlash->enabled);
 }

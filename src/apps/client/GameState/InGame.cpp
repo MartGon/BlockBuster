@@ -763,6 +763,10 @@ void InGame::DrawGUI()
                     playerAvatar.aTransform.rotation = modelRot;
                 }
             }
+            if(ImGui::Button("Shoot"))
+            {
+                fpsAvatar.PlayShootAnimation();
+            }
         }
         ImGui::End();
     }
