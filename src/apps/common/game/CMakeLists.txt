@@ -24,6 +24,7 @@ target_link_libraries(Game
     GL 
     Rendering
     Collisions 
+    Animation
     Math
     Entity
 

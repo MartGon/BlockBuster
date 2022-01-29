@@ -20,6 +20,11 @@ namespace Util
             isPaused = false;
         }
 
+        inline void Resume()
+        {
+            isPaused = false;
+        }
+
         inline void Pause()
         {
             isPaused = true;

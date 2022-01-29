@@ -9,7 +9,7 @@ using namespace Animation;
 
 void Player::Update(Util::Time::Seconds secs)
 {
-    if(!clip)
+    if(!clip || isDone)
         return;
 
     timer.Update(secs);
@@ -24,10 +24,16 @@ void Player::Update(Util::Time::Seconds secs)
         auto s = Interpolate(k1.sample, k2.sample, w.x);
         ApplySample(s);
     }
-    else if(isLooping)
+    else
     {
-        Reset();
-        timer.Start();
+        if(onDone)
+            onDone();
+            
+        if(isLooping)
+        {
+            Reset();
+            timer.Start();
+        }
     }
 }
 

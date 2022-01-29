@@ -26,14 +26,17 @@ void FPSAvatar::Draw(const glm::mat4& projMat)
     rightArm->Draw(tMat, Rendering::RenderMgr::IGNORE_DEPTH);
 }
 
+void FPSAvatar::Update(Util::Time::Seconds deltaTime)
+{
+    idlePlayer.Update(deltaTime);
+    shootPlayer.Update(deltaTime);
+}
+
 void FPSAvatar::PlayShootAnimation()
 {
-    animPlayer.SetClip(&shoot);
-    animPlayer.Reset();
-    animPlayer.Play();
-    animPlayer.isLooping = false;
-
-    // TODO: Set callback on Done, return to idle animation
+    idlePlayer.Pause();
+    shootPlayer.Reset();
+    shootPlayer.Play();
 }
 
 void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
@@ -116,13 +119,19 @@ void FPSAvatar::InitAnimations()
     shoot.fps = 60;
 
     // Set idle clip
-    animPlayer.SetClip(&idle);
-    animPlayer.SetTargetFloat("yPos", &idlePivot.position.y);
-    animPlayer.isLooping = true;
-    animPlayer.Play();
+    idlePlayer.SetClip(&idle);
+    idlePlayer.SetTargetFloat("yPos", &idlePivot.position.y);
+    idlePlayer.isLooping = true;
+    idlePlayer.Play();
 
     // Set shot clip params
-    animPlayer.SetTargetFloat("zPos", &idlePivot.position.z);
-    animPlayer.SetTargetBool("left-flash", &leftFlash->enabled);
-    animPlayer.SetTargetBool("right-flash", &rightFlash->enabled);
+    shootPlayer.SetClip(&shoot);
+    shootPlayer.isLooping = false;
+    shootPlayer.Pause();
+    shootPlayer.SetTargetFloat("zPos", &idlePivot.position.z);
+    shootPlayer.SetTargetBool("left-flash", &leftFlash->enabled);
+    shootPlayer.SetTargetBool("right-flash", &rightFlash->enabled);
+    shootPlayer.SetOnDoneCallback([this](){
+        this->idlePlayer.Resume();
+    });
 }

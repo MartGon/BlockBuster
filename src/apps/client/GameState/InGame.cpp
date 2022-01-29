@@ -232,7 +232,7 @@ void InGame::Update()
 void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 {
     camController_.Update();
-    fpsAvatar.animPlayer.Update(deltaTime);
+    fpsAvatar.Update(deltaTime);
 }
 
 void InGame::RecvServerSnapshots()

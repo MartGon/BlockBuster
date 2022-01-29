@@ -3,6 +3,7 @@
 #include <vector>
 #include <optional>
 #include <unordered_map>
+#include <functional>
 
 #include <math/Transform.h>
 #include <util/Timer.h>
@@ -50,6 +51,11 @@ namespace Animation
             bTargets[key] = target;
         }
 
+        inline void SetOnDoneCallback(std::function<void()> onDone)
+        {
+            this->onDone = onDone;
+        }
+
         inline void Play()
         {
             timer.Start();
@@ -58,6 +64,11 @@ namespace Animation
         inline void Pause()
         {
             timer.Pause();
+        }
+
+        inline void Resume()
+        {
+            timer.Resume();
         }
 
         void Reset()
@@ -83,6 +94,8 @@ namespace Animation
         bool isDone = false;
         Clip* clip = nullptr;
         Util::Timer timer;
+
+        std::function<void()> onDone;
 
         std::unordered_map<std::string, float*> fTargets;
         std::unordered_map<std::string, bool*> bTargets;
