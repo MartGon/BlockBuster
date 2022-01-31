@@ -2,10 +2,11 @@
 
 #include <rendering/Model.h>
 #include <rendering/RenderMgr.h>
+#include <animation/Animation.h>
 
-namespace Game
+namespace Game::Models
 {
-    class PlayerAvatar
+    class Player
     {
     public:
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
@@ -13,14 +14,20 @@ namespace Game
         void Draw(const glm::mat4& tMat);
         
         void SteerWheels(glm::vec3 moveDir);
+        void SetArmsPivot(Math::Transform armsPivot);
         void RotateArms(float pitch);
 
+        Animation::Clip* GetIdleAnim();
+        Animation::Clip* GetShootAnim();
+
+        Math::Transform armsPivot;
         Math::Transform wTransform;
         Math::Transform aTransform{glm::vec3{0.0f, 0.2f, 0.625f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
         Rendering::Model* armsModel;
 
     private:
         void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
+        void InitAnimations();
 
         // Models
         Rendering::Model* bodyModel;
@@ -31,5 +38,9 @@ namespace Game
         Rendering::Mesh* cubePtr = nullptr;
         Rendering::Mesh* cylinderPtr = nullptr;
         Rendering::Mesh* slopePtr = nullptr;
+
+        // Animations
+        Animation::Clip idle;
+        Animation::Clip shoot; 
     };
 }

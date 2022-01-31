@@ -16,8 +16,8 @@
 #include <game/Map.h>
 #include <game/CameraController.h>
 #include <game/ChunkMeshMgr.h>
-#include <game/PlayerAvatar.h>
-#include <game/FPSAvatar.h>
+#include <game/models/Player.h>
+#include <game/models/FPS.h>
 
 #include <util/BBTime.h>
 #include <util/Ring.h>
@@ -92,14 +92,15 @@ namespace BlockBuster
         Rendering::Mesh slope;
 
             // Models
-        Game::PlayerAvatar playerAvatar;
-        Game::FPSAvatar fpsAvatar;
+        Game::Models::Player playerAvatar;
+        Game::Models::FPS fpsAvatar;
 
             // Camera
         Rendering::Camera camera_;
         int drawMode = GL_FILL;
+        ::App::Client::CameraController camController_;
 
-            // Metrics
+        // Metrics
         Util::Time::SteadyPoint preSimulationTime;
         Util::Time::Seconds simulationLag;
         Util::Time::Seconds deltaTime;
@@ -108,9 +109,6 @@ namespace BlockBuster
 
         // GUI
         GL::VertexArray guiVao;
-
-        // Controls
-        ::App::Client::CameraController camController_;
 
         // Player transforms
         std::unordered_map<Entity::ID, Entity::Player> playerTable;

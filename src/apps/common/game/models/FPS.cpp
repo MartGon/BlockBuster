@@ -1,23 +1,23 @@
-#include <FPSAvatar.h>
+#include <models/FPS.h>
 
 #include <rendering/Primitive.h>
 
-using namespace Game;
+using namespace Game::Models;
 
-void FPSAvatar::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
+void FPS::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     InitModel(renderMgr, shader, quadShader, texture);
     InitAnimations();
 }
 
-void FPSAvatar::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder)
+void FPS::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder)
 {
     quadPtr = &quad;
     cubePtr = &cube;
     cylinderPtr = &cylinder;
 }
 
-void FPSAvatar::Draw(const glm::mat4& projMat)
+void FPS::Draw(const glm::mat4& projMat)
 {
     auto t = transform.GetTransformMat();
     auto pt = idlePivot.GetTransformMat();
@@ -26,20 +26,20 @@ void FPSAvatar::Draw(const glm::mat4& projMat)
     rightArm->Draw(tMat, Rendering::RenderMgr::IGNORE_DEPTH);
 }
 
-void FPSAvatar::Update(Util::Time::Seconds deltaTime)
+void FPS::Update(Util::Time::Seconds deltaTime)
 {
     idlePlayer.Update(deltaTime);
     shootPlayer.Update(deltaTime);
 }
 
-void FPSAvatar::PlayShootAnimation()
+void FPS::PlayShootAnimation()
 {
     idlePlayer.Pause();
     shootPlayer.Reset();
     shootPlayer.Play();
 }
 
-void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
+void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     leftArm = renderMgr.CreateModel();
     rightArm = renderMgr.CreateModel();
@@ -75,7 +75,7 @@ void FPSAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, G
     }
 }
 
-void FPSAvatar::InitAnimations()
+void FPS::InitAnimations()
 {
     // Idle animation
     Animation::Sample s1{

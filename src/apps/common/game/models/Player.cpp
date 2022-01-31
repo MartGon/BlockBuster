@@ -1,15 +1,16 @@
-#include <PlayerAvatar.h>
+#include <models/Player.h>
 
 #include <rendering/Primitive.h>
 
-using namespace Game;
+using namespace Game::Models;
 
-void PlayerAvatar::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
+void Player::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     InitModel(renderMgr, shader, quadShader, texture);
+    InitAnimations();
 }
 
-void PlayerAvatar::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder, Rendering::Mesh& slope)
+void Player::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder, Rendering::Mesh& slope)
 {
     quadPtr = &quad;
     cubePtr = &cube;
@@ -17,7 +18,7 @@ void PlayerAvatar::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rende
     slopePtr = &slope;
 }
 
-void PlayerAvatar::Draw(const glm::mat4& tMat)
+void Player::Draw(const glm::mat4& tMat)
 {
     bodyModel->Draw(tMat);
 
@@ -28,12 +29,13 @@ void PlayerAvatar::Draw(const glm::mat4& tMat)
     // Draw arms. Disable culling for muzzle flash quad
     glDisable(GL_CULL_FACE);
     auto armsT = aTransform.GetTransformMat();
-    auto atMat = tMat * armsT;
+    auto apT = armsPivot.GetTransformMat();
+    auto atMat = tMat * armsT * apT;
     armsModel->Draw(atMat, Rendering::RenderMgr::NO_FACE_CULLING);
     glEnable(GL_CULL_FACE);
 }
 
-void PlayerAvatar::SteerWheels(glm::vec3 moveDir /*, float facingAngle*/)
+void Player::SteerWheels(glm::vec3 moveDir /*, float facingAngle*/)
 {
     // TODO: This should be the angle between the facing vector and the default wheel vector.
     // In other words, It should be different according to the facing dir.
@@ -41,12 +43,27 @@ void PlayerAvatar::SteerWheels(glm::vec3 moveDir /*, float facingAngle*/)
     wTransform.rotation.y = yaw + 90;
 }
 
-void PlayerAvatar::RotateArms(float pitch)
+void Player::SetArmsPivot(Math::Transform armsPivot)
+{
+    this->armsPivot = armsPivot;
+}
+
+void Player::RotateArms(float pitch)
 {
     aTransform.rotation.x = pitch;
 }
 
-void PlayerAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
+Animation::Clip* Player::GetIdleAnim()
+{
+    return &idle;
+}
+
+Animation::Clip* Player::GetShootAnim()
+{
+    return &shoot;
+}
+
+void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     // Get model handlers
     bodyModel = renderMgr.CreateModel();
@@ -129,4 +146,48 @@ void PlayerAvatar::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader
         auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false};
         armsModel->AddSubModel(std::move(flashModel));
     }
+}
+
+void Player::InitAnimations()
+{
+    // Idle animation
+    Animation::Sample s1{
+        {{"yPos", -0.05f}}
+    };
+    Animation::KeyFrame f1{s1, 0};    
+    Animation::Sample s2{
+        {{"yPos", 0.05f}}
+    };
+    Animation::KeyFrame f2{s2, 60};
+    Animation::KeyFrame f3{s1, 120};
+    idle.keyFrames = {f1, f2, f3};
+
+    // Shoot animation
+    Animation::Sample sS1{
+        {{"zPos", 0.00f}},
+        {
+            {"left-flash", true},
+            {"right-flash", true}
+        },
+    };
+    Animation::KeyFrame sF1{sS1, 0};
+    Animation::Sample sS2{
+        {{"zPos", 0.10f}},
+        {
+            {"left-flash", false},
+            {"right-flash", false}
+        }
+    };
+    Animation::KeyFrame sF2{sS2, 6};
+
+    Animation::Sample sS3{
+        {{"zPos", 0.00f}},
+        {
+            {"left-flash", false},
+            {"right-flash", false}
+        }
+    };
+    Animation::KeyFrame sF3{sS3, 20};
+    shoot.keyFrames = {sF1, sF2, sF3};
+    shoot.fps = 60;
 }

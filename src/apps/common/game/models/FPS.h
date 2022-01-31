@@ -4,9 +4,9 @@
 #include <rendering/RenderMgr.h>
 #include <animation/Animation.h>
 
-namespace Game
+namespace Game::Models
 {
-    class FPSAvatar
+    class FPS
     {
     public:
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
@@ -15,11 +15,8 @@ namespace Game
         void Update(Util::Time::Seconds deltaTime);
 
         void PlayShootAnimation();
-
         
         Math::Transform idlePivot;
-
-        // TODO: Keep var tracking last shooting arm, toggle after each shot. 
     private:
 
         void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
@@ -38,7 +35,7 @@ namespace Game
 
         // Animations
         Animation::Clip idle;
-        Animation::Clip shoot;
+        Animation::Clip shoot; // TODO: Keep var tracking last shooting arm, alternate arm after each shot. 
 
         // Anim Players
         Animation::Player idlePlayer;
