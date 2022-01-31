@@ -48,6 +48,12 @@ void Player::SetArmsPivot(Math::Transform armsPivot)
     this->armsPivot = armsPivot;
 }
 
+void Player::SetFlashesActive(bool active)
+{
+    leftFlash->enabled = active;
+    rightFlash->enabled = active;
+}
+
 void Player::RotateArms(float pitch)
 {
     aTransform.rotation.x = pitch;
@@ -125,8 +131,13 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
     }
 
     // Weapon
+    auto leftId = 0;
+    auto rightId = 0;
     for(int i = -1; i < 2; i += 2)
     {
+        bool isLeft = i == -1;
+        auto fid = isLeft ? &leftId : &rightId;
+
         auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
         painting.type = Rendering::PaintingType::COLOR;
         painting.color = lightBlue;
@@ -144,8 +155,11 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
         painting.hasAlpha = true;
         painting.texture = &texture;
         auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false};
-        armsModel->AddSubModel(std::move(flashModel));
+        *fid = armsModel->AddSubModel(std::move(flashModel));
     }
+
+    leftFlash = armsModel->GetSubModel(leftId);
+    rightFlash = armsModel->GetSubModel(rightId);
 }
 
 void Player::InitAnimations()
@@ -172,7 +186,7 @@ void Player::InitAnimations()
     };
     Animation::KeyFrame sF1{sS1, 0};
     Animation::Sample sS2{
-        {{"zPos", 0.10f}},
+        {{"zPos", 0.25f}},
         {
             {"left-flash", false},
             {"right-flash", false}

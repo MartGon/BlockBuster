@@ -46,6 +46,9 @@ namespace BlockBuster
         void HandleSDLEvents();
 
         // Networking
+        // TODO: Preallocate players. This is useful to avoid resizing the vectors/maps
+        void OnPlayerJoin(Entity::ID playerId, Networking::PlayerState playerState);
+        void OnPlayerLeave(Entity::ID playerId);
         void RecvServerSnapshots();
         void UpdateNetworking();
 
@@ -111,7 +114,16 @@ namespace BlockBuster
         GL::VertexArray guiVao;
 
         // Player transforms
+        struct PlayerState
+        {
+            Animation::Player shootPlayer;
+            Animation::Player idlePlayer;
+            Math::Transform armsPivot;
+            bool leftFlashActive = false;
+            bool rightFlashActive = false;
+        };
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
+        std::unordered_map<Entity::ID, PlayerState> playerStateTable;
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerPos;
         float PLAYER_SPEED = 5.f;
 

@@ -144,10 +144,7 @@ void InGame::Start()
                 // Create player entries
                 if(playerTable.find(playerId) == playerTable.end())
                 {
-                    Math::Transform transform{player.pos, glm::vec3{0.0f}, glm::vec3{1.f, 1.0f, 1.f}};
-                    Entity::Player player{playerId, transform};
-                    playerTable[playerId] = player;
-                    prevPlayerPos[playerId] = player;
+                    OnPlayerJoin(playerId, player);
                 }
 
                 // Update dmg status
@@ -170,7 +167,7 @@ void InGame::Start()
             Networking::Command::Server::PlayerDisconnected playerDisconnect = packet->data.playerDisconnect;
             client_->logger->LogInfo("Player with id " + std::to_string(playerDisconnect.playerId) + " disconnected");
 
-            playerTable.erase(playerDisconnect.playerId);
+            OnPlayerLeave(playerDisconnect.playerId);
         }
     });
     host.Connect(serverAddress);
@@ -234,6 +231,41 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 {
     camController_.Update();
     fpsAvatar.Update(deltaTime);
+
+    for(auto& [playerId, playerState] : playerStateTable)
+    {
+        playerState.idlePlayer.Update(deltaTime);
+        playerState.shootPlayer.Update(deltaTime);
+    }
+}
+
+void InGame::OnPlayerJoin(Entity::ID playerId, Networking::PlayerState playerState)
+{
+    Math::Transform transform{playerState.pos, glm::vec3{0.0f}, glm::vec3{1.f, 1.0f, 1.f}};
+    Entity::Player player{playerId, transform};
+    playerTable[playerId] = player;
+    prevPlayerPos[playerId] = player;
+
+    // Setup player animator
+    playerStateTable[playerId] = PlayerState();
+    PlayerState& ps = playerStateTable[playerId];
+
+    ps.idlePlayer.SetClip(playerAvatar.GetIdleAnim());
+    ps.idlePlayer.SetTargetFloat("yPos", &ps.armsPivot.position.y);
+    ps.idlePlayer.isLooping = true;
+    //ps.idlePlayer.Play();
+
+    ps.shootPlayer.SetClip(playerAvatar.GetShootAnim());
+    ps.shootPlayer.SetTargetFloat("zPos", &ps.armsPivot.position.z);
+    ps.shootPlayer.SetTargetBool("left-flash", &ps.leftFlashActive);
+    ps.shootPlayer.SetTargetBool("right-flash", &ps.rightFlashActive);
+}
+
+void InGame::OnPlayerLeave(Entity::ID playerId)
+{
+    playerTable.erase(playerId);
+    prevPlayerPos.erase(playerId);
+    playerStateTable.erase(playerId);
 }
 
 void InGame::RecvServerSnapshots()
@@ -667,16 +699,22 @@ void InGame::DrawScene()
             client_->logger->LogDebug("Player didn't move this frame");
         // End debug
 
+        auto playerState = playerStateTable[playerId];
+        playerAvatar.SetArmsPivot(playerState.armsPivot);
+        playerAvatar.SetFlashesActive(playerState.leftFlashActive);
+
         auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;
         shader.SetUniformInt("dmg", player.second.onDmg);
         playerAvatar.Draw(transform);
 
         // Draw player hitbox
+        /*
         Math::Transform boxTf{modelOffset, modelRot, modelScale};
         auto mat = transform * boxTf.GetTransformMat();
         shader.SetUniformMat4("transform", mat);
         cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
+        */
     }
     prevPlayerPos = playerTable;
 
@@ -741,16 +779,16 @@ void InGame::DrawGUI()
 
         if(ImGui::Begin("Transform"))
         {
-            if(ImGui::InputInt("Model ID", (int*)&modelId))
+            if(ImGui::InputInt("ID", (int*)&playerId))
             {
                 if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
                 {
-                    modelOffset = playerAvatar.aTransform.position;
+                    modelOffset = playerStateTable[playerId].armsPivot.position;
                     modelScale =  playerAvatar.aTransform.scale;
                     modelRot =  playerAvatar.aTransform.rotation;
                 }
             }
-            ImGui::SliderFloat3("Offset", &fpsAvatar.idlePivot.position.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Offset", &playerStateTable[playerId].armsPivot.position.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Scale", &fpsAvatar.idlePivot.scale.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Rotation", &fpsAvatar.idlePivot.rotation.x, -sliderPrecision, sliderPrecision);
             ImGui::InputFloat("Precision", &sliderPrecision);
@@ -767,6 +805,12 @@ void InGame::DrawGUI()
             if(ImGui::Button("Shoot"))
             {
                 fpsAvatar.PlayShootAnimation();
+                for(auto& [playerId, playerState] : playerStateTable)
+                {
+                    playerState.shootPlayer.Reset();
+                    playerState.shootPlayer.Play();
+                    break;
+                }
             }
         }
         ImGui::End();
