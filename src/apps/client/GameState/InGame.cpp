@@ -63,6 +63,7 @@ void InGame::Start()
     slope = Rendering::Primitive::GenerateSlope();
 
     // Models
+    playerAvatar.SetMeshes(quad, cube, cylinder, slope);
     playerAvatar.Start(renderMgr, shader, quadShader, flashTexture);
 
     fpsAvatar.SetMeshes(quad, cube, cylinder);

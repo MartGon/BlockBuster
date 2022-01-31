@@ -9,6 +9,7 @@ namespace Game
     {
     public:
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
+        void SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder, Rendering::Mesh& slope); // NOTE: This should be called before Start
         void Draw(const glm::mat4& tMat);
         
         void SteerWheels(glm::vec3 moveDir);
@@ -26,15 +27,9 @@ namespace Game
         Rendering::Model* wheelsModel;
 
         // Base Meshes
-        Rendering::Mesh quad;
-        Rendering::Mesh cube;
-        Rendering::Mesh slope;
-        Rendering::Mesh cylinder;
-
-                // Base Meshes
         Rendering::Mesh* quadPtr = nullptr;
         Rendering::Mesh* cubePtr = nullptr;
-        Rendering::Mesh* slopePtr = nullptr;
         Rendering::Mesh* cylinderPtr = nullptr;
+        Rendering::Mesh* slopePtr = nullptr;
     };
 }
