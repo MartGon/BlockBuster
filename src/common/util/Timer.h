@@ -30,6 +30,11 @@ namespace Util
             isPaused = true;
         }
 
+        inline bool IsPaused() const
+        {
+            return isPaused;
+        }
+
         inline void Reset()
         {
             startPoint_ = Util::Time::GetTime();

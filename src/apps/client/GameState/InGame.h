@@ -134,6 +134,7 @@ namespace BlockBuster
         glm::vec3 modelOffset{0.0f};
         glm::vec3 modelScale{1.0f};
         glm::vec3 modelRot{0.0f};
+        float facingAngle = 0;
 
         // Networking
         ENet::Host host;

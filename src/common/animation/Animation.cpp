@@ -9,7 +9,7 @@ using namespace Animation;
 
 void Player::Update(Util::Time::Seconds secs)
 {
-    if(!clip || isDone)
+    if(!clip || isDone || timer.IsPaused())
         return;
 
     timer.Update(secs);

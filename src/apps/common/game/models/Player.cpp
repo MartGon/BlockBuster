@@ -20,7 +20,9 @@ void Player::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::
 
 void Player::Draw(const glm::mat4& tMat)
 {
-    bodyModel->Draw(tMat);
+    auto bodyT = bTransform.GetTransformMat();
+    auto btMat = tMat * bodyT;
+    bodyModel->Draw(btMat);
 
     auto wheelsT = wTransform.GetTransformMat();
     auto wtMat = tMat * wheelsT;
@@ -30,7 +32,7 @@ void Player::Draw(const glm::mat4& tMat)
     glDisable(GL_CULL_FACE);
     auto armsT = aTransform.GetTransformMat();
     auto apT = armsPivot.GetTransformMat();
-    auto atMat = tMat * armsT * apT;
+    auto atMat = tMat * bodyT * armsT * apT;
     armsModel->Draw(atMat, Rendering::RenderMgr::NO_FACE_CULLING);
     glEnable(GL_CULL_FACE);
 }
@@ -52,6 +54,11 @@ void Player::SetFlashesActive(bool active)
 {
     leftFlash->enabled = active;
     rightFlash->enabled = active;
+}
+
+void Player::SetFacing(float facingAngle)
+{
+    bTransform.rotation.y = facingAngle;
 }
 
 void Player::RotateArms(float pitch)

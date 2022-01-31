@@ -702,6 +702,7 @@ void InGame::DrawScene()
         auto playerState = playerStateTable[playerId];
         playerAvatar.SetArmsPivot(playerState.armsPivot);
         playerAvatar.SetFlashesActive(playerState.leftFlashActive);
+        playerAvatar.SetFacing(facingAngle);
 
         auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;
@@ -792,6 +793,7 @@ void InGame::DrawGUI()
             ImGui::SliderFloat3("Scale", &fpsAvatar.idlePivot.scale.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Rotation", &fpsAvatar.idlePivot.rotation.x, -sliderPrecision, sliderPrecision);
             ImGui::InputFloat("Precision", &sliderPrecision);
+            ImGui::InputFloat("Facing Angle", &facingAngle);
             if(ImGui::Button("Apply"))
             {
                 // Edit player model

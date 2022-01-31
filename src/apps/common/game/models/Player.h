@@ -16,6 +16,7 @@ namespace Game::Models
         void SteerWheels(glm::vec3 moveDir);
         void SetArmsPivot(Math::Transform armsPivot);
         void SetFlashesActive(bool active);
+        void SetFacing(float facingAngle);
         void RotateArms(float pitch);
         
 
@@ -23,6 +24,7 @@ namespace Game::Models
         Animation::Clip* GetShootAnim();
 
         Math::Transform armsPivot;
+        Math::Transform bTransform;
         Math::Transform wTransform;
         Math::Transform aTransform{glm::vec3{0.0f, 0.2f, 0.625f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
         Rendering::Model* armsModel;
@@ -36,7 +38,6 @@ namespace Game::Models
         Rendering::Model* wheelsModel;
         Rendering::SubModel* leftFlash;
         Rendering::SubModel* rightFlash;
-
 
         // Base Meshes
         Rendering::Mesh* quadPtr = nullptr;
