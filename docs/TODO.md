@@ -11,11 +11,11 @@
 - Muzzle Flash effect on weapon. - DONE
     - Sort transparent quads by distance. Draw the ones on the back first. Use a RendererManager with delayed calls. - DONE
 - Player movement animation (wheels steer to movement direction) - DONE
-- Player rotation animation (Upper body rotation, weapons pitch up and down)
-    - Body rotation
+- Player rotation animation (Upper body rotation, weapons pitch up and down) - DONE
+    - Body rotation - DONE
     - Arms rotation - DONE
-- Player shooting animation (Weapons move back and forth, muzzle flash)
-- Player movement collision box (Ignore wheels, use a rectangle)
+- Player shooting animation (Weapons move back and forth, muzzle flash) - DONE
+- Player movement collision box (Ignore wheels, use a rectangle) - DONE
 - Player shooting collision box (Use rectangles fors wheels and body) - DONE
 - Weapon system 
     - Player Health
@@ -32,7 +32,7 @@
     - Pick up weapons (Optional)
     - Recoil (Optional)
     - Grenades (Optional)
-- Power Up System
+- Power Up System (Optional)
     - Health Packs
     - Invisibility
     - No overheat, extra rate of fire

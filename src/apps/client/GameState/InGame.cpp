@@ -37,6 +37,7 @@ void InGame::Start()
         shader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "circleVertex.glsl", "circleFrag.glsl");
         chunkShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
         quadShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
+        textShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "textVertex.glsl", "textFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -54,6 +55,12 @@ void InGame::Start()
     {
         this->client_->logger->LogError(e.what());
     }
+
+    // Init font
+    std::filesystem::path fontPath = std::filesystem::path{RESOURCES_DIR} / "fonts/Pixel.ttf";
+    pixelFont = GUI::TextFactory::Get()->LoadFont(fontPath);
+    text = pixelFont->CreateText();
+    text.SetText("See ya");
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
@@ -824,5 +831,9 @@ void InGame::DrawGUI()
     auto windowSize = client_->GetWindowSize();
     int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
     ImGui_ImplOpenGL3_RestoreState(scissor_box);
+
+    text.SetColor(glm::vec4{0.0f, 1.0f, 0.0f, 1.0f});
+    text.SetScale(2.0f);
+    text.Draw(textShader, glm::vec2{0.0f, 0.0f}, glm::vec2{(float)windowSize.x, (float)windowSize.y});
 }
 

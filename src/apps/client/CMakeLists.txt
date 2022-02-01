@@ -25,6 +25,7 @@ target_link_libraries(Client
     Entity 
     App
     Game
+    freetype
     GUI
 
     EnetW

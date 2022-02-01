@@ -28,6 +28,8 @@
 #include <networking/Command.h>
 #include <networking/Snapshot.h>
 
+#include <gui/TextFactory.h>
+
 namespace BlockBuster
 {
     class InGame : public GameState
@@ -83,6 +85,7 @@ namespace BlockBuster
         GL::Shader shader;
         GL::Shader chunkShader;
         GL::Shader quadShader;
+        GL::Shader textShader;
 
             // Textures
         GL::Texture flashTexture;
@@ -112,6 +115,9 @@ namespace BlockBuster
 
         // GUI
         GL::VertexArray guiVao;
+
+        GUI::FontFamily* pixelFont = nullptr;
+        GUI::Text text;
 
         // Player transforms
         struct PlayerState

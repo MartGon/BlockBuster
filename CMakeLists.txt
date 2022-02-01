@@ -9,9 +9,11 @@ set (CMAKE_CXX_STANDARD 17)
 
 set(DEPS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/deps)
 set(SHADERS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
+set(RESOURCES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
 
 add_compile_definitions(SHADERS_DIR="${SHADERS_FOLDER}")
 add_compile_definitions(TEXTURES_DIR="${CMAKE_SOURCE_DIR}/resources/textures/")
+add_compile_definitions(RESOURCES_DIR="${RESOURCES_DIR}")
 add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD=1)
 add_compile_definitions(NOMINMAX=1)
 # Add compile defines
