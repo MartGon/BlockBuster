@@ -152,6 +152,7 @@ TextFactory::TextFactory()
 
 TextFactory::~TextFactory()
 {
+    fonts.clear();
     FT_Done_FreeType(ft);
 }
 
