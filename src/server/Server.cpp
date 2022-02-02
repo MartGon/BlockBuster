@@ -4,6 +4,7 @@
 #include <networking/enetw/ENetW.h>
 #include <networking/Command.h>
 #include <networking/Snapshot.h>
+#include <networking/Networking.h>
 
 #include <util/BBTime.h>
 #include <util/Random.h>
@@ -333,6 +334,8 @@ int main()
         }
 
         // Create snapshot
+        std::unique_ptr<Networking::Packet> snapshotPacket{new Networking::Packets::Server::Snapshot{}};
+
         Networking::Snapshot s;
         s.serverTick = tickCount;
         for(auto& [id, client] : clients)

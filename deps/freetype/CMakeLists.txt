@@ -130,7 +130,6 @@ else ()
   endif ()
 endif ()
 
-
 project(freetype C)
 
 set(VERSION_MAJOR "2")

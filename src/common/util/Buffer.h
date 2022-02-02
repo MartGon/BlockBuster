@@ -37,6 +37,11 @@ namespace Util
             return buffer;
         }
 
+        inline void Clear()
+        {
+            size = 0;
+        }
+
         template<typename T>
         void WriteAt(T data, uint32_t offset)
         {
@@ -88,7 +93,7 @@ namespace Util
 
         private:
             uint32_t index = 0;
-            uint32_t size;
+            uint32_t size = 0;
             const void* buffer = nullptr;
         };
         Reader GetReader();
