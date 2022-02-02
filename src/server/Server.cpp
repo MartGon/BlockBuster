@@ -334,7 +334,7 @@ int main()
         }
 
         // Create snapshot
-        std::unique_ptr<Networking::Packet> snapshotPacket{new Networking::Packets::Server::Snapshot{}};
+        auto worldUpdate = std::make_unique<Networking::Packets::Server::WorldUpdate>();
 
         Networking::Snapshot s;
         s.serverTick = tickCount;
@@ -343,38 +343,26 @@ int main()
             auto& player = client.player;
             s.players[player.id].pos = player.transform.position;
             s.players[player.id].onDmg = player.onDmg;
+
             client.player.onDmg = false;
         }
         history.PushBack(s);
-
-        auto snapshotBuffer = s.ToBuffer();
+        worldUpdate->snapShot = s;
 
         // Send snapshot with acks
         for(auto pair : clients)
         {
             auto client = pair.second;
-            Util::Buffer buffer;
 
-            Networking::Command::Header header;
-            header.type = Networking::Command::Type::SERVER_SNAPSHOT;
-            header.tick = tickCount;
-
-            Networking::Command::Server::Update update;
-            update.lastCmd = client.lastAck;
-            update.snapshotDataSize = snapshotBuffer.GetSize();
-
-            Networking::Command::Payload snapshotData;
-            snapshotData.snapshot = update;
-
-            Networking::Command cmd{header, snapshotData};
-
-            Util::Buffer packetBuf;
-            packetBuf.Write(cmd);
+            if(client.isAI)
+                continue;
             
-            packetBuf = Util::Buffer::Concat(std::move(packetBuf), snapshotBuffer.Clone());
-
-            ENet::SentPacket epacket{packetBuf.GetData(), packetBuf.GetSize(), 0};
-            if(!client.isAI)
+            worldUpdate->lastCmd = client.lastAck;
+            worldUpdate->Write();
+            
+            auto packetBuf = worldUpdate->GetBuffer();
+            ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
+            
                 host.SendPacket(pair.first, 0, epacket);
         }
 

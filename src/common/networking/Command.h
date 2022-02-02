@@ -13,7 +13,7 @@ namespace Networking
         enum Type
         {
             // Server
-            CLIENT_CONFIG,
+            CLIENT_CONFIG = 128,
             SERVER_SNAPSHOT,
             PLAYER_DISCONNECTED,
             ACK_COMMAND, // Deprecated. Snapshot carry acks.

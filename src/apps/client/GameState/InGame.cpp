@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 #include <httplib/httplib.h>
 
+#include <networking/Networking.h>
 
 #include <iostream>
 #include <algorithm>
@@ -123,7 +124,14 @@ void InGame::Start()
 
             client_->logger->LogInfo("We play as player " + std::to_string(this->playerId));
         }
-        else if(packet->header.type == Networking::Command::Type::SERVER_SNAPSHOT)
+        else if(packet->header.type == Networking::Command::Type::PLAYER_DISCONNECTED)
+        {
+            Networking::Command::Server::PlayerDisconnected playerDisconnect = packet->data.playerDisconnect;
+            client_->logger->LogInfo("Player with id " + std::to_string(playerDisconnect.playerId) + " disconnected");
+
+            OnPlayerLeave(playerDisconnect.playerId);
+        }
+        else
         {
             client_->logger->LogInfo("Recv server snapshot for tick: " + std::to_string(packet->header.tick));
 
@@ -136,16 +144,18 @@ void InGame::Start()
                 client_->logger->LogInfo("Offset millis " + std::to_string(this->offsetTime.count()));
             }
 
-            // Process Snapshot
-            auto update = packet->data.snapshot;
+            Util::Buffer::Reader reader{ePacket.GetData(), ePacket.GetSize()};
+            auto opCode = reader.Read<uint16_t>();
+            auto buffer = reader.ReadAll();
+            auto snapShot = std::make_unique<Networking::Packets::Server::WorldUpdate>();
+            snapShot->SetBuffer(std::move(buffer));
+            snapShot->Read();
 
             // Update last ack
-            this->lastAck = update.lastCmd;
-            client_->logger->LogInfo("Server ack command: " + std::to_string(update.lastCmd));
+            this->lastAck = snapShot->lastCmd;
+            client_->logger->LogInfo("Server ack command: " + std::to_string(this->lastAck));
             
-            Util::Buffer::Reader reader{packet, ePacket.GetSize()};
-            reader.Skip(sizeof(Networking::Command));
-            auto s = Networking::Snapshot::FromBuffer(reader);
+            auto s = snapShot->snapShot;
             for(auto& [playerId, player] : s.players)
             {
                 // Create player entries
@@ -168,13 +178,6 @@ void InGame::Start()
             {
                 return a.serverTick < b.serverTick;
             });
-        }
-        else if(packet->header.type == Networking::Command::Type::PLAYER_DISCONNECTED)
-        {
-            Networking::Command::Server::PlayerDisconnected playerDisconnect = packet->data.playerDisconnect;
-            client_->logger->LogInfo("Player with id " + std::to_string(playerDisconnect.playerId) + " disconnected");
-
-            OnPlayerLeave(playerDisconnect.playerId);
         }
     });
     host.Connect(serverAddress);

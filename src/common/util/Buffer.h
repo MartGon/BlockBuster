@@ -87,6 +87,7 @@ namespace Util
                 return *ptr;
             }
             Buffer Read(uint32_t dataSize);
+            Buffer ReadAll();
 
             bool IsOver() const;
             void Skip(uint32_t bytes);

@@ -124,6 +124,12 @@ Buffer Buffer::Reader::Read(uint32_t dataSize)
     return std::move(b);
 }
 
+Buffer Buffer::Reader::ReadAll()
+{
+    auto diff = size - index;
+    return Read(diff);
+}
+
 bool Buffer::Reader::IsOver() const
 {
     return index >= size;

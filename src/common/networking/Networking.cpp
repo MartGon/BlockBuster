@@ -11,9 +11,9 @@ void Packet::Read()
 
 void Packet::Write()
 {
-    buffer.Write(GetSize());
-    buffer.Write(opCode);
+    buffer.Clear();
 
+    buffer.Write(opCode);
     OnWrite();
 }
 
@@ -31,7 +31,7 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
         break;
 
     case OpcodeServer::SNAPSHOT:
-        packet = std::make_unique<Packets::Server::Snapshot>();
+        packet = std::make_unique<Packets::Server::WorldUpdate>();
         break;
     
     default:
@@ -66,29 +66,22 @@ void Server::Welcome::OnWrite()
     buffer.Write(tickRate);
 }
 
-void Server::Snapshot::OnRead(Util::Buffer::Reader reader)
+void Server::WorldUpdate::OnRead(Util::Buffer::Reader reader)
 {
     lastCmd = reader.Read<uint32_t>();
-    serverTick = reader.Read<uint32_t>();
+    snapShot.serverTick = reader.Read<uint32_t>();
 
-    auto len = reader.Read<std::size_t>();
+    auto len = reader.Read<std::uint8_t>();
     for(auto i = 0; i < len; i++)
     {
         auto id = reader.Read<Entity::ID>();
         auto playerState = reader.Read<PlayerState>();
-        players[id] = playerState;
+        snapShot.players[id] = playerState;
     }
 }
 
-void Server::Snapshot::OnWrite()
+void Server::WorldUpdate::OnWrite()
 {
     buffer.Write(lastCmd);
-    buffer.Write(serverTick);
-
-    buffer.Write(players.size());
-    for(auto& [id, playerState] : players)
-    {
-        buffer.Write(id);
-        buffer.Write(playerState);
-    }
+    buffer.Append(this->snapShot.ToBuffer());
 }

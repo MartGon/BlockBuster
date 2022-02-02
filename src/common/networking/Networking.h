@@ -52,7 +52,7 @@ namespace Networking
 
         inline uint32_t GetSize()
         {
-            return sizeof(opCode) + buffer.GetSize();
+            return buffer.GetSize();
         }
 
         inline uint16_t GetOpcode()
@@ -67,7 +67,7 @@ namespace Networking
 
         inline void SetBuffer(Util::Buffer&& buffer)
         {
-            buffer = std::move(buffer);
+            this->buffer = std::move(buffer);
         }
 
         void Read();
@@ -152,25 +152,22 @@ namespace Networking
                 void OnRead(Util::Buffer::Reader reader) override;
                 void OnWrite() override;
 
-            private:
                 uint8_t playerId;
                 double tickRate;
             };
 
-            class Snapshot final : public Packet
+            class WorldUpdate final : public Packet
             {
             public:
-                Snapshot() : Packet{OpcodeServer::SNAPSHOT}
+                WorldUpdate() : Packet{OpcodeServer::SNAPSHOT}
                 {
 
                 }
                 void OnRead(Util::Buffer::Reader reader) override;
                 void OnWrite() override;
 
-            private:
                 uint32_t lastCmd = 0;
-                uint32_t serverTick = 0;
-                std::unordered_map<Entity::ID, PlayerState> players;
+                Snapshot snapShot;
             };
             
             class PlayerDisconnected final : public Packet
