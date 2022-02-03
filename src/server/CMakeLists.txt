@@ -1,6 +1,7 @@
 SET(SOURCES
 
     Server.cpp
+    Main.cpp
 )
 
 add_executable(Server ${SOURCES})
