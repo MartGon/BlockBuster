@@ -12,6 +12,7 @@
 #include <httplib/httplib.h>
 
 #include <networking/Networking.h>
+#include <game/Input.h>
 
 #include <iostream>
 #include <algorithm>
@@ -287,55 +288,21 @@ void InGame::UpdateNetworking()
 {
     client_->logger->LogInfo("Input: Sending player inputs");
 
+    auto input = Input::GetPlayerInputNumpad();
+
     // Sample player input
-    int8_t* state = (int8_t*)SDL_GetKeyboardState(nullptr);
     glm::vec3 moveDir{0.0f};
-    moveDir.x = state[SDL_SCANCODE_KP_6] - state[SDL_SCANCODE_KP_4];
-    moveDir.z = state[SDL_SCANCODE_KP_2] - state[SDL_SCANCODE_KP_8];
+    moveDir.x = input[Entity::MOVE_RIGHT] - input[Entity::MOVE_LEFT];
+    moveDir.z = input[Entity::MOVE_DOWN] - input[Entity::MOVE_UP];
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
+    PlayerMovement playerMovement;
+    playerMovement.moveDir = moveDir;
 
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     auto click = mouseState & SDL_BUTTON_RIGHT;
 
-    // Build batched player input batch
-    auto cmdId = this->cmdId++;
-    Networking::Command::Header header;
-    header.type = Networking::Command::Type::PLAYER_MOVEMENT_BATCH;
-    header.tick = cmdId;
-
-    auto historySize = predictionHistory_.GetSize();
-    auto redundancy = std::min(redundantInputs, historySize);
-    auto amount = redundancy + 1u;
-    Networking::Command::User::PlayerMovementBatch playerMovementBatch;
-    playerMovementBatch.amount = amount;
-
-    Networking::Command::Payload data;
-    data.playerMovementBatch = playerMovementBatch;
-    
-    Networking::Command cmd{header, data};
-
-    // Write them to a buffer
-    Util::Buffer buf;
-    buf.Write(cmd);
-
-        // Write recent input
-    Networking::Command::User::PlayerMovement playerMovement;
-    playerMovement.reqId = cmdId;
-    playerMovement.moveDir = moveDir;
-    buf.Write(playerMovement);
-
-        // Write redudant inputs
-    for(int i = 0; i < redundancy; i++)
-    {
-        auto oldCmd = predictionHistory_.At((historySize - 1) - i);
-        buf.Write(oldCmd->cmd);
-        client_->logger->LogInfo("Sending input with reqId " + std::to_string(oldCmd->cmd.reqId));
-    }
-
-    // Send them
-    ENet::SentPacket sentPacket{buf.GetData(), buf.GetSize(), 0};
-    host.SendPacket(serverId, 0, sentPacket);
+    SendPlayerInput(input);
 
     // Prediction
     PredictPlayerMovement(playerMovement, cmdId);
@@ -376,7 +343,55 @@ void InGame::UpdateNetworking()
     }
 }
 
-void InGame::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd, uint32_t cmdId)
+void InGame::SendPlayerInput(Entity::PlayerInput input)
+{
+    glm::vec3 moveDir{0.0f};
+    moveDir.x = input[Entity::MOVE_RIGHT] - input[Entity::MOVE_LEFT];
+    moveDir.z = input[Entity::MOVE_DOWN] - input[Entity::MOVE_UP];
+
+    // Build batched player input batch
+    auto cmdId = this->cmdId++;
+    Networking::Command::Header header;
+    header.type = Networking::Command::Type::PLAYER_MOVEMENT_BATCH;
+    header.tick = cmdId;
+
+    auto historySize = predictionHistory_.GetSize();
+    auto redundancy = std::min(redundantInputs, historySize);
+    auto amount = redundancy + 1u;
+    Networking::Command::User::PlayerMovementBatch playerMovementBatch;
+    playerMovementBatch.amount = amount;
+
+    Networking::Command::Payload data;
+    data.playerMovementBatch = playerMovementBatch;
+    
+    Networking::Command cmd{header, data};
+
+    // Write them to a buffer
+    Util::Buffer buf;
+    buf.Write(cmd);
+
+        // Write recent input
+    Networking::Command::User::PlayerMovement playerMovement;
+    playerMovement.reqId = cmdId;
+    playerMovement.moveDir = moveDir;
+    buf.Write(playerMovement);
+
+        // Write redudant inputs
+    for(int i = 0; i < redundancy; i++)
+    {
+        auto oldCmd = predictionHistory_.At((historySize - 1) - i);
+        auto reqId = playerMovement.reqId - (i + 1);
+        buf.Write(reqId);
+        buf.Write(oldCmd->playerMove.moveDir);
+        client_->logger->LogInfo("Sending input with reqId " + std::to_string(reqId));
+    }
+
+    // Send them
+    ENet::SentPacket sentPacket{buf.GetData(), buf.GetSize(), 0};
+    host.SendPacket(serverId, 0, sentPacket);
+}
+
+void InGame::PredictPlayerMovement(PlayerMovement movement, uint32_t cmdId)
 {
     if(playerTable.find(playerId) == playerTable.end())
         return;
@@ -385,7 +400,7 @@ void InGame::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd
 
     // Discard old commands
     std::optional<Prediction> prediction;
-    while(predictionHistory_.GetSize() > 0 && predictionHistory_.Front()->cmd.reqId <= lastAck)
+    while(predictionHistory_.GetSize() > 0 && cmdId <= lastAck)
     {
         prediction = predictionHistory_.PopFront();
     }
@@ -418,7 +433,7 @@ void InGame::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd
                     auto predict = predictionHistory_.At(i);
 
                     // Re-calculate prediction
-                    auto move = predict->cmd;
+                    auto move = predict->playerMove;
                     auto origin = realPos;
                     realPos = PredPlayerPos(realPos, move.moveDir, serverTickRate);
 
@@ -449,8 +464,8 @@ void InGame::PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd
     }
 
     // Run predicted command for this simulation
-    auto predictedPos = PredPlayerPos(prevPos, cmd.moveDir, serverTickRate);
-    Prediction p{cmd, prevPos, predictedPos, now};
+    auto predictedPos = PredPlayerPos(prevPos, movement.moveDir, serverTickRate);
+    Prediction p{movement, prevPos, predictedPos, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
 
@@ -472,7 +487,7 @@ void InGame::SmoothPlayerMovement()
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
         predOffset += deltaTime;
-        auto predPos = PredPlayerPos(lastPred->origin, lastPred->cmd.moveDir, predOffset);
+        auto predPos = PredPlayerPos(lastPred->origin, lastPred->playerMove.moveDir, predOffset);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;

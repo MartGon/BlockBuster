@@ -17,3 +17,19 @@ Entity::PlayerInput Input::GetPlayerInput()
 
     return input;
 }
+
+Entity::PlayerInput Input::GetPlayerInputNumpad()
+{
+    Entity::PlayerInput input;
+    auto state = SDL_GetKeyboardState(nullptr);
+    input[Entity::MOVE_LEFT] = state[SDL_SCANCODE_KP_4];
+    input[Entity::MOVE_RIGHT] = state[SDL_SCANCODE_KP_6];
+    input[Entity::MOVE_UP] = state[SDL_SCANCODE_KP_8];
+    input[Entity::MOVE_DOWN] = state[SDL_SCANCODE_KP_2];
+
+
+    auto mouseState = SDL_GetMouseState(nullptr, nullptr);
+    input[Entity::SHOT] = mouseState & SDL_BUTTON_LEFT;
+
+    return input;
+}

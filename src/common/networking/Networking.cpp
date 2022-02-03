@@ -52,21 +52,21 @@ void Batch::Write()
     }
 }
 
-using namespace Networking::Packets;
+using namespace Networking::Packets::Server;
 
-void Server::Welcome::OnRead(Util::Buffer::Reader reader)
+void Welcome::OnRead(Util::Buffer::Reader reader)
 {
     playerId = reader.Read<uint8_t>();
     tickRate = reader.Read<double>();
 }
 
-void Server::Welcome::OnWrite()
+void Welcome::OnWrite()
 {
     buffer.Write(playerId);
     buffer.Write(tickRate);
 }
 
-void Server::WorldUpdate::OnRead(Util::Buffer::Reader reader)
+void WorldUpdate::OnRead(Util::Buffer::Reader reader)
 {
     lastCmd = reader.Read<uint32_t>();
     snapShot.serverTick = reader.Read<uint32_t>();
@@ -80,8 +80,20 @@ void Server::WorldUpdate::OnRead(Util::Buffer::Reader reader)
     }
 }
 
-void Server::WorldUpdate::OnWrite()
+void WorldUpdate::OnWrite()
 {
     buffer.Write(lastCmd);
     buffer.Append(this->snapShot.ToBuffer());
+}
+
+using namespace Networking::Packets::Client;
+
+void Input::OnRead(Util::Buffer::Reader reader)
+{
+    playerInput = reader.Read<Entity::PlayerInput>();
+}
+
+void Input::OnWrite()
+{
+    buffer.Write(playerInput);
 }

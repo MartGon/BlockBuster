@@ -15,8 +15,7 @@ namespace Networking
 {
     enum OpcodeClient : uint16_t
     {
-        MOVEMENT,
-        SHOOT
+        INPUT
     };
 
     enum OpcodeServer : uint16_t
@@ -185,11 +184,14 @@ namespace Networking
             class Input final : public Packet
             {   
             public:
+                Input() : Packet{OpcodeClient::INPUT}
+                {
+
+                }
                 void OnRead(Util::Buffer::Reader reader) override;
                 void OnWrite() override;
 
-            private:
-
+                Entity::PlayerInput playerInput;
             };
         }
     }

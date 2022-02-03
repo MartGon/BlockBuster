@@ -53,9 +53,11 @@ namespace BlockBuster
         void OnPlayerLeave(Entity::ID playerId);
         void RecvServerSnapshots();
         void UpdateNetworking();
+        void SendPlayerInput(Entity::PlayerInput playerInput);
 
         // Networking - Prediction
-        void PredictPlayerMovement(Networking::Command::User::PlayerMovement cmd, uint32_t cmdId);
+        struct PlayerMovement;
+        void PredictPlayerMovement(PlayerMovement movement, uint32_t cmdId);
         void SmoothPlayerMovement();
         glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Seconds deltaTime);
 
@@ -152,9 +154,13 @@ namespace BlockBuster
         Util::Ring<Networking::Snapshot> snapshotHistory{16};
 
         // Networking - Prediction
+        struct PlayerMovement
+        {
+            glm::vec3 moveDir;
+        };
         struct Prediction
         {
-            Networking::Command::User::PlayerMovement cmd;
+            PlayerMovement playerMove;
             glm::vec3 origin;
             glm::vec3 dest;
             Util::Time::SteadyPoint time;
