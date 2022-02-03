@@ -3,30 +3,19 @@
 
 using namespace BlockBuster;
 
-glm::vec3 Server::GetRandomPos() const
-{
-    glm::vec3 pos;
-    pos.x = Util::Random::Uniform(-7.0f, 7.0f);
-    pos.y = 5.15f;
-    //pos.z = Util::Random::Uniform(-7.0f, 7.0f);
-    pos.z = -7.0f;
-
-    return pos;
-}
-
 void Server::Start()
 {
     InitLogger();
     InitNetworking();
     InitAI();
+
+    auto next = Util::Time::GetTime() + TICK_RATE;
+    nextTickDate = next;
 }
 
 void Server::Run()
 {
     // Server loop
-    Util::Time::Seconds deltaTime{0};
-    Util::Time::Seconds lag{0};
-    auto nextTickDate = Util::Time::GetTime() + TICK_RATE;
     while(true)
     {
         host->PollAllEvents();
@@ -34,63 +23,12 @@ void Server::Run()
         auto preSimulationTime = Util::Time::GetTime();
 
         HandleClientsInput();
+        SendWorldUpdate();
 
-        // Create snapshot
-        auto worldUpdate = std::make_unique<Networking::Packets::Server::WorldUpdate>();
-
-        Networking::Snapshot s;
-        s.serverTick = tickCount;
-        for(auto& [id, client] : clients)
-        {
-            auto& player = client.player;
-            s.players[player.id].pos = player.transform.position;
-            s.players[player.id].onDmg = player.onDmg;
-
-            client.player.onDmg = false;
-        }
-        history.PushBack(s);
-        worldUpdate->snapShot = s;
-
-        // Send snapshot with acks
-        for(auto pair : clients)
-        {
-            auto client = pair.second;
-
-            if(client.isAI)
-                continue;
-            
-            worldUpdate->lastCmd = client.lastAck;
-            worldUpdate->Write();
-            
-            auto packetBuf = worldUpdate->GetBuffer();
-            ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
-            
-                host->SendPacket(pair.first, 0, epacket);
-        }
-
-        // Increase tick
         tickCount++;
-
-        // Flush logs
         logger.Flush();
 
-        // Sleep until next tick
-        auto preSleepTime = Util::Time::GetTime();
-        auto elapsed = preSleepTime - preSimulationTime;
-        auto wait = TICK_RATE - elapsed - lag;
-        Util::Time::Sleep(wait);
-
-        // Calculate sleep lag
-        auto afterSleepTime = Util::Time::GetTime();
-        Util::Time::Seconds simulationTime = afterSleepTime - preSimulationTime;
-
-        // Calculate how far behind the server is
-        lag = afterSleepTime - nextTickDate;
-        logger.LogInfo("Server tick took " + std::to_string(simulationTime.count()) + " s");
-        logger.LogInfo("Server delay " + std::to_string(lag.count()));
-
-        // Update next tick date
-        nextTickDate += TICK_RATE;
+        SleepUntilNextTick(preSimulationTime);
     }
 
     logger.LogInfo("Server shutdown");
@@ -370,4 +308,74 @@ void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)
             }
         }
     }
+}
+
+void Server::SendWorldUpdate()
+{
+    // Create snapshot
+    auto worldUpdate = std::make_unique<Networking::Packets::Server::WorldUpdate>();
+
+    Networking::Snapshot s;
+    s.serverTick = tickCount;
+    for(auto& [id, client] : clients)
+    {
+        auto& player = client.player;
+        s.players[player.id].pos = player.transform.position;
+        s.players[player.id].onDmg = player.onDmg;
+
+        client.player.onDmg = false;
+    }
+    history.PushBack(s);
+    worldUpdate->snapShot = s;
+
+    // Send snapshot with acks
+    for(auto pair : clients)
+    {
+        auto client = pair.second;
+
+        if(client.isAI)
+            continue;
+        
+        worldUpdate->lastCmd = client.lastAck;
+        worldUpdate->Write();
+        
+        auto packetBuf = worldUpdate->GetBuffer();
+        ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
+        
+            host->SendPacket(pair.first, 0, epacket);
+    }
+}
+
+// Misc
+
+glm::vec3 Server::GetRandomPos() const
+{
+    glm::vec3 pos;
+    pos.x = Util::Random::Uniform(-7.0f, 7.0f);
+    pos.y = 5.15f;
+    //pos.z = Util::Random::Uniform(-7.0f, 7.0f);
+    pos.z = -7.0f;
+
+    return pos;
+}
+
+void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
+{
+    // Sleep until next tick
+    auto preSleepTime = Util::Time::GetTime();
+    auto elapsed = preSleepTime - preSimulationTime;
+    auto wait = TICK_RATE - elapsed - lag;
+    Util::Time::Sleep(wait);
+
+    // Calculate sleep lag
+    auto afterSleepTime = Util::Time::GetTime();
+    Util::Time::Seconds simulationTime = afterSleepTime - preSimulationTime;
+
+    // Calculate how far behind the server is
+    lag = afterSleepTime - nextTickDate;
+    logger.LogInfo("Server tick took " + std::to_string(simulationTime.count()) + " s");
+    logger.LogInfo("Server delay " + std::to_string(lag.count()));
+
+    // Update next tick date
+    nextTickDate = nextTickDate + TICK_RATE;
 }

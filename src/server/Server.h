@@ -70,19 +70,27 @@ namespace BlockBuster
         void HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMovement pm);
         void HandleClientsInput();
         void HandleShootCommand(BlockBuster::ShotCommand shotCmd);
+        void SendWorldUpdate();
 
         // Misc
+        void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
         glm::vec3 GetRandomPos() const;
         
 
         const Util::Time::Seconds TICK_RATE{0.050};
         const float PLAYER_SPEED = 5.f;
 
+        // Networking
         std::optional<ENet::Host> host;
         std::unordered_map<ENet::PeerId, Client> clients;
         Entity::ID lastId = 0;
         unsigned int tickCount = 0;
-        Util::Ring<Networking::Snapshot, 30> history; 
+        Util::Ring<Networking::Snapshot, 30> history;
+
+        // Simulation
+        Util::Time::Seconds deltaTime{0};
+        Util::Time::Seconds lag{0};
+        Util::Time::Point<Util::Time::Seconds> nextTickDate;
 
         Log::ComposedLogger logger;
     };
