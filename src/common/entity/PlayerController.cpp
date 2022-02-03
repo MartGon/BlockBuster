@@ -5,26 +5,19 @@
 #include <algorithm>
 #include <iostream>
 
-void AppGame::PlayerController::HandleSDLEvent(const SDL_Event& event)
-{
-
-}
-
-void AppGame::PlayerController::Update()
+void AppGame::PlayerController::Update(Entity::PlayerInput input)
 {
     this->prevPos = transform.position;
 
     // Move
-    auto state = SDL_GetKeyboardState(nullptr);
-
     glm::vec3 moveDir{0.0f};
-    if(state[SDL_SCANCODE_A])
+    if(input[Entity::MOVE_LEFT])
         moveDir.x -= 1;
-    if(state[SDL_SCANCODE_D])
+    if(input[Entity::MOVE_RIGHT])
         moveDir.x += 1;
-    if(state[SDL_SCANCODE_W])
+    if(input[Entity::MOVE_UP])
         moveDir.z -= 1;
-    if(state[SDL_SCANCODE_S])
+    if(input[Entity::MOVE_DOWN])
         moveDir.z += 1;
 
     // Rotate moveDir

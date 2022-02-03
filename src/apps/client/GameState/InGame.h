@@ -12,7 +12,6 @@
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
 
-#include <game/PlayerController.h>
 #include <game/Map.h>
 #include <game/CameraController.h>
 #include <game/ChunkMeshMgr.h>
@@ -23,6 +22,7 @@
 #include <util/Ring.h>
 
 #include <entity/Player.h>
+#include <entity/PlayerController.h>
 
 #include <networking/enetw/ENetW.h>
 #include <networking/Command.h>
@@ -49,7 +49,7 @@ namespace BlockBuster
 
         // Networking
         // TODO: Preallocate players. This is useful to avoid resizing the vectors/maps
-        void OnPlayerJoin(Entity::ID playerId, Networking::PlayerState playerState);
+        void OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState);
         void OnPlayerLeave(Entity::ID playerId);
         void RecvServerSnapshots();
         void UpdateNetworking();

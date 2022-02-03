@@ -2,6 +2,7 @@
 
 #include <entity/Game.h>
 #include <math/BBMath.h>
+#include <game/Input.h>
 
 #include <iostream>
 #include <algorithm>
@@ -1441,7 +1442,8 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
 
     player.transform.rotation = glm::vec3{0.0f, glm::degrees(camera.GetRotation().y) - 90.0f, 0.0f};
 
-    player.Update();
+    auto input = Input::GetPlayerInput();
+    player.Update(input);
     player.HandleCollisions(project.map.GetMap(), blockScale);
     auto playerPos = player.transform.position;
 

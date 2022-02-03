@@ -75,7 +75,7 @@ void Server::WorldUpdate::OnRead(Util::Buffer::Reader reader)
     for(auto i = 0; i < len; i++)
     {
         auto id = reader.Read<Entity::ID>();
-        auto playerState = reader.Read<PlayerState>();
+        auto playerState = reader.Read<Entity::PlayerState>();
         snapShot.players[id] = playerState;
     }
 }

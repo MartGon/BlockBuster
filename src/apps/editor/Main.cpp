@@ -30,7 +30,6 @@
 
 #include <entity/Block.h>
 #include <game/ServiceLocator.h>
-#include <game/PlayerController.h>
 
 #include <Editor.h>
 

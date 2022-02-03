@@ -3,7 +3,9 @@ SET(SOURCES
     Map.cpp
     Game.cpp
     Player.cpp
+    PlayerController.cpp
     Weapon.cpp
+    World.cpp
 )
 
 

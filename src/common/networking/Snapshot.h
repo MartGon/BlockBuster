@@ -8,17 +8,10 @@
 
 namespace Networking
 {
-    struct PlayerState
-    {
-        glm::vec3 pos;
-        glm::vec2 rot;
-        bool onDmg;
-    };
-
     struct Snapshot
     {
         uint32_t serverTick = 0;
-        std::unordered_map<Entity::ID, PlayerState> players;
+        std::unordered_map<Entity::ID, Entity::PlayerState> players;
 
         Util::Buffer ToBuffer() const;
         static Snapshot FromBuffer(Util::Buffer::Reader& reader);

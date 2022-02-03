@@ -11,7 +11,7 @@
 #include <rendering/Rendering.h>
 #include <game/ChunkMeshMgr.h>
 
-#include <game/PlayerController.h>
+#include <entity/PlayerController.h>
 #include <entity/Block.h>
 #include <entity/Map.h>
 #include <game/CameraController.h>

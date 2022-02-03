@@ -1,12 +1,10 @@
 #pragma once
 
-#include <SDL2/SDL.h>
-
 #include <math/Transform.h>
 
 #include <entity/Block.h>
 #include <entity/Map.h>
-#include <game/models/FPS.h>
+#include <entity/Player.h>
 
 #include <vector>
 
@@ -16,8 +14,7 @@ namespace AppGame
     {
     public:
 
-        void Update();
-        void HandleSDLEvent(const SDL_Event& event);
+        void Update(Entity::PlayerInput input);
         void HandleCollisions(Game::Map::Map* map, float blockScale);
         void HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks);
         
@@ -26,8 +23,6 @@ namespace AppGame
         float speed = 0.1f;
         float height = 2.0f;
         float gravitySpeed = -0.4f;
-
-        Game::Models::FPS* fpsAvatar = nullptr;
 
     private:
         glm::vec3 prevPos;

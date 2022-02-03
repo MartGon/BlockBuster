@@ -1,6 +1,5 @@
 SET(SOURCES
 
-    PlayerController.cpp
     CameraController.cpp
     Map.cpp
     ServiceLocator.cpp
@@ -8,6 +7,7 @@ SET(SOURCES
     ColorPalette.cpp
     ChunkMeshBuilder.cpp
     ChunkMeshMgr.cpp
+    Input.cpp
 
     models/Player.cpp
     models/FPS.cpp

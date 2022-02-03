@@ -31,7 +31,7 @@ Snapshot Snapshot::FromBuffer(Util::Buffer::Reader& reader)
     for(auto i = 0; i < players; i++)
     {
         auto id = reader.Read<Entity::ID>();
-        auto playerState = reader.Read<PlayerState>();
+        auto playerState = reader.Read<Entity::PlayerState>();
         s.players[id] = playerState;
     }
 

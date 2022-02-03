@@ -249,7 +249,7 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
     }
 }
 
-void InGame::OnPlayerJoin(Entity::ID playerId, Networking::PlayerState playerState)
+void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
 {
     Math::Transform transform{playerState.pos, glm::vec3{0.0f}, glm::vec3{1.f, 1.0f, 1.f}};
     Entity::Player player{playerId, transform};

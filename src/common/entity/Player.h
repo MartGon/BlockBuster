@@ -12,6 +12,34 @@ namespace Entity
         static const Math::Transform wheels; // This one should rotate with the wheels, so it's affected by moveDir
     };
 
+    struct PlayerState
+    {
+        glm::vec3 pos;
+        glm::vec2 rot;
+        bool onDmg;
+    };
+
+    enum Inputs
+    {
+        MOVE_DOWN,
+        MOVE_UP,        
+        MOVE_LEFT,
+        MOVE_RIGHT,
+        SHOT,
+
+        MAX
+    };
+
+    struct PlayerInput
+    {
+        bool inputs[Inputs::MAX];
+
+        bool& operator[](uint32_t index)
+        {
+            return inputs[index];
+        }
+    };
+
     using ID = uint8_t;
     struct Player
     {
