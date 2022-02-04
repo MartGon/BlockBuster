@@ -41,6 +41,26 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     return packet;
 }
 
+template<>
+std::unique_ptr<Packet> Networking::MakePacket<PacketType::Client>(uint16_t opCode)
+{
+    using namespace Networking::Packets::Client;
+
+    std::unique_ptr<Packet> packet = nullptr;
+
+    switch (opCode)
+    {
+    case OpcodeClient::INPUT:
+        packet = std::make_unique<Input>();
+        break;
+    
+    default:
+        break;
+    }
+
+    return packet;
+}
+
 void Batch::Write()
 {
     buffer.Clear();
@@ -48,6 +68,7 @@ void Batch::Write()
     for(auto& packet : packets)
     {
         packet->Write();
+        buffer.Write(packet->GetSize());
         buffer.Append(std::move(*packet->GetBuffer()));
     }
 }
@@ -90,10 +111,12 @@ using namespace Networking::Packets::Client;
 
 void Input::OnRead(Util::Buffer::Reader reader)
 {
+    reqId = reader.Read<uint32_t>();
     playerInput = reader.Read<Entity::PlayerInput>();
 }
 
 void Input::OnWrite()
 {
+    buffer.Write(reqId);
     buffer.Write(playerInput);
 }

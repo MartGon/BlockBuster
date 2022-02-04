@@ -14,3 +14,16 @@ const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, gl
 
 const float Player::MAX_HEALTH = 100.0f;
 const float Player::MAX_SHIELD = 300.0f;
+
+
+// Functions
+
+glm::vec3 Entity::PlayerInputToMove(PlayerInput input)
+{
+    glm::vec3 moveDir{0.0f};
+    moveDir.x = input[Entity::MOVE_RIGHT] - input[Entity::MOVE_LEFT];
+    moveDir.z = input[Entity::MOVE_DOWN] - input[Entity::MOVE_UP];
+    moveDir = glm::normalize(moveDir);
+
+    return moveDir;
+}

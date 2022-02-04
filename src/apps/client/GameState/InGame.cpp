@@ -305,7 +305,7 @@ void InGame::UpdateNetworking()
     SendPlayerInput(input);
 
     // Prediction
-    PredictPlayerMovement(playerMovement, cmdId);
+    PredictPlayerMovement(input, playerMovement, cmdId);
 
     // Player shots
     if(click)
@@ -339,59 +339,51 @@ void InGame::UpdateNetworking()
         Networking::Command cmd{header, payload};
 
         ENet::SentPacket sentPacket{&cmd, sizeof(cmd), 0};
-        host.SendPacket(serverId, 0, sentPacket);
+        //host.SendPacket(serverId, 0, sentPacket);
     }
 }
 
 void InGame::SendPlayerInput(Entity::PlayerInput input)
 {
-    glm::vec3 moveDir{0.0f};
-    moveDir.x = input[Entity::MOVE_RIGHT] - input[Entity::MOVE_LEFT];
-    moveDir.z = input[Entity::MOVE_DOWN] - input[Entity::MOVE_UP];
-
     // Build batched player input batch
     auto cmdId = this->cmdId++;
-    Networking::Command::Header header;
-    header.type = Networking::Command::Type::PLAYER_MOVEMENT_BATCH;
-    header.tick = cmdId;
+    Networking::Batch batch;
 
     auto historySize = predictionHistory_.GetSize();
     auto redundancy = std::min(redundantInputs, historySize);
     auto amount = redundancy + 1u;
-    Networking::Command::User::PlayerMovementBatch playerMovementBatch;
-    playerMovementBatch.amount = amount;
 
-    Networking::Command::Payload data;
-    data.playerMovementBatch = playerMovementBatch;
-    
-    Networking::Command cmd{header, data};
+    // Write recent input
+    // TODO: Could do this within the next loop. Write input to prediction history first
+    using InputPacket = Networking::Packets::Client::Input;
+    auto inputPacket = std::make_unique<InputPacket>();
 
-    // Write them to a buffer
-    Util::Buffer buf;
-    buf.Write(cmd);
+    inputPacket->reqId = cmdId;
+    inputPacket->playerInput = input;
+    batch.PushPacket(std::move(inputPacket));
 
-        // Write recent input
-    Networking::Command::User::PlayerMovement playerMovement;
-    playerMovement.reqId = cmdId;
-    playerMovement.moveDir = moveDir;
-    buf.Write(playerMovement);
-
-        // Write redudant inputs
+    // Write redudant inputs
     for(int i = 0; i < redundancy; i++)
     {
         auto oldCmd = predictionHistory_.At((historySize - 1) - i);
-        auto reqId = playerMovement.reqId - (i + 1);
-        buf.Write(reqId);
-        buf.Write(oldCmd->playerMove.moveDir);
-        client_->logger->LogInfo("Sending input with reqId " + std::to_string(reqId));
+        auto reqId = cmdId - (i + 1);
+
+        using InputPacket = Networking::Packets::Client::Input;
+        auto inputPacket = std::make_unique<InputPacket>();
+        
+        inputPacket->playerInput = oldCmd->input;
+        inputPacket->reqId = reqId;
+        batch.PushPacket(std::move(inputPacket));
     }
 
     // Send them
-    ENet::SentPacket sentPacket{buf.GetData(), buf.GetSize(), 0};
+    batch.Write();
+    auto batchBuffer = batch.GetBuffer();
+    ENet::SentPacket sentPacket{batchBuffer->GetData(), batchBuffer->GetSize(), 0};
     host.SendPacket(serverId, 0, sentPacket);
 }
 
-void InGame::PredictPlayerMovement(PlayerMovement movement, uint32_t cmdId)
+void InGame::PredictPlayerMovement(Entity::PlayerInput playerInput, PlayerMovement movement, uint32_t cmdId)
 {
     if(playerTable.find(playerId) == playerTable.end())
         return;
@@ -465,7 +457,7 @@ void InGame::PredictPlayerMovement(PlayerMovement movement, uint32_t cmdId)
 
     // Run predicted command for this simulation
     auto predictedPos = PredPlayerPos(prevPos, movement.moveDir, serverTickRate);
-    Prediction p{movement, prevPos, predictedPos, now};
+    Prediction p{playerInput, movement, prevPos, predictedPos, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
 

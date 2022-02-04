@@ -46,7 +46,7 @@ void Server::InitLogger()
     if(!flogger->IsOk())
         clogger->LogError("Could not create log file " + logFile.string());
 
-    //logger.AddLogger(std::move(clogger));
+    logger.AddLogger(std::move(clogger));
     logger.AddLogger(std::move(flogger));
     logger.SetVerbosity(Log::Verbosity::DEBUG);
 }
@@ -90,15 +90,21 @@ void Server::InitNetworking()
         auto& client = clients[peerId];
 
         Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
-        auto command = reader.Read<Networking::Command>();
+        Util::Buffer buffer = reader.ReadAll();
 
-        if(command.header.type == Networking::Command::PLAYER_MOVEMENT_BATCH)
+        Networking::Batch batch;
+        batch.SetBuffer(std::move(buffer));
+
+        batch.Read<Networking::PacketType::Client>();
+        
+        for(auto i = 0; i < batch.GetPacketCount(); i++)
         {
-            auto inputs = command.data.playerMovementBatch.amount;
-            for(int i = 0; i < inputs; i++)
+            auto packet = batch.GetPacket(i);
+            if(packet->GetOpcode() == Networking::OpcodeClient::INPUT)
             {
-                auto move = reader.Read<Networking::Command::User::PlayerMovement>();
-                auto cmdId = move.reqId;
+                auto inputPacket = packet->To<Networking::Packets::Client::Input>();
+
+                auto cmdId = inputPacket->reqId;
                 logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId));
 
                 // Check if we already have this input
@@ -109,8 +115,11 @@ void Server::InitNetworking()
 
                 if(!found.has_value())
                 {
+                    auto moveDir = Entity::PlayerInputToMove(inputPacket->playerInput);
+
+                    PlayerInputCmd cmd{inputPacket->reqId, moveDir};
                     if(cmdId > client.lastAck)
-                        client.inputBuffer.PushBack(move);
+                        client.inputBuffer.PushBack(cmd);
                     // This packet is either duplicated or it arrived really late
                     else
                         logger.LogWarning("Command with cmdid " + std::to_string(cmdId) + " dropped. Last ack " + std::to_string(client.lastAck));
@@ -129,6 +138,8 @@ void Server::InitNetworking()
                 }
             }
         }
+
+        /*
         else if(command.header.type == Networking::Command::PLAYER_SHOT)
         {
             auto playerShot = command.data.playerShot;
@@ -147,6 +158,7 @@ void Server::InitNetworking()
             ShotCommand sc{playerShot, commandTime};
             client.shotBuffer.PushBack(sc);
         }
+        */
     });
     host->SetOnDisconnectCallback([this](auto peerId)
     {
@@ -181,7 +193,7 @@ void Server::InitAI()
     ai.player.id = 200;
     ai.player.transform = Math::Transform{GetRandomPos(), glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
     ai.targetPos = GetRandomPos();
-    clients[200] = ai;
+    //clients[200] = ai;
 }
 
 // Networking
@@ -230,7 +242,7 @@ void Server::HandleClientsInput()
             if(dist > stepDist)
             {
                 auto dir = glm::normalize(move);
-                Networking::Command::User::PlayerMovement pm{0, dir};
+                PlayerInputCmd pm{0, dir};
                 HandleMoveCommand(peerId, pm);
             }
             else
@@ -239,14 +251,18 @@ void Server::HandleClientsInput()
     }
 }
 
-void Server::HandleMoveCommand(ENet::PeerId peerId, Networking::Command::User::PlayerMovement pm)
+void Server::HandleMoveCommand(ENet::PeerId peerId, PlayerInputCmd cmd)
 {
     auto& player = clients[peerId].player;
-    auto len = glm::length(pm.moveDir);
-    if(len > 0)
+    auto len = glm::length(cmd.moveDir);
+    if (len > 200)
     {
-        auto moveDir = glm::normalize(pm.moveDir);
-        auto velocity = pm.moveDir * PLAYER_SPEED * (float)TICK_RATE.count();
+        logger.LogError("Distance error!");
+    }
+    else if(len > 0)
+    {
+        auto moveDir = glm::normalize(cmd.moveDir);
+        auto velocity = cmd.moveDir * PLAYER_SPEED * (float)TICK_RATE.count();
         player.transform.position += velocity;
     }
 }

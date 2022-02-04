@@ -57,7 +57,7 @@ namespace BlockBuster
 
         // Networking - Prediction
         struct PlayerMovement;
-        void PredictPlayerMovement(PlayerMovement movement, uint32_t cmdId);
+        void PredictPlayerMovement(Entity::PlayerInput playerInput, PlayerMovement movement, uint32_t cmdId);
         void SmoothPlayerMovement();
         glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Seconds deltaTime);
 
@@ -160,6 +160,7 @@ namespace BlockBuster
         };
         struct Prediction
         {
+            Entity::PlayerInput input;
             PlayerMovement playerMove;
             glm::vec3 origin;
             glm::vec3 dest;

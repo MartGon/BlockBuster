@@ -40,6 +40,8 @@ namespace Entity
         }
     };
 
+    glm::vec3 PlayerInputToMove(PlayerInput input);
+
     using ID = uint8_t;
     struct Player
     {

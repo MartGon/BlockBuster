@@ -69,6 +69,12 @@ namespace Networking
             this->buffer = std::move(buffer);
         }
 
+        template<typename T>
+        inline T* To()
+        {
+            return static_cast<T*>(this);
+        }
+
         void Read();
         void Write();
 
@@ -97,8 +103,8 @@ namespace Networking
                 auto len = reader.Read<uint32_t>();
                 auto opCode = reader.Read<uint16_t>();
 
-                auto packetBuffer = reader.Read(len);
-                std::unique_ptr<Packet> packet = MakePacket<Type>();
+                auto packetBuffer = reader.Read(len - sizeof(opCode));
+                std::unique_ptr<Packet> packet = MakePacket<Type>(opCode);
                 packet->SetBuffer(std::move(packetBuffer));
                 packet->Read();
 
@@ -129,6 +135,11 @@ namespace Networking
         inline Util::Buffer* GetBuffer()
         {
             return &buffer;
+        }
+
+        inline void SetBuffer(Util::Buffer&& buffer)
+        {
+            this->buffer = std::move(buffer);
         }
 
     private:
@@ -191,6 +202,7 @@ namespace Networking
                 void OnRead(Util::Buffer::Reader reader) override;
                 void OnWrite() override;
 
+                uint32_t reqId;
                 Entity::PlayerInput playerInput;
             };
         }
