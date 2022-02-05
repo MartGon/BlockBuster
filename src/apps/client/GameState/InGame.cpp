@@ -382,7 +382,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
 
     // Discard old commands
     std::optional<Prediction> prediction = predictionHistory_.Front();
-    while(prediction && prediction->inputReq.reqId <= lastAck)
+    while(prediction && prediction->inputReq.reqId < lastAck)
     {
         prediction = predictionHistory_.PopFront();
     }
@@ -468,6 +468,7 @@ void InGame::SmoothPlayerMovement()
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
         predOffset += deltaTime;
+        // TODO: Interpolate between prevState and endState
         auto predPos = PredPlayerPos(lastPred->origin, lastPred->inputReq.playerInput, predOffset);
 
         // Prediction Error correction
@@ -488,8 +489,8 @@ glm::vec3 InGame::PredPlayerPos(glm::vec3 pos, Entity::PlayerInput playerInput, 
 {
     auto& player = playerTable[playerId];
 
-    pController.transform = player.transform;
-    pController.Update(playerInput);
+    pController.transform.position = pos;
+    pController.Update(playerInput, deltaTime);
     pController.HandleCollisions(map_.GetMap(), 2.0f);
 
     playerAvatar.SteerWheels(Entity::PlayerInputToMove(playerInput));

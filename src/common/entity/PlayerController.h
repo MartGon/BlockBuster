@@ -6,6 +6,8 @@
 #include <entity/Map.h>
 #include <entity/Player.h>
 
+#include <util/Timer.h>
+
 #include <vector>
 
 namespace Entity
@@ -14,13 +16,13 @@ namespace Entity
     {
     public:
 
-        void Update(Entity::PlayerInput input);
+        void Update(Entity::PlayerInput input, Util::Time::Seconds deltaTime = Util::Time::Seconds{0.016666});
         void HandleCollisions(Game::Map::Map* map, float blockScale);
         void HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks);
         
         Math::Transform transform;
 
-        float speed = 0.1f;
+        float speed = 5.f;
         float height = 2.0f;
         float gravitySpeed = -0.4f;
 

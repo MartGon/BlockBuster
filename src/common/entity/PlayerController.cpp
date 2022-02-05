@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <iostream>
 
-void Entity::PlayerController::Update(Entity::PlayerInput input)
+void Entity::PlayerController::Update(Entity::PlayerInput input, Util::Time::Seconds deltaTime)
 {
     this->prevPos = transform.position;
 
@@ -17,7 +17,7 @@ void Entity::PlayerController::Update(Entity::PlayerInput input)
     moveDir = glm::vec3{rotMat * glm::vec4{moveDir, 1.0f}};
     moveDir = glm::length(moveDir) > 0.0f ? glm::normalize(moveDir) : moveDir;
     
-    glm::vec3 velocity = moveDir * speed;
+    glm::vec3 velocity = moveDir * speed * (float) deltaTime.count();
     // Velocity on slope's normal axis is doubled
     if(isOnSlope || wasOnSlope)
     {

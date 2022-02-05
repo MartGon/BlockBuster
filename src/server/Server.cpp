@@ -256,7 +256,7 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     auto& pController = client.pController;
     logger.LogDebug("Gravity is " + std::to_string(pController.gravity));
     pController.transform = player.transform;
-    pController.Update(cmd.playerInput);
+    pController.Update(cmd.playerInput, TICK_RATE);
     pController.HandleCollisions(&map, 2.0f);
     player.transform = pController.transform;
 }
