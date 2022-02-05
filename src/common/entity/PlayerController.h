@@ -24,9 +24,11 @@ namespace Entity
         float height = 2.0f;
         float gravitySpeed = -0.4f;
 
+        bool gravity = false;
+
     private:
         glm::vec3 prevPos;
-        bool gravity = false;
+        
         bool isOnSlope = false;
         bool wasOnSlope = false;
         glm::vec3 slopeNormal;

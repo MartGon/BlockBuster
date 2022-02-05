@@ -134,8 +134,6 @@ void InGame::Start()
         }
         else
         {
-            client_->logger->LogInfo("Recv server snapshot for tick: " + std::to_string(packet->header.tick));
-
             // Entity Interpolation - Reset offset
             auto mostRecent = snapshotHistory.Back();
             if(mostRecent.has_value() && packet->header.tick > mostRecent->serverTick)
@@ -151,6 +149,8 @@ void InGame::Start()
             auto snapShot = std::make_unique<Networking::Packets::Server::WorldUpdate>();
             snapShot->SetBuffer(std::move(buffer));
             snapShot->Read();
+
+            client_->logger->LogInfo("Recv server snapshot for tick: " + std::to_string(snapShot->snapShot.serverTick));
 
             // Update last ack
             this->lastAck = snapShot->lastCmd;
@@ -381,8 +381,8 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     auto& player = playerTable[playerId];
 
     // Discard old commands
-    std::optional<Prediction> prediction;
-    while(predictionHistory_.GetSize() > 0 && cmdId <= lastAck)
+    std::optional<Prediction> prediction = predictionHistory_.Front();
+    while(prediction && prediction->inputReq.reqId <= lastAck)
     {
         prediction = predictionHistory_.PopFront();
     }

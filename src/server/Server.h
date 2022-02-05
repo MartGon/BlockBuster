@@ -82,8 +82,6 @@ namespace BlockBuster
         // Misc
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
         glm::vec3 GetRandomPos() const;
-        
-        const float PLAYER_SPEED = 5.f;
 
         // Networking
         std::optional<ENet::Host> host;

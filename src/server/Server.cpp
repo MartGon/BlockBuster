@@ -140,27 +140,6 @@ void Server::InitNetworking()
                 }
             }
         }
-
-        /*
-        else if(command.header.type == Networking::Command::PLAYER_SHOT)
-        {
-            auto playerShot = command.data.playerShot;
-
-            // Calculate command time
-            auto peerInfo = host->GetPeerInfo(peerId);
-            auto rtt = Util::Time::Millis(peerInfo.roundTripTimeMs);
-            
-            Util::Time::Seconds now = tickCount * TICK_RATE;
-            Util::Time::Seconds lerp = TICK_RATE * 2.0;
-            Util::Time::Seconds commandTime = now - (rtt / 2.0) - lerp;
-            // FIXME/TODO: Rtt calculation by enet isn't very reliable until some time has passed since the connection started
-            // An average is calculated according to the sent and recv packets. When we were using reliable packets, it converged way earlier.
-            commandTime = Util::Time::Seconds(playerShot.clientTime);
-
-            ShotCommand sc{playerShot, commandTime};
-            client.shotBuffer.PushBack(sc);
-        }
-        */
     });
     host->SetOnDisconnectCallback([this](auto peerId)
     {
@@ -247,7 +226,8 @@ void Server::HandleClientsInput()
                 }
             }
         }
-        else
+        /*
+        else if(client.isAi)
         {
             auto origin = client.player.transform.position;
             auto dest = client.targetPos;
@@ -264,6 +244,7 @@ void Server::HandleClientsInput()
             else
                 client.targetPos = GetRandomPos();
         }
+        */
     }
 }
 
@@ -272,7 +253,8 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     auto& client = clients[peerId];
     auto& player = client.player;
 
-    auto pController = client.pController;
+    auto& pController = client.pController;
+    logger.LogDebug("Gravity is " + std::to_string(pController.gravity));
     pController.transform = player.transform;
     pController.Update(cmd.playerInput);
     pController.HandleCollisions(&map, 2.0f);

@@ -12,20 +12,13 @@ namespace Entity
         static const Math::Transform wheels; // This one should rotate with the wheels, so it's affected by moveDir
     };
 
-    struct PlayerState
-    {
-        glm::vec3 pos;
-        glm::vec2 rot;
-        bool onDmg;
-    };
-
     enum Inputs
     {
         MOVE_DOWN,
         MOVE_UP,        
         MOVE_LEFT,
         MOVE_RIGHT,
-        SHOT,
+        SHOOT,
 
         MAX
     };
@@ -42,10 +35,23 @@ namespace Entity
 
     glm::vec3 PlayerInputToMove(PlayerInput input);
 
+    struct PlayerState
+    {
+        glm::vec3 pos;
+        glm::vec2 rot;
+        bool onDmg;
+    };
+
+    void Interpoalte(PlayerState a, PlayerState b, float alpha);
+
     using ID = uint8_t;
     struct Player
     {
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain
+
+
+        void ApplyState(PlayerState state);
+        PlayerState ExtractState();
 
         ID id;
         Math::Transform transform;

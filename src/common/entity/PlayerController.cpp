@@ -124,9 +124,12 @@ void Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math
                     }
                 }
             }
-            else
+            else if (block.type == Game::BLOCK)
             {
-                auto boxIntersect = Collisions::AABBCollision(transform.position, glm::vec3{transform.scale}, blockTransform.position, blockTransform.scale);
+                auto moveColBox = Entity::Player::moveCollisionBox;
+                auto colBoxPos = moveColBox.position + transform.position;
+
+                auto boxIntersect = Collisions::AABBCollision(colBoxPos, glm::vec3{moveColBox.scale}, blockTransform.position, blockTransform.scale);
                 if(boxIntersect.collides)
                 {
                     //std::cout << "Collides w Box\n";
