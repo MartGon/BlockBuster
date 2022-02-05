@@ -27,6 +27,7 @@
 #include <networking/enetw/ENetW.h>
 #include <networking/Command.h>
 #include <networking/Snapshot.h>
+#include <networking/Packets.h>
 
 #include <gui/TextFactory.h>
 
@@ -56,8 +57,8 @@ namespace BlockBuster
         void SendPlayerInput(Entity::PlayerInput playerInput);
 
         // Networking - Prediction
-        struct PlayerMovement;
-        void PredictPlayerMovement(Entity::PlayerInput playerInput, PlayerMovement movement, uint32_t cmdId);
+        using InputReq = Networking::Packets::Client::Input::Req;
+        void Predict(Entity::PlayerInput playerInput);
         void SmoothPlayerMovement();
         glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Seconds deltaTime);
 
@@ -154,14 +155,9 @@ namespace BlockBuster
         Util::Ring<Networking::Snapshot> snapshotHistory{16};
 
         // Networking - Prediction
-        struct PlayerMovement
-        {
-            glm::vec3 moveDir;
-        };
         struct Prediction
         {
-            Entity::PlayerInput input;
-            PlayerMovement playerMove;
+            InputReq inputReq;
             glm::vec3 origin;
             glm::vec3 dest;
             Util::Time::SteadyPoint time;

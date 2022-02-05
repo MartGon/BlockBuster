@@ -2,6 +2,7 @@
 #include <Server.h>
 
 using namespace BlockBuster;
+using namespace Networking::Packets::Client;
 
 void Server::Start()
 {
@@ -102,8 +103,9 @@ void Server::InitNetworking()
             if(packet->GetOpcode() == Networking::OpcodeClient::OPCODE_CLIENT_INPUT)
             {
                 auto inputPacket = packet->To<Networking::Packets::Client::Input>();
+                auto inputReq = inputPacket->req;
 
-                auto cmdId = inputPacket->reqId;
+                auto cmdId = inputReq.reqId;
                 logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId));
 
                 // Check if we already have this input
@@ -114,11 +116,10 @@ void Server::InitNetworking()
 
                 if(!found.has_value())
                 {
-                    auto moveDir = Entity::PlayerInputToMove(inputPacket->playerInput);
+                    auto moveDir = Entity::PlayerInputToMove(inputReq.playerInput);
 
-                    PlayerInputCmd cmd{inputPacket->reqId, moveDir};
                     if(cmdId > client.lastAck)
-                        client.inputBuffer.PushBack(cmd);
+                        client.inputBuffer.PushBack(inputReq);
                     // This packet is either duplicated or it arrived really late
                     else
                         logger.LogWarning("Command with cmdid " + std::to_string(cmdId) + " dropped. Last ack " + std::to_string(client.lastAck));
@@ -241,8 +242,8 @@ void Server::HandleClientsInput()
             if(dist > stepDist)
             {
                 auto dir = glm::normalize(move);
-                PlayerInputCmd pm{0, dir};
-                HandleMoveCommand(peerId, pm);
+                //InputReq pm{0, dir};
+                //HandleMoveCommand(peerId, pm);
             }
             else
                 client.targetPos = GetRandomPos();
@@ -250,18 +251,16 @@ void Server::HandleClientsInput()
     }
 }
 
-void Server::HandleMoveCommand(ENet::PeerId peerId, PlayerInputCmd cmd)
+void Server::HandleMoveCommand(ENet::PeerId peerId, Input::Req cmd)
 {
+    auto moveDir = Entity::PlayerInputToMove(cmd.playerInput);
+
     auto& player = clients[peerId].player;
-    auto len = glm::length(cmd.moveDir);
-    if (len > 200)
+    auto len = glm::length(moveDir);
+    if(len > 0)
     {
-        logger.LogError("Distance error!");
-    }
-    else if(len > 0)
-    {
-        auto moveDir = glm::normalize(cmd.moveDir);
-        auto velocity = cmd.moveDir * PLAYER_SPEED * (float)TICK_RATE.count();
+        moveDir = glm::normalize(moveDir);
+        auto velocity = moveDir * PLAYER_SPEED * (float)TICK_RATE.count();
         player.transform.position += velocity;
     }
 }
@@ -357,7 +356,7 @@ void Server::SendWorldUpdate()
         auto packetBuf = worldUpdate->GetBuffer();
         ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
         
-            host->SendPacket(pair.first, 0, epacket);
+        host->SendPacket(pair.first, 0, epacket);
     }
 }
 

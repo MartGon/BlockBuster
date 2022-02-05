@@ -4,6 +4,7 @@ SET(SOURCES
     Command.cpp
     Snapshot.cpp
     Networking.cpp
+    Packets.cpp
 )
 
 add_library(Networking ${SOURCES})

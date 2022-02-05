@@ -8,6 +8,7 @@
 #include <networking/Command.h>
 #include <networking/Snapshot.h>
 #include <networking/Networking.h>
+#include <networking/Packets.h>
 
 #include <util/BBTime.h>
 #include <util/Random.h>
@@ -40,15 +41,13 @@ namespace BlockBuster
 
     const uint32_t MIN_INPUT_BUFFER_SIZE = 2;
     const uint32_t MAX_INPUT_BUFFER_SIZE = 5;
-    struct PlayerInputCmd
-    {
-        uint32_t reqId;
-        glm::vec3 moveDir;
-    };
+    
+    using InputReq = Networking::Packets::Client::Input::Req;
     struct Client
     {
+
         Entity::Player player;
-        Util::Ring<PlayerInputCmd, MAX_INPUT_BUFFER_SIZE> inputBuffer;
+        Util::Ring<InputReq, MAX_INPUT_BUFFER_SIZE> inputBuffer;
         Util::Ring<ShotCommand, MAX_INPUT_BUFFER_SIZE> shotBuffer;
         uint32_t lastAck = 0;
         BufferingState state = BufferingState::REFILLING;
@@ -72,7 +71,7 @@ namespace BlockBuster
         void InitAI();
 
         // Networking
-        void HandleMoveCommand(ENet::PeerId peerId, PlayerInputCmd pm);
+        void HandleMoveCommand(ENet::PeerId peerId, InputReq pm);
         void HandleClientsInput();
         void HandleShootCommand(BlockBuster::ShotCommand shotCmd);
         void SendWorldUpdate();

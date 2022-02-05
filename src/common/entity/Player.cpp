@@ -23,7 +23,8 @@ glm::vec3 Entity::PlayerInputToMove(PlayerInput input)
     glm::vec3 moveDir{0.0f};
     moveDir.x = input[Entity::MOVE_RIGHT] - input[Entity::MOVE_LEFT];
     moveDir.z = input[Entity::MOVE_DOWN] - input[Entity::MOVE_UP];
-    moveDir = glm::normalize(moveDir);
+    if(moveDir.x != 0.0f && moveDir.z != 0.0f)
+        moveDir = glm::normalize(moveDir);  
 
     return moveDir;
 }

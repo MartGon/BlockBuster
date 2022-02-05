@@ -291,21 +291,20 @@ void InGame::UpdateNetworking()
     auto input = Input::GetPlayerInputNumpad();
 
     // Sample player input
-    glm::vec3 moveDir{0.0f};
-    moveDir.x = input[Entity::MOVE_RIGHT] - input[Entity::MOVE_LEFT];
-    moveDir.z = input[Entity::MOVE_DOWN] - input[Entity::MOVE_UP];
+    glm::vec3 moveDir = Entity::PlayerInputToMove(input);
     auto len = glm::length(moveDir);
     moveDir = len > 0 ? moveDir / len : moveDir;
-    PlayerMovement playerMovement;
-    playerMovement.moveDir = moveDir;
 
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     auto click = mouseState & SDL_BUTTON_RIGHT;
 
-    SendPlayerInput(input);
+    // Update lastCmdReq
+    this->cmdId++;
 
     // Prediction
-    PredictPlayerMovement(input, playerMovement, cmdId);
+    Predict(input);
+
+    SendPlayerInput(input);
 
     // Player shots
     if(click)
@@ -346,24 +345,15 @@ void InGame::UpdateNetworking()
 void InGame::SendPlayerInput(Entity::PlayerInput input)
 {
     // Build batched player input batch
-    auto cmdId = this->cmdId++;
+    auto cmdId = this->cmdId;
     Networking::Batch<Networking::PacketType::Client> batch;
 
     auto historySize = predictionHistory_.GetSize();
     auto redundancy = std::min(redundantInputs, historySize);
     auto amount = redundancy + 1u;
 
-    // Write recent input
-    // TODO: Could do this within the next loop. Write input to prediction history first
-    using InputPacket = Networking::Packets::Client::Input;
-    auto inputPacket = std::make_unique<InputPacket>();
-
-    inputPacket->reqId = cmdId;
-    inputPacket->playerInput = input;
-    batch.PushPacket(std::move(inputPacket));
-
-    // Write redudant inputs
-    for(int i = 0; i < redundancy; i++)
+    // Write inputs
+    for(int i = 0; i < amount; i++)
     {
         auto oldCmd = predictionHistory_.At((historySize - 1) - i);
         auto reqId = cmdId - (i + 1);
@@ -371,8 +361,8 @@ void InGame::SendPlayerInput(Entity::PlayerInput input)
         using InputPacket = Networking::Packets::Client::Input;
         auto inputPacket = std::make_unique<InputPacket>();
         
-        inputPacket->playerInput = oldCmd->input;
-        inputPacket->reqId = reqId;
+        inputPacket->req.playerInput = oldCmd->inputReq.playerInput;
+        inputPacket->req.reqId = reqId;
         batch.PushPacket(std::move(inputPacket));
     }
 
@@ -383,7 +373,7 @@ void InGame::SendPlayerInput(Entity::PlayerInput input)
     host.SendPacket(serverId, 0, sentPacket);
 }
 
-void InGame::PredictPlayerMovement(Entity::PlayerInput playerInput, PlayerMovement movement, uint32_t cmdId)
+void InGame::Predict(Entity::PlayerInput playerInput)
 {
     if(playerTable.find(playerId) == playerTable.end())
         return;
@@ -425,9 +415,9 @@ void InGame::PredictPlayerMovement(Entity::PlayerInput playerInput, PlayerMoveme
                     auto predict = predictionHistory_.At(i);
 
                     // Re-calculate prediction
-                    auto move = predict->playerMove;
+                    auto moveDir = Entity::PlayerInputToMove(predict->inputReq.playerInput);
                     auto origin = realPos;
-                    realPos = PredPlayerPos(realPos, move.moveDir, serverTickRate);
+                    realPos = PredPlayerPos(realPos, moveDir, serverTickRate);
 
                     // Update history
                     predict->origin = origin;
@@ -456,8 +446,8 @@ void InGame::PredictPlayerMovement(Entity::PlayerInput playerInput, PlayerMoveme
     }
 
     // Run predicted command for this simulation
-    auto predictedPos = PredPlayerPos(prevPos, movement.moveDir, serverTickRate);
-    Prediction p{playerInput, movement, prevPos, predictedPos, now};
+    auto predictedPos = PredPlayerPos(prevPos, Entity::PlayerInputToMove(playerInput), serverTickRate);
+    Prediction p{InputReq{cmdId, playerInput}, prevPos, predictedPos, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
 
@@ -479,7 +469,7 @@ void InGame::SmoothPlayerMovement()
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
         predOffset += deltaTime;
-        auto predPos = PredPlayerPos(lastPred->origin, lastPred->playerMove.moveDir, predOffset);
+        auto predPos = PredPlayerPos(lastPred->origin, Entity::PlayerInputToMove(lastPred->inputReq.playerInput), predOffset);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
