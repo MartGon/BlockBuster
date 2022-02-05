@@ -92,15 +92,14 @@ void Server::InitNetworking()
         Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
         Util::Buffer buffer = reader.ReadAll();
 
-        Networking::Batch batch;
+        Networking::Batch<Networking::PacketType::Client> batch;
         batch.SetBuffer(std::move(buffer));
-
-        batch.Read<Networking::PacketType::Client>();
+        batch.Read();
         
         for(auto i = 0; i < batch.GetPacketCount(); i++)
         {
             auto packet = batch.GetPacket(i);
-            if(packet->GetOpcode() == Networking::OpcodeClient::INPUT)
+            if(packet->GetOpcode() == Networking::OpcodeClient::OPCODE_CLIENT_INPUT)
             {
                 auto inputPacket = packet->To<Networking::Packets::Client::Input>();
 

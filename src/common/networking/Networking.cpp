@@ -26,11 +26,11 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
 
     switch (opCode)
     {
-    case OpcodeServer::WELCOME:
+    case OpcodeServer::OPCODE_SERVER_WELCOME:
         packet = std::make_unique<Welcome>();
         break;
 
-    case OpcodeServer::SNAPSHOT:
+    case OpcodeServer::OPCODE_SERVER_SNAPSHOT:
         packet = std::make_unique<Packets::Server::WorldUpdate>();
         break;
     
@@ -50,7 +50,7 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Client>(uint16_t opCo
 
     switch (opCode)
     {
-    case OpcodeClient::INPUT:
+    case OpcodeClient::OPCODE_CLIENT_INPUT:
         packet = std::make_unique<Input>();
         break;
     
@@ -61,16 +61,16 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Client>(uint16_t opCo
     return packet;
 }
 
-void Batch::Write()
+template<>
+Batch<Networking::PacketType::Client>::Batch() : Packet{OPCODE_CLIENT_BATCH}
 {
-    buffer.Clear();
 
-    for(auto& packet : packets)
-    {
-        packet->Write();
-        buffer.Write(packet->GetSize());
-        buffer.Append(std::move(*packet->GetBuffer()));
-    }
+}
+
+template<>
+Batch<Networking::PacketType::Server>::Batch() : Packet{OPCODE_SERVER_BATCH}
+{
+    
 }
 
 using namespace Networking::Packets::Server;

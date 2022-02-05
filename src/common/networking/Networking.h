@@ -15,14 +15,16 @@ namespace Networking
 {
     enum OpcodeClient : uint16_t
     {
-        INPUT
+        OPCODE_CLIENT_BATCH,
+        OPCODE_CLIENT_INPUT
     };
 
     enum OpcodeServer : uint16_t
     {
-        WELCOME,
-        SNAPSHOT,
-        PLAYER_DISCONNECTED
+        OPCODE_SERVER_BATCH,
+        OPCODE_SERVER_WELCOME,
+        OPCODE_SERVER_SNAPSHOT,
+        OPCODE_SERVER_PLAYER_DISCONNECTED
     };
 
     enum class PacketType : uint8_t
@@ -89,15 +91,14 @@ namespace Networking
     template <PacketType type>
     std::unique_ptr<Packet> MakePacket(uint16_t opCode);
 
-    class Batch
+    template <PacketType Type>
+    class Batch : public Packet
     {
     public:
+        Batch();
 
-        template <PacketType Type>
-        void Read()
+        void OnRead(Util::Buffer::Reader reader) override
         {
-            auto reader = buffer.GetReader();
-
             while(!reader.IsOver())
             {
                 auto len = reader.Read<uint32_t>();
@@ -112,7 +113,17 @@ namespace Networking
             }
         }
 
-        void Write();
+        void OnWrite() override
+        {
+            buffer.Clear();
+
+            for(auto& packet : packets)
+            {
+                packet->Write();
+                buffer.Write(packet->GetSize());
+                buffer.Append(std::move(*packet->GetBuffer()));
+            }
+        }
 
         inline uint32_t GetPacketCount()
         {
@@ -131,21 +142,9 @@ namespace Networking
         {
             packets.push_back(std::move(packet));
         }
-        
-        inline Util::Buffer* GetBuffer()
-        {
-            return &buffer;
-        }
-
-        inline void SetBuffer(Util::Buffer&& buffer)
-        {
-            this->buffer = std::move(buffer);
-        }
 
     private:
         std::vector<std::unique_ptr<Packet>> packets;
-
-        Util::Buffer buffer;
     };
 
     namespace Packets
@@ -155,7 +154,7 @@ namespace Networking
             class Welcome final : public Packet
             {
             public:
-                Welcome() : Packet{OpcodeServer::WELCOME}
+                Welcome() : Packet{OpcodeServer::OPCODE_SERVER_WELCOME}
                 {
 
                 }
@@ -169,7 +168,7 @@ namespace Networking
             class WorldUpdate final : public Packet
             {
             public:
-                WorldUpdate() : Packet{OpcodeServer::SNAPSHOT}
+                WorldUpdate() : Packet{OpcodeServer::OPCODE_SERVER_SNAPSHOT}
                 {
 
                 }
@@ -195,7 +194,7 @@ namespace Networking
             class Input final : public Packet
             {   
             public:
-                Input() : Packet{OpcodeClient::INPUT}
+                Input() : Packet{OpcodeClient::OPCODE_CLIENT_INPUT}
                 {
 
                 }

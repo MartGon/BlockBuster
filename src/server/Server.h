@@ -81,8 +81,6 @@ namespace BlockBuster
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
         glm::vec3 GetRandomPos() const;
         
-
-        const Util::Time::Seconds TICK_RATE{0.050};
         const float PLAYER_SPEED = 5.f;
 
         // Networking
@@ -93,6 +91,7 @@ namespace BlockBuster
         Util::Ring<Networking::Snapshot, 30> history;
 
         // Simulation
+        const Util::Time::Seconds TICK_RATE{0.050};
         Util::Time::Seconds deltaTime{0};
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;

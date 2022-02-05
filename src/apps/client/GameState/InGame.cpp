@@ -347,7 +347,7 @@ void InGame::SendPlayerInput(Entity::PlayerInput input)
 {
     // Build batched player input batch
     auto cmdId = this->cmdId++;
-    Networking::Batch batch;
+    Networking::Batch<Networking::PacketType::Client> batch;
 
     auto historySize = predictionHistory_.GetSize();
     auto redundancy = std::min(redundantInputs, historySize);
