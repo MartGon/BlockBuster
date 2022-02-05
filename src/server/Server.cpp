@@ -9,6 +9,8 @@ void Server::Start()
     InitLogger();
     InitNetworking();
     InitAI();
+    InitMap();
+    
 
     auto next = Util::Time::GetTime() + TICK_RATE;
     nextTickDate = next;
@@ -196,6 +198,20 @@ void Server::InitAI()
     //clients[200] = ai;
 }
 
+void Server::InitMap()
+{
+    Game::BlockRot rot{Game::ROT_0, Game::ROT_0};
+    for(int x = -8; x < 8; x++)
+    {
+        for(int z = -8; z < 8; z++)
+        {
+            uint32_t colorId = 0;
+            Game::Display display{Game::DisplayType::COLOR, colorId};
+            map.AddBlock(glm::ivec3{x, 0, z}, Game::Block{Game::BlockType::BLOCK, rot, display});
+        }
+    }
+}
+
 // Networking
 
 void Server::HandleClientsInput()
@@ -214,7 +230,7 @@ void Server::HandleClientsInput()
                     client.lastAck = cmdId;
 
                     logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
-                    HandleMoveCommand(peerId, command.value());
+                    HandleClientInput(peerId, command.value());
 
                     logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
                 }
@@ -251,18 +267,16 @@ void Server::HandleClientsInput()
     }
 }
 
-void Server::HandleMoveCommand(ENet::PeerId peerId, Input::Req cmd)
+void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 {
-    auto moveDir = Entity::PlayerInputToMove(cmd.playerInput);
+    auto& client = clients[peerId];
+    auto& player = client.player;
 
-    auto& player = clients[peerId].player;
-    auto len = glm::length(moveDir);
-    if(len > 0)
-    {
-        moveDir = glm::normalize(moveDir);
-        auto velocity = moveDir * PLAYER_SPEED * (float)TICK_RATE.count();
-        player.transform.position += velocity;
-    }
+    auto pController = client.pController;
+    pController.transform = player.transform;
+    pController.Update(cmd.playerInput);
+    pController.HandleCollisions(&map, 2.0f);
+    player.transform = pController.transform;
 }
 
 void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)

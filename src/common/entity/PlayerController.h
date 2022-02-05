@@ -8,7 +8,7 @@
 
 #include <vector>
 
-namespace AppGame
+namespace Entity
 {
     class PlayerController
     {

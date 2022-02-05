@@ -5,20 +5,12 @@
 #include <algorithm>
 #include <iostream>
 
-void AppGame::PlayerController::Update(Entity::PlayerInput input)
+void Entity::PlayerController::Update(Entity::PlayerInput input)
 {
     this->prevPos = transform.position;
 
     // Move
-    glm::vec3 moveDir{0.0f};
-    if(input[Entity::MOVE_LEFT])
-        moveDir.x -= 1;
-    if(input[Entity::MOVE_RIGHT])
-        moveDir.x += 1;
-    if(input[Entity::MOVE_UP])
-        moveDir.z -= 1;
-    if(input[Entity::MOVE_DOWN])
-        moveDir.z += 1;
+    glm::vec3 moveDir = Entity::PlayerInputToMove(input);
 
     // Rotate moveDir
     auto rotMat = transform.GetRotationMat();
@@ -70,9 +62,8 @@ struct Intersection
     Math::Transform blockTransform;
 };
 
-void AppGame::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale)
+void Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale)
 {
-
     std::vector<std::pair<Math::Transform, Game::Block>> blocks;
     auto bIt = map->CreateIterator();
     for(auto b = bIt.GetNextBlock(); !bIt.IsOver(); b = bIt.GetNextBlock())
@@ -81,7 +72,7 @@ void AppGame::PlayerController::HandleCollisions(Game::Map::Map* map, float bloc
     HandleCollisions(blocks);
 }
 
-void AppGame::PlayerController::HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks)
+void Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks)
 {
     bool intersects;
     unsigned int iterations = 0;

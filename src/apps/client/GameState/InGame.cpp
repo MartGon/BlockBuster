@@ -356,7 +356,7 @@ void InGame::SendPlayerInput(Entity::PlayerInput input)
     for(int i = 0; i < amount; i++)
     {
         auto oldCmd = predictionHistory_.At((historySize - 1) - i);
-        auto reqId = cmdId - (i + 1);
+        auto reqId = cmdId - i;
 
         using InputPacket = Networking::Packets::Client::Input;
         auto inputPacket = std::make_unique<InputPacket>();
@@ -415,9 +415,8 @@ void InGame::Predict(Entity::PlayerInput playerInput)
                     auto predict = predictionHistory_.At(i);
 
                     // Re-calculate prediction
-                    auto moveDir = Entity::PlayerInputToMove(predict->inputReq.playerInput);
                     auto origin = realPos;
-                    realPos = PredPlayerPos(realPos, moveDir, serverTickRate);
+                    realPos = PredPlayerPos(realPos, predict->inputReq.playerInput, serverTickRate);
 
                     // Update history
                     predict->origin = origin;
@@ -446,7 +445,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     }
 
     // Run predicted command for this simulation
-    auto predictedPos = PredPlayerPos(prevPos, Entity::PlayerInputToMove(playerInput), serverTickRate);
+    auto predictedPos = PredPlayerPos(prevPos, playerInput, serverTickRate);
     Prediction p{InputReq{cmdId, playerInput}, prevPos, predictedPos, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
@@ -469,7 +468,7 @@ void InGame::SmoothPlayerMovement()
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
         predOffset += deltaTime;
-        auto predPos = PredPlayerPos(lastPred->origin, Entity::PlayerInputToMove(lastPred->inputReq.playerInput), predOffset);
+        auto predPos = PredPlayerPos(lastPred->origin, lastPred->inputReq.playerInput, predOffset);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
@@ -485,15 +484,17 @@ void InGame::SmoothPlayerMovement()
     }
 }
 
-glm::vec3 InGame::PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Seconds deltaTime)
+glm::vec3 InGame::PredPlayerPos(glm::vec3 pos, Entity::PlayerInput playerInput, Util::Time::Seconds deltaTime)
 {
     auto& player = playerTable[playerId];
-    auto velocity = moveDir * PLAYER_SPEED * (float)deltaTime.count();
-    auto predPos = pos + velocity;
 
-    playerAvatar.SteerWheels(moveDir);
+    pController.transform = player.transform;
+    pController.Update(playerInput);
+    pController.HandleCollisions(map_.GetMap(), 2.0f);
 
-    return predPos;
+    playerAvatar.SteerWheels(Entity::PlayerInputToMove(playerInput));
+
+    return pController.transform.position;
 }
 
 Util::Time::Seconds InGame::TickToTime(uint32_t tick)
@@ -591,6 +592,7 @@ void InGame::EntityInterpolation()
                         continue;
 
                     // Extrapolate player pos
+                    /*
                     auto s0Pos = s0.players[playerId].pos;
                     auto s1Pos = s1.players[playerId].pos;
                     auto offset = s1Pos - s0Pos;
@@ -603,6 +605,7 @@ void InGame::EntityInterpolation()
                     auto ws = Math::GetWeights(t1.count(), t2.count(), renderTime.count());
                     auto alpha = ws.x;
                     EntityInterpolation(playerId, s1, exS, alpha);
+                    */
                 }
             }
         }

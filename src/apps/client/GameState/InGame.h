@@ -58,9 +58,11 @@ namespace BlockBuster
 
         // Networking - Prediction
         using InputReq = Networking::Packets::Client::Input::Req;
+        Entity::PlayerController pController;
         void Predict(Entity::PlayerInput playerInput);
         void SmoothPlayerMovement();
-        glm::vec3 PredPlayerPos(glm::vec3 pos, glm::vec3 moveDir, Util::Time::Seconds deltaTime);
+        // TODO: CHange to PredPlayerState. Should store old player states
+        glm::vec3 PredPlayerPos(glm::vec3 pos, Entity::PlayerInput playerInput, Util::Time::Seconds deltaTime);
 
         // Networking - Entity Interpolation
         Util::Time::Seconds GetCurrentTime();

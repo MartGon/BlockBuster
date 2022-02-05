@@ -348,7 +348,7 @@ namespace BlockBuster
 
             // Test
             bool playerMode = false;
-            AppGame::PlayerController player;
+            Entity::PlayerController player;
         };
     }
 }

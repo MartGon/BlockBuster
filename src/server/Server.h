@@ -19,6 +19,8 @@
 #include <math/Interpolation.h>
 
 #include <entity/Player.h>
+#include <entity/PlayerController.h>
+#include <entity/Map.h>
 
 #include <vector>
 #include <map>
@@ -45,8 +47,8 @@ namespace BlockBuster
     using InputReq = Networking::Packets::Client::Input::Req;
     struct Client
     {
-
         Entity::Player player;
+        Entity::PlayerController pController;
         Util::Ring<InputReq, MAX_INPUT_BUFFER_SIZE> inputBuffer;
         Util::Ring<ShotCommand, MAX_INPUT_BUFFER_SIZE> shotBuffer;
         uint32_t lastAck = 0;
@@ -69,9 +71,10 @@ namespace BlockBuster
         void InitLogger();
         void InitNetworking();
         void InitAI();
+        void InitMap();
 
         // Networking
-        void HandleMoveCommand(ENet::PeerId peerId, InputReq pm);
+        void HandleClientInput(ENet::PeerId peerId, InputReq pm);
         void HandleClientsInput();
         void HandleShootCommand(BlockBuster::ShotCommand shotCmd);
         void SendWorldUpdate();
@@ -94,6 +97,10 @@ namespace BlockBuster
         Util::Time::Seconds deltaTime{0};
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
+
+        // World
+        Game::Map::Map map;
+
 
         Log::ComposedLogger logger;
     };
