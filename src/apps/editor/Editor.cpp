@@ -1296,7 +1296,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
             if(playerMode)
             {
                 player.transform.position = camera.GetPos();
-                //SetCameraMode(::App::Client::CameraMode::FPS);
+                SetCameraMode(::App::Client::CameraMode::FPS);
             }
         }
 

@@ -37,7 +37,7 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
     velocity = glm::vec3{0.0f, gravitySpeed, 0.0f};
     transform.position += velocity;
 
-    offset = HandleCollisions(map, 2.0f, false);
+    offset = HandleCollisions(map, 2.0f, true);
     transform.position.y += offset.y;
     Debug::PrintVector(offset, "Gravity Collision Offset");
     Debug::PrintVector(transform.position, "Position");
@@ -96,12 +96,12 @@ glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair
                     if(slopeIntersect.intersects)
                     {
                         std::cout << "Intersects w Slope at " << glm::to_string(blockTransform.position) << "\n";
-                        //std::cout << "Intersection with " << block.name << "\n";
                         Intersection intersect;
                         intersect.block = block;
                         intersect.intersection.aabbSlope = slopeIntersect;
-                        intersections.push_back(intersect);
                         intersect.blockTransform = blockTransform;
+                        if(!gravity || (gravity && slopeIntersect.normal.y > 0.0f))
+                            intersections.push_back(intersect);
 
                         intersects = true;
                     }
@@ -119,7 +119,8 @@ glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair
                         intersect.block = block;
                         intersect.intersection.aabb = boxIntersect;
                         intersect.blockTransform = blockTransform;
-                        intersections.push_back(intersect);
+                        if(!gravity || (gravity && boxIntersect.normal.y > 0.0f))
+                            intersections.push_back(intersect);
                         
                         intersects = true;
                     }
@@ -139,6 +140,7 @@ glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair
             auto first = intersections.front();
             auto block = first.block;
             Debug::PrintVector("Block Col Handled", first.blockTransform.position);
+            Debug::PrintVector("Offset", first.intersection.aabb.offset);
             if(block.type == Game::SLOPE)
             {
                 auto slopeIntersect = first.intersection.aabbSlope;
