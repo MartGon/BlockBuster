@@ -130,40 +130,31 @@ AABBIntersection Collisions::AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm:
     return AABBIntersection{collides, intersects, offset, normal};
 }
 
-Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 prevPosA, glm::vec3 sizeA, glm::vec3 sizeB, float precision)
+Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision)
 {
     auto posB = glm::vec3{0.0f};
 
     // Move to down, left, back corner
     posA = posA - sizeA * 0.5f;
-    prevPosA = prevPosA - sizeA * 0.5f;
     posB = posB - sizeB * 0.5f;
 
     auto distance = posA - posB;
-    auto prevDistance = prevPosA - posB;
-    prevDistance.y = (float)round(prevDistance.y / precision) * precision;
     distance.y = (float)round(distance.y / precision) * precision;
-
     auto sign = glm::sign(distance);
-    auto prevSign = glm::sign(prevDistance);
 
+    // Right up corner
     auto boundA = posA + sizeA;
     auto boundB = posB + sizeB;
-    auto prevBoundA = prevPosA + sizeA;
 
     auto diffA = boundB - posA;
     auto diffB = boundA - posB;
-    auto prevDiffA = boundB - prevPosA;
-    auto prevDiffB = prevBoundA - posB;
     
     auto min = glm::min(diffA, diffB);
-    auto prevMin = glm::min(prevDiffA, prevDiffB);
 
     // Checking for collision with slope side
-    bool wasAbove = prevSign.y >= 0.0f;
-    bool wasInFront = prevSign.z > 0.0f;
-    bool wasInSide = prevMin.x > precision && prevMin.x <= (sizeA.x + sizeB.x);
-    if(wasInFront && wasAbove)
+    bool isAbove = sign.y >= 0.0f;
+    bool isInFront = sign.z > 0.0f;
+    if(isInFront && isAbove)
     {   
         min.y = diffA.z - (posA.y - posB.y);
         min.z = diffA.y - (posA.z - posB.z);
@@ -177,12 +168,6 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
 
         sign.y = 1.0f;
         sign.z = 1.0f;
-    }
-
-    // Prevent falling from the side, when on slope
-    if(wasInSide)
-    {
-        min.x = glm::max(min.y, min.z) + precision;
     }
 
     // Collision detection
@@ -199,19 +184,17 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     return AABBSlopeIntersection{collides, intersects, offset, normal};
 }
 
-Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform prevTransformAABB, Math::Transform transformSlope, float precision)
+Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope, float precision)
 {
     auto posAABB = transformAABB.position;
-    auto prevPosAABB = prevTransformAABB.position;
 
     auto slopeRot = transformSlope.GetRotationMat();
     auto slopeTranslation = transformSlope.GetTranslationMat();
     auto toSlopeSpace = glm::inverse(slopeTranslation * slopeRot);
 
     posAABB = toSlopeSpace * glm::vec4{posAABB, 1.0f};
-    prevPosAABB = toSlopeSpace * glm::vec4{prevPosAABB, 1.0f};
 
-    auto intersection = AABBSlopeCollision(posAABB, prevPosAABB, glm::vec3{transformAABB.scale}, glm::vec3{transformSlope.scale});
+    auto intersection = AABBSlopeCollision(posAABB, glm::vec3{transformAABB.scale}, glm::vec3{transformSlope.scale});
     auto slopeSpaceNormal = intersection.normal;
 
     intersection.normal = slopeRot * glm::vec4{intersection.normal, 1.0f};

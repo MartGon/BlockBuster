@@ -490,8 +490,8 @@ glm::vec3 InGame::PredPlayerPos(glm::vec3 pos, Entity::PlayerInput playerInput, 
     auto& player = playerTable[playerId];
 
     pController.transform.position = pos;
-    pController.Update(playerInput, deltaTime);
-    pController.HandleCollisions(map_.GetMap(), 2.0f);
+    pController.Update(playerInput, map_.GetMap(), deltaTime);
+    //pController.HandleCollisions(map_.GetMap(), 2.0f);
 
     playerAvatar.SteerWheels(Entity::PlayerInputToMove(playerInput));
 

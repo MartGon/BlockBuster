@@ -1296,7 +1296,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
             if(playerMode)
             {
                 player.transform.position = camera.GetPos();
-                SetCameraMode(::App::Client::CameraMode::FPS);
+                //SetCameraMode(::App::Client::CameraMode::FPS);
             }
         }
 
@@ -1443,8 +1443,8 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
     player.transform.rotation = glm::vec3{0.0f, glm::degrees(camera.GetRotation().y) - 90.0f, 0.0f};
 
     auto input = Input::GetPlayerInput();
-    player.Update(input);
-    player.HandleCollisions(project.map.GetMap(), blockScale);
+    player.Update(input, project.map.GetMap(), Util::Time::Seconds{0.016666f});
+    //player.HandleCollisions(project.map.GetMap(), blockScale);
     auto playerPos = player.transform.position;
 
     auto cameraPos = playerPos + glm::vec3{0.0f, player.height, 0.0f};

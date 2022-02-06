@@ -16,25 +16,15 @@ namespace Entity
     {
     public:
 
-        void Update(Entity::PlayerInput input, Util::Time::Seconds deltaTime = Util::Time::Seconds{0.016666});
-        void HandleCollisions(Game::Map::Map* map, float blockScale);
-        void HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks);
+        void Update(Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime);
+        glm::vec3 HandleCollisions(Game::Map::Map* map, float blockScale, bool gravity);
+        glm::vec3 HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks, bool gravity);
         
         Math::Transform transform;
 
         float speed = 5.f;
         float height = 2.0f;
         float gravitySpeed = -0.4f;
-
-        bool gravity = false;
-
-    private:
-        glm::vec3 prevPos;
-        
-        bool isOnSlope = false;
-        bool wasOnSlope = false;
-        glm::vec3 slopeNormal;
-        Math::Transform slopeTransform;
     };
 
 }

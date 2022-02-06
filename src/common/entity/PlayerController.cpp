@@ -2,51 +2,45 @@
 
 #include <collisions/Collisions.h>
 
+#include <debug/Debug.h>
+
 #include <algorithm>
 #include <iostream>
 
-void Entity::PlayerController::Update(Entity::PlayerInput input, Util::Time::Seconds deltaTime)
+void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime)
 {
-    this->prevPos = transform.position;
-
     // Move
-    glm::vec3 moveDir = Entity::PlayerInputToMove(input);
+    glm::vec3 moveDir{0.0f};
+    if(input[Entity::MOVE_LEFT])
+        moveDir.x -= 1;
+    if(input[Entity::MOVE_RIGHT])
+        moveDir.x += 1;
+    if(input[Entity::MOVE_UP])
+        moveDir.z -= 1;
+    if(input[Entity::MOVE_DOWN])
+        moveDir.z += 1;
 
     // Rotate moveDir
     auto rotMat = transform.GetRotationMat();
     moveDir = glm::vec3{rotMat * glm::vec4{moveDir, 1.0f}};
     moveDir = glm::length(moveDir) > 0.0f ? glm::normalize(moveDir) : moveDir;
     
+    // Horizontal movement
     glm::vec3 velocity = moveDir * speed * (float) deltaTime.count();
-    // Velocity on slope's normal axis is doubled
-    if(isOnSlope || wasOnSlope)
-    {
-        // Projected dir onto slope plane
-        moveDir = moveDir - glm::dot(moveDir, slopeNormal) * slopeNormal;
-        auto mod = glm::max(glm::step(glm::vec3{0.005}, glm::abs(slopeNormal)) * 2.0f, glm::vec3{1.0f});
-        velocity = moveDir * mod * speed;
-    }
-    
     transform.position += velocity;
-    // Fix height on slope
-    if(isOnSlope || wasOnSlope)
-    {
-        auto slopeHeight = slopeTransform.position.y;
-        auto slopeScale = slopeTransform.scale;
-        auto maxHeight = slopeHeight + (slopeScale - transform.scale / 2.0f).y;
-        auto minHeight = slopeHeight - (slopeScale - transform.scale / 2.0f).y;
-        transform.position.y = glm::min(maxHeight, transform.position.y);
-    }
 
-    auto pos = transform.position;
-    std::cout << "Desired pos " << pos.x << " " << pos.y << " " << pos.z << "\n";
-    if(gravity && (!wasOnSlope || !isOnSlope))
-    {
-        transform.position += glm::vec3{0.0f, gravitySpeed, 0.0f};
-    }
-    gravity = true;
-    wasOnSlope = isOnSlope;
-    isOnSlope = false;
+    auto offset = HandleCollisions(map, 2.0f, false);
+    transform.position += offset;
+    Debug::PrintVector(offset, "Horizontal Collision Offset");
+
+    // Gravity effect
+    velocity = glm::vec3{0.0f, gravitySpeed, 0.0f};
+    transform.position += velocity;
+
+    offset = HandleCollisions(map, 2.0f, false);
+    transform.position.y += offset.y;
+    Debug::PrintVector(offset, "Gravity Collision Offset");
+    Debug::PrintVector(transform.position, "Position");
 }
 
 union IntersectionU
@@ -62,18 +56,25 @@ struct Intersection
     Math::Transform blockTransform;
 };
 
-void Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale)
+glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale, bool gravity)
 {
     std::vector<std::pair<Math::Transform, Game::Block>> blocks;
     auto bIt = map->CreateIterator();
     for(auto b = bIt.GetNextBlock(); !bIt.IsOver(); b = bIt.GetNextBlock())
         blocks.push_back({Game::GetBlockTransform(*b.second, b.first, blockScale), *b.second});
 
-    HandleCollisions(blocks);
+    return HandleCollisions(blocks, gravity);
 }
 
-void Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks)
+glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks, bool gravity)
 {
+    glm::vec3 offset{0.0f};
+
+    auto mcb = Entity::Player::moveCollisionBox;
+    auto mct = this->transform;
+    mct.position += mcb.position;
+    mct.scale = mcb.scale;
+
     bool intersects;
     unsigned int iterations = 0;
     const unsigned int MAX_ITERATIONS = 10;
@@ -84,35 +85,17 @@ void Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math
         iterations++;
 
         std::vector<Intersection> intersections;
-        for(const auto& b : blocks)
-        {
-            auto blockTransform = b.first;
-            auto block = b.second;
-            Math::Transform prevPlayerTransform{this->prevPos, glm::vec3{0.0f}, transform.scale};
-
+        for(const auto& [blockTransform, block] : blocks)
+        {            
             if(block.type == Game::SLOPE)
             {
-                // Collision player and slope i                
-                auto slopeIntersect = Collisions::AABBSlopeCollision(transform, prevPlayerTransform, blockTransform);
+                // Collision player and slope
+                auto slopeIntersect = Collisions::AABBSlopeCollision(mct, blockTransform);
                 if(slopeIntersect.collides)
                 {
-                    //std::cout << "Collides w Slope\n";
-                    glm::vec3 normalSign = glm::sign(slopeIntersect.normal);
-                    glm::vec3 normal = glm::step(glm::vec3{0.005}, glm::abs(slopeIntersect.normal)) * normalSign; 
-
-                    if (normal.y > 0.0f)
-                    {
-                        gravity = false;
-                        if(glm::abs(normal.x) > 0.0f || glm::abs(normal.z) > 0.0f)
-                        {
-                            isOnSlope = true;
-                            slopeNormal = glm::normalize(normal);
-                            slopeTransform = blockTransform;
-                        }
-                    }
-
                     if(slopeIntersect.intersects)
                     {
+                        std::cout << "Intersects w Slope at " << glm::to_string(blockTransform.position) << "\n";
                         //std::cout << "Intersection with " << block.name << "\n";
                         Intersection intersect;
                         intersect.block = block;
@@ -124,21 +107,14 @@ void Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math
                     }
                 }
             }
-            else if (block.type == Game::BLOCK)
+            else
             {
-                auto moveColBox = Entity::Player::moveCollisionBox;
-                auto colBoxPos = moveColBox.position + transform.position;
-
-                auto boxIntersect = Collisions::AABBCollision(colBoxPos, glm::vec3{moveColBox.scale}, blockTransform.position, blockTransform.scale);
+                auto boxIntersect = Collisions::AABBCollision(mct.position, glm::vec3{mct.scale}, blockTransform.position, blockTransform.scale);
                 if(boxIntersect.collides)
                 {
-                    //std::cout << "Collides w Box\n";
-                    auto isGround = boxIntersect.normal.y > 0.0f && glm::abs(boxIntersect.normal.x) == 0.0f && glm::abs(boxIntersect.normal.z) == 0.0f;
-                    if(isGround)
-                        gravity = false;
-
                     if(boxIntersect.intersects)
                     {
+                        std::cout << "Intersects w Block at " << glm::to_string(blockTransform.position) << "\n";
                         Intersection intersect;
                         intersect.block = block;
                         intersect.intersection.aabb = boxIntersect;
@@ -162,17 +138,22 @@ void Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math
         {
             auto first = intersections.front();
             auto block = first.block;
+            Debug::PrintVector("Block Col Handled", first.blockTransform.position);
             if(block.type == Game::SLOPE)
             {
-                //std::cout << "Handling collision with " << block.name << "\n";
                 auto slopeIntersect = first.intersection.aabbSlope;
-                auto offset = slopeIntersect.offset;
-                transform.position += slopeIntersect.offset;
+                offset += slopeIntersect.offset;
+
+                auto modPos = gravity ? slopeIntersect.offset * glm::vec3{0.0f, 1.0f, 0.0f} : slopeIntersect.offset;
+                mct.position += modPos;
             }
             else
             {
                 auto boxIntersect = first.intersection.aabb;
-                transform.position += boxIntersect.offset;
+                offset += boxIntersect.offset;
+
+                auto modPos = gravity ? boxIntersect.offset * glm::vec3{0.0f, 1.0f, 0.0f} : boxIntersect.offset;
+                mct.position += modPos;
             }
 
             auto o = first.intersection.aabb.offset;
@@ -181,5 +162,5 @@ void Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math
 
     }while(intersects && iterations < MAX_ITERATIONS);
 
-    auto pos = transform.position;
+    return offset;
 }
