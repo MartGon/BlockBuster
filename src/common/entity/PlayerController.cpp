@@ -23,21 +23,26 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
     // Rotate moveDir
     auto rotMat = transform.GetRotationMat();
     moveDir = glm::vec3{rotMat * glm::vec4{moveDir, 1.0f}};
-    moveDir = glm::length(moveDir) > 0.0f ? glm::normalize(moveDir) : moveDir;
-    
-    // Horizontal movement
-    glm::vec3 velocity = moveDir * speed * (float) deltaTime.count();
-    transform.position += velocity;
+    bool isMoving = glm::length(moveDir) > 0.0f;
 
-    auto offset = HandleCollisions(map, 2.0f, false);
-    transform.position += offset;
-    Debug::PrintVector(offset, "Horizontal Collision Offset");
+    if(isMoving)
+    {
+        moveDir = isMoving ? glm::normalize(moveDir) : moveDir;
+        
+        // Horizontal movement
+        glm::vec3 velocity = moveDir * speed * (float) deltaTime.count();
+        transform.position += velocity;
+
+        auto offset = HandleCollisions(map, 2.0f, false);
+        transform.position += offset;
+        Debug::PrintVector(offset, "Horizontal Collision Offset");
+    }
 
     // Gravity effect
-    velocity = glm::vec3{0.0f, gravitySpeed, 0.0f};
+    auto velocity = glm::vec3{0.0f, gravitySpeed, 0.0f};
     transform.position += velocity;
 
-    offset = HandleCollisions(map, 2.0f, true);
+    auto offset = HandleCollisions(map, 2.0f, true);
     transform.position.y += offset.y;
     Debug::PrintVector(offset, "Gravity Collision Offset");
     Debug::PrintVector(transform.position, "Position");
@@ -100,6 +105,7 @@ glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair
                         intersect.block = block;
                         intersect.intersection.aabbSlope = slopeIntersect;
                         intersect.blockTransform = blockTransform;
+                        // Ignore in gravity check and doesn't push up
                         if(!gravity || (gravity && slopeIntersect.normal.y > 0.0f))
                             intersections.push_back(intersect);
 

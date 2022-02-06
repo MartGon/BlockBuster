@@ -24,14 +24,14 @@ Game::BlockRot Game::GetNextValidRotation(Game::BlockRot rot, Game::RotationAxis
 {
     Game::BlockRot blockRot = rot;
     auto sign = positive ? 1 : -1;
-    if(axis ==Game::RotationAxis::Y)
+    if(axis == Game::RotationAxis::Y)
     {
         int8_t i8rot = Math::OverflowSumInt<int8_t>(blockRot.y, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
         blockRot.y = static_cast<Game::RotType>(i8rot);
     }
-    else if(axis ==Game::RotationAxis::Z)
+    else if(axis == Game::RotationAxis::Z)
     {
-        int8_t i8rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
+        int8_t i8rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_180);
         blockRot.z = static_cast<Game::RotType>(i8rot);
     }
 

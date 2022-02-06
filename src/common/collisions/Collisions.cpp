@@ -184,17 +184,25 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(glm::vec3 posA,
     return AABBSlopeIntersection{collides, intersects, offset, normal};
 }
 
+// TODO: Weird things happen when scale is not uniform and slope is rotated in Z axis. This should be fixed by using quaternions
 Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope, float precision)
 {
     auto posAABB = transformAABB.position;
+    auto scaleAABB = transformAABB.scale;
 
     auto slopeRot = transformSlope.GetRotationMat();
+    auto scaleRot = slopeRot;
     auto slopeTranslation = transformSlope.GetTranslationMat();
     auto toSlopeSpace = glm::inverse(slopeTranslation * slopeRot);
 
-    posAABB = toSlopeSpace * glm::vec4{posAABB, 1.0f};
+    // FIXME/TODO: Hack to fix collisions with wierd axis rotation
+    if(transformSlope.rotation.z == 90.0f && (transformSlope.rotation.y == 90.0f || transformSlope.rotation.y == 270.0f))
+        scaleRot = glm::inverse(slopeRot);
 
-    auto intersection = AABBSlopeCollision(posAABB, glm::vec3{transformAABB.scale}, glm::vec3{transformSlope.scale});
+    posAABB = toSlopeSpace * glm::vec4{posAABB, 1.0f};
+    scaleAABB = glm::abs(scaleRot * glm::vec4{scaleAABB, 1.0f});
+
+    auto intersection = AABBSlopeCollision(posAABB, scaleAABB, transformSlope.scale);
     auto slopeSpaceNormal = intersection.normal;
 
     intersection.normal = slopeRot * glm::vec4{intersection.normal, 1.0f};
