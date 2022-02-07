@@ -31,6 +31,7 @@
 
 #include <gui/TextFactory.h>
 
+
 namespace BlockBuster
 {
     class InGame : public GameState
@@ -75,6 +76,9 @@ namespace BlockBuster
         void DrawScene();
         void DrawGUI();
         void Render();
+
+        // Map
+        void LoadMap(std::filesystem::path filePath);
 
         // GameState
         std::unique_ptr<GameState> gameState;

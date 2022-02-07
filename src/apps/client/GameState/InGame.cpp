@@ -4,6 +4,7 @@
 
 #include <util/Random.h>
 #include <util/BBTime.h>
+#include <util/File.h>
 
 #include <math/Interpolation.h>
 
@@ -89,17 +90,7 @@ void InGame::Start()
     // Map
     auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
     auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
-
-    Game::BlockRot rot{Game::ROT_0, Game::ROT_0};
-    for(int x = -8; x < 8; x++)
-    {
-        for(int z = -8; z < 8; z++)
-        {
-            auto colorId = ((x + z) & 2) ? black.data.id : white.data.id;
-            Game::Display display{Game::DisplayType::COLOR, colorId};
-            map_.SetBlock(glm::ivec3{x, 0, z}, Game::Block{Game::BlockType::BLOCK, rot, display});
-        }
-    }
+    LoadMap("resources/maps/TestMap.bbm");
 
     // Networking
     auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
@@ -841,3 +832,27 @@ void InGame::DrawGUI()
     text.Draw(textShader, glm::vec2{0.0f, 0.0f}, glm::vec2{(float)windowSize.x, (float)windowSize.y});
 }
 
+// TODO: Redundancy with Project::Load
+void InGame::LoadMap(std::filesystem::path filePath)
+{
+    using namespace Util::File;
+
+    std::fstream file{filePath, file.binary | file.in};
+    if(!file.is_open())
+    {
+        client_->logger->LogError("Could not open file " + filePath.string());
+        return;
+    }
+
+    auto magic = ReadFromFile<int>(file);
+    if(magic != Game::Map::Map::magicNumber)
+    {
+        client_->logger->LogError("Wrong format for file " + filePath.string());
+        return;
+    }
+
+    // Load map
+    auto bufferSize = ReadFromFile<uint32_t>(file);
+    Util::Buffer buffer = ReadFromFile(file, bufferSize);
+    map_ = App::Client::Map::FromBuffer(buffer.GetReader());
+}

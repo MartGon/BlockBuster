@@ -6,6 +6,8 @@
 #include <ChunkMeshMgr.h>
 #include <util/Buffer.h>
 
+#include <filesystem>
+
 namespace App::Client
 {
     class Map

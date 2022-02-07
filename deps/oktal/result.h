@@ -550,19 +550,13 @@ struct Storage {
         : initialized_(false)
     { }
 
-    /*
+    
     void construct(types::Ok<T> ok)
     {
         new (&storage_) T(ok.val);
         initialized_ = true;
     }
-    */
-   
-    void construct(types::Ok<T>&& ok)
-    {
-        new (&storage_) T(std::move(ok.val));
-        initialized_ = true;
-    }
+    
     void construct(types::Err<E> err)
     {
         new (&storage_) E(err.val);

@@ -9,7 +9,9 @@
 #include <oktal/result.h>
 
 #include <unordered_map>
+
 #include <filesystem>
+#include <memory>
 
 namespace Game
 {
@@ -30,7 +32,7 @@ namespace Game
 
             Map() = default;
 
-            Map(Map& other) = delete;
+            Map(const Map& other) = delete;
             Map& operator=(const Map& other) = delete;
 
             Map(Map&&) = default;
@@ -73,7 +75,7 @@ namespace Game
             };
 
             static const int magicNumber;
-            static Result<Map, LoadMapError> LoadFromFile(std::filesystem::path file);
+            static Result<std::shared_ptr<Map>, LoadMapError> LoadFromFile(std::filesystem::path file);
 
             class Iterator
             {

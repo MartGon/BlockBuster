@@ -159,7 +159,7 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
     return std::move(map);
 }
 
-Result<Map, Map::LoadMapError> Game::Map::Map::LoadFromFile(std::filesystem::path filePath)
+Result<std::shared_ptr<Map>, Map::LoadMapError> Game::Map::Map::LoadFromFile(std::filesystem::path filePath)
 {
     using namespace Util;
 
@@ -181,7 +181,10 @@ Result<Map, Map::LoadMapError> Game::Map::Map::LoadFromFile(std::filesystem::pat
     auto reader = buffer.GetReader();
     auto map = FromBuffer(reader);
 
-    return Ok(std::move(map));
+    auto mapPtr = std::make_shared<Map>();
+    *mapPtr.get() = std::move(map);
+
+    return Ok(mapPtr);
 }
 
 // #### Iterator #### \\

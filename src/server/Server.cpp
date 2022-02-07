@@ -179,7 +179,17 @@ void Server::InitAI()
 
 void Server::InitMap()
 {
-    //Game::Map::Map::FromBuffer()
+    std::filesystem::path mapFile = "resources/maps/TestMap.bbm";
+    auto res = Game::Map::Map::LoadFromFile(mapFile);
+    if(res.isOk())
+    {
+        auto mapPtr = std::move(res.unwrap());
+        map = std::move(*mapPtr.get());
+    }
+    else
+    {
+        logger.LogError("Could not load map " + mapFile.string());
+    }
 }
 
 // Networking
