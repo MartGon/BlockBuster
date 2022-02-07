@@ -61,6 +61,7 @@ struct Intersection
     Math::Transform blockTransform;
 };
 
+// TODO: Optimize, check collision with chunk AABB, then with blocks
 glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale, bool gravity)
 {
     std::vector<std::pair<Math::Transform, Game::Block>> blocks;
@@ -71,6 +72,7 @@ glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float 
     return HandleCollisions(blocks, gravity);
 }
 
+// TODO: Clean up gravity parameter.
 glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks, bool gravity)
 {
     glm::vec3 offset{0.0f};

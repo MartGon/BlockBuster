@@ -6,6 +6,7 @@ SET(SOURCES
     Result.cpp
     Time.cpp
     Timer.cpp
+    File.cpp
 )
 
 

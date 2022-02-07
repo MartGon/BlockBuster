@@ -2,6 +2,14 @@
 
 #include <debug/Debug.h>
 
+#include <util/File.h>
+
+#include <fstream>
+
+using namespace Game::Map;
+
+const int Game::Map::Map::magicNumber = 0xB010F0;
+
 // #### Public Interface #### \\
 
 Game::Block const* Game::Map::Map::GetBlock(glm::ivec3 pos) const
@@ -126,6 +134,8 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
 {
     Game::Map::Map map;
 
+    map.blockScale = reader.Read<float>();
+
     auto chunkIndicesCount = reader.Read<std::size_t>();
     for(auto i = 0; i < chunkIndicesCount; i++)
     {
@@ -147,6 +157,31 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
     }
 
     return std::move(map);
+}
+
+Result<Map, Map::LoadMapError> Game::Map::Map::LoadFromFile(std::filesystem::path filePath)
+{
+    using namespace Util;
+
+    std::fstream file{filePath, file.binary | file.in};
+    if(!file.is_open())
+    {
+       return Err(Map::LoadMapError::FILE_NOT_FOUND);
+    }
+
+    auto magic = Util::File::ReadFromFile<int>(file);
+    if(magic != magicNumber)
+    {
+        return Err(Map::LoadMapError::MAGIC_NUMBER_NOT_FOUND);
+    }
+
+    // Load map
+    auto bufferSize = File::ReadFromFile<uint32_t>(file);
+    Util::Buffer buffer = File::ReadFromFile(file, bufferSize);
+    auto reader = buffer.GetReader();
+    auto map = FromBuffer(reader);
+
+    return Ok(std::move(map));
 }
 
 // #### Iterator #### \\

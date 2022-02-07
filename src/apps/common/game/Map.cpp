@@ -15,12 +15,11 @@ Map& Map::operator=(Map&& other)
 {
     std::swap(this->map_, other.map_);
     std::swap(this->textureFolder, other.textureFolder);
-    std::swap(this->blockScale, other.blockScale);
     std::swap(tPalette, other.tPalette);
     std::swap(cPalette, other.cPalette);
 
     // This is not moved, still points to the same location
-    chunkMeshMgr_.SetBlockScale(blockScale);
+    chunkMeshMgr_.SetBlockScale(this->map_.GetBlockScale());
     chunkMeshMgr_.Reset();
     chunkMeshMgr_.Update();
     
@@ -31,13 +30,12 @@ void Map::SetBlockScale(float scale)
 {
     this->changed = true;
 
-    this->blockScale = scale;
     chunkMeshMgr_.SetBlockScale(scale);
 }
 
 float Map::GetBlockScale() const
 {
-    return blockScale;
+    return map_.GetBlockScale();
 }
 
 Game::Map::Map* Map::GetMap()
@@ -91,6 +89,7 @@ void Map::DrawChunkBorders(GL::Shader& shader, Rendering::Mesh& cubeMesh, const 
     auto chunkIt = map_.CreateChunkIterator();
     for(auto chunk = chunkIt.GetNextChunk(); !chunkIt.IsOver(); chunk = chunkIt.GetNextChunk())
     {
+        auto blockScale = map_.GetBlockScale();
         auto pos = Game::Map::ToRealChunkPos(chunk.first, blockScale);
         auto size = glm::vec3{Game::Map::Map::Chunk::DIMENSIONS} * blockScale;
         Math::Transform ct{pos, glm::vec3{0.0f}, size};
@@ -129,7 +128,6 @@ Util::Buffer Map::ToBuffer()
     Util::Buffer buffer;
 
     // Concat inner buffers
-    buffer.Write(blockScale);
     buffer.Append(map_.ToBuffer());
     buffer.Write<std::string>(textureFolder.string());
     buffer.Append(tPalette.ToBuffer());
@@ -142,7 +140,6 @@ Map Map::FromBuffer(Util::Buffer::Reader reader)
 {
     Map map;
 
-    map.blockScale = reader.Read<float>();
     map.map_ = Game::Map::Map::FromBuffer(reader);
     map.textureFolder = reader.Read<std::string>();
     map.tPalette = Rendering::TexturePalette::FromBuffer(reader, map.textureFolder);

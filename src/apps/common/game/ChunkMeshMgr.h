@@ -31,7 +31,7 @@ namespace Rendering::ChunkMesh
 
         void SetBlockScale(float blockScale)
         {
-            blockScale_ = blockScale;
+            map_->SetBlockScale(blockScale);
             Reset();
         }
 

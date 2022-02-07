@@ -5,8 +5,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include <unordered_map>
 #include <util/Buffer.h>
+#include <oktal/result.h>
+
+#include <unordered_map>
+#include <filesystem>
 
 namespace Game
 {
@@ -48,7 +51,29 @@ namespace Game
             bool HasChunk(glm::ivec3 index) const;
             void Clear();
 
+            inline float GetBlockScale() const
+            {
+                return blockScale;
+            }
+
+            void SetBlockScale(float blockScale)
+            {
+                this->blockScale = blockScale;
+            }
+
             unsigned int GetBlockCount() const;
+
+            Util::Buffer ToBuffer();
+            static Map FromBuffer(Util::Buffer::Reader& reader);
+
+            enum class LoadMapError
+            {
+                FILE_NOT_FOUND,
+                MAGIC_NUMBER_NOT_FOUND,
+            };
+
+            static const int magicNumber;
+            static Result<Map, LoadMapError> LoadFromFile(std::filesystem::path file);
 
             class Iterator
             {
@@ -197,10 +222,8 @@ namespace Game
 
             ChunkIterator CreateChunkIterator();
 
-            Util::Buffer ToBuffer();
-            static Map FromBuffer(Util::Buffer::Reader& reader);
-
         private:
+            float blockScale = 2.0f;
             std::unordered_map<glm::ivec3, Chunk> chunks_;
         };
 

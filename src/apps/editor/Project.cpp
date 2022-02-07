@@ -3,6 +3,8 @@
 #include <debug/Debug.h>
 #include <game/ServiceLocator.h>
 
+#include <File.h>
+
 #include <fstream>
 #include <iostream>
 
@@ -26,57 +28,10 @@ void BlockBuster::Editor::Project::Init()
     });
 }
 
-static void WriteToFile(std::fstream& file, void* data, uint32_t size)
-{
-    file.write(reinterpret_cast<char*>(data), size);
-}
-
-template<typename T>
-static void WriteToFile(std::fstream& file, T val)
-{
-    file.write(reinterpret_cast<char*>(&val), sizeof(T));
-}
-
-static void WriteToFile(std::fstream& file, std::string str)
-{
-    for(auto c : str)
-        WriteToFile(file, c);
-    WriteToFile(file, '\0');
-}
-
-template <typename T>
-static T ReadFromFile(std::fstream& file)
-{
-    T val;
-    file.read(reinterpret_cast<char*>(&val), sizeof(T));
-    return val;
-}
-
-template <>
-std::string ReadFromFile(std::fstream& file)
-{
-    std::string str;
-    char c = ReadFromFile<char>(file);
-    while(c != '\0' && !file.eof())
-    {   
-        str.push_back(c);
-        c = ReadFromFile<char>(file);
-    }
-
-    return str;
-}
-
-static Util::Buffer ReadFromFile(std::fstream& file, uint32_t size)
-{
-    Util::Buffer buffer{size};
-    file.read(reinterpret_cast<char*>(buffer.GetData()), size);
-    return std::move(buffer);
-}
-
-static const int magicNumber = 0xB010F0;
-
 void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath)
 {
+    using namespace Util::File;
+
     std::fstream file{filepath, file.binary | file.out};
     if(!file.is_open())
     {
@@ -85,7 +40,7 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
         return;
     }
 
-    WriteToFile(file, magicNumber);
+    WriteToFile(file, Game::Map::Map::magicNumber);
 
     // Write map
     auto buffer = p.map.ToBuffer();
@@ -104,6 +59,8 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
 
 BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::filesystem::path filepath)
 {
+    using namespace Util::File;
+
     Project p;
 
     std::fstream file{filepath, file.binary | file.in};
@@ -116,7 +73,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     }
 
     auto magic = ReadFromFile<int>(file);
-    if(magic != magicNumber)
+    if(magic != Game::Map::Map::magicNumber)
     {
         if(auto logger = App::ServiceLocator::GetLogger())
             logger->LogError("Wrong format for file " + filepath.string());

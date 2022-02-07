@@ -1,12 +1,12 @@
 #pragma once
 
+#include <entity/Map.h>
+
 namespace Entity
 {
-    class World
+    struct World
     {
-    public:
-
-    private:
-        // Map, players, game objects, etc.
+        float blockScale;
+        Game::Map::Map map;
     };
 }

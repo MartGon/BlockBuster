@@ -46,7 +46,6 @@ namespace App::Client
         bool MapChanged() const;
         void CommitChanges();
 
-        float blockScale = 2.0;
         bool changed = false;
         Game::Map::Map map_;
 

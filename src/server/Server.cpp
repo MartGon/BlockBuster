@@ -179,16 +179,7 @@ void Server::InitAI()
 
 void Server::InitMap()
 {
-    Game::BlockRot rot{Game::ROT_0, Game::ROT_0};
-    for(int x = -8; x < 8; x++)
-    {
-        for(int z = -8; z < 8; z++)
-        {
-            uint32_t colorId = 0;
-            Game::Display display{Game::DisplayType::COLOR, colorId};
-            map.AddBlock(glm::ivec3{x, 0, z}, Game::Block{Game::BlockType::BLOCK, rot, display});
-        }
-    }
+    //Game::Map::Map::FromBuffer()
 }
 
 // Networking
@@ -257,7 +248,6 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     //logger.LogDebug("Gravity is " + std::to_string(pController.gravity));
     pController.transform = player.transform;
     pController.Update(cmd.playerInput, &map, TICK_RATE);
-    //pController.HandleCollisions(&map, 2.0f);
     player.transform = pController.transform;
 }
 

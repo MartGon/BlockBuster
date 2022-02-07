@@ -13,6 +13,7 @@ add_library(Entity ${SOURCES})
 target_link_libraries(Entity 
     Math
     Animation
+    Util
     
     Debug
 )
