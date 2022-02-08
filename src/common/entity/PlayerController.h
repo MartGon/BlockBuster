@@ -25,6 +25,8 @@ namespace Entity
         float speed = 5.f;
         float height = 2.0f;
         float gravitySpeed = -0.4f;
+    private:
+        Math::Transform GetECB();
     };
 
 }

@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <iostream>
 
+using namespace Entity;
+
 void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime)
 {
     // Move
@@ -64,12 +66,44 @@ struct Intersection
 // TODO: Optimize, check collision with chunk AABB, then with blocks
 glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale, bool gravity)
 {
+    auto ecb = GetECB();
+    auto sizeInBlocks = ecb.scale / blockScale;
+    
+
     std::vector<std::pair<Math::Transform, Game::Block>> blocks;
-    auto bIt = map->CreateIterator();
-    for(auto b = bIt.GetNextBlock(); !bIt.IsOver(); b = bIt.GetNextBlock())
-        blocks.push_back({Game::GetBlockTransform(*b.second, b.first, blockScale), *b.second});
+    auto allocation = sizeInBlocks.x * sizeInBlocks.y * sizeInBlocks.z;
+    blocks.reserve(allocation);
+
+    auto range = glm::ceil(sizeInBlocks / 2.f);
+    auto playerBlockPos = Game::Map::ToGlobalPos(ecb.position, blockScale);
+    for(int x = -range.x; x <= range.x; x++)
+    {
+        for(int y = -range.y; y <= range.y; y++)
+        {
+            for(int z = -range.z; z <= range.z; z++)
+            {
+                auto blockIndex = playerBlockPos + glm::ivec3{x, y, z};
+                if(auto block = map->GetBlock(blockIndex); block && block->type != Game::BlockType::NONE)
+                {
+                    auto rot = block->GetRotation();
+                    Math::Transform t = Game::GetBlockTransform(*block, blockIndex, blockScale);
+                    blocks.push_back({t, *block});
+                }
+            }
+        }
+    }
 
     return HandleCollisions(blocks, gravity);
+}
+
+Math::Transform PlayerController::GetECB()
+{
+    auto mcb = Entity::Player::moveCollisionBox;
+    auto ecb = this->transform;
+    ecb.position += mcb.position;
+    ecb.scale = mcb.scale;
+
+    return ecb;
 }
 
 // TODO: Clean up gravity parameter.
@@ -77,10 +111,7 @@ glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair
 {
     glm::vec3 offset{0.0f};
 
-    auto mcb = Entity::Player::moveCollisionBox;
-    auto mct = this->transform;
-    mct.position += mcb.position;
-    mct.scale = mcb.scale;
+    auto mct = GetECB();
 
     bool intersects;
     unsigned int iterations = 0;
