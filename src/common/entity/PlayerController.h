@@ -26,6 +26,7 @@ namespace Entity
         float height = 2.0f;
         float gravitySpeed = -0.4f;
     private:
+        glm::vec3 HandleGravityCollisions(Game::Map::Map* map, float blockScale);
         Math::Transform GetECB();
     };
 

@@ -25,7 +25,7 @@ RayIntersection Collisions::RayAABBIntersection(Ray modelRay, glm::vec3 boxSize)
     float tN = glm::max(glm::max(t1.x, t1.y), t1.z);
     float tF = glm::min(glm::min(t2.x, t2.y), t2.z);
 
-    bool intersection = !(tN > tF) && tF > 0.0f;
+    bool intersection = tN < tF && tF > 0.0f;
     auto step1 = glm::step(glm::vec3{t1.y, t1.z, t1.x}, t1);
     auto step2 = glm::step(glm::vec3{t1.z, t1.x, t1.y}, t1);
     auto normal = -glm::sign(rayDir) * step1 * step2;
@@ -47,11 +47,14 @@ bool RaySlopeIntersectionCheckPoint(glm::vec3 point)
     auto min = glm::sign(point) * glm::step(glm::abs(glm::vec3{point.y, point.z, point.x}), glm::abs(point)) 
         * glm::step(glm::abs(glm::vec3{point.z, point.x, point.y}), glm::abs(point));
 
+    // Point is either on far or bottom face
     if(min.z == -1 || min.y == -1)
     {
         intersects = true;
     }
 
+    // Point is either on left or right face. 
+    // Needs to check if it falls within the bottom half
     if(min.x == 1 || min.x == -1)
     {        
         intersects = point.y <= (-1 * point.z);

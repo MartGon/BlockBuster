@@ -1,6 +1,7 @@
 #include <PlayerController.h>
 
 #include <collisions/Collisions.h>
+#include <Game.h>
 
 #include <debug/Debug.h>
 
@@ -41,13 +42,20 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
     }
 
     // Gravity effect
+    auto offset = HandleGravityCollisions(map, map->GetBlockScale());
+    transform.position.y += offset.y;
+
+    /*
     auto velocity = glm::vec3{0.0f, gravitySpeed, 0.0f};
     transform.position += velocity;
 
     auto offset = HandleCollisions(map, 2.0f, true);
     transform.position.y += offset.y;
+    */
+    
     Debug::PrintVector(offset, "Gravity Collision Offset");
     Debug::PrintVector(transform.position, "Position");
+
 }
 
 union IntersectionU
@@ -63,13 +71,11 @@ struct Intersection
     Math::Transform blockTransform;
 };
 
-// TODO: Optimize, check collision with chunk AABB, then with blocks
 glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale, bool gravity)
 {
     auto ecb = GetECB();
     auto sizeInBlocks = ecb.scale / blockScale;
     
-
     std::vector<std::pair<Math::Transform, Game::Block>> blocks;
     auto allocation = sizeInBlocks.x * sizeInBlocks.y * sizeInBlocks.z;
     blocks.reserve(allocation);
@@ -85,7 +91,6 @@ glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float 
                 auto blockIndex = playerBlockPos + glm::ivec3{x, y, z};
                 if(auto block = map->GetBlock(blockIndex); block && block->type != Game::BlockType::NONE)
                 {
-                    auto rot = block->GetRotation();
                     Math::Transform t = Game::GetBlockTransform(*block, blockIndex, blockScale);
                     blocks.push_back({t, *block});
                 }
@@ -138,7 +143,7 @@ glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair
                         intersect.block = block;
                         intersect.intersection.aabbSlope = slopeIntersect;
                         intersect.blockTransform = blockTransform;
-                        // Ignore in gravity check and doesn't push up
+                        // Ignore if gravity check and doesn't push up
                         if(!gravity || (gravity && slopeIntersect.normal.y > 0.0f))
                             intersections.push_back(intersect);
 
@@ -202,6 +207,50 @@ glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair
         }
 
     }while(intersects && iterations < MAX_ITERATIONS);
+
+    return offset;
+}
+
+glm::vec3 PlayerController::HandleGravityCollisions(Game::Map::Map* map, float blockScale)
+{
+    glm::vec3 offset = glm::vec3{0.0f, gravitySpeed, 0.0f};
+    float fallDistance = glm::abs(gravitySpeed); // * deltaTime;
+
+    auto ecb = GetECB();
+    auto bottomPoint = ecb.position - glm::vec3{0.0f, ecb.scale.y / 2.0f ,0.0f};
+    auto fallPos = bottomPoint - glm::vec3{0.0f, gravitySpeed, 0.0f};
+    auto blockIndex = Game::Map::ToGlobalPos(bottomPoint, blockScale);
+    auto belowBlockIndex = blockIndex - glm::ivec3{0, 0, 0};
+
+    if(auto block = map->GetBlock(belowBlockIndex); block && block->type != Game::BlockType::NONE)
+    {
+        Collisions::Ray ray{bottomPoint, fallPos};
+        Math::Transform t = Game::GetBlockTransform(*block, blockIndex, blockScale);
+        auto tMat = t.GetTransformMat();
+
+        Collisions::RayIntersection intersection;
+        if(block->type == Game::BlockType::BLOCK)
+        {
+            intersection = Collisions::RayAABBIntersection(ray, tMat);
+        }
+        else if(block->type == Game::BlockType::SLOPE)
+        {
+            intersection = Collisions::RaySlopeIntersection(ray, tMat);
+        }
+
+        if(intersection.intersects)
+        {
+            auto colPoint = ray.origin + ray.GetDir() * intersection.ts.x;
+            if(block->type == Game::BlockType::SLOPE)
+            {
+                auto ssColPoint = glm::inverse(tMat) * glm::vec4{colPoint, 1.0f};
+                auto percent = ssColPoint.z / (t.position.z + t.scale.z);
+                colPoint.y = t.position.y + t.scale.y * percent;
+            }
+
+            offset = glm::max(offset, colPoint - bottomPoint);
+        }
+    }
 
     return offset;
 }
