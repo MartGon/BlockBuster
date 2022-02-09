@@ -99,6 +99,9 @@ Game::Map::Map::ChunkIterator Game::Map::Map::CreateChunkIterator()
 Util::Buffer Game::Map::Map::ToBuffer()
 {
     Util::Buffer buffer;
+
+    buffer.Write(blockScale);
+
     // Write map
     auto chunkIndices = GetChunkIndices();
 
@@ -457,7 +460,8 @@ glm::vec3 Game::Map::ToRealPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex, flo
 
 glm::ivec3 Game::Map::ToGlobalPos(glm::vec3 realPos, float blockScale)
 {
-    return glm::round(realPos / blockScale);
+    //return glm::round(realPos / blockScale);
+    return glm::floor(realPos / blockScale);
 }
 
 glm::ivec3 Game::Map::ToGlobalPos(glm::ivec3 chunkIndex, glm::ivec3 blockIndex)
