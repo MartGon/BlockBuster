@@ -46,8 +46,10 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
     // Gravity effect
     auto offset = HandleGravityCollisions(map, map->GetBlockScale());
     transform.position.y += offset.y;
+
     
     Debug::PrintVector(offset, "Gravity Collision Offset");
+    Debug::PrintVector(transform.position, "Position");
 }
 
 union IntersectionU
@@ -257,7 +259,7 @@ std::optional<glm::vec3> PlayerController::HandleGravityCollisionBlock(Game::Map
         {
             const float hover = blockScale * 0.005f;
             auto colPoint = ray.origin + ray.GetDir() * intersection.ts.x + hover;
-            if(block->type == Game::BlockType::SLOPE)
+            if(block->type == Game::BlockType::SLOPE && block->rot.z == Game::RotType::ROT_0)
             {
                 auto ssColPoint = glm::inverse(tMat) * glm::vec4{colPoint, 1.0f};
                 auto percent = glm::max(0.f, glm::min(1.f - (ssColPoint.z + 0.5f), 1.f));
