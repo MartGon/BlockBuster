@@ -27,6 +27,7 @@ namespace Entity
         float gravitySpeed = -0.4f;
     private:
         glm::vec3 HandleGravityCollisions(Game::Map::Map* map, float blockScale);
+        std::optional<glm::vec3> HandleGravityCollisionBlock(Game::Map::Map* map, glm::vec3 bottomPoint, glm::ivec3 blockIndex, glm::vec3 offset);
         Math::Transform GetECB();
     };
 

@@ -36,26 +36,18 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
         glm::vec3 velocity = moveDir * speed * (float) deltaTime.count();
         transform.position += velocity;
 
+        /*
         auto offset = HandleCollisions(map, 2.0f, false);
         transform.position += offset;
         Debug::PrintVector(offset, "Horizontal Collision Offset");
+        */
     }
 
     // Gravity effect
     auto offset = HandleGravityCollisions(map, map->GetBlockScale());
     transform.position.y += offset.y;
-
-    /*
-    auto velocity = glm::vec3{0.0f, gravitySpeed, 0.0f};
-    transform.position += velocity;
-
-    auto offset = HandleCollisions(map, 2.0f, true);
-    transform.position.y += offset.y;
-    */
     
     Debug::PrintVector(offset, "Gravity Collision Offset");
-    Debug::PrintVector(transform.position, "Position");
-
 }
 
 union IntersectionU
@@ -217,14 +209,37 @@ glm::vec3 PlayerController::HandleGravityCollisions(Game::Map::Map* map, float b
     float fallDistance = glm::abs(gravitySpeed); // * deltaTime;
 
     auto ecb = GetECB();
-    auto bottomPoint = ecb.position - glm::vec3{0.0f, ecb.scale.y / 2.0f ,0.0f};
-    auto fallPos = bottomPoint - glm::vec3{0.0f, gravitySpeed, 0.0f};
+    auto bottomPoint = ecb.position - glm::vec3{0.0f, ecb.scale.y / 2.0f, 0.0f};
     auto blockIndex = Game::Map::ToGlobalPos(bottomPoint, blockScale);
-    auto belowBlockIndex = blockIndex - glm::ivec3{0, 0, 0};
+    auto aboveBlockIndex = blockIndex + glm::ivec3{0, 1, 0};
+    auto belowBlockIndex = blockIndex - glm::ivec3{0, 1, 0};
 
-    if(auto block = map->GetBlock(belowBlockIndex); block && block->type != Game::BlockType::NONE)
+    // Check for block at same height slightly above
+    glm::ivec3 blocks[3] = {aboveBlockIndex, blockIndex, belowBlockIndex};
+    glm::vec3 dirs[3] = {-offset, offset, offset};
+    for(auto i = 0; i < 3; i++)
     {
+        auto snap = HandleGravityCollisionBlock(map, bottomPoint, blocks[i], dirs[i]);
+        if(snap.has_value())
+        {
+            offset = snap.value();
+            break;
+        }
+    }
+
+    return offset;
+}
+
+std::optional<glm::vec3> PlayerController::HandleGravityCollisionBlock(Game::Map::Map* map, glm::vec3 bottomPoint, glm::ivec3 blockIndex, glm::vec3 rayDir)
+{
+    std::optional<glm::vec3> offset;
+
+    float blockScale = map->GetBlockScale();
+    if(auto block = map->GetBlock(blockIndex); block && block->type != Game::BlockType::NONE)
+    {
+        auto fallPos = bottomPoint + rayDir;
         Collisions::Ray ray{bottomPoint, fallPos};
+
         Math::Transform t = Game::GetBlockTransform(*block, blockIndex, blockScale);
         auto tMat = t.GetTransformMat();
 
@@ -240,15 +255,18 @@ glm::vec3 PlayerController::HandleGravityCollisions(Game::Map::Map* map, float b
 
         if(intersection.intersects)
         {
-            auto colPoint = ray.origin + ray.GetDir() * intersection.ts.x;
+            const float hover = blockScale * 0.005f;
+            auto colPoint = ray.origin + ray.GetDir() * intersection.ts.x + hover;
             if(block->type == Game::BlockType::SLOPE)
             {
                 auto ssColPoint = glm::inverse(tMat) * glm::vec4{colPoint, 1.0f};
-                auto percent = ssColPoint.z / (t.position.z + t.scale.z);
-                colPoint.y = t.position.y + t.scale.y * percent;
+                auto percent = glm::max(0.f, glm::min(1.f - (ssColPoint.z + 0.5f), 1.f));
+
+                colPoint.y = t.position.y + t.scale.y * (percent - 0.5f) + hover;
             }
 
-            offset = glm::max(offset, colPoint - bottomPoint);
+            auto displacement = colPoint - bottomPoint;
+            offset = glm::length(rayDir) > glm::length(displacement) ? displacement : rayDir;
         }
     }
 
