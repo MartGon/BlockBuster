@@ -12,6 +12,8 @@ using namespace Entity;
 
 void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime)
 {
+    auto dT = (float) deltaTime.count();
+
     // Move
     glm::vec3 moveDir{0.0f};
     if(input[Entity::MOVE_LEFT])
@@ -33,7 +35,7 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
         moveDir = isMoving ? glm::normalize(moveDir) : moveDir;
         
         // Horizontal movement
-        glm::vec3 velocity = moveDir * speed * (float) deltaTime.count();
+        glm::vec3 velocity = moveDir * speed * dT;
         transform.position += velocity;
 
         auto blocks = GetCollisionBlocks(map, map->GetBlockScale());
@@ -43,9 +45,9 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
 
     // Gravity effect
 #ifdef ALT_COLLISIONS
-    auto offset = HandleGravityCollisionsAlt(map, map->GetBlockScale());
+    auto offset = HandleGravityCollisionsAlt(map, map->GetBlockScale(), dT);
 #else
-    auto velocity = glm::vec3{0.0f, gravitySpeed, 0.0f};
+    auto velocity = glm::vec3{0.0f, gravitySpeed * dT, 0.0f};
     transform.position += velocity;
 
     auto blocks = GetCollisionBlocks(map, map->GetBlockScale());
@@ -202,10 +204,10 @@ Math::Transform PlayerController::GetGCB()
     return ecb;
 }
 
-glm::vec3 PlayerController::HandleGravityCollisionsAlt(Game::Map::Map* map, float blockScale)
+glm::vec3 PlayerController::HandleGravityCollisionsAlt(Game::Map::Map* map, float blockScale, Util::Time::Seconds deltaTime)
 {
     float fallDistance = gravitySpeed; // TODO: * deltaTime;
-    glm::vec3 offset = glm::vec3{0.0f, gravitySpeed, 0.0f};
+    glm::vec3 offset = glm::vec3{0.0f, fallDistance, 0.0f};
 
     auto ecb = GetGCB();
     auto bottomPoint = ecb.position - glm::vec3{0.0f, ecb.scale.y / 2.0f, 0.0f};
