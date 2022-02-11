@@ -36,39 +36,124 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
         glm::vec3 velocity = moveDir * speed * (float) deltaTime.count();
         transform.position += velocity;
 
-        auto offset = HandleCollisions(map, 2.0f, false);
+        auto blocks = GetCollisionBlocks(map, map->GetBlockScale());
+        auto offset = HandleCollisions(map, blocks);
         transform.position += offset;
-        //Debug::PrintVector(offset, "Horizontal Collision Offset");
     }
 
     // Gravity effect
-    auto offset = HandleGravityCollisions(map, map->GetBlockScale());
+#ifdef ALT_COLLISIONS
+    auto offset = HandleGravityCollisionsAlt(map, map->GetBlockScale());
+#else
+    auto velocity = glm::vec3{0.0f, gravitySpeed, 0.0f};
+    transform.position += velocity;
+
+    auto blocks = GetCollisionBlocks(map, map->GetBlockScale());
+    auto offset = HandleGravityCollisions(map, blocks);
+#endif
+
     transform.position.y += offset.y;
-
-    
-    Debug::PrintVector(offset, "Gravity Collision Offset");
-    Debug::PrintVector(transform.position, "Position");
 }
-
-union IntersectionU
-{
-    Collisions::AABBSlopeIntersection aabbSlope;
-    Collisions::AABBIntersection aabb;
-};
 
 struct Intersection
 {
     Game::Block block;
-    IntersectionU intersection;
+    union
+    {
+        Collisions::AABBSlopeIntersection aabbSlope;
+        Collisions::AABBIntersection aabb;
+    };
     Math::Transform blockTransform;
 };
 
-glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float blockScale, bool gravity)
+glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, const std::vector<glm::ivec3> &blocks, glm::vec3 normalMask)
 {
-    auto ecb = GetECB();
+    // Step 0. Initialize data
+    glm::vec3 offset{0.0f};
+
+    auto mct = GetECB();
+    
+    bool intersects;
+    unsigned int iterations = 0;
+    const unsigned int MAX_ITERATIONS = 10;
+    do
+    {        
+        intersects = false;
+        iterations++;
+
+        // Step 1. Get Collided blocks
+        std::vector<Intersection> intersections;
+        for(const auto& blockIndex : blocks)
+        {    
+            auto block = map->GetBlock(blockIndex);
+            Math::Transform blockTransform = Game::GetBlockTransform(*block, blockIndex, map->GetBlockScale());
+
+            Intersection intersect;
+            intersect.blockTransform = blockTransform;
+            intersect.block = *block;
+            intersect.aabb.normal = glm::vec3{0.0f};
+
+            if(block->type == Game::SLOPE)
+            {
+                auto slopeIntersect = Collisions::AABBSlopeCollision(mct, blockTransform);
+                if(slopeIntersect.intersects)
+                {   
+                    intersect.aabbSlope = slopeIntersect;   
+                }
+            }
+            else if(block->type == Game::BLOCK)
+            {
+                auto boxIntersect = Collisions::AABBCollision(mct.position, glm::vec3{mct.scale}, blockTransform.position, blockTransform.scale);
+                if(boxIntersect.intersects)
+                {
+                    intersect.aabb = boxIntersect;
+                }
+            }
+            
+            if(glm::length(intersect.aabb.normal * normalMask) > 0.0f)
+            {
+                intersections.push_back(intersect);
+            }
+        }
+        intersects = !intersections.empty();
+
+        // Step 2. Sort them by distance
+        auto playerPos = transform.position;
+        std::sort(intersections.begin(), intersections.end(), [playerPos](const auto& a, const auto& b){
+            auto distToA = glm::length(a.blockTransform.position - playerPos);
+            auto distToB = glm::length(b.blockTransform.position - playerPos);
+            return distToA < distToB;
+        });
+
+        // Step 3. Handle collision with closest one
+        if(!intersections.empty())
+        {
+            auto first = intersections.front();
+            Debug::PrintVector("Block Col Handled", first.blockTransform.position);
+            Debug::PrintVector("Offset", first.aabb.offset);
+
+            auto modPos = first.aabb.offset;
+            offset += modPos;
+            mct.position += modPos;
+        }
+
+    }while(intersects && iterations < MAX_ITERATIONS);
+
+    return offset;
+}
+
+glm::vec3 Entity::PlayerController::HandleGravityCollisions(Game::Map::Map* map, const std::vector<glm::ivec3> &blocks)
+{
+    return HandleCollisions(map, blocks, glm::vec3{0.0f, 1.0f, 0.0f});
+}
+
+std::vector<glm::ivec3> Entity::PlayerController::GetCollisionBlocks(Game::Map::Map* map, float blockScale)
+{
+    std::vector<glm::ivec3> blocks;
+
+    auto ecb = GetGCB();
     auto sizeInBlocks = ecb.scale / blockScale;
     
-    std::vector<std::pair<Math::Transform, Game::Block>> blocks;
     auto allocation = sizeInBlocks.x * sizeInBlocks.y * sizeInBlocks.z;
     blocks.reserve(allocation);
 
@@ -83,14 +168,13 @@ glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, float 
                 auto blockIndex = playerBlockPos + glm::ivec3{x, y, z};
                 if(auto block = map->GetBlock(blockIndex); block && block->type != Game::BlockType::NONE)
                 {
-                    Math::Transform t = Game::GetBlockTransform(*block, blockIndex, blockScale);
-                    blocks.push_back({t, *block});
+                    blocks.push_back({blockIndex});
                 }
             }
         }
     }
 
-    return HandleCollisions(blocks, gravity);
+    return blocks;
 }
 
 Math::Transform PlayerController::GetECB()
@@ -100,11 +184,10 @@ Math::Transform PlayerController::GetECB()
     ecb.position += mcb.position;
     ecb.scale = mcb.scale;
 
-    //if(lastStepBlock.has_value() && lastStepBlock->type == Game::BlockType::SLOPE && lastStepBlock->rot.z == Game::RotType::ROT_0)
-    {
-        ecb.position.y += (mcb.scale.z / 4.0f) + 0.01f;
-        ecb.scale.y -= (mcb.scale.z / 2.0f);
-    }
+#ifdef ALT_COLLISIONS
+    ecb.position.y += (mcb.scale.z / 4.0f) + 0.01f;
+    ecb.scale.y -= (mcb.scale.z / 2.0f);
+#endif
 
     return ecb;
 }
@@ -119,110 +202,7 @@ Math::Transform PlayerController::GetGCB()
     return ecb;
 }
 
-// TODO: Clean up gravity parameter.
-glm::vec3 Entity::PlayerController::HandleCollisions(const std::vector<std::pair<Math::Transform, Game::Block>> &blocks, bool gravity)
-{
-    glm::vec3 offset{0.0f};
-
-    auto mct = GetECB();
-
-    bool intersects;
-    unsigned int iterations = 0;
-    const unsigned int MAX_ITERATIONS = 10;
-    std::vector<glm::vec<3, int>> alreadyOffset;
-    do
-    {        
-        intersects = false;
-        iterations++;
-
-        std::vector<Intersection> intersections;
-        for(const auto& [blockTransform, block] : blocks)
-        {            
-            if(block.type == Game::SLOPE)
-            {
-                // Collision player and slope
-                auto slopeIntersect = Collisions::AABBSlopeCollision(mct, blockTransform);
-                if(slopeIntersect.collides)
-                {
-                    if(slopeIntersect.intersects)
-                    {
-                        std::cout << "Intersects w Slope at " << glm::to_string(blockTransform.position) << "\n";
-                        Intersection intersect;
-                        intersect.block = block;
-                        intersect.intersection.aabbSlope = slopeIntersect;
-                        intersect.blockTransform = blockTransform;
-                        if(slopeIntersect.normal.y <= 0.0f)
-                            intersections.push_back(intersect);
-                        else
-                            std::cout << "Sends upwards\n";
-
-                        intersects = true;
-                    }
-                }
-            }
-            else
-            {
-                auto boxIntersect = Collisions::AABBCollision(mct.position, glm::vec3{mct.scale}, blockTransform.position, blockTransform.scale);
-                if(boxIntersect.collides)
-                {
-                    if(boxIntersect.intersects)
-                    {
-                        std::cout << "Intersects w Block at " << glm::to_string(blockTransform.position) << "\n";
-                        Intersection intersect;
-                        intersect.block = block;
-                        intersect.intersection.aabb = boxIntersect;
-                        intersect.blockTransform = blockTransform;
-                        if(boxIntersect.normal.y <= 0.0f)
-                            intersections.push_back(intersect);
-                        else
-                            std::cout << "Sends upwards\n";
-                        
-                        intersects = true;
-                    }
-                }
-            }
-        }
-
-        auto playerPos = transform.position;
-        std::sort(intersections.begin(), intersections.end(), [playerPos](const auto& a, const auto& b){
-            auto distToA = glm::length(a.blockTransform.position - playerPos);
-            auto distToB = glm::length(b.blockTransform.position - playerPos);
-            return distToA < distToB;
-        });
-
-        if(!intersections.empty())
-        {
-            auto first = intersections.front();
-            auto block = first.block;
-            Debug::PrintVector("Block Col Handled", first.blockTransform.position);
-            Debug::PrintVector("Offset", first.intersection.aabb.offset);
-            glm::vec3 modPos{0.0f};
-            if(block.type == Game::SLOPE)
-            {
-                auto slopeIntersect = first.intersection.aabbSlope;
-                modPos = slopeIntersect.offset;
-
-               
-            }
-            else
-            {
-                auto boxIntersect = first.intersection.aabb;
-                modPos = boxIntersect.offset;
-            }
-
-            offset += modPos;
-            mct.position += modPos;
-
-            auto o = first.intersection.aabb.offset;
-            alreadyOffset.push_back(first.blockTransform.position);
-        }
-
-    }while(intersects && iterations < MAX_ITERATIONS);
-
-    return offset;
-}
-
-glm::vec3 PlayerController::HandleGravityCollisions(Game::Map::Map* map, float blockScale)
+glm::vec3 PlayerController::HandleGravityCollisionsAlt(Game::Map::Map* map, float blockScale)
 {
     float fallDistance = gravitySpeed; // TODO: * deltaTime;
     glm::vec3 offset = glm::vec3{0.0f, gravitySpeed, 0.0f};
@@ -238,7 +218,7 @@ glm::vec3 PlayerController::HandleGravityCollisions(Game::Map::Map* map, float b
     glm::vec3 dirs[3] = {-offset, offset, offset};
     for(auto i = 0; i < 3; i++)
     {
-        auto snap = HandleGravityCollisionBlock(map, bottomPoint, blocks[i], dirs[i]);
+        auto snap = HandleGravityCollisionAltBlock(map, bottomPoint, blocks[i], dirs[i]);
         if(snap.has_value())
         {
             offset = snap.value();
@@ -249,7 +229,7 @@ glm::vec3 PlayerController::HandleGravityCollisions(Game::Map::Map* map, float b
     return offset;
 }
 
-std::optional<glm::vec3> PlayerController::HandleGravityCollisionBlock(Game::Map::Map* map, glm::vec3 bottomPoint, glm::ivec3 blockIndex, glm::vec3 rayDir)
+std::optional<glm::vec3> PlayerController::HandleGravityCollisionAltBlock(Game::Map::Map* map, glm::vec3 bottomPoint, glm::ivec3 blockIndex, glm::vec3 rayDir)
 {
     std::optional<glm::vec3> offset;
 
