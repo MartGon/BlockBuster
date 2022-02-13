@@ -23,6 +23,7 @@ namespace GL
         Util::Result<GLuint> AddTexture(std::filesystem::path folder, std::filesystem::path filename, bool flipVertically = true);
         Util::Result<GLuint> AddTexture(std::filesystem::path filepath, bool flipVertically = true);
         Util::Result<GLuint> AddTexture(const void* data);
+        void SetTexture(GLuint id, const void* data);
 
         void Bind(GLuint activeTexture = GL_TEXTURE0) const;
 

@@ -9,6 +9,7 @@
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
+#include <rendering/Model.h>
 #include <game/ChunkMeshMgr.h>
 
 #include <entity/PlayerController.h>
@@ -24,6 +25,12 @@
 
 #include <functional>
 
+/* TODO LIST
+    1. Add Debug window to edit transforms. Only in debug build
+    2. Create respawn object model. Cylinder + Slope
+    3. Create object system. Enum with object types (respawn, weapon, etc).
+    4. Every Object has a transform. Each object inherits from it.
+*/
 
 namespace BlockBuster
 {
@@ -277,6 +284,7 @@ namespace BlockBuster
             std::vector<ImGui::Impl::Texture> guiTextures;
 
             bool pickingColor = false;
+            bool newColor = false;
             glm::vec4 colorPick;
 
             const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};

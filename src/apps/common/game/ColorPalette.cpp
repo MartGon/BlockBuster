@@ -18,6 +18,17 @@ Util::Result<Rendering::ColorPalette::Member> Rendering::ColorPalette::GetMember
     return Util::CreateSuccess(members_[index]);
 }
 
+void Rendering::ColorPalette::SetColor(unsigned int id, glm::u8vec4 color)
+{
+    if(id < 0 || id >= members_.size())
+        return;
+
+    auto ptr = reinterpret_cast<void*>(&color);
+    auto& member = members_[id];
+    member.color = color;
+    tArray_.SetTexture(member.id, ptr);
+}
+
 bool Rendering::ColorPalette::HasColor(glm::u8vec4 color)
 {
     for(const auto& m : members_)

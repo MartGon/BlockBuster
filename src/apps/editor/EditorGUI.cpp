@@ -687,7 +687,6 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
 
     ImGui::RadioButton("Color", &displayType, Game::DisplayType::COLOR);
 
-
     ImGui::Text("Palette");
 
     // Palette
@@ -763,17 +762,23 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
     if(displayType == Game::DisplayType::COLOR)
     {
         auto color = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(colorId).data.color);
+        if(ImGui::Button("New Color"))
+        {
+            ImGui::OpenPopup("Color Picker");
+            pickingColor = true;
+            newColor = true;
+        }
+        ImGui::SameLine();
         if(ImGui::ColorButton("Chosen Color", color))
         {
             ImGui::OpenPopup("Color Picker");
             pickingColor = true;
         }
         ImGui::SameLine();
-        ImGui::Text("Select color");
+        ImGui::Text("Edit color");
         if(ImGui::BeginPopup("Color Picker"))
         {
-            if(ImGui::ColorPicker4("##picker", &colorPick.x, ImGuiColorEditFlags__OptionsDefault))
-                colorId = -1;
+            ImGui::ColorPicker4("##picker", &colorPick.x, ImGuiColorEditFlags__OptionsDefault);
             ImGui::EndPopup();
         }
         else if(pickingColor)
@@ -784,10 +789,17 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
                 auto color = Rendering::FloatColorToUint8(colorPick);
                 if(!project.map.cPalette.HasColor(color))
                 {
-                    auto res = project.map.cPalette.AddColor(color);
-                    colorId = res.data.id;
+                    if(newColor)
+                    {
+                        auto res = project.map.cPalette.AddColor(color);
+                        colorId = res.data.id;
+                    }
+                    else
+                        project.map.cPalette.SetColor(colorId, color);
                 }
             }
+
+            newColor = false;
         }
     }
     else if(displayType == Game::DisplayType::TEXTURE)

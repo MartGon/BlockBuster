@@ -96,6 +96,18 @@ Util::Result<GLuint> GL::TextureArray::AddTexture(const void* data)
     return Util::CreateSuccess<GLuint>(count_++);
 }
 
+void GL::TextureArray::SetTexture(GLuint id, const void* data)
+{
+    if(id >= count_)
+        return;
+
+    Bind();
+    
+    auto format = channels_ == 3 ? GL_RGB : GL_RGBA;
+    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, id, texSize_, texSize_, 1, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+}
+
 void GL::TextureArray::Bind(GLuint activeTexture) const
 {
     glActiveTexture(activeTexture);

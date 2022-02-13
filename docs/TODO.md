@@ -61,3 +61,16 @@
 - Launch Game server by pressing StartGame on Client. Tell other clients.
 - Client uploads map. Using button on server browser view. Combobox with maps on Map folder.
 - Download available map list from server. They show on CreateGame view
+
+
+## TODO - Alpha (Pacifist - Movement only)
+
+- Respawn points. They are objects.
+    - Editor
+        - Object tab. Add and select Tool
+        - Assign Team Id (Spawn group could be useful, but do later)
+        - Attach object to block. This objects moves with that block.
+
+- KillBoxes (Chore) or Set kill height (easier) (Map Options)
+- Launch game server from MatchMaking. Port, player num, map and gamemode as params
+        
