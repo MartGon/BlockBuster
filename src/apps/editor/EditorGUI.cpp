@@ -1267,6 +1267,7 @@ void BlockBuster::Editor::Editor::GUI()
                 }
                 if(ImGui::CollapsingHeader("Debug Options"))
                 {
+                    ImGui::Checkbox("Draw Chunk borders", &drawChunkBorders);
                 #ifdef _DEBUG
                     ImGui::Separator();
                     ImGui::Checkbox("New map system", &newMapSys);
@@ -1274,9 +1275,31 @@ void BlockBuster::Editor::Editor::GUI()
                     ImGui::Checkbox("Intersection Optimization", &optimizeIntersection);
                     ImGui::SameLine();
                     ImGui::Checkbox("Use Texture Array", &useTextureArray);
-                    ImGui::SameLine();
+                    
+                    auto prevModelId = modelId;
+                    if(ImGui::InputInt("ID", (int*)&modelId))
+                    {
+                        if(auto sm = respawnModel.model->GetSubModel(modelId))
+                        {
+                            modelOffset = sm->transform.position;
+                            modelScale = sm->transform.scale;
+                            modelRot = sm->transform.rotation;
+                        }
+                        else
+                            modelId = prevModelId;
+                    }
+                    ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
+                    ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
+                    ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
+                    if(auto sm = respawnModel.model->GetSubModel(modelId))
+                    {
+                        sm->transform.position = modelOffset;
+                        sm->transform.scale = modelScale;
+                        sm->transform.rotation = modelRot;
+                    }
+                    ImGui::InputFloat("Precision", &sliderPrecision);
                 #endif
-                    ImGui::Checkbox("Draw Chunk borders", &drawChunkBorders);
+                    
                 }
 
                 ImGui::EndTabItem();

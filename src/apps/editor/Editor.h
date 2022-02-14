@@ -8,8 +8,10 @@
 #include <rendering/Camera.h>
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
+#include <rendering/RenderMgr.h>
 #include <rendering/Rendering.h>
 #include <rendering/Model.h>
+#include <models/Respawn.h>
 #include <game/ChunkMeshMgr.h>
 
 #include <entity/PlayerController.h>
@@ -249,12 +251,17 @@ namespace BlockBuster
             Project project;
 
             // Rendering
+            Rendering::RenderMgr renderMgr;
             GL::Shader shader;
             GL::Shader chunkShader;
             Rendering::Mesh cube;
             Rendering::Mesh slope;
+            Rendering::Mesh cylinder;
             Rendering::Camera camera;
             ::App::Client::CameraController cameraController;
+
+            // Models
+            Game::Models::Respawn respawnModel;
             
             // Editor
             bool quit = false;
@@ -344,6 +351,11 @@ namespace BlockBuster
 
             // Debug
             #ifdef _DEBUG
+                uint32_t modelId = 2;
+                float sliderPrecision = 5.0f;
+                glm::vec3 modelOffset{0.0f};
+                glm::vec3 modelRot{0.0f};
+                glm::vec3 modelScale{1.0f};
                 bool showDemo = false;
                 bool newMapSys = true;
                 bool optimizeIntersection = true;

@@ -21,7 +21,7 @@ void BlockBuster::Editor::Editor::Start()
 {
     // Load shaders
     try{
-        shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
+        shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "circleVertex.glsl", "circleFrag.glsl");
         chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
     }
     catch(const std::runtime_error& e)
@@ -34,12 +34,16 @@ void BlockBuster::Editor::Editor::Start()
     // Meshes
     cube = Rendering::Primitive::GenerateCube();
     slope = Rendering::Primitive::GenerateSlope();
+    cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
+
+    // Models
+    respawnModel.SetMeshes(cylinder, slope);
+    respawnModel.Start(renderMgr, shader);
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glEnable(GL_MULTISAMPLE);
-
    
     chunkShader.SetUniformInt("textureArray", 0);
     chunkShader.SetUniformInt("colorArray", 1);
@@ -85,6 +89,13 @@ void BlockBuster::Editor::Editor::Update()
 
     // Draw new Map System Cubes
     project.map.Draw(chunkShader, camera.GetProjViewMat());
+
+    // Render models
+    auto view = camera.GetProjViewMat();
+    Math::Transform t{glm::vec3{0.0f, 10.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
+    auto tMat = view * t.GetTransformMat();
+    respawnModel.Draw(tMat);
+    renderMgr.Render(camera);
     
     if(playerMode)
         UpdatePlayerMode();
