@@ -21,7 +21,6 @@
 #include <entity/Player.h>
 #include <entity/PlayerController.h>
 #include <entity/Map.h>
-#include <entity/World.h>
 
 #include <vector>
 #include <map>

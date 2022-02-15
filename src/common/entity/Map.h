@@ -21,8 +21,7 @@ namespace Game
         {
             glm::vec3 pos;
             float orientation;
-
-            // enum Team team;
+            uint8_t teamId = 0;
         }; 
 
         class Map
@@ -227,6 +226,7 @@ namespace Game
         private:
             float blockScale = 2.0f;
             std::unordered_map<glm::ivec3, Chunk> chunks_;
+            std::vector<Respawn> respawns_;
         };
 
         // Position transforms

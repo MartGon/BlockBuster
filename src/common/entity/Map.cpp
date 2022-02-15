@@ -130,6 +130,11 @@ Util::Buffer Game::Map::Map::ToBuffer()
         }
     }
 
+    // Write respawns
+    buffer.Write(respawns_.size());
+    for(auto respawn : respawns_)
+        buffer.Write(respawn);
+
     return buffer;
 }
 
@@ -137,8 +142,10 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
 {
     Game::Map::Map map;
 
+    // Read scale
     map.blockScale = reader.Read<float>();
 
+    // Read map
     auto chunkIndicesCount = reader.Read<std::size_t>();
     for(auto i = 0; i < chunkIndicesCount; i++)
     {
@@ -158,6 +165,15 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
             map.AddBlock(globalPos, block);
         }
     }
+
+    // Read respawns
+    /* TODO: Uncomment this
+    auto respawnCount = reader.Read<std::size_t>();
+    for(auto i = 0; i < respawnCount; i++)
+    {
+        auto respawn = reader.Read<Respawn>();
+        map.respawns_.push_back(respawn);
+    }*/
 
     return std::move(map);
 }

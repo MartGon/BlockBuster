@@ -615,6 +615,15 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
             }
             break;
         }
+        case PLACE_OBJECT:
+        {
+            break;
+        }
+        case SELECT_OBJECT:
+        {
+            break;
+            
+        }
     }
 }
 

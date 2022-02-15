@@ -5,7 +5,7 @@ SET(SOURCES
     Player.cpp
     PlayerController.cpp
     Weapon.cpp
-    World.cpp
+    GameObject.cpp
 )
 
 

@@ -17,6 +17,7 @@
 #include <entity/PlayerController.h>
 #include <entity/Block.h>
 #include <entity/Map.h>
+#include <entity/GameObject.h>
 #include <game/CameraController.h>
 
 #include <imgui/backends/imgui_impl_opengl3.h>
@@ -79,6 +80,7 @@ namespace BlockBuster
             enum TabState
             {
                 TOOLS_TAB,
+                OBJECTS_TAB,
                 OPTIONS_TAB,
 
                 DEBUG_TAB
@@ -95,7 +97,10 @@ namespace BlockBuster
                 PLACE_BLOCK,
                 ROTATE_BLOCK,
                 PAINT_BLOCK,
-                SELECT_BLOCKS
+                SELECT_BLOCKS,
+
+                PLACE_OBJECT,
+                SELECT_OBJECT
             };
 
             enum SelectSubTool
@@ -245,6 +250,9 @@ namespace BlockBuster
             void SelectBlockTypeGUI();
             void SelectBlockDisplayGUI();
 
+            // GameObject
+            void InputProperty(Entity::GameObject* go, const char* key, Entity::GameObject::Property::Type type);
+
             void GUI();
 
             // Project
@@ -327,6 +335,10 @@ namespace BlockBuster
             MirrorPlane selectMirrorPlane = MirrorPlane::XY;
             Game::RotType selectRotType = Game::RotType::ROT_90;
             std::string selectRotErrorText;
+
+            // Objects
+            Entity::GameObject placedGo;
+            int objectType = Entity::GameObject::RESPAWN;
 
             // GUIGL
             GL::VertexArray gui_vao;

@@ -813,6 +813,39 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
     }
 }
 
+using namespace Entity;
+
+void BlockBuster::Editor::Editor::InputProperty(Entity::GameObject* go, const char* key, GameObject::Property::Type type)
+{
+    switch(type)
+    {
+        case GameObject::Property::Type::BOOL:
+        {
+            auto& ref = go->properties[key];
+            ImGui::Checkbox(key, &ref.boolean);
+            break;
+        }
+        case GameObject::Property::Type::FLOAT:
+        {
+            auto& ref = go->properties[key];
+            ImGui::InputFloat(key, &ref.f);
+            break;
+        }
+        case GameObject::Property::Type::INT:
+        {
+            auto& ref = go->properties[key];
+            ImGui::InputInt(key, &ref.i);
+            break;
+        }
+        case GameObject::Property::Type::STRING:
+        {
+            auto& ref = go->properties[key];
+            ImGui::InputText(key, ref.string, 16);
+            break;
+        }
+    }
+}
+
 // #### GUI - Base #### \\
 
 void BlockBuster::Editor::Editor::GUI()
@@ -1185,6 +1218,78 @@ void BlockBuster::Editor::Editor::GUI()
                 ImGui::EndTabItem();
             }
             
+            flags = tabState == TabState::OBJECTS_TAB ? ImGuiTabItemFlags_SetSelected : 0;
+            if(ImGui::BeginTabItem("Objects", nullptr, flags))
+            {
+                if(ImGui::IsItemActive())
+                    tabState = TabState::OBJECTS_TAB;
+
+                ImGui::SetCursorPosX(0);
+                auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit;
+                if(ImGui::BeginTable("#Tools", 2, 0, ImVec2{0, 0}))
+                {
+                    ImGui::TableSetupColumn("##Tools", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableSetupColumn("##Tool Options", 0);
+                    
+                    ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TableHeader("##Tools");
+                    ImGui::SameLine();
+                    ImGui::Text("Tools");
+
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TableHeader("##Tool Options");
+                    ImGui::SameLine();
+                    ImGui::Text("Tools Options");
+                    
+                    // Tools Table
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    if(ImGui::BeginTable("##Tools", 2, 0, ImVec2{120, 0}))
+                    {
+                        ImGui::TableNextColumn();
+                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
+                        if(ImGui::Selectable("Place", tool == PLACE_OBJECT, 0, ImVec2{0, 0}))
+                        {
+                            SelectTool(PLACE_OBJECT);
+                        }
+
+                        ImGui::TableNextColumn();
+                        if(ImGui::Selectable("Select", tool == SELECT_OBJECT, 0, ImVec2{0, 0}))
+                        {
+                            SelectTool(SELECT_OBJECT);
+                        }
+
+                        ImGui::PopStyleVar();
+
+                        ImGui::EndTable();
+                    }
+
+                    // Tools Options
+                    ImGui::TableNextColumn();
+
+                    if(tool == PLACE_OBJECT)
+                    {
+                        if(ImGui::Combo("Object Type", &objectType, Entity::GameObject::objectTypesToString, Entity::GameObject::COUNT))
+                        {
+                            placedGo.type = static_cast<Entity::GameObject::Type>(objectType);
+                        }
+
+                        ImGui::Dummy(ImVec2{10, 0}); ImGui::SameLine();
+                        ImGui::Text("Object Properties");
+                        auto propertiesTemplate = GameObject::GetPropertyTemplate(placedGo.type);
+                        for(auto p : propertiesTemplate)
+                        {
+                            InputProperty(&placedGo, p.name.c_str(), p.type);
+                        }
+                    }
+
+                    ImGui::EndTable();
+                }
+
+                ImGui::EndTabItem();
+            }
+
             flags = tabState == TabState::OPTIONS_TAB ? ImGuiTabItemFlags_SetSelected : 0;
             if(ImGui::BeginTabItem("Options", nullptr, flags))
             {
