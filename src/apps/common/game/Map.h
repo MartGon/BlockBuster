@@ -30,6 +30,7 @@ namespace App::Client
         Game::Block GetBlock(glm::ivec3 pos) const;
         void SetBlock(glm::ivec3 pos, Game::Block block);
         bool IsNullBlock(glm::ivec3 pos) const;
+        bool CanPlaceBlock(glm::ivec3 pos) const;
         void RemoveBlock(glm::ivec3 pos);
         uint32_t GetBlockCount() const;
 

@@ -19,6 +19,7 @@ void RenderMgr::Render(const Rendering::Camera& camera)
     
     DrawList(&opaqueReq);
     DrawList(&transparentReq);
+    
     glClear(GL_DEPTH_BUFFER_BIT);
     DrawList(&ignoreDepthReqs);
     opaqueReq.clear();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entity/Block.h>
+#include <entity/GameObject.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
@@ -8,8 +9,8 @@
 #include <util/Buffer.h>
 #include <oktal/result.h>
 
-#include <unordered_map>
 
+#include <unordered_map>
 #include <filesystem>
 #include <memory>
 
@@ -19,7 +20,7 @@ namespace Game
     {
         struct Respawn
         {
-            glm::vec3 pos;
+            glm::ivec3 pos;
             float orientation;
             uint8_t teamId = 0;
         }; 
@@ -223,10 +224,17 @@ namespace Game
 
             ChunkIterator CreateChunkIterator();
 
+            // Respawns
+            void AddRespawn(Respawn respawn);
+            Respawn* GetRespawn(glm::ivec3 pos);
+            std::vector<glm::ivec3> GetRespawnIndices() const;
+            void RemoveRespawn(glm::ivec3 pos);
+
         private:
             float blockScale = 2.0f;
             std::unordered_map<glm::ivec3, Chunk> chunks_;
-            std::vector<Respawn> respawns_;
+            std::unordered_map<glm::ivec3, Respawn> respawns_;
+            Entity::ID lastRespawnId = 0;
         };
 
         // Position transforms

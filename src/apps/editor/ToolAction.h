@@ -3,6 +3,7 @@
 #include <entity/Block.h>
 
 #include <game/Map.h>
+#include <entity/GameObject.h>
 
 #include <vector>
 #include <memory>
@@ -140,6 +141,36 @@ namespace BlockBuster
             glm::ivec3* cursorPos_;
             std::vector<BlockData>* selTarget_;
         };
+        
+        class PlaceObjectAction : public ToolAction
+        {
+        public:
+            PlaceObjectAction(Entity::GameObject object, App::Client::Map* map, glm::ivec3 pos) : 
+                object_{object}, map_{map}, pos_{pos} {}
+
+            void Do() override;
+            void Undo() override;
+        private:
+            Entity::GameObject object_;
+            App::Client::Map* map_;
+            glm::ivec3 pos_;
+        };
+
+        class RemoveObjectAction : public ToolAction
+        {
+        public:
+            RemoveObjectAction(App::Client::Map* map, glm::ivec3 pos) : 
+                map_{map}, pos_{pos} {}
+
+            void Do() override;
+            void Undo() override;
+        private:
+            Entity::GameObject object_;
+            App::Client::Map* map_;
+            glm::ivec3 pos_;
+        };
+
+        void PlaceObject(Entity::GameObject obejct, App::Client::Map* map, glm::ivec3 pos);
 
         class BatchedAction : public ToolAction
         {

@@ -89,13 +89,6 @@ void BlockBuster::Editor::Editor::Update()
 
     // Draw new Map System Cubes
     project.map.Draw(chunkShader, camera.GetProjViewMat());
-
-    // Render models
-    auto view = camera.GetProjViewMat();
-    Math::Transform t{glm::vec3{0.0f, 10.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
-    auto tMat = view * t.GetTransformMat();
-    respawnModel.Draw(tMat);
-    renderMgr.Render(camera);
     
     if(playerMode)
         UpdatePlayerMode();
@@ -327,10 +320,26 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     }
     
     // Camera
+    auto view = camera.GetProjViewMat();
     if(!io_->WantCaptureKeyboard)
     {
         cameraController.Update();
     }
+
+    // Render respawn models
+    auto map = project.map.GetMap();
+    auto rIndices = map->GetRespawnIndices();
+    for(auto pos : rIndices)
+    {
+        auto blockScale = project.map.GetBlockScale();
+        auto rPos = Game::Map::ToRealPos(pos, blockScale);
+        rPos.y -= (blockScale / 2.0f);
+        auto respawn = map->GetRespawn(pos);
+        Math::Transform t{rPos, glm::vec3{0.0f, respawn->orientation, 0.0f}, glm::vec3{0.8f}};
+        auto tMat = view * t.GetTransformMat();
+        respawnModel.Draw(tMat);
+    }
+    renderMgr.Render(camera);
 
     // Draw Cursor
     glDisable(GL_DEPTH_TEST);
@@ -343,7 +352,6 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     {
         DrawSelectCursor(cursor.pos);
     }
-
     glEnable(GL_DEPTH_TEST);
 
     // Draw pre view painted block
@@ -368,7 +376,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
         }
         
         auto mMat = t.GetTransformMat();
-        auto tMat = camera.GetProjViewMat() * mMat;
+        auto tMat = view * mMat;
         auto& mesh = GetMesh(block.type);
 
         auto display =  GetBlockDisplay();
@@ -390,10 +398,7 @@ void BlockBuster::Editor::Editor::UpdateEditor()
 
     // Draw chunk borders
     if(drawChunkBorders)
-    {
-        auto view = camera.GetProjViewMat();
         project.map.DrawChunkBorders(shader, cube, view, yellow);
-    }
 
     // Create GUI
     GUI();
@@ -489,42 +494,38 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
             if(intersect.intersection.intersects)
             {
                 auto block = *intersect.block;
+                auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
+                Game::BlockRot rot{Game::RotType::ROT_0, Game::RotType::ROT_0};
+                if(blockType == Game::BlockType::SLOPE)
+                    rot.y = static_cast<Game::RotType>(glm::round(camera.GetRotation().y / glm::half_pi<float>()) - 1);
 
-                if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::HOVER)
+                if(actionType == ActionType::LEFT_BUTTON)
                 {
-                    auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
-                    Game::BlockRot rot{Game::RotType::ROT_0, Game::RotType::ROT_0};
-                    if(blockType == Game::BlockType::SLOPE)
-                        rot.y = static_cast<Game::RotType>(glm::round(camera.GetRotation().y / glm::half_pi<float>()) - 1);
-
-                    if(actionType == ActionType::LEFT_BUTTON)
+                    if(IsDisplayValid())
                     {
-                        if(IsDisplayValid())
+                                                    
+                        auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
+                        if(project.map.CanPlaceBlock(iNewPos))
                         {
-                                                       
-                            auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                            if(project.map.IsNullBlock(iNewPos))
-                            {
-                                auto display = GetBlockDisplay(); 
-                                auto block = Game::Block{blockType, rot, display};
-                                auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &project.map);
+                            auto display = GetBlockDisplay(); 
+                            auto block = Game::Block{blockType, rot, display};
+                            auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &project.map);
 
-                                DoToolAction(std::move(action));
-                            }
+                            DoToolAction(std::move(action));
                         }
                     }
-                    else if(actionType == ActionType::HOVER)
+                }
+                else if(actionType == ActionType::HOVER)
+                {
+                    cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
+                    if(project.map.CanPlaceBlock(cursor.pos))
                     {
-                        cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                        if(project.map.IsNullBlock(cursor.pos))
-                        {
-                            cursor.enabled = true;
-                            cursor.type = blockType;
-                            cursor.rot = rot;
-                        }
-                        else
-                            cursor.enabled = false;
+                        cursor.enabled = true;
+                        cursor.type = blockType;
+                        cursor.rot = rot;
                     }
+                    else
+                        cursor.enabled = false;
                 }
                 else if(actionType == ActionType::RIGHT_BUTTON)
                 {
@@ -533,8 +534,6 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                         auto action = std::make_unique<RemoveAction>(intersect.pos, block, &project.map);
                         DoToolAction(std::move(action));
                     }
-
-                    break;
                 }
             }
             else
@@ -617,6 +616,46 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
         }
         case PLACE_OBJECT:
         {
+            if(intersect.intersection.intersects && intersection.normal.y == 1.0f)
+            {
+                auto block = *intersect.block;
+
+                if(actionType == ActionType::LEFT_BUTTON)
+                {                          
+                    auto iNewPos = intersect.pos + glm::ivec3{0, 1, 0}; // It will be added over the collided block
+                    auto iNewPosCeil = iNewPos + glm::ivec3{0, 1, 0}; // We need another block as well
+                    if(project.map.CanPlaceBlock(iNewPos) && project.map.CanPlaceBlock(iNewPosCeil))
+                    {
+                        auto action = std::make_unique<PlaceObjectAction>(placedGo, &project.map, iNewPos);
+
+                        DoToolAction(std::move(action));
+                    }
+                }
+                else if(actionType == ActionType::HOVER)
+                {
+                    cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
+                    if(project.map.CanPlaceBlock(cursor.pos))
+                    {
+                        cursor.enabled = true;
+                        cursor.type = blockType;
+                    }
+                    else
+                        cursor.enabled = false;
+                }
+                else if(actionType == ActionType::RIGHT_BUTTON)
+                {
+                    auto rpos = intersect.pos + glm::ivec3{0, 1, 0};
+                    if(auto respawn = project.map.GetMap()->GetRespawn(rpos))
+                    {
+                        auto action = std::make_unique<RemoveObjectAction>(&project.map, rpos);
+                        DoToolAction(std::move(action));
+                    }
+                }
+            }
+            else
+            {
+                cursor.enabled = false;
+            }
             break;
         }
         case SELECT_OBJECT:

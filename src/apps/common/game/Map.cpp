@@ -61,6 +61,15 @@ bool Map::IsNullBlock(glm::ivec3 pos) const
     return map_.IsNullBlock(pos);
 }
 
+bool Map::CanPlaceBlock(glm::ivec3 pos) const
+{
+    auto rids = map_.GetRespawnIndices();
+    bool found = std::find(rids.begin(), rids.end(), pos) != rids.end();
+    bool isNull = IsNullBlock(pos);
+
+    return !found && isNull;
+}
+
 void Map::RemoveBlock(glm::ivec3 pos)
 {
     auto chunkIndex = Game::Map::ToChunkIndex(pos);

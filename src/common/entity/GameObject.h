@@ -8,6 +8,7 @@
 
 namespace Entity
 {
+    using ID = uint8_t;
     class GameObject
     {
     public:

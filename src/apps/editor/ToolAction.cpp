@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <iostream>
 
+using namespace BlockBuster::Editor;
+
 void BlockBuster::Editor::PlaceBlockAction::Do()
 {
     map_->SetBlock(pos_, block_);
@@ -126,6 +128,59 @@ bool BlockBuster::Editor::MoveSelectionAction::IsBlockInSelection(glm::ivec3 pos
             return true;
 
     return false;
+}
+
+void PlaceObjectAction::Do()
+{
+    PlaceObject(object_, map_, pos_);
+}
+
+void PlaceObjectAction::Undo()
+{
+    switch (object_.type)
+    {
+        case Entity::GameObject::Type::RESPAWN:
+        {
+            map_->GetMap()->RemoveRespawn(pos_);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void RemoveObjectAction::Do()
+{
+    auto map = map_->GetMap();
+    auto respawn = map->GetRespawn(pos_);
+    object_.type = Entity::GameObject::Type::RESPAWN;
+    object_.properties["Orientation"] = Entity::GameObject::Property{Entity::GameObject::Property::Type::FLOAT, respawn->orientation};
+    Entity::GameObject::Property teamId;
+    teamId.type = Entity::GameObject::Property::Type::INT; teamId.i = respawn->teamId;
+    object_.properties["TeamId"] = teamId;
+    map_->GetMap()->RemoveRespawn(pos_);
+}
+
+void RemoveObjectAction::Undo()
+{
+    PlaceObject(object_, map_, pos_);
+}
+
+void BlockBuster::Editor::PlaceObject(Entity::GameObject go, App::Client::Map* map, glm::ivec3 pos)
+{
+    switch (go.type)
+    {
+        case Entity::GameObject::Type::RESPAWN:
+        {
+            auto orientation = go.properties["Orientation"].f;
+            auto teamId = static_cast<uint8_t>(go.properties["TeamId"].i);
+            Game::Map::Respawn respawn{pos, orientation, teamId};
+            map->GetMap()->AddRespawn(respawn);
+            break;
+        }
+    default:
+        break;
+    }
 }
 
 void BlockBuster::Editor::BatchedAction::Do()

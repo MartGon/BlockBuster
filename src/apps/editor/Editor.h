@@ -29,9 +29,9 @@
 #include <functional>
 
 /* TODO LIST
-    1. Add Debug window to edit transforms. Only in debug build
-    2. Create respawn object model. Cylinder + Slope
-    3. Create object system. Enum with object types (respawn, weapon, etc).
+    1. Add Debug window to edit transforms. Only in debug build - DONE
+    2. Create respawn object model. Cylinder + Slope - DONE
+    3. Create object system. Enum with object types (respawn, weapon, etc). - DONE
     4. Every Object has a transform. Each object inherits from it.
 */
 

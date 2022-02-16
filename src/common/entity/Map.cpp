@@ -94,6 +94,36 @@ Game::Map::Map::ChunkIterator Game::Map::Map::CreateChunkIterator()
     return ChunkIterator{this, GetChunkIndices()};
 }
 
+// #### Respawns #### \\
+
+void Map::AddRespawn(Respawn respawn)
+{
+    respawns_[respawn.pos] = respawn;    
+}
+
+Respawn* Map::GetRespawn(glm::ivec3 pos)
+{
+    Respawn* respawn = nullptr;
+    if(respawns_.find(pos) != respawns_.end())
+        respawn = &respawns_[pos];
+        
+    return respawn;
+}
+
+std::vector<glm::ivec3> Map::GetRespawnIndices() const
+{
+    std::vector<glm::ivec3> vec{};
+    for(auto [pos, respawn] : respawns_)
+        vec.push_back(pos);
+
+    return vec;
+}
+
+void Map::RemoveRespawn(glm::ivec3 pos)
+{
+    respawns_.erase(pos);
+}
+
 // #### Serialization #### \\
 
 Util::Buffer Game::Map::Map::ToBuffer()
@@ -132,7 +162,7 @@ Util::Buffer Game::Map::Map::ToBuffer()
 
     // Write respawns
     buffer.Write(respawns_.size());
-    for(auto respawn : respawns_)
+    for(auto [id, respawn] : respawns_)
         buffer.Write(respawn);
 
     return buffer;
@@ -167,13 +197,12 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
     }
 
     // Read respawns
-    /* TODO: Uncomment this
     auto respawnCount = reader.Read<std::size_t>();
     for(auto i = 0; i < respawnCount; i++)
     {
         auto respawn = reader.Read<Respawn>();
-        map.respawns_.push_back(respawn);
-    }*/
+        map.respawns_[respawn.pos] = respawn;
+    }
 
     return std::move(map);
 }
