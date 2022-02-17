@@ -246,6 +246,7 @@ namespace BlockBuster
 
             // Tools - GUI
             void ToolsTab();
+            void PlaceBlockGUI();
             void SelectBlockTypeGUI();
             void SelectBlockDisplayGUI();
             void RotateBlockGUI();

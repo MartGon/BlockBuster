@@ -775,6 +775,35 @@ void Editor::ToolsTab()
     }
 }
 
+void Editor::PlaceBlockGUI()
+{
+    
+    if(ImGui::BeginTable("##Place Block Options Table", 2, 0, ImVec2{0, 0}))
+    {
+        ImGui::TableSetupColumn("##Block Type", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("##Painting Options", 0);
+
+        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TableHeader("##Block Type");
+        ImGui::SameLine();
+        ImGui::Text("Block Type");
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TableHeader("##Painting Options");
+        ImGui::SameLine();
+        ImGui::Text("Painting Options");
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+            SelectBlockTypeGUI();
+        ImGui::TableNextColumn();
+            SelectBlockDisplayGUI();
+
+        ImGui::EndTable();
+    }
+}
+
 void BlockBuster::Editor::Editor::SelectBlockTypeGUI()
 {
     ImGui::Text("Block Type");
@@ -1168,8 +1197,7 @@ void Editor::SelectBlocksGUI()
                     PaintSelection();
                 }
 
-                SelectBlockTypeGUI();
-                SelectBlockDisplayGUI();
+                PlaceBlockGUI();
             }
 
             default:
@@ -1235,10 +1263,13 @@ void Editor::ToolOptionsGUI()
     switch (tool)
     {
     case PLACE_BLOCK:
-        SelectBlockTypeGUI();
+        PlaceBlockGUI();
+        break;
+
     case PAINT_BLOCK:
         SelectBlockDisplayGUI();
         break;
+
     case ROTATE_BLOCK:
         RotateBlockGUI();
         break;
