@@ -29,10 +29,9 @@
 #include <functional>
 
 /* TODO LIST
-    1. Add Debug window to edit transforms. Only in debug build - DONE
-    2. Create respawn object model. Cylinder + Slope - DONE
-    3. Create object system. Enum with object types (respawn, weapon, etc). - DONE
-    4. Every Object has a transform. Each object inherits from it.
+    1. Implement select object tool
+    2. Change respawn color based on teamId
+    3. Choose rotation in place block
 */
 
 namespace BlockBuster
@@ -80,7 +79,6 @@ namespace BlockBuster
             enum TabState
             {
                 TOOLS_TAB,
-                OBJECTS_TAB,
                 OPTIONS_TAB,
 
                 DEBUG_TAB
@@ -247,12 +245,17 @@ namespace BlockBuster
             void HelpShortCutWindow();
 
             // Tools - GUI
+            void ToolsTab();
             void SelectBlockTypeGUI();
             void SelectBlockDisplayGUI();
+            void RotateBlockGUI();
+            void SelectBlocksGUI();
+            void PlaceObjectGUI();
 
             // GameObject
             void InputProperty(Entity::GameObject* go, const char* key, Entity::GameObject::Property::Type type);
 
+            void ToolOptionsGUI();
             void GUI();
 
             // Project

@@ -8,6 +8,9 @@
 
 // #### GUI - PopUps #### \\
 
+using namespace BlockBuster::Editor;
+using namespace Entity;
+
 void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& params)
 {
     auto displaySize = io_->DisplaySize;
@@ -669,6 +672,109 @@ void BlockBuster::Editor::Editor::HelpShortCutWindow()
 
 // #### GUI - Tools #### \\
 
+void Editor::ToolsTab()
+{
+    if(ImGui::IsItemActive())
+        tabState = TabState::TOOLS_TAB;
+
+    bool pbSelected = tool == PLACE_BLOCK;
+    bool rotbSelected = tool == ROTATE_BLOCK;
+    bool paintSelected = tool == PAINT_BLOCK;
+    bool selectSelected = tool == SELECT_BLOCKS;
+
+    ImGui::SetCursorPosX(0);
+    auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit;
+    if(ImGui::BeginTable("#Tools", 2, 0, ImVec2{0, 0}))
+    {
+        // Title Column 1
+        ImGui::TableSetupColumn("##Tools", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("##Tool Options", 0);
+        
+        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TableHeader("##Tools");
+        ImGui::SameLine();
+        ImGui::Text("Tools");
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TableHeader("##Tool Options");
+        ImGui::SameLine();
+        ImGui::Text("Tools Options");
+        
+        // Map Tools Table
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+
+        ImGui::SetCursorPosX(4);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1, 1, 0.0f, 1.0f});
+        ImGui::Text("Map Tools");
+        ImGui::PopStyleColor();
+        if(ImGui::BeginTable("##Map Tools", 2, 0, ImVec2{120, 0}))
+        {
+            ImGui::TableNextColumn();
+            ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
+            if(ImGui::Selectable("Place", &pbSelected, 0, ImVec2{0, 0}))
+            {
+                SelectTool(PLACE_BLOCK);
+            }
+
+            ImGui::TableNextColumn();
+            if(ImGui::Selectable("Rotate", &rotbSelected, 0, ImVec2{0, 0}))
+            {
+                SelectTool(ROTATE_BLOCK);
+            }
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            if(ImGui::Selectable("Paint", &paintSelected, 0, ImVec2{0, 0}))
+            {
+                SelectTool(PAINT_BLOCK);
+            }
+
+            ImGui::TableNextColumn();
+            if(ImGui::Selectable("Select", selectSelected, 0, ImVec2{0, 0}))
+            {
+                SelectTool(SELECT_BLOCKS);
+            }
+
+            ImGui::PopStyleVar();
+
+            ImGui::EndTable();
+        }
+
+        ImGui::SetCursorPosX(4);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1, 1, 0.0f, 1.0f});
+        ImGui::Text("Object Tools");
+        ImGui::PopStyleColor();
+        if(ImGui::BeginTable("##Object Tools", 2, 0, ImVec2{120, 0}))
+        {
+            ImGui::TableNextColumn();
+            ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
+            if(ImGui::Selectable("Place", tool == PLACE_OBJECT, 0, ImVec2{0, 0}))
+            {
+                SelectTool(PLACE_OBJECT);
+            }
+
+            ImGui::TableNextColumn();
+            if(ImGui::Selectable("Select", tool == SELECT_OBJECT, 0, ImVec2{0, 0}))
+            {
+                SelectTool(SELECT_OBJECT);
+            }
+            ImGui::PopStyleVar();
+
+            ImGui::EndTable();
+        }
+        
+
+        // Tools Options
+        ImGui::TableNextColumn();
+
+        ToolOptionsGUI();
+
+        ImGui::EndTable();
+    }
+}
+
 void BlockBuster::Editor::Editor::SelectBlockTypeGUI()
 {
     ImGui::Text("Block Type");
@@ -813,7 +919,283 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
     }
 }
 
-using namespace Entity;
+void BlockBuster::Editor::Editor::RotateBlockGUI()
+{
+    ImGui::Text("Axis");
+
+    ImGui::SameLine();
+    ImGui::RadioButton("Y", &axis,Game::RotationAxis::Y);
+    ImGui::SameLine();
+    ImGui::RadioButton("Z", &axis,Game::RotationAxis::Z);
+}
+
+void Editor::SelectBlocksGUI()
+{
+    if(ImGui::BeginTable("##Select Scale", 4))
+    {
+        ImGui::TableSetupColumn("##Title", ImGuiTableColumnFlags_WidthFixed, 60);
+        ImGui::TableSetupColumn("##Scale x", ImGuiTableColumnFlags_WidthFixed, 180);
+        ImGui::TableSetupColumn("##Scale y", ImGuiTableColumnFlags_WidthFixed, 180);
+        ImGui::TableSetupColumn("##Scale z", ImGuiTableColumnFlags_WidthFixed, 180);
+        ImGui::TableNextColumn();
+
+        ImGui::Text("Scale");
+        ImGui::TableNextColumn();
+        
+        auto flag = movingSelection ? ImGuiInputTextFlags_ReadOnly : 0;
+        ImGui::InputInt("X", &cursor.scale.x, 1, 1, flag);
+        ImGui::TableNextColumn();
+        ImGui::InputInt("Y", &cursor.scale.y, 1, 1, flag);
+        ImGui::TableNextColumn();
+        ImGui::InputInt("Z", &cursor.scale.z, 1, 1, flag);
+
+        cursor.scale = glm::max(cursor.scale, glm::ivec3{1, 1, 1});
+
+        ImGui::EndTable();
+    }
+
+    if(ImGui::BeginTable("##Select Pos", 4))
+    {
+        ImGui::TableSetupColumn("##Title", ImGuiTableColumnFlags_WidthFixed, 60);
+        ImGui::TableSetupColumn("##Pos x", ImGuiTableColumnFlags_WidthFixed, 180);
+        ImGui::TableSetupColumn("##Pos y", ImGuiTableColumnFlags_WidthFixed, 180);
+        ImGui::TableSetupColumn("##Pos z", ImGuiTableColumnFlags_WidthFixed, 180);
+        ImGui::TableNextColumn();
+
+        ImGui::Text("Position");
+        ImGui::TableNextColumn();
+
+        auto nextPos = cursor.pos;
+        bool hasSelectionMoved = false;
+        hasSelectionMoved |= ImGui::InputInt("X", &nextPos.x, 1);
+        ImGui::TableNextColumn();
+        hasSelectionMoved |= ImGui::InputInt("Y", &nextPos.y, 1);
+        ImGui::TableNextColumn();
+        hasSelectionMoved |= ImGui::InputInt("Z", &nextPos.z, 1);
+        ImGui::TableNextColumn();
+        if(hasSelectionMoved)
+            MoveSelectionCursor(nextPos);
+
+        ImGui::EndTable();
+    }
+    
+    if(ImGui::BeginTable("###Select tools", 2, 0))
+    {
+        ImGui::TableSetupColumn("##Sub-Tools", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("##Tool Options", 0);
+
+        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TableHeader("##Sub-Tools");
+        ImGui::SameLine();
+        ImGui::Text("Sub-Tools");
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TableHeader("##Tool Options");
+        ImGui::SameLine();
+        ImGui::Text("Tools Options");
+
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
+
+        auto cursorX = ImGui::GetCursorPosX();
+        ImGui::SetCursorPosX(cursorX + 4);
+        if(ImGui::BeginTable("###Select Tools Pad", 2, 0, ImVec2{100, 0}))
+        {
+            const std::array<const char*, 4> names = std::array<const char*, 4>{"Move", "Edit", "Rotate", "Fill"};
+            for(unsigned int i = SelectSubTool::MOVE; i < SelectSubTool::END; i++)
+            {
+                auto subTool = static_cast<SelectSubTool>(i);
+                ImGui::TableNextColumn();
+                ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
+                if(ImGui::Selectable(names[i], &selectTool, subTool))
+                    OnChooseSelectSubTool(selectTool);
+
+                ImGui::PopStyleVar();
+            }
+            
+
+            ImGui::EndTable();
+        }
+
+        ImGui::TableNextColumn();
+        switch (selectTool)
+        {
+            case SelectSubTool::MOVE:
+            {
+                const char* label = movingSelection ? "Stop Moving" : "Start Moving";
+                ImVec4 color = movingSelection ? ImVec4{1.0f, 0.0f, 0.0f, 1.0f} : ImVec4{0.0f, 1.0f, 0.0f, 1.0f};
+                ImGui::PushStyleColor(ImGuiCol_Button, color);
+                if(ImGui::Button(label))
+                {
+                    movingSelection = !movingSelection;
+                    if(movingSelection)
+                        SelectBlocks();
+                    else
+                        ClearSelection();
+                }
+                ImGui::PopStyleColor();
+
+                #ifdef _DEBUG
+                ImGui::Text("Selected %zu blocks", selection.size());
+                ImVec2 size {0, 40};
+                if(ImGui::BeginTable("Selection", 1, ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY, size))
+                {
+                    for(auto pair : selection)
+                    {
+                        ImGui::TableNextColumn();
+                        std::string str = "Block pos: " + Debug::ToString(pair.first);
+                        ImGui::Text("%s", str.c_str());
+                    }
+                    ImGui::EndTable();
+                }
+                #endif
+            }
+            break;
+            
+            case SelectSubTool::EDIT:
+            {
+                if(ImGui::Button("Copy"))
+                {
+                    CopySelection();
+                }
+                ImGui::SameLine();
+
+                if(ImGui::Button("Cut"))
+                {
+                    CutSelection();
+                }
+                ImGui::SameLine();
+
+                if(ImGui::Button("Paste"))
+                {
+                    PasteSelection();
+                }
+                ImGui::SameLine();
+
+                if(ImGui::Button("Remove"))
+                {
+                    RemoveSelection();
+                }
+                ImGui::SameLine();
+                break;
+            }
+
+            case SelectSubTool::ROTATE_OR_MIRROR:
+            {
+                if(ImGui::BeginTable("## Rotate or Mirror", 2))
+                {
+                    ImGui::TableSetupColumn("## whatever", ImGuiTableColumnFlags_WidthFixed);
+                    ImGui::TableNextColumn();
+                    
+                    ImGui::TableHeader("Rotate");
+                    ImGui::TableNextColumn();
+
+                    ImGui::TableHeader("Mirror");
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+
+                    ImGui::Text("Axis");
+
+                    ImGui::SameLine();
+                    ImGui::RadioButton("X", &selectRotAxis,Game::RotationAxis::X);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("Y", &selectRotAxis,Game::RotationAxis::Y);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("Z", &selectRotAxis,Game::RotationAxis::Z);
+
+                    ImGui::Text("Rotation angle (deg)");
+
+                    ImGui::SameLine();
+                    ImGui::RadioButton("90", &selectRotType, Game::RotType::ROT_90);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("180", &selectRotType, Game::RotType::ROT_180);
+
+                    if(ImGui::Button("Rotate selection"))
+                    {
+                        auto res = RotateSelection(selectRotAxis, selectRotType);
+                        selectRotErrorText = res.info;
+                    }
+
+                    ImGui::TableNextColumn();
+
+                    ImGui::Text("Plane");
+                    ImGui::RadioButton("XY", &selectMirrorPlane, MirrorPlane::XY);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("XZ", &selectMirrorPlane, MirrorPlane::XZ);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("YZ", &selectMirrorPlane, MirrorPlane::YZ);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("-XY", &selectMirrorPlane, MirrorPlane::NOT_XY);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("-XZ", &selectMirrorPlane, MirrorPlane::NOT_XZ);
+                    ImGui::SameLine();
+                    ImGui::RadioButton("-YZ", &selectMirrorPlane, MirrorPlane::NOT_YZ);
+
+
+                    if(ImGui::Button("Mirror selection"))
+                    {
+                        auto res = MirrorSelection(selectMirrorPlane);
+                        selectRotErrorText = res.info;
+                    }
+
+                    ImGui::EndTable();
+                }
+                // Error text
+                ImVec4 red{1.0f, 0.0f, 0.0f, 1.0f};
+                ImGui::PushStyleColor(ImGuiCol_Text, red);
+                ImGui::Text("%s", selectRotErrorText.c_str());
+                ImGui::PopStyleColor();
+                break;
+            }
+
+            case SelectSubTool::FILL_OR_PAINT:
+            {
+                if(ImGui::Button("Fill"))
+                {
+                    FillSelection();
+                }
+
+                ImGui::SameLine();
+                if(ImGui::Button("Replace"))
+                {
+                    ReplaceSelection();
+                }
+
+                ImGui::SameLine();
+                if(ImGui::Button("Paint"))
+                {
+                    PaintSelection();
+                }
+
+                SelectBlockTypeGUI();
+                SelectBlockDisplayGUI();
+            }
+
+            default:
+                break;
+        }
+
+
+        ImGui::EndTable();
+    }
+}
+
+void Editor::PlaceObjectGUI()
+{
+    if(ImGui::Combo("Object Type", &objectType, Entity::GameObject::objectTypesToString, Entity::GameObject::COUNT))
+    {
+        placedGo.type = static_cast<Entity::GameObject::Type>(objectType);
+    }
+
+    ImGui::Dummy(ImVec2{10, 0}); ImGui::SameLine();
+    ImGui::Text("Object Properties");
+    auto propertiesTemplate = GameObject::GetPropertyTemplate(placedGo.type);
+    for(auto p : propertiesTemplate)
+    {
+        InputProperty(&placedGo, p.name.c_str(), p.type);
+    }
+}
 
 void BlockBuster::Editor::Editor::InputProperty(Entity::GameObject* go, const char* key, GameObject::Property::Type type)
 {
@@ -848,6 +1230,31 @@ void BlockBuster::Editor::Editor::InputProperty(Entity::GameObject* go, const ch
 
 // #### GUI - Base #### \\
 
+void Editor::ToolOptionsGUI()
+{
+    switch (tool)
+    {
+    case PLACE_BLOCK:
+        SelectBlockTypeGUI();
+    case PAINT_BLOCK:
+        SelectBlockDisplayGUI();
+        break;
+    case ROTATE_BLOCK:
+        RotateBlockGUI();
+        break;
+
+    case SELECT_BLOCKS:
+        SelectBlocksGUI();
+        break;
+    
+    case PLACE_OBJECT:
+        PlaceObjectGUI();
+    
+    default:
+        break;
+    }
+}
+
 void BlockBuster::Editor::Editor::GUI()
 {
     // Clear GUI buffer
@@ -871,421 +1278,7 @@ void BlockBuster::Editor::Editor::GUI()
             auto flags = tabState == TabState::TOOLS_TAB ? ImGuiTabItemFlags_SetSelected : 0;
             if(ImGui::BeginTabItem("Tools", nullptr, flags))
             {
-                if(ImGui::IsItemActive())
-                    tabState = TabState::TOOLS_TAB;
-
-                bool pbSelected = tool == PLACE_BLOCK;
-                bool rotbSelected = tool == ROTATE_BLOCK;
-                bool paintSelected = tool == PAINT_BLOCK;
-                bool selectSelected = tool == SELECT_BLOCKS;
-
-                ImGui::SetCursorPosX(0);
-                auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit;
-                if(ImGui::BeginTable("#Tools", 2, 0, ImVec2{0, 0}))
-                {
-                    // Title Column 1
-                    ImGui::TableSetupColumn("##Tools", ImGuiTableColumnFlags_WidthFixed);
-                    ImGui::TableSetupColumn("##Tool Options", 0);
-                    
-                    ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::TableHeader("##Tools");
-                    ImGui::SameLine();
-                    ImGui::Text("Tools");
-
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::TableHeader("##Tool Options");
-                    ImGui::SameLine();
-                    ImGui::Text("Tools Options");
-                    
-                    // Tools Table
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    if(ImGui::BeginTable("##Tools", 2, 0, ImVec2{120, 0}))
-                    {
-                        ImGui::TableNextColumn();
-                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
-                        if(ImGui::Selectable("Place", &pbSelected, 0, ImVec2{0, 0}))
-                        {
-                            SelectTool(PLACE_BLOCK);
-                        }
-
-                        ImGui::TableNextColumn();
-                        if(ImGui::Selectable("Rotate", &rotbSelected, 0, ImVec2{0, 0}))
-                        {
-                            SelectTool(ROTATE_BLOCK);
-                        }
-
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-                        if(ImGui::Selectable("Paint", &paintSelected, 0, ImVec2{0, 0}))
-                        {
-                            SelectTool(PAINT_BLOCK);
-                        }
-
-                        ImGui::TableNextColumn();
-                        if(ImGui::Selectable("Select", selectSelected, 0, ImVec2{0, 0}))
-                        {
-                            SelectTool(SELECT_BLOCKS);
-                        }
-
-                        ImGui::PopStyleVar();
-
-                        ImGui::EndTable();
-                    }
-
-                    // Tools Options
-                    ImGui::TableNextColumn();
-
-                    if(pbSelected)
-                    {
-                        SelectBlockTypeGUI();
-                    }
-
-                    if(pbSelected || paintSelected)
-                    {
-                        SelectBlockDisplayGUI();
-                    }
-                    
-                    if(rotbSelected)            
-                    {
-                        ImGui::Text("Axis");
-
-                        ImGui::SameLine();
-                        ImGui::RadioButton("Y", &axis,Game::RotationAxis::Y);
-                        ImGui::SameLine();
-                        ImGui::RadioButton("Z", &axis,Game::RotationAxis::Z);
-                    }
-
-                    if(selectSelected)
-                    {
-                        if(ImGui::BeginTable("##Select Scale", 4))
-                        {
-                            ImGui::TableSetupColumn("##Title", ImGuiTableColumnFlags_WidthFixed, 60);
-                            ImGui::TableSetupColumn("##Scale x", ImGuiTableColumnFlags_WidthFixed, 180);
-                            ImGui::TableSetupColumn("##Scale y", ImGuiTableColumnFlags_WidthFixed, 180);
-                            ImGui::TableSetupColumn("##Scale z", ImGuiTableColumnFlags_WidthFixed, 180);
-                            ImGui::TableNextColumn();
-
-                            ImGui::Text("Scale");
-                            ImGui::TableNextColumn();
-                            
-                            auto flag = movingSelection ? ImGuiInputTextFlags_ReadOnly : 0;
-                            ImGui::InputInt("X", &cursor.scale.x, 1, 1, flag);
-                            ImGui::TableNextColumn();
-                            ImGui::InputInt("Y", &cursor.scale.y, 1, 1, flag);
-                            ImGui::TableNextColumn();
-                            ImGui::InputInt("Z", &cursor.scale.z, 1, 1, flag);
-
-                            cursor.scale = glm::max(cursor.scale, glm::ivec3{1, 1, 1});
-
-                            ImGui::EndTable();
-                        }
-
-                        if(ImGui::BeginTable("##Select Pos", 4))
-                        {
-                            ImGui::TableSetupColumn("##Title", ImGuiTableColumnFlags_WidthFixed, 60);
-                            ImGui::TableSetupColumn("##Pos x", ImGuiTableColumnFlags_WidthFixed, 180);
-                            ImGui::TableSetupColumn("##Pos y", ImGuiTableColumnFlags_WidthFixed, 180);
-                            ImGui::TableSetupColumn("##Pos z", ImGuiTableColumnFlags_WidthFixed, 180);
-                            ImGui::TableNextColumn();
-
-                            ImGui::Text("Position");
-                            ImGui::TableNextColumn();
-
-                            auto nextPos = cursor.pos;
-                            bool hasSelectionMoved = false;
-                            hasSelectionMoved |= ImGui::InputInt("X", &nextPos.x, 1);
-                            ImGui::TableNextColumn();
-                            hasSelectionMoved |= ImGui::InputInt("Y", &nextPos.y, 1);
-                            ImGui::TableNextColumn();
-                            hasSelectionMoved |= ImGui::InputInt("Z", &nextPos.z, 1);
-                            ImGui::TableNextColumn();
-                            if(hasSelectionMoved)
-                                MoveSelectionCursor(nextPos);
-
-                            ImGui::EndTable();
-                        }
-                        
-                        if(ImGui::CollapsingHeader("Select Sub-tools"))
-                        {
-                            if(ImGui::BeginTable("###Select tools", 2, 0))
-                            {
-                                ImGui::TableSetupColumn("##Sub-Tools", ImGuiTableColumnFlags_WidthFixed);
-                                ImGui::TableSetupColumn("##Tool Options", 0);
-
-                                ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-                                ImGui::TableSetColumnIndex(0);
-                                ImGui::TableHeader("##Sub-Tools");
-                                ImGui::SameLine();
-                                ImGui::Text("Sub-Tools");
-
-                                ImGui::TableSetColumnIndex(1);
-                                ImGui::TableHeader("##Tool Options");
-                                ImGui::SameLine();
-                                ImGui::Text("Tools Options");
-
-                                ImGui::TableNextRow();
-                                ImGui::TableNextColumn();
-
-                                auto cursorX = ImGui::GetCursorPosX();
-                                ImGui::SetCursorPosX(cursorX + 4);
-                                if(ImGui::BeginTable("###Select Tools Pad", 2, 0, ImVec2{100, 0}))
-                                {
-                                    const std::array<const char*, 4> names = std::array<const char*, 4>{"Move", "Edit", "Rotate", "Fill"};
-                                    for(unsigned int i = SelectSubTool::MOVE; i < SelectSubTool::END; i++)
-                                    {
-                                        auto subTool = static_cast<SelectSubTool>(i);
-                                        ImGui::TableNextColumn();
-                                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
-                                        if(ImGui::Selectable(names[i], &selectTool, subTool))
-                                            OnChooseSelectSubTool(selectTool);
-
-                                        ImGui::PopStyleVar();
-                                    }
-                                    
-
-                                    ImGui::EndTable();
-                                }
-
-                                ImGui::TableNextColumn();
-                                switch (selectTool)
-                                {
-                                    case SelectSubTool::MOVE:
-                                    {
-                                        const char* label = movingSelection ? "Stop Moving" : "Start Moving";
-                                        ImVec4 color = movingSelection ? ImVec4{1.0f, 0.0f, 0.0f, 1.0f} : ImVec4{0.0f, 1.0f, 0.0f, 1.0f};
-                                        ImGui::PushStyleColor(ImGuiCol_Button, color);
-                                        if(ImGui::Button(label))
-                                        {
-                                            movingSelection = !movingSelection;
-                                            if(movingSelection)
-                                                SelectBlocks();
-                                            else
-                                                ClearSelection();
-                                        }
-                                        ImGui::PopStyleColor();
-
-                                        #ifdef _DEBUG
-                                        ImGui::Text("Selected %zu blocks", selection.size());
-                                        ImVec2 size {0, 40};
-                                        if(ImGui::BeginTable("Selection", 1, ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY, size))
-                                        {
-                                            for(auto pair : selection)
-                                            {
-                                                ImGui::TableNextColumn();
-                                                std::string str = "Block pos: " + Debug::ToString(pair.first);
-                                                ImGui::Text("%s", str.c_str());
-                                            }
-                                            ImGui::EndTable();
-                                        }
-                                        #endif
-                                    }
-                                    break;
-                                    
-                                    case SelectSubTool::EDIT:
-                                    {
-                                        if(ImGui::Button("Copy"))
-                                        {
-                                            CopySelection();
-                                        }
-                                        ImGui::SameLine();
-
-                                        if(ImGui::Button("Cut"))
-                                        {
-                                            CutSelection();
-                                        }
-                                        ImGui::SameLine();
-
-                                        if(ImGui::Button("Paste"))
-                                        {
-                                            PasteSelection();
-                                        }
-                                        ImGui::SameLine();
-
-                                        if(ImGui::Button("Remove"))
-                                        {
-                                            RemoveSelection();
-                                        }
-                                        ImGui::SameLine();
-                                        break;
-                                    }
-
-                                    case SelectSubTool::ROTATE_OR_MIRROR:
-                                    {
-                                        if(ImGui::BeginTable("## Rotate or Mirror", 2))
-                                        {
-                                            ImGui::TableSetupColumn("## whatever", ImGuiTableColumnFlags_WidthFixed);
-                                            ImGui::TableNextColumn();
-                                            
-                                            ImGui::TableHeader("Rotate");
-                                            ImGui::TableNextColumn();
-
-                                            ImGui::TableHeader("Mirror");
-                                            ImGui::TableNextRow();
-                                            ImGui::TableNextColumn();
-
-                                            ImGui::Text("Axis");
-
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("X", &selectRotAxis,Game::RotationAxis::X);
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("Y", &selectRotAxis,Game::RotationAxis::Y);
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("Z", &selectRotAxis,Game::RotationAxis::Z);
-
-                                            ImGui::Text("Rotation angle (deg)");
-
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("90", &selectRotType, Game::RotType::ROT_90);
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("180", &selectRotType, Game::RotType::ROT_180);
-
-                                            if(ImGui::Button("Rotate selection"))
-                                            {
-                                                auto res = RotateSelection(selectRotAxis, selectRotType);
-                                                selectRotErrorText = res.info;
-                                            }
-
-                                            ImGui::TableNextColumn();
-
-                                            ImGui::Text("Plane");
-                                            ImGui::RadioButton("XY", &selectMirrorPlane, MirrorPlane::XY);
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("XZ", &selectMirrorPlane, MirrorPlane::XZ);
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("YZ", &selectMirrorPlane, MirrorPlane::YZ);
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("-XY", &selectMirrorPlane, MirrorPlane::NOT_XY);
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("-XZ", &selectMirrorPlane, MirrorPlane::NOT_XZ);
-                                            ImGui::SameLine();
-                                            ImGui::RadioButton("-YZ", &selectMirrorPlane, MirrorPlane::NOT_YZ);
-
-
-                                            if(ImGui::Button("Mirror selection"))
-                                            {
-                                                auto res = MirrorSelection(selectMirrorPlane);
-                                                selectRotErrorText = res.info;
-                                            }
-
-                                            ImGui::EndTable();
-                                        }
-                                        // Error text
-                                        ImVec4 red{1.0f, 0.0f, 0.0f, 1.0f};
-                                        ImGui::PushStyleColor(ImGuiCol_Text, red);
-                                        ImGui::Text("%s", selectRotErrorText.c_str());
-                                        ImGui::PopStyleColor();
-                                        break;
-                                    }
-
-                                    case SelectSubTool::FILL_OR_PAINT:
-                                    {
-                                        if(ImGui::Button("Fill"))
-                                        {
-                                            FillSelection();
-                                        }
-
-                                        ImGui::SameLine();
-                                        if(ImGui::Button("Replace"))
-                                        {
-                                            ReplaceSelection();
-                                        }
-
-                                        ImGui::SameLine();
-                                        if(ImGui::Button("Paint"))
-                                        {
-                                            PaintSelection();
-                                        }
-
-                                        SelectBlockTypeGUI();
-                                        SelectBlockDisplayGUI();
-                                    }
-
-                                    default:
-                                        break;
-                                }
-
-
-                                ImGui::EndTable();
-                            }
-                        }
-                    }
-
-                    ImGui::EndTable();
-                }
-
-                ImGui::EndTabItem();
-            }
-            
-            flags = tabState == TabState::OBJECTS_TAB ? ImGuiTabItemFlags_SetSelected : 0;
-            if(ImGui::BeginTabItem("Objects", nullptr, flags))
-            {
-                if(ImGui::IsItemActive())
-                    tabState = TabState::OBJECTS_TAB;
-
-                ImGui::SetCursorPosX(0);
-                auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit;
-                if(ImGui::BeginTable("#Tools", 2, 0, ImVec2{0, 0}))
-                {
-                    ImGui::TableSetupColumn("##Tools", ImGuiTableColumnFlags_WidthFixed);
-                    ImGui::TableSetupColumn("##Tool Options", 0);
-                    
-                    ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::TableHeader("##Tools");
-                    ImGui::SameLine();
-                    ImGui::Text("Tools");
-
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::TableHeader("##Tool Options");
-                    ImGui::SameLine();
-                    ImGui::Text("Tools Options");
-                    
-                    // Tools Table
-                    ImGui::TableNextRow();
-                    ImGui::TableNextColumn();
-                    if(ImGui::BeginTable("##Tools", 2, 0, ImVec2{120, 0}))
-                    {
-                        ImGui::TableNextColumn();
-                        ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
-                        if(ImGui::Selectable("Place", tool == PLACE_OBJECT, 0, ImVec2{0, 0}))
-                        {
-                            SelectTool(PLACE_OBJECT);
-                        }
-
-                        ImGui::TableNextColumn();
-                        if(ImGui::Selectable("Select", tool == SELECT_OBJECT, 0, ImVec2{0, 0}))
-                        {
-                            SelectTool(SELECT_OBJECT);
-                        }
-
-                        ImGui::PopStyleVar();
-
-                        ImGui::EndTable();
-                    }
-
-                    // Tools Options
-                    ImGui::TableNextColumn();
-
-                    if(tool == PLACE_OBJECT)
-                    {
-                        if(ImGui::Combo("Object Type", &objectType, Entity::GameObject::objectTypesToString, Entity::GameObject::COUNT))
-                        {
-                            placedGo.type = static_cast<Entity::GameObject::Type>(objectType);
-                        }
-
-                        ImGui::Dummy(ImVec2{10, 0}); ImGui::SameLine();
-                        ImGui::Text("Object Properties");
-                        auto propertiesTemplate = GameObject::GetPropertyTemplate(placedGo.type);
-                        for(auto p : propertiesTemplate)
-                        {
-                            InputProperty(&placedGo, p.name.c_str(), p.type);
-                        }
-                    }
-
-                    ImGui::EndTable();
-                }
+                ToolsTab();
 
                 ImGui::EndTabItem();
             }
