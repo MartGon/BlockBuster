@@ -230,10 +230,17 @@ namespace Game
             std::vector<glm::ivec3> GetRespawnIndices() const;
             void RemoveRespawn(glm::ivec3 pos);
 
+            // GameObjects
+            void AddGameObject(Entity::GameObject go);
+            Entity::GameObject* GetGameObject(glm::ivec3 pos);
+            std::vector<glm::ivec3> GetGameObjectIndices() const;
+            void RemoveGameObject(glm::ivec3 pos);
+
         private:
             float blockScale = 2.0f;
             std::unordered_map<glm::ivec3, Chunk> chunks_;
             std::unordered_map<glm::ivec3, Respawn> respawns_;
+            std::unordered_map<glm::ivec3, Entity::GameObject> gameObjects_;
             Entity::ID lastRespawnId = 0;
         };
 

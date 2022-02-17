@@ -29,6 +29,8 @@
 #include <functional>
 
 /* TODO LIST
+    0a. Change Respawns to gameObject. Handle them in Map as a special case
+    0b. Consider forbidding getting a reference to edit. Allow only to remove or place. Makes things easier overall to undo/redo
     1. Implement select object tool
     2. Change respawn color based on teamId
     3. Choose rotation in place block

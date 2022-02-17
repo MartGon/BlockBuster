@@ -124,6 +124,36 @@ void Map::RemoveRespawn(glm::ivec3 pos)
     respawns_.erase(pos);
 }
 
+// #### GameObjects #### \\
+
+void Map::AddGameObject(Entity::GameObject go)
+{
+    gameObjects_[go.pos] = go;    
+}
+
+Entity::GameObject* Map::GetGameObject(glm::ivec3 pos)
+{
+    Entity::GameObject* go = nullptr;
+    if(gameObjects_.find(pos) != gameObjects_.end())
+        go = &gameObjects_[pos];
+        
+    return go;
+}
+
+std::vector<glm::ivec3> Map::GetGameObjectIndices() const
+{
+    std::vector<glm::ivec3> vec{};
+    for(auto [pos, go] : gameObjects_)
+        vec.push_back(pos);
+
+    return vec;
+}
+
+void Map::RemoveGameObject(glm::ivec3 pos)
+{
+    gameObjects_.erase(pos);
+}
+
 // #### Serialization #### \\
 
 Util::Buffer Game::Map::Map::ToBuffer()

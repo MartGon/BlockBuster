@@ -49,7 +49,7 @@ namespace Entity
         static const char* objectTypesToString[Type::COUNT];
         static std::vector<Entity::GameObject::PropertyTemplate> GetPropertyTemplate(GameObject::Type type);
 
-        Math::Transform transform;
+        glm::ivec3 pos;
         Type type;
         std::unordered_map<std::string, Property> properties;
 
