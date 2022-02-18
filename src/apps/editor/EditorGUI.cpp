@@ -1232,27 +1232,31 @@ void BlockBuster::Editor::Editor::InputProperty(Entity::GameObject* go, const ch
         case GameObject::Property::Type::BOOL:
         {
             auto& ref = go->properties[key];
-            ImGui::Checkbox(key, &ref.boolean);
+            ImGui::Checkbox(key, &std::get<bool>(ref.value));
             break;
         }
         case GameObject::Property::Type::FLOAT:
         {
             auto& ref = go->properties[key];
-            ImGui::InputFloat(key, &ref.f);
+            ImGui::InputFloat(key, &std::get<float>(ref.value));
             break;
         }
         case GameObject::Property::Type::INT:
         {
             auto& ref = go->properties[key];
-            ImGui::InputInt(key, &ref.i);
+            ImGui::InputInt(key, &std::get<int>(ref.value));
             break;
         }
         case GameObject::Property::Type::STRING:
         {
             auto& ref = go->properties[key];
-            ImGui::InputText(key, ref.string, 16);
+            auto& str = std::get<std::string>(ref.value);
+            ImGui::InputText(key, str.data(), 16);
             break;
         }
+
+        default:
+            break;
     }
 }
 

@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <variant>
 
 namespace Entity
 {
@@ -13,25 +14,23 @@ namespace Entity
     {
     public:
 
+        
+
         struct Property
         {
+            using Value = std::variant<float, int, std::string, bool>;
             enum class Type
             {
+                BOOL,
+                STRING,
                 FLOAT,
                 INT,
-                STRING,
-                BOOL,
-            };
-            
 
-            Type type;
-            union
-            {
-                float f;
-                int i;
-                char string[16];
-                bool boolean;
+                COUNT
             };
+
+            Value value;
+            Type type;
         };
 
         struct PropertyTemplate
@@ -48,9 +47,10 @@ namespace Entity
         };
         static const char* objectTypesToString[Type::COUNT];
         static std::vector<Entity::GameObject::PropertyTemplate> GetPropertyTemplate(GameObject::Type type);
+        static GameObject Create(GameObject::Type type);
 
-        glm::ivec3 pos;
-        Type type;
+        glm::ivec3 pos{0};
+        Type type = Type::RESPAWN;
         std::unordered_map<std::string, Property> properties;
 
     private:

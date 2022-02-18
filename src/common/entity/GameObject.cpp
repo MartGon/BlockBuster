@@ -16,3 +16,34 @@ std::vector<Entity::GameObject::PropertyTemplate> Entity::GameObject::GetPropert
 {
     return propertiesTemplate_[type];
 }
+
+GameObject GameObject::Create(GameObject::Type type)
+{
+    GameObject go;
+
+    auto propertyTemplates = GetPropertyTemplate(type);
+    for(auto p : propertyTemplates)
+    {
+        switch (p.type)
+        {
+        case Property::Type::BOOL:
+            go.properties[p.name].value = false;
+            break;
+        case Property::Type::INT:
+            go.properties[p.name].value = 0;
+            break;
+        case Property::Type::FLOAT:
+            go.properties[p.name].value = 0.0f;
+            break;
+        case Property::Type::STRING:
+            go.properties[p.name].value = "";
+            std::get<std::string>(go.properties[p.name].value).reserve(16);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    return go;
+}

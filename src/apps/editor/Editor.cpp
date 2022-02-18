@@ -70,6 +70,9 @@ void BlockBuster::Editor::Editor::Start()
     if(!mapLoaded)
         NewProject();
 
+    // Init template go
+    placedGo = Entity::GameObject::Create(Entity::GameObject::Type::RESPAWN);
+
     // Cursor
     cursor.show = GetConfigOption("showCursor", "1") == "1";
 

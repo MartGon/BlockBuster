@@ -154,9 +154,11 @@ void RemoveObjectAction::Do()
     auto map = map_->GetMap();
     auto respawn = map->GetRespawn(pos_);
     object_.type = Entity::GameObject::Type::RESPAWN;
-    object_.properties["Orientation"] = Entity::GameObject::Property{Entity::GameObject::Property::Type::FLOAT, respawn->orientation};
+    object_.properties["Orientation"].type = Entity::GameObject::Property::Type::FLOAT;
+    object_.properties["Orientation"].value = respawn->orientation;
     Entity::GameObject::Property teamId;
-    teamId.type = Entity::GameObject::Property::Type::INT; teamId.i = respawn->teamId;
+    teamId.type = Entity::GameObject::Property::Type::INT;
+    teamId.value = respawn->teamId;
     object_.properties["TeamId"] = teamId;
     map_->GetMap()->RemoveRespawn(pos_);
 }
@@ -172,8 +174,8 @@ void BlockBuster::Editor::PlaceObject(Entity::GameObject go, App::Client::Map* m
     {
         case Entity::GameObject::Type::RESPAWN:
         {
-            auto orientation = go.properties["Orientation"].f;
-            auto teamId = static_cast<uint8_t>(go.properties["TeamId"].i);
+            auto orientation = std::get<float>(go.properties["Orientation"].value);
+            auto teamId = static_cast<uint8_t>(std::get<int>(go.properties["TeamId"].value));
             Game::Map::Respawn respawn{pos, orientation, teamId};
             map->GetMap()->AddRespawn(respawn);
             break;
