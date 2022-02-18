@@ -131,9 +131,12 @@ namespace BlockBuster
 
             // Editor
             void UpdateEditor();
-            
             void SetCameraMode(::App::Client::CameraMode cameraMode);
+            void HandleKeyShortCut(const SDL_KeyboardEvent& e);
+            void SetUnsaved(bool unsaved);
+            void Exit();
 
+            // Tools - General
             void SelectTool(Tool tool);
             void UseTool(glm::vec<2, int> mousePos, ActionType actionType = ActionType::LEFT_BUTTON);
             void QueueAction(std::unique_ptr<ToolAction> action);
@@ -142,6 +145,12 @@ namespace BlockBuster
             void UndoToolAction();
             void ClearActionHistory();
 
+            // Paint tool
+            Game::Display GetBlockDisplay();
+            bool IsDisplayValid();
+            void SetBlockDisplay(Game::Display display);
+
+            // Selection cursor
             void DrawCursor(Math::Transform t);
             void DrawSelectCursor(glm::ivec3 pos);
             void EnumBlocksInSelection(std::function<void(glm::ivec3 pos, glm::ivec3 offset)> onEach);
@@ -153,6 +162,7 @@ namespace BlockBuster
             void MoveSelection(glm::ivec3 offset);
             void MoveSelectionCursor(glm::ivec3 nextPos);
 
+            // Select Tool
             void CopySelection();
             void RemoveSelection();
             void CutSelection();
@@ -165,14 +175,9 @@ namespace BlockBuster
             void PaintSelection();
             void OnChooseSelectSubTool(SelectSubTool subTool);
 
-            void HandleKeyShortCut(const SDL_KeyboardEvent& e);
-
-            Game::Display GetBlockDisplay();
-            bool IsDisplayValid();
-            void SetBlockDisplay(Game::Display display);
-
-            void SetUnsaved(bool unsaved);
-            void Exit();
+            // Object Tool
+            void SelectGameObject(glm::ivec3 pos);
+            void EditGameObject();
 
             // Test Mode
             void UpdatePlayerMode();
@@ -256,7 +261,7 @@ namespace BlockBuster
             void PlaceObjectGUI();
 
             // GameObject
-            void InputProperty(Entity::GameObject* go, const char* key, Entity::GameObject::Property::Type type);
+            void PropertyInput(Entity::GameObject* go, const char* key, Entity::GameObject::Property::Type type);
 
             void ToolOptionsGUI();
             void GUI();
@@ -345,6 +350,7 @@ namespace BlockBuster
             // Objects
             Entity::GameObject placedGo;
             int objectType = Entity::GameObject::RESPAWN;
+            glm::ivec3 selectedObj{0};
 
             // GUIGL
             GL::VertexArray gui_vao;

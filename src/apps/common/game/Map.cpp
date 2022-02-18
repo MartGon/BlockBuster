@@ -63,7 +63,7 @@ bool Map::IsNullBlock(glm::ivec3 pos) const
 
 bool Map::CanPlaceBlock(glm::ivec3 pos) const
 {
-    auto rids = map_.GetRespawnIndices();
+    auto rids = map_.GetGameObjectIndices();
     bool found = std::find(rids.begin(), rids.end(), pos) != rids.end();
     bool isNull = IsNullBlock(pos);
 

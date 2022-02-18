@@ -1221,11 +1221,11 @@ void Editor::PlaceObjectGUI()
     auto propertiesTemplate = GameObject::GetPropertyTemplate(placedGo.type);
     for(auto p : propertiesTemplate)
     {
-        InputProperty(&placedGo, p.name.c_str(), p.type);
+        PropertyInput(&placedGo, p.name.c_str(), p.type);
     }
 }
 
-void BlockBuster::Editor::Editor::InputProperty(Entity::GameObject* go, const char* key, GameObject::Property::Type type)
+void BlockBuster::Editor::Editor::PropertyInput(Entity::GameObject* go, const char* key, GameObject::Property::Type type)
 {
     switch(type)
     {
@@ -1284,6 +1284,18 @@ void Editor::ToolOptionsGUI()
     
     case PLACE_OBJECT:
         PlaceObjectGUI();
+        break;
+
+    case SELECT_OBJECT:
+        if(project.map.GetMap()->GetGameObject(selectedObj))
+        {
+            PlaceObjectGUI();
+            if(ImGui::Button("Apply Changes"))
+                EditGameObject();
+        }
+        else
+            ImGui::Text("No object selected. Click in an object to select it");
+        break;
     
     default:
         break;

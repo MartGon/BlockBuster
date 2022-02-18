@@ -137,30 +137,14 @@ void PlaceObjectAction::Do()
 
 void PlaceObjectAction::Undo()
 {
-    switch (object_.type)
-    {
-        case Entity::GameObject::Type::RESPAWN:
-        {
-            map_->GetMap()->RemoveRespawn(pos_);
-            break;
-        }
-        default:
-            break;
-    }
+    map_->GetMap()->RemoveGameObject(pos_);
 }
 
 void RemoveObjectAction::Do()
 {
     auto map = map_->GetMap();
-    auto respawn = map->GetRespawn(pos_);
-    object_.type = Entity::GameObject::Type::RESPAWN;
-    object_.properties["Orientation"].type = Entity::GameObject::Property::Type::FLOAT;
-    object_.properties["Orientation"].value = respawn->orientation;
-    Entity::GameObject::Property teamId;
-    teamId.type = Entity::GameObject::Property::Type::INT;
-    teamId.value = respawn->teamId;
-    object_.properties["TeamId"] = teamId;
-    map_->GetMap()->RemoveRespawn(pos_);
+    object_ = *map->GetGameObject(pos_);
+    map_->GetMap()->RemoveGameObject(pos_);
 }
 
 void RemoveObjectAction::Undo()
@@ -170,19 +154,8 @@ void RemoveObjectAction::Undo()
 
 void BlockBuster::Editor::PlaceObject(Entity::GameObject go, App::Client::Map* map, glm::ivec3 pos)
 {
-    switch (go.type)
-    {
-        case Entity::GameObject::Type::RESPAWN:
-        {
-            auto orientation = std::get<float>(go.properties["Orientation"].value);
-            auto teamId = static_cast<uint8_t>(std::get<int>(go.properties["TeamId"].value));
-            Game::Map::Respawn respawn{pos, orientation, teamId};
-            map->GetMap()->AddRespawn(respawn);
-            break;
-        }
-    default:
-        break;
-    }
+    go.pos = pos;
+    map->GetMap()->AddGameObject(go);
 }
 
 void BlockBuster::Editor::BatchedAction::Do()

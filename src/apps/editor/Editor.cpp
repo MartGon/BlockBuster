@@ -15,6 +15,8 @@
 
 #include <imgui/backends/imgui_impl_opengl3.h>
 
+using namespace BlockBuster::Editor;
+
 // #### Public Interface #### \\
 
 void BlockBuster::Editor::Editor::Start()
@@ -648,7 +650,7 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
                 else if(actionType == ActionType::RIGHT_BUTTON)
                 {
                     auto rpos = intersect.pos + glm::ivec3{0, 1, 0};
-                    if(auto respawn = project.map.GetMap()->GetRespawn(rpos))
+                    if(auto go = project.map.GetMap()->GetGameObject(rpos))
                     {
                         auto action = std::make_unique<RemoveObjectAction>(&project.map, rpos);
                         DoToolAction(std::move(action));
@@ -663,8 +665,33 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
         }
         case SELECT_OBJECT:
         {
+            if(intersect.intersection.intersects && intersection.normal.y == 1.0f)
+            {
+                auto oPos = intersect.pos + glm::ivec3{0, 1, 0};
+                if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::RIGHT_BUTTON)
+                {
+                    
+                    SelectGameObject(oPos);
+                }
+                else if(actionType == ActionType::HOVER)
+                {
+                    cursor.pos = oPos;
+                    if(auto go = project.map.GetMap()->GetGameObject(oPos))
+                    {
+                        cursor.enabled = true;
+                        cursor.type = blockType;
+                    }
+                    else if(auto go = project.map.GetMap()->GetGameObject(selectedObj))
+                    {
+                        cursor.pos = selectedObj;
+                        cursor.enabled = true;
+                        cursor.type = blockType;
+                    }
+                    else
+                        cursor.enabled = false;
+                }
+            }
             break;
-            
         }
     }
 }
@@ -1460,6 +1487,26 @@ void BlockBuster::Editor::Editor::Exit()
     }
     else
         quit = true;
+}
+
+void Editor::Editor::SelectGameObject(glm::ivec3 pos)
+{
+    if(auto object = project.map.GetMap()->GetGameObject(pos))
+    {
+        // Copy data to placedGo
+        placedGo = *object;
+        selectedObj = pos;
+    }
+}
+
+void Editor::EditGameObject()
+{
+    auto place = std::make_unique<PlaceObjectAction>(placedGo, &project.map, selectedObj);
+    auto remove = std::make_unique<RemoveObjectAction>(&project.map, selectedObj);
+    auto batch = std::make_unique<BatchedAction>();
+    batch->AddAction(std::move(remove));
+    batch->AddAction(std::move(place));
+    DoToolAction(std::move(batch));
 }
 
 // #### Test Mode #### \\

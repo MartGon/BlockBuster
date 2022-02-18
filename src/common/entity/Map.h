@@ -23,6 +23,9 @@ namespace Game
             glm::ivec3 pos;
             float orientation;
             uint8_t teamId = 0;
+
+            static Respawn FromGameObject(Entity::GameObject go);
+            Entity::GameObject ToGameObject();
         }; 
 
         class Map

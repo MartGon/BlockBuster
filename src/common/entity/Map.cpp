@@ -96,9 +96,32 @@ Game::Map::Map::ChunkIterator Game::Map::Map::CreateChunkIterator()
 
 // #### Respawns #### \\
 
+Respawn Respawn::FromGameObject(Entity::GameObject go)
+{
+    Respawn respawn;
+    respawn.pos = go.pos;
+    respawn.orientation = std::get<float>(go.properties["Orientation"].value);
+    respawn.teamId = static_cast<uint8_t>(std::get<int>(go.properties["TeamId"].value));
+
+    return respawn;
+}
+
+Entity::GameObject Respawn::ToGameObject()
+{
+    auto resGo = Entity::GameObject::Create(Entity::GameObject::Type::RESPAWN);
+    resGo.pos = pos;
+    resGo.properties["Orientation"].value = this->orientation;
+    resGo.properties["TeamId"].value = this->teamId;
+
+    return resGo;
+}
+
 void Map::AddRespawn(Respawn respawn)
 {
-    respawns_[respawn.pos] = respawn;    
+    respawns_[respawn.pos] = respawn;
+
+    if(!GetGameObject(respawn.pos))
+        AddGameObject(respawn.ToGameObject());
 }
 
 Respawn* Map::GetRespawn(glm::ivec3 pos)
@@ -121,21 +144,28 @@ std::vector<glm::ivec3> Map::GetRespawnIndices() const
 
 void Map::RemoveRespawn(glm::ivec3 pos)
 {
-    respawns_.erase(pos);
+    if(auto go = GetGameObject(pos); go->type == Entity::GameObject::Type::RESPAWN)
+    {
+        gameObjects_.erase(pos);
+        respawns_.erase(pos);
+    }
 }
 
 // #### GameObjects #### \\
 
 void Map::AddGameObject(Entity::GameObject go)
 {
-    gameObjects_[go.pos] = go;    
+    gameObjects_[go.pos] = go;
+
+    if(go.type == Entity::GameObject::Type::RESPAWN && !GetRespawn(go.pos))
+        AddRespawn(Respawn::FromGameObject(go));
 }
 
 Entity::GameObject* Map::GetGameObject(glm::ivec3 pos)
 {
     Entity::GameObject* go = nullptr;
     if(gameObjects_.find(pos) != gameObjects_.end())
-        go = &gameObjects_[pos];
+        go = &gameObjects_[pos];    
         
     return go;
 }
@@ -151,6 +181,9 @@ std::vector<glm::ivec3> Map::GetGameObjectIndices() const
 
 void Map::RemoveGameObject(glm::ivec3 pos)
 {
+    if(auto go = GetGameObject(pos); go->type == Entity::GameObject::Type::RESPAWN)
+        respawns_.erase(pos);
+
     gameObjects_.erase(pos);
 }
 
@@ -231,7 +264,7 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
     for(auto i = 0; i < respawnCount; i++)
     {
         auto respawn = reader.Read<Respawn>();
-        map.respawns_[respawn.pos] = respawn;
+        map.AddRespawn(respawn);
     }
 
     return std::move(map);

@@ -13,9 +13,6 @@ namespace Entity
     class GameObject
     {
     public:
-
-        
-
         struct Property
         {
             using Value = std::variant<float, int, std::string, bool>;
