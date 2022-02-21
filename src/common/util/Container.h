@@ -10,7 +10,7 @@ namespace Util::Vector
         const T* res = nullptr;
         if(!vec.empty())
         {
-            uint32_t max = vec.size();
+            uint32_t max = vec.size() - 1;
             auto index = Util::Random::Uniform(0, max);
             res = &vec[index];
         }

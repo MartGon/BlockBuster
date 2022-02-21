@@ -125,7 +125,10 @@ TEST_CASE("Queue")
 TEST_CASE("Random")
 {
     uint32_t max = 2;
-    uint32_t random = Util::Random::Uniform(0, max);
-    bool inRange = random >= 0 && random < 2;
-    CHECK(inRange == true);
+    for(int i = 0; i < 100; i++)
+    {
+        uint32_t random = Util::Random::Uniform(0, max);
+        bool inRange = random >= 0 && random <= max;
+        CHECK(inRange == true);
+    }
 }
