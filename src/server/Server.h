@@ -83,6 +83,12 @@ namespace BlockBuster
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
         glm::vec3 GetRandomPos() const;
 
+        // Match TODO: Should move these to their class/module
+        static const float MIN_SPAWN_ENEMY_DISTANCE;
+        glm::ivec3 FindSpawnPoint(Entity::Player player);
+        std::vector<Entity::Player> GetPlayers() const;
+        bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const;
+
         // Networking
         std::optional<ENet::Host> host;
         std::unordered_map<ENet::PeerId, Client> clients;
@@ -98,7 +104,6 @@ namespace BlockBuster
 
         // World
         Game::Map::Map map;
-
 
         Log::ComposedLogger logger;
     };

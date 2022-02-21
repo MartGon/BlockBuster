@@ -49,21 +49,22 @@ namespace Entity
     {
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain
 
-
         void ApplyState(PlayerState state);
         PlayerState ExtractState();
 
-        ID id;
+        ID id = 0;
+        
+
+        // State
         Math::Transform transform;
         bool onDmg = false;
-
-            // State
         static const float MAX_SHIELD;
         static const float MAX_HEALTH;
         float shield = MAX_SHIELD;
         float health = MAX_HEALTH;
-
         glm::vec3 lastMoveDir;
+
+        ID teamId = 0;
 
         Weapon* weapon = nullptr;
 

@@ -2,6 +2,7 @@
 
 #include <util/Buffer.h>
 #include <util/Ring.h>
+#include <util/Random.h>
 
 TEST_CASE("Buffer tests")
 {
@@ -119,4 +120,12 @@ TEST_CASE("Queue")
         CHECK(q.At(-2) == 1);
         CHECK(q.At(-3) == 0);
     }
+}
+
+TEST_CASE("Random")
+{
+    uint32_t max = 2;
+    uint32_t random = Util::Random::Uniform(0, max);
+    bool inRange = random >= 0 && random < 2;
+    CHECK(inRange == true);
 }

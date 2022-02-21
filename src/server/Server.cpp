@@ -1,6 +1,8 @@
 
 #include <Server.h>
 
+#include <util/Container.h>
+
 using namespace BlockBuster;
 using namespace Networking::Packets::Client;
 
@@ -68,7 +70,12 @@ void Server::InitNetworking()
         // Add player to table
         Entity::Player player;
         player.id = this->lastId++;
-        player.transform = Math::Transform{GetRandomPos(), glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
+        player.teamId = player.id;
+        auto sIndex = FindSpawnPoint(player);
+        auto spawn = map.GetRespawn(sIndex);
+        auto playerPos = Game::Map::ToRealPos(sIndex) + glm::vec3{0.0f, player.moveCollisionBox.scale.y / 2.0f, 0.0f};
+        //playerPos = GetRandomPos();
+        player.transform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
         clients[peerId].player = player;
 
         // Inform client
@@ -179,7 +186,7 @@ void Server::InitAI()
 
 void Server::InitMap()
 {
-    std::filesystem::path mapFile = "resources/maps/TestMap.bbm";
+    std::filesystem::path mapFile = "/home/defu/Projects/BlockBuster/resources/maps/TestMap.bbm";
     auto res = Game::Map::Map::LoadFromFile(mapFile);
     if(res.isOk())
     {
@@ -189,6 +196,7 @@ void Server::InitMap()
     else
     {
         logger.LogError("Could not load map " + mapFile.string());
+        std::exit(-1);
     }
 }
 
@@ -388,4 +396,61 @@ void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
 
     // Update next tick date
     nextTickDate = nextTickDate + TICK_RATE;
+}
+
+// Match
+
+const float Server::MIN_SPAWN_ENEMY_DISTANCE = 5.0f;
+
+// This should get a random spawn point from a list of valid ones
+// A valid spawn point is one which doesn't have an enemy in X distance
+// Return the first one, if it 
+glm::ivec3 Server::FindSpawnPoint(Entity::Player player)
+{
+    auto spawnPoints = map.GetRespawnIndices();
+
+    std::vector<glm::ivec3> validSpawns;
+    for(auto sPoint : spawnPoints)
+    {
+        if(IsSpawnValid(sPoint, player))
+            validSpawns.push_back(sPoint);
+    }
+
+    glm::ivec3 spawn;
+    if(!validSpawns.empty())
+        spawn = *Util::Vector::PickRandom(validSpawns);
+    else
+        spawn = *Util::Vector::PickRandom(spawnPoints);
+
+    return spawn;
+}
+
+bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
+{
+    auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
+
+    auto players = GetPlayers();
+    for(auto other : players)
+    {
+        if(other.teamId != player.teamId)
+        {
+            auto posA = other.transform.position;
+            auto dist = glm::length(posA - spawnPos);
+
+            if(dist < MIN_SPAWN_ENEMY_DISTANCE)
+                return false;
+        }
+    }
+
+    return true;
+}
+
+std::vector<Entity::Player> Server::GetPlayers() const
+{
+    std::vector<Entity::Player> players;
+    players.reserve(clients.size());
+    for(auto [id, client] : clients)
+        players.push_back(client.player);
+
+    return players;
 }
