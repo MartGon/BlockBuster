@@ -243,14 +243,14 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 
 void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
 {
-    Math::Transform transform{playerState.pos, glm::vec3{0.0f}, glm::vec3{1.f, 1.0f, 1.f}};
+    Math::Transform transform{playerState.pos, glm::vec3{playerState.rot, 0.0f}, glm::vec3{1.f, 1.0f, 1.f}};
     Entity::Player player{playerId, transform};
     playerTable[playerId] = player;
     prevPlayerPos[playerId] = player;
 
     // Setup player animator
-    playerStateTable[playerId] = PlayerState();
-    PlayerState& ps = playerStateTable[playerId];
+    playerStateTable[playerId] = PlayerModelState();
+    PlayerModelState& ps = playerStateTable[playerId];
 
     ps.idlePlayer.SetClip(playerAvatar.GetIdleAnim());
     ps.idlePlayer.SetTargetFloat("yPos", &ps.armsPivot.position.y);
@@ -611,16 +611,16 @@ void InGame::EntityInterpolation()
 
 void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& s1, const Networking::Snapshot& s2, float alpha)
 {
-    auto pos1 = s1.players.at(playerId).pos;
-    auto pos2 = s2.players.at(playerId).pos;
+    auto state1 = s1.players.at(playerId);
+    auto state2 = s2.players.at(playerId);
 
 #ifdef _DEBUG
-    auto diff = glm::length(pos2 - pos1);
-    client_->logger->LogDebug("P1 " + glm::to_string(pos1) + " P2 " + glm::to_string(pos2) + " D " + std::to_string(diff));
+    auto diff = glm::length(state2.pos - state1.pos);
+    client_->logger->LogDebug("P1 " + glm::to_string(state1.pos) + " P2 " + glm::to_string(state2.pos) + " D " + std::to_string(diff));
 #endif
 
-    auto smoothPos = pos1 * alpha + pos2 * (1 - alpha);
-    playerTable[playerId].transform.position = smoothPos;
+    auto smoothPos = Entity::Interpolate(state1, state2, alpha);
+    playerTable[playerId].ApplyState(smoothPos);
 }
 
 void InGame::HandleSDLEvents()

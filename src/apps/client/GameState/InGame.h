@@ -129,7 +129,7 @@ namespace BlockBuster
         GUI::Text text;
 
         // Player transforms
-        struct PlayerState
+        struct PlayerModelState
         {
             Animation::Player shootPlayer;
             Animation::Player idlePlayer;
@@ -138,7 +138,7 @@ namespace BlockBuster
             bool rightFlashActive = false;
         };
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
-        std::unordered_map<Entity::ID, PlayerState> playerStateTable;
+        std::unordered_map<Entity::ID, PlayerModelState> playerStateTable;
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerPos;
         float PLAYER_SPEED = 5.f;
 

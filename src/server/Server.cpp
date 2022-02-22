@@ -75,7 +75,7 @@ void Server::InitNetworking()
         auto spawn = map.GetRespawn(sIndex);
         auto playerPos = Game::Map::ToRealPos(sIndex, map.GetBlockScale()) + glm::vec3{0.0f, player.moveCollisionBox.scale.y / 2.0f, 0.0f};
         // TODO: Should set orientation as well, but prediction errors happen. Orientaiton is not updated in client
-        player.transform = Math::Transform{playerPos, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
+        player.transform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
         clients[peerId].player = player;
 
         // Inform client
@@ -338,8 +338,7 @@ void Server::SendWorldUpdate()
     for(auto& [id, client] : clients)
     {
         auto& player = client.player;
-        s.players[player.id].pos = player.transform.position;
-        s.players[player.id].onDmg = player.onDmg;
+        s.players[player.id] = player.ExtractState();
 
         client.player.onDmg = false;
     }
