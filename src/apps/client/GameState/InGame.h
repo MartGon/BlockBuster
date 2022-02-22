@@ -63,7 +63,7 @@ namespace BlockBuster
         void Predict(Entity::PlayerInput playerInput);
         void SmoothPlayerMovement();
         // TODO: CHange to PredPlayerState. Should store old player states
-        glm::vec3 PredPlayerPos(glm::vec3 pos, Entity::PlayerInput playerInput, Util::Time::Seconds deltaTime);
+        Entity::PlayerState PredPlayerState(Entity::PlayerState a, Entity::PlayerInput playerInput, Util::Time::Seconds deltaTime);
 
         // Networking - Entity Interpolation
         Util::Time::Seconds GetCurrentTime();
@@ -164,8 +164,8 @@ namespace BlockBuster
         struct Prediction
         {
             InputReq inputReq;
-            glm::vec3 origin;
-            glm::vec3 dest;
+            Entity::PlayerState origin;
+            Entity::PlayerState dest;
             Util::Time::SteadyPoint time;
         };
         Util::Ring<Prediction> predictionHistory_{128};
@@ -174,7 +174,7 @@ namespace BlockBuster
         Util::Time::Seconds predOffset{0};
 
         const Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0};
-        glm::vec3 errorCorrectionDiff{0};
+        Entity::PlayerState errorCorrectionDiff;
         Util::Time::SteadyPoint errorCorrectionStart;
 
         // Networking - Entity Interpolation

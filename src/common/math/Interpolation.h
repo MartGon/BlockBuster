@@ -19,4 +19,6 @@ namespace Math
     {
         return left * alpha + right * (1.0f - alpha);
     }
+
+    float InterpolateDeg(float left, float right, float alpha);
 }

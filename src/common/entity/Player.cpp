@@ -1,4 +1,5 @@
 #include <entity/Player.h>
+#include <math/Interpolation.h>
 
 using namespace Entity;
 
@@ -15,8 +16,42 @@ const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, gl
 const float Player::MAX_HEALTH = 100.0f;
 const float Player::MAX_SHIELD = 300.0f;
 
+// Player State
+
+Math::Transform PlayerState::GetTransform()
+{
+    Math::Transform t{pos, glm::vec3{rot, 0.0f}, glm::vec3{1.0f}};
+    return t;
+}
 
 // Functions
+
+Entity::PlayerState Entity::operator+(const Entity::PlayerState& a, const Entity::PlayerState& b)
+{
+    Entity::PlayerState res;
+    res.pos = a.pos + b.pos;
+    res.rot = a.rot + b.rot;
+
+    return res;
+}
+
+Entity::PlayerState Entity::operator-(const Entity::PlayerState& a, const Entity::PlayerState& b)
+{
+    Entity::PlayerState res;
+    res.pos = a.pos - b.pos;
+    res.rot = a.rot - b.rot;
+
+    return res;
+}
+
+Entity::PlayerState Entity::operator*(const Entity::PlayerState& a, float b)
+{
+    Entity::PlayerState res;
+    res.pos = a.pos * b;
+    res.rot = a.rot * b;
+
+    return res;
+}
 
 glm::vec3 Entity::PlayerInputToMove(PlayerInput input)
 {
@@ -27,4 +62,52 @@ glm::vec3 Entity::PlayerInputToMove(PlayerInput input)
         moveDir = glm::normalize(moveDir);  
 
     return moveDir;
+}
+
+float Entity::GetDifference(PlayerState a, PlayerState b)
+{
+    auto distance = glm::length(a.pos - b.pos);
+    auto diff = distance / glm::length(a.pos);
+
+    auto angleDist = glm::length(a.rot - b.rot);
+    auto aDiff = angleDist / glm::length(a.rot);
+
+    return std::max(diff, aDiff);
+}
+
+Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerState b, float alpha)
+{
+    Entity::PlayerState res;
+
+    auto pos1 = a.pos;
+    auto pos2 = b.pos;
+    res.pos = pos1 * alpha + pos2 * (1 - alpha);
+
+    auto pitch1 = a.rot.x;
+    auto pitch2 = b.rot.x;
+    res.rot.x = Math::InterpolateDeg(pitch1, pitch2, alpha);
+
+    auto yaw1 = a.rot.y;
+    auto yaw2 = b.rot.y;
+    res.rot.y = Math::InterpolateDeg(yaw1, yaw2, alpha);
+
+    return res;
+}
+
+// Player
+
+Entity::PlayerState Player::ExtractState() const
+{
+    Entity::PlayerState s;
+
+    s.pos = this->transform.position;
+    s.rot = glm::vec2{transform.rotation};
+
+    return s;
+}
+
+void Player::ApplyState(Entity::PlayerState s)
+{
+    this->transform.position = s.pos;
+    this->transform.rotation = glm::vec3{s.rot, 0.0f};
 }
