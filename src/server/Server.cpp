@@ -51,7 +51,7 @@ void Server::InitLogger()
     if(!flogger->IsOk())
         clogger->LogError("Could not create log file " + logFile.string());
 
-    logger.AddLogger(std::move(clogger));
+    //logger.AddLogger(std::move(clogger));
     logger.AddLogger(std::move(flogger));
     logger.SetVerbosity(Log::Verbosity::DEBUG);
 }

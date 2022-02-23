@@ -19,6 +19,7 @@
 #include <algorithm>
 
 using namespace BlockBuster;
+using namespace ::App::Client;
 
 InGame::InGame(Client* client) : GameState{client}, host{ENet::HostFactory::Get()->CreateHost(1, 2)}
 {
@@ -86,6 +87,7 @@ void InGame::Start()
     camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, client_->config.window.fov);
     camController_ = ::App::Client::CameraController{&camera_, {client_->window_, client_->io_}, ::App::Client::CameraMode::EDITOR};
+    camController_.SetMode(::App::Client::CameraMode::FPS);
 
     // Map
     auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
@@ -231,7 +233,16 @@ void InGame::Update()
 
 void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 {
-    camController_.Update();
+    auto camMode = camController_.GetMode();
+    if(camMode == CameraMode::FPS)
+    {
+        auto player = playerTable[playerId];
+        auto camPos = player.transform.position + glm::vec3{0.0f, 1.75f, 0.0f};
+        camera_.SetPos(camPos);
+    }
+    else
+        camController_.Update();
+
     fpsAvatar.Update(deltaTime);
 
     for(auto& [playerId, playerState] : playerStateTable)
@@ -459,7 +470,6 @@ void InGame::SmoothPlayerMovement()
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
         predOffset += deltaTime;
-        // TODO: Interpolate between prevState and endState
         auto predPos = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, predOffset);
 
         // Prediction Error correction
@@ -636,6 +646,16 @@ void InGame::HandleSDLEvents()
         case SDL_KEYDOWN:
             if(e.key.keysym.sym == SDLK_f)
                 drawMode = drawMode == GL_FILL ? GL_LINE : GL_FILL;
+            if(e.key.keysym.sym == SDLK_p)
+            {
+                using namespace ::App::Client;
+                auto mode = this->camController_.GetMode();
+                auto nextMode = mode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
+                this->camController_.SetMode(nextMode);
+            }
+            // TODO: Remove before release
+            if(e.key.keysym.sym == SDLK_ESCAPE)
+                client_->quit = true;
             break;
         }
         camController_.HandleSDLEvent(e);
@@ -679,8 +699,11 @@ void InGame::DrawScene()
     // Draw players
     for(auto player : playerTable)
     {
-        // Start Debug
         auto playerId = player.first;
+        if(this->playerId == playerId && camController_.GetMode() == CameraMode::FPS)
+            continue;
+
+        // Start Debug
         auto oldPos = prevPlayerPos[playerId].transform.position;
         auto newPos = player.second.transform.position;
         auto diff = newPos - oldPos;

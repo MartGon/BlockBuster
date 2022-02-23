@@ -83,7 +83,8 @@ namespace BlockBuster
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
         glm::vec3 GetRandomPos() const;
 
-        // Match TODO: Should move these to their class/module
+        // Match 
+        // TODO: Should move these to their class/module
         static const float MIN_SPAWN_ENEMY_DISTANCE;
         glm::ivec3 FindSpawnPoint(Entity::Player player);
         std::vector<Entity::Player> GetPlayers() const;

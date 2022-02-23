@@ -62,7 +62,6 @@ namespace BlockBuster
         Entity::PlayerController pController;
         void Predict(Entity::PlayerInput playerInput);
         void SmoothPlayerMovement();
-        // TODO: CHange to PredPlayerState. Should store old player states
         Entity::PlayerState PredPlayerState(Entity::PlayerState a, Entity::PlayerInput playerInput, Util::Time::Seconds deltaTime);
 
         // Networking - Entity Interpolation
