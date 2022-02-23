@@ -36,7 +36,7 @@ void Respawn::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     model->AddSubModel(std::move(sm1));
 
     // Slope
-    auto slopeT = Math::Transform{glm::vec3{0.0f, 0.130f, 0.750f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.240f, 1.0f}};
+    auto slopeT = Math::Transform{glm::vec3{0.0f, 0.130f, -0.750f}, glm::vec3{0.0f, 180.0f, 0.0f}, glm::vec3{1.0f, 0.240f, 1.0f}};
     painting.color = lightBlue;
     auto slope = Rendering::SubModel{slopeT, painting, slopePtr, &shader};
     model->AddSubModel(std::move(slope));

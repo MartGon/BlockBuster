@@ -74,11 +74,11 @@ void Server::InitNetworking()
         auto sIndex = FindSpawnPoint(player);
         auto spawn = map.GetRespawn(sIndex);
         auto playerPos = Game::Map::ToRealPos(sIndex, map.GetBlockScale()) + glm::vec3{0.0f, player.moveCollisionBox.scale.y / 2.0f, 0.0f};
-        // TODO: Should set orientation as well, but prediction errors happen. Orientaiton is not updated in client
         player.transform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
         clients[peerId].player = player;
 
         // Inform client
+        // TODO: Change for new packet system
         Networking::Command::Server::ClientConfig clientConfig;
         clientConfig.playerId = player.id;
         clientConfig.sampleRate = TICK_RATE.count();

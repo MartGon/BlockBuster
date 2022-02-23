@@ -481,17 +481,14 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
 {
     auto& player = playerTable[playerId];
     
-    pController.transform = a.GetTransform();
+    pController.transform.position = a.pos;
+    pController.transform.rotation.y = a.rot.y;
     pController.Update(playerInput, map_.GetMap(), deltaTime);
-    Entity::PlayerState res;
-    res.pos = pController.transform.position;
-    res.rot = pController.transform.rotation;
-
-    auto state = player.ExtractState();
+    a.pos = pController.transform.position;
 
     playerAvatar.SteerWheels(Entity::PlayerInputToMove(playerInput));
 
-    return res;
+    return a;
 }
 
 Util::Time::Seconds InGame::TickToTime(uint32_t tick)
