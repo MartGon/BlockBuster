@@ -10,9 +10,11 @@
 
 using namespace Entity;
 
-void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime)
+glm::vec3 Entity::PlayerController::UpdatePosition(glm::vec3 pos, float yaw, Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime)
 {
     auto dT = (float) deltaTime.count();
+    transform.position = pos;
+    transform.rotation = glm::vec3{0.0f, yaw, 0.0f};
 
     // Move
     glm::vec3 moveDir{0.0f};
@@ -26,7 +28,7 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
         moveDir.z += 1;
 
     // Rotate moveDir
-    auto rotMat = transform.GetRotationMat();
+    auto rotMat = glm::rotate(glm::mat4{1.0f}, glm::radians(yaw) - glm::half_pi<float>(), glm::vec3{0.0f, 1.0f, 0.0f});
     moveDir = glm::vec3{rotMat * glm::vec4{moveDir, 1.0f}};
     bool isMoving = glm::length(moveDir) > 0.0f;
 
@@ -55,6 +57,8 @@ void Entity::PlayerController::Update(Entity::PlayerInput input, Game::Map::Map*
 #endif
 
     transform.position.y += offset.y;
+
+    return transform.position;
 }
 
 struct Intersection

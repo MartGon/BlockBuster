@@ -263,10 +263,9 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     auto& player = client.player;
 
     auto& pController = client.pController;
-    //logger.LogDebug("Gravity is " + std::to_string(pController.gravity));
-    pController.transform = player.transform;
-    pController.Update(cmd.playerInput, &map, TICK_RATE);
-    player.transform = pController.transform;
+    auto playerPos = player.transform.position;
+    auto playerYaw = player.transform.rotation.y;
+    player.transform.position = pController.UpdatePosition(playerPos, playerYaw + 90.0f, cmd.playerInput, &map, TICK_RATE);
 }
 
 void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)

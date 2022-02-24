@@ -491,10 +491,10 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
 {
     auto& player = playerTable[playerId];
     
-    pController.transform.position = a.pos;
-    pController.transform.rotation.y = a.rot.y;
-    pController.Update(playerInput, map_.GetMap(), deltaTime);
-    a.pos = pController.transform.position;
+    auto playerPos = a.pos;
+    auto playerYaw = a.rot.y;
+    // TODO: Call this with yaw and pitch with cam values
+    a.pos = pController.UpdatePosition(playerPos, playerYaw + 90.0f, playerInput, map_.GetMap(), deltaTime);
 
     playerAvatar.SteerWheels(Entity::PlayerInputToMove(playerInput));
 

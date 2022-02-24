@@ -16,9 +16,7 @@ namespace Entity
     {
     public:
 
-        void Update(Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime);
-        
-        Math::Transform transform;
+        glm::vec3 UpdatePosition(glm::vec3 pos, float yaw, Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime);
 
         Math::Transform GetECB();
         Math::Transform GetGCB();
@@ -27,6 +25,8 @@ namespace Entity
         float height = 2.0f;
         float gravitySpeed = -12.0f; // -24.0f
     private:
+
+        Math::Transform transform;
 
         glm::vec3 HandleCollisions(Game::Map::Map* map, const std::vector<glm::ivec3> &blocks, glm::vec3 normalMask = glm::vec3{1.f});
         glm::vec3 HandleGravityCollisions(Game::Map::Map* map, const std::vector<glm::ivec3> &blocks);

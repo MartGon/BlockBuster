@@ -1384,8 +1384,8 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
             logger->LogDebug("Player mode enabled: " + std::to_string(playerMode));
             if(playerMode)
             {
-                player.transform.position = camera.GetPos();
-                //SetCameraMode(::App::Client::CameraMode::FPS);
+                //player.transform.position = camera.GetPos();
+                SetCameraMode(::App::Client::CameraMode::FPS);
             }
         }
 
@@ -1530,7 +1530,6 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
                 logger->LogDebug("Player mode enabled: " + std::to_string(playerMode));
                 if(playerMode)
                 {
-                    player.transform.position = camera.GetPos();
                     SetCameraMode(::App::Client::CameraMode::FPS);
                 }
                 else
@@ -1549,15 +1548,12 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
         }
     }
 
-    player.transform.rotation = glm::vec3{0.0f, glm::degrees(camera.GetRotation().y) - 90.0f, 0.0f};
-
+    const auto camOffset = glm::vec3{0.0f, player.height, 0.0f};
+    auto pos = camera.GetPos() - camOffset;
+    auto yaw = glm::degrees(camera.GetRotation().y);
     auto input = Input::GetPlayerInput();
-    player.Update(input, project.map.GetMap(), Util::Time::Seconds{0.016666f});
-    //player.HandleCollisions(project.map.GetMap(), blockScale);
-    auto playerPos = player.transform.position;
-
-    auto cameraPos = playerPos + glm::vec3{0.0f, player.height, 0.0f};
-    camera.SetPos(cameraPos);
+    auto playerPos = player.UpdatePosition(pos, yaw, input, project.map.GetMap(), Util::Time::Seconds{0.016666f}) + camOffset;
+    camera.SetPos(playerPos);
 }
 
 // #### Options #### \\
