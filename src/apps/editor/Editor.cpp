@@ -19,7 +19,7 @@ using namespace BlockBuster::Editor;
 
 // #### Public Interface #### \\
 
-void BlockBuster::Editor::Editor::Start()
+void Editor::Start()
 {
     // Load shaders
     try{
@@ -82,7 +82,7 @@ void BlockBuster::Editor::Editor::Start()
     InitPopUps();
 }
 
-void BlockBuster::Editor::Editor::Update()
+void Editor::Update()
 {
     // Clear Buffer
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -103,12 +103,12 @@ void BlockBuster::Editor::Editor::Update()
     SDL_GL_SwapWindow(window_);
 }
 
-bool BlockBuster::Editor::Editor::Quit()
+bool Editor::Quit()
 {
     return quit;
 }
 
-void BlockBuster::Editor::Editor::Shutdown()
+void Editor::Shutdown()
 {
     config.options["Map"] = std::string(fileName);
     config.options["MapsFolder"] = mapsFolder.string();
@@ -119,12 +119,12 @@ void BlockBuster::Editor::Editor::Shutdown()
 
 // #### Rendering #### \\
 
-Rendering::Mesh& BlockBuster::Editor::Editor::GetMesh(Game::BlockType blockType)
+Rendering::Mesh& Editor::GetMesh(Game::BlockType blockType)
 {
     return blockType == Game::BlockType::SLOPE ? slope : cube;
 }
 
-glm::vec4 BlockBuster::Editor::Editor::GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor, glm::vec4 lightColor)
+glm::vec4 Editor::GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor, glm::vec4 lightColor)
 {
     auto color = basecolor;
     auto darkness = (color.r + color.g + color.b) / 3.0f;
@@ -132,7 +132,7 @@ glm::vec4 BlockBuster::Editor::Editor::GetBorderColor(glm::vec4 basecolor, glm::
     return borderColor;
 }
 
-Util::Result<bool> BlockBuster::Editor::Editor::LoadTexture()
+Util::Result<bool> Editor::LoadTexture()
 {
     if(project.map.tPalette.GetCount() >= MAX_TEXTURES)
         return Util::CreateError<bool>("Maximum of textures reached");
@@ -151,7 +151,7 @@ Util::Result<bool> BlockBuster::Editor::Editor::LoadTexture()
     return Util::CreateSuccess<bool>(true);
 }
 
-bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName)
+bool Editor::IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName)
 {
     auto texturePath = folder / textureName;
     for(int i = 0; i < project.map.tPalette.GetCount(); i++)
@@ -163,7 +163,7 @@ bool BlockBuster::Editor::Editor::IsTextureInPalette(std::filesystem::path folde
 
 // #### World #### \\
 
-void BlockBuster::Editor::Editor::NewProject()
+void Editor::NewProject()
 {
     // Init project
     project = Project{};
@@ -190,7 +190,7 @@ void BlockBuster::Editor::Editor::NewProject()
     ClearActionHistory();
 }
 
-void BlockBuster::Editor::Editor::SaveProject()
+void Editor::SaveProject()
 {
     std::filesystem::path mapPath = mapsFolder / fileName;
 
@@ -202,7 +202,7 @@ void BlockBuster::Editor::Editor::SaveProject()
     // Cursor Pos
     project.cursorPos = cursor.pos;
     project.cursorScale = cursor.scale;
-    ::BlockBuster::Editor::WriteProjectToFile(project, mapPath);
+    ::WriteProjectToFile(project, mapPath);
 
     RenameMainWindow(fileName);
 
@@ -211,10 +211,10 @@ void BlockBuster::Editor::Editor::SaveProject()
     unsaved = false;
 }
 
-Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
+Util::Result<bool> Editor::OpenProject()
 {
     std::filesystem::path mapPath = mapsFolder / fileName;
-    Project temp = ::BlockBuster::Editor::ReadProjectFromFile(mapPath);
+    Project temp = ::ReadProjectFromFile(mapPath);
 
     auto res = Util::CreateError<bool>("Could not open project");
 
@@ -258,7 +258,7 @@ Util::Result<bool> BlockBuster::Editor::Editor::OpenProject()
 
 // #### Editor #### \\
 
-void BlockBuster::Editor::Editor::UpdateEditor()
+void Editor::UpdateEditor()
 {
     // Handle Events    
     SDL_Event e;
@@ -409,12 +409,12 @@ void BlockBuster::Editor::Editor::UpdateEditor()
     GUI();
 }
 
-void BlockBuster::Editor::Editor::SetCameraMode(::App::Client::CameraMode mode)
+void Editor::SetCameraMode(::App::Client::CameraMode mode)
 {
     cameraController.SetMode(mode);
 }
 
-void BlockBuster::Editor::Editor::SelectTool(Tool newTool)
+void Editor::SelectTool(Tool newTool)
 {
     // OnDeselect
     switch (tool)
@@ -451,7 +451,7 @@ void BlockBuster::Editor::Editor::SelectTool(Tool newTool)
     }
 }
 
-void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
+void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
 {
     // Window to eye
     auto winSize = GetWindowSize();
@@ -696,19 +696,19 @@ void BlockBuster::Editor::Editor::UseTool(glm::vec<2, int> mousePos, ActionType 
     }
 }
 
-void BlockBuster::Editor::Editor::QueueAction(std::unique_ptr<ToolAction> action)
+void Editor::QueueAction(std::unique_ptr<ToolAction> action)
 {
     actionHistory.erase(actionHistory.begin() + actionIndex, actionHistory.end());
     actionHistory.push_back(std::move(action));
 }
 
-void BlockBuster::Editor::Editor::DoToolAction(std::unique_ptr<ToolAction> action)
+void Editor::DoToolAction(std::unique_ptr<ToolAction> action)
 {
     QueueAction(std::move(action));
     DoToolAction();
 }
 
-void BlockBuster::Editor::Editor::DoToolAction()
+void Editor::DoToolAction()
 {
     if(actionIndex < actionHistory.size())
     {
@@ -722,7 +722,7 @@ void BlockBuster::Editor::Editor::DoToolAction()
         logger->LogDebug("Could not do action");
 }
 
-void BlockBuster::Editor::Editor::UndoToolAction()
+void Editor::UndoToolAction()
 {
     if(actionIndex > 0)
     {
@@ -739,13 +739,13 @@ void BlockBuster::Editor::Editor::UndoToolAction()
         logger->LogDebug("Could not undo anymore");
 }
 
-void BlockBuster::Editor::Editor::ClearActionHistory()
+void Editor::ClearActionHistory()
 {
     actionIndex = 0;
     actionHistory.clear();
 }
 
-void BlockBuster::Editor::Editor::DrawCursor(Math::Transform t)
+void Editor::DrawCursor(Math::Transform t)
 {
     // Draw cursor
     auto model = t.GetTransformMat();
@@ -762,7 +762,7 @@ void BlockBuster::Editor::Editor::DrawCursor(Math::Transform t)
     glEnable(GL_CULL_FACE);
 }
 
-void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
+void Editor::DrawSelectCursor(glm::ivec3 pos)
 {
     if(cursor.mode == CursorMode::BLOCKS)
     {
@@ -790,7 +790,7 @@ void BlockBuster::Editor::Editor::DrawSelectCursor(glm::ivec3 pos)
     }
 }
 
-void BlockBuster::Editor::Editor::EnumBlocksInSelection(std::function<void(glm::ivec3, glm::ivec3)> onEach)
+void Editor::EnumBlocksInSelection(std::function<void(glm::ivec3, glm::ivec3)> onEach)
 {
     auto scale = glm::vec3{blockScale};
     glm::ivec3 cursorBasePos = cursor.pos;
@@ -808,9 +808,9 @@ void BlockBuster::Editor::Editor::EnumBlocksInSelection(std::function<void(glm::
     }
 }
 
-std::vector<BlockBuster::Editor::BlockData> BlockBuster::Editor::Editor::GetBlocksInSelection(bool globalPos)
+std::vector<BlockData> Editor::GetBlocksInSelection(bool globalPos)
 {
-    std::vector<BlockBuster::Editor::BlockData> selection;
+    std::vector<BlockData> selection;
 
     auto scale = glm::vec3{blockScale};
     glm::ivec3 cursorBasePos = cursor.pos;
@@ -829,19 +829,19 @@ std::vector<BlockBuster::Editor::BlockData> BlockBuster::Editor::Editor::GetBloc
     return selection;
 }
 
-void BlockBuster::Editor::Editor::SelectBlocks()
+void Editor::SelectBlocks()
 {
     selection = GetBlocksInSelection();
 
    logger->LogDebug("Selected " + std::to_string(selection.size()) + " blocks");
 }
 
-void BlockBuster::Editor::Editor::ClearSelection()
+void Editor::ClearSelection()
 {
     selection.clear();
 }
 
-bool BlockBuster::Editor::Editor::CanMoveSelection(glm::ivec3 offset)
+bool Editor::CanMoveSelection(glm::ivec3 offset)
 {   
     for(const auto& pair : selection)
     {
@@ -854,7 +854,7 @@ bool BlockBuster::Editor::Editor::CanMoveSelection(glm::ivec3 offset)
 
 }
 
-bool BlockBuster::Editor::Editor::IsBlockInSelection(glm::ivec3 pos)
+bool Editor::IsBlockInSelection(glm::ivec3 pos)
 {
     for(const auto& pair : selection)
         if(pair.first == pos)
@@ -863,12 +863,12 @@ bool BlockBuster::Editor::Editor::IsBlockInSelection(glm::ivec3 pos)
     return false;
 }
 
-void BlockBuster::Editor::Editor::MoveSelection(glm::ivec3 offset)
+void Editor::MoveSelection(glm::ivec3 offset)
 {
-    DoToolAction(std::make_unique<BlockBuster::Editor::MoveSelectionAction>(&project.map, selection, offset, &cursor.pos, &selection));
+    DoToolAction(std::make_unique<MoveSelectionAction>(&project.map, selection, offset, &cursor.pos, &selection));
 }
 
-void BlockBuster::Editor::Editor::MoveSelectionCursor(glm::ivec3 nextPos)
+void Editor::MoveSelectionCursor(glm::ivec3 nextPos)
 {
     if(movingSelection)
     {
@@ -880,14 +880,14 @@ void BlockBuster::Editor::Editor::MoveSelectionCursor(glm::ivec3 nextPos)
         cursor.pos = nextPos;
 }
 
-void BlockBuster::Editor::Editor::CopySelection()
+void Editor::CopySelection()
 {
     clipboard = GetBlocksInSelection(false);
 
     logger->LogDebug(std::to_string(clipboard.size()) + std::string(" copied to clipboard"));
 }
 
-void BlockBuster::Editor::Editor::RemoveSelection()
+void Editor::RemoveSelection()
 {
     auto blockData = GetBlocksInSelection();
     auto batchRemove = std::make_unique<BatchedAction>();
@@ -899,13 +899,13 @@ void BlockBuster::Editor::Editor::RemoveSelection()
     DoToolAction(std::move(batchRemove));
 }
 
-void BlockBuster::Editor::Editor::CutSelection()
+void Editor::CutSelection()
 {
     CopySelection();
     RemoveSelection();
 }
 
-void BlockBuster::Editor::Editor::PasteSelection()
+void Editor::PasteSelection()
 {
     auto batchPlace = std::make_unique<BatchedAction>();
     for(auto& bData : clipboard)
@@ -920,7 +920,7 @@ void BlockBuster::Editor::Editor::PasteSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection(Game::RotationAxis axis, Game::RotType rotType)
+Editor::Result Editor::RotateSelection(Game::RotationAxis axis, Game::RotType rotType)
 {
     Result res;
 
@@ -959,7 +959,7 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
     glm::vec3 center = glm::vec3{cursor.pos} + adjustedOffset;
 
     // Batched action
-    auto batch = std::make_unique<BlockBuster::Editor::BatchedAction>();
+    auto batch = std::make_unique<BatchedAction>();
 
     for(auto bData : lselection)
     {
@@ -967,7 +967,7 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
         glm::vec3 rotOffset = rotMat * offset;
         rotSelection.push_back({rotOffset, bData.second});
 
-        batch->AddAction(std::make_unique<BlockBuster::Editor::RemoveAction>(bData.first, bData.second, &project.map));
+        batch->AddAction(std::make_unique<RemoveAction>(bData.first, bData.second, &project.map));
     }
 
     for(auto bData : rotSelection)
@@ -1127,7 +1127,7 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
         }
 
         glm::ivec3 absPos = glm::round(center + bData.first);
-        batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(absPos, bData.second, &project.map));
+        batch->AddAction(std::make_unique<PlaceBlockAction>(absPos, bData.second, &project.map));
     }
 
     if(rotType == Game::ROT_90)
@@ -1142,32 +1142,32 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::RotateSelection
     return res;
 }
 
-static glm::ivec3 GetRefBlock(BlockBuster::Editor::MirrorPlane plane, glm::ivec3 blockPos, glm::ivec3 cursorPos, glm::ivec3 cursorScale)
+static glm::ivec3 GetRefBlock(MirrorPlane plane, glm::ivec3 blockPos, glm::ivec3 cursorPos, glm::ivec3 cursorScale)
 {
     glm::ivec3 refBlock;
     switch (plane)
     {
-    case BlockBuster::Editor::MirrorPlane::XY:
+    case MirrorPlane::XY:
         refBlock = glm::ivec3{blockPos.x, blockPos.y, cursorPos.z - 1};
         break;
     
-    case BlockBuster::Editor::MirrorPlane::XZ:
+    case MirrorPlane::XZ:
         refBlock = glm::ivec3{blockPos.x, cursorPos.y - 1, blockPos.z};
         break;
     
-    case BlockBuster::Editor::MirrorPlane::YZ:
+    case MirrorPlane::YZ:
         refBlock = glm::ivec3{cursorPos.x - 1, blockPos.y, blockPos.z};
         break;
 
-    case BlockBuster::Editor::MirrorPlane::NOT_XY:
+    case MirrorPlane::NOT_XY:
         refBlock = glm::ivec3{blockPos.x, blockPos.y, cursorPos.z + cursorScale.z};
         break;
     
-    case BlockBuster::Editor::MirrorPlane::NOT_XZ:
+    case MirrorPlane::NOT_XZ:
         refBlock = glm::ivec3{blockPos.x, cursorPos.y + cursorScale.y, blockPos.z};
         break;
     
-    case BlockBuster::Editor::MirrorPlane::NOT_YZ:
+    case MirrorPlane::NOT_YZ:
         refBlock = glm::ivec3{cursorPos.x + cursorScale.x, blockPos.y , blockPos.z};
         break;
     
@@ -1178,12 +1178,12 @@ static glm::ivec3 GetRefBlock(BlockBuster::Editor::MirrorPlane plane, glm::ivec3
     return refBlock;
 }
 
-BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection(MirrorPlane plane)
+Editor::Result Editor::MirrorSelection(MirrorPlane plane)
 {
     Result res;
 
     auto lselection = GetBlocksInSelection();
-    auto batch = std::make_unique<BlockBuster::Editor::BatchedAction>();
+    auto batch = std::make_unique<BatchedAction>();
 
     for(auto bData : lselection)
     {
@@ -1252,9 +1252,9 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection
 
         }
         if(project.map.IsNullBlock(mirrorPos))
-            batch->AddAction(std::make_unique<BlockBuster::Editor::PlaceBlockAction>(mirrorPos, bData.second, &project.map));
+            batch->AddAction(std::make_unique<PlaceBlockAction>(mirrorPos, bData.second, &project.map));
         else
-            batch->AddAction(std::make_unique<BlockBuster::Editor::UpdateBlockAction>(mirrorPos, bData.second, &project.map));
+            batch->AddAction(std::make_unique<UpdateBlockAction>(mirrorPos, bData.second, &project.map));
     }
 
     DoToolAction(std::move(batch));
@@ -1262,7 +1262,7 @@ BlockBuster::Editor::Editor::Result BlockBuster::Editor::Editor::MirrorSelection
     return res;
 }
 
-void BlockBuster::Editor::Editor::FillSelection()
+void Editor::FillSelection()
 {
     auto batchPlace = std::make_unique<BatchedAction>();
     auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
@@ -1278,7 +1278,7 @@ void BlockBuster::Editor::Editor::FillSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-void BlockBuster::Editor::Editor::ReplaceSelection()
+void Editor::ReplaceSelection()
 {
     auto batchPlace = std::make_unique<BatchedAction>();
     auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
@@ -1294,7 +1294,7 @@ void BlockBuster::Editor::Editor::ReplaceSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-void BlockBuster::Editor::Editor::PaintSelection()
+void Editor::PaintSelection()
 {
     auto batchPlace = std::make_unique<BatchedAction>();
     auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
@@ -1311,14 +1311,14 @@ void BlockBuster::Editor::Editor::PaintSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-void BlockBuster::Editor::Editor::OnChooseSelectSubTool(SelectSubTool subTool)
+void Editor::OnChooseSelectSubTool(SelectSubTool subTool)
 {
     // Always stop moving selection
     movingSelection = false;
     ClearSelection();
 }
 
-void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
+void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
 {
     auto& io = ImGui::GetIO();
     if(key.type == SDL_KEYDOWN)
@@ -1434,7 +1434,7 @@ void BlockBuster::Editor::Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key
     }
 }
 
-Game::Display BlockBuster::Editor::Editor::GetBlockDisplay()
+Game::Display Editor::GetBlockDisplay()
 {
     Game::Display display;
     display.type = displayType;
@@ -1446,7 +1446,7 @@ Game::Display BlockBuster::Editor::Editor::GetBlockDisplay()
     return display;
 }
 
-bool BlockBuster::Editor::Editor::IsDisplayValid()
+bool Editor::IsDisplayValid()
 {
     auto display = GetBlockDisplay();
     auto texCount = project.map.tPalette.GetCount();
@@ -1455,7 +1455,7 @@ bool BlockBuster::Editor::Editor::IsDisplayValid()
     return isColor || isValidTexture;
 }
 
-void BlockBuster::Editor::Editor::SetBlockDisplay(Game::Display display)
+void Editor::SetBlockDisplay(Game::Display display)
 {
     displayType = display.type;
     if(displayType == Game::DisplayType::TEXTURE)
@@ -1464,7 +1464,7 @@ void BlockBuster::Editor::Editor::SetBlockDisplay(Game::Display display)
         colorId = display.id;
 }
 
-void BlockBuster::Editor::Editor::SetUnsaved(bool unsaved)
+void Editor::SetUnsaved(bool unsaved)
 {
     this->unsaved = unsaved;
     std::string mapName = std::strlen(fileName) > 0 ? fileName : "New Map";
@@ -1474,14 +1474,14 @@ void BlockBuster::Editor::Editor::SetUnsaved(bool unsaved)
         RenameMainWindow(mapName);
 }
 
-void BlockBuster::Editor::Editor::Exit()
+void Editor::Exit()
 {
     if(unsaved)
     {
         if(playerMode)
             playerMode = false;
 
-        OpenWarningPopUp(std::bind(&BlockBuster::Editor::Editor::Exit, this));
+        OpenWarningPopUp(std::bind(&Editor::Exit, this));
         if(cameraController.GetMode() != ::App::Client::CameraMode::EDITOR)
             SetCameraMode(::App::Client::CameraMode::EDITOR);
     }
@@ -1511,7 +1511,7 @@ void Editor::EditGameObject()
 
 // #### Test Mode #### \\
 
-void BlockBuster::Editor::Editor::UpdatePlayerMode()
+void Editor::UpdatePlayerMode()
 {
     SDL_Event e;
     ImGuiIO& io = ImGui::GetIO();
@@ -1558,7 +1558,7 @@ void BlockBuster::Editor::Editor::UpdatePlayerMode()
 
 // #### Options #### \\
 
-void BlockBuster::Editor::Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
+void Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
 {
     if(winEvent.event == SDL_WINDOWEVENT_RESIZED)
     {
@@ -1570,7 +1570,7 @@ void BlockBuster::Editor::Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
     }
 }
 
-void BlockBuster::Editor::Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
+void Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
 {
     auto width = winConfig.resolutionW;
     auto height = winConfig.resolutionH;
@@ -1596,7 +1596,7 @@ void BlockBuster::Editor::Editor::ApplyVideoOptions(::App::Configuration::Window
     SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
 
-std::string BlockBuster::Editor::Editor::GetConfigOption(const std::string& key, std::string defaultValue)
+std::string Editor::GetConfigOption(const std::string& key, std::string defaultValue)
 {
     std::string ret = defaultValue;
     auto it = config.options.find(key);
