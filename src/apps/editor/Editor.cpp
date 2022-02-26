@@ -1550,7 +1550,7 @@ void Editor::UpdatePlayerMode()
 
     const auto camOffset = glm::vec3{0.0f, player.height, 0.0f};
     auto pos = camera.GetPos() - camOffset;
-    auto yaw = glm::degrees(camera.GetRotation().y);
+    auto yaw = camera.GetRotationDeg().y;
     auto input = Input::GetPlayerInput();
     auto playerPos = player.UpdatePosition(pos, yaw, input, project.map.GetMap(), Util::Time::Seconds{0.016666f}) + camOffset;
     camera.SetPos(playerPos);

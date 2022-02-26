@@ -140,7 +140,8 @@ namespace Networking
                 {
                     uint32_t reqId;
                     Entity::PlayerInput playerInput;
-                    // TODO: Add camera rot
+                    float camYaw;
+                    float camPitch;
                 };
 
                 Input() : Packet{OpcodeClient::OPCODE_CLIENT_INPUT}

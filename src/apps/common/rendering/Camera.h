@@ -24,6 +24,7 @@ namespace Rendering
         float GetParam(Param param) const;
         glm::vec3 GetPos() const;
         glm::vec2 GetRotation() const;
+        glm::vec2 GetRotationDeg() const;
         glm::vec3 GetFront() const;
 
         glm::mat4 GetProjMat() const;

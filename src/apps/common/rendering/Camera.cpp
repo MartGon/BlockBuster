@@ -49,6 +49,11 @@ glm::vec2 Rendering::Camera::GetRotation() const
     return glm::vec2{rotation_.x, rotation_.y};
 }
 
+glm::vec2 Rendering::Camera::GetRotationDeg() const
+{
+    return glm::degrees(GetRotation());
+}
+
 glm::vec3 Rendering::Camera::GetFront() const
 {
     return front_;

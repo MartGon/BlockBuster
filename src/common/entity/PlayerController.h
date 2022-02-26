@@ -22,7 +22,7 @@ namespace Entity
         Math::Transform GetGCB();
 
         float speed = 5.f;
-        const float height = 2.0f;
+        float height = 2.0f;
         float gravitySpeed = -12.0f; // -24.0f
     private:
 

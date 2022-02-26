@@ -204,12 +204,13 @@ void InGame::Update()
     {
         preSimulationTime = Util::Time::GetTime();
 
-        HandleSDLEvents();
+        //HandleSDLEvents();
         if(connected)
             RecvServerSnapshots();
 
         while(simulationLag >= serverTickRate)
         {
+            HandleSDLEvents();
             DoUpdate(serverTickRate);
 
             if(connected)
@@ -290,13 +291,8 @@ void InGame::UpdateNetworking()
 {
     client_->logger->LogInfo("Input: Sending player inputs");
 
-    auto input = Input::GetPlayerInputNumpad();
-
     // Sample player input
-    glm::vec3 moveDir = Entity::PlayerInputToMove(input);
-    auto len = glm::length(moveDir);
-    moveDir = len > 0 ? moveDir / len : moveDir;
-
+    auto input = Input::GetPlayerInputNumpad();
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     auto click = mouseState & SDL_BUTTON_RIGHT;
 
@@ -363,8 +359,13 @@ void InGame::SendPlayerInput(Entity::PlayerInput input)
         using InputPacket = Networking::Packets::Client::Input;
         auto inputPacket = std::make_unique<InputPacket>();
         
-        inputPacket->req.playerInput = oldCmd->inputReq.playerInput;
         inputPacket->req.reqId = reqId;
+        inputPacket->req.playerInput = oldCmd->inputReq.playerInput;
+
+        auto camRot = camera_.GetRotationDeg();
+        inputPacket->req.camYaw = camRot.y;
+        inputPacket->req.camPitch = camRot.x;
+
         batch.PushPacket(std::move(inputPacket));
     }
 
@@ -492,9 +493,8 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     auto& player = playerTable[playerId];
     
     auto playerPos = a.pos;
-    auto playerYaw = a.rot.y;
-    // TODO: Call this with yaw and pitch with cam values
-    a.pos = pController.UpdatePosition(playerPos, playerYaw + 90.0f, playerInput, map_.GetMap(), deltaTime);
+    auto playerYaw = camera_.GetRotationDeg().y;
+    a.pos = pController.UpdatePosition(playerPos, playerYaw, playerInput, map_.GetMap(), deltaTime);
 
     playerAvatar.SteerWheels(Entity::PlayerInputToMove(playerInput));
 
@@ -731,6 +731,7 @@ void InGame::DrawScene()
         playerAvatar.SetFlashesActive(playerState.leftFlashActive);
         playerAvatar.SetFacing(facingAngle);
 
+        // TODO: Ignore pitch on this transform. This should only apply to playerAvatar arms angle
         auto t = player.second.transform.GetTransformMat();
         auto transform = view * t;
         shader.SetUniformInt("dmg", player.second.onDmg);

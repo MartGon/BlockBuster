@@ -135,8 +135,8 @@ glm::vec3 Entity::PlayerController::HandleCollisions(Game::Map::Map* map, const 
         if(!intersections.empty())
         {
             auto first = intersections.front();
-            Debug::PrintVector("Block Col Handled", first.blockTransform.position);
-            Debug::PrintVector("Offset", first.aabb.offset);
+            //Debug::PrintVector("Block Col Handled", first.blockTransform.position);
+            //Debug::PrintVector("Offset", first.aabb.offset);
 
             auto modPos = first.aabb.offset;
             offset += modPos;

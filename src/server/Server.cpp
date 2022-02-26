@@ -51,7 +51,7 @@ void Server::InitLogger()
     if(!flogger->IsOk())
         clogger->LogError("Could not create log file " + logFile.string());
 
-    //logger.AddLogger(std::move(clogger));
+    logger.AddLogger(std::move(clogger));
     logger.AddLogger(std::move(flogger));
     logger.SetVerbosity(Log::Verbosity::DEBUG);
 }
@@ -264,8 +264,10 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 
     auto& pController = client.pController;
     auto playerPos = player.transform.position;
-    auto playerYaw = player.transform.rotation.y;
-    player.transform.position = pController.UpdatePosition(playerPos, playerYaw + 90.0f, cmd.playerInput, &map, TICK_RATE);
+    auto playerYaw = cmd.camYaw;
+    logger.LogInfo("Cam yaw is " + std::to_string(playerYaw));
+    player.transform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
+    // TODO: Update player yaw and pitch based on recv cam rotation
 }
 
 void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)
