@@ -726,18 +726,26 @@ void InGame::DrawScene()
             client_->logger->LogDebug("Player didn't move this frame");
         // End debug
 
+        // Apply changes to model
         auto playerState = playerStateTable[playerId];
+        auto playerT = player.second.transform;
         playerAvatar.SetArmsPivot(playerState.armsPivot);
         playerAvatar.SetFlashesActive(playerState.leftFlashActive);
         playerAvatar.SetFacing(facingAngle);
+        auto cPitch = std::min(std::max(playerT.rotation.x, 60.0f), 120.0f);
+        auto pitch = -(cPitch- 90.0f);
+        playerAvatar.RotateArms(pitch);
 
-        // TODO: Ignore pitch on this transform. This should only apply to playerAvatar arms angle
-        auto t = player.second.transform.GetTransformMat();
+        // Draw model
+        playerT.rotation.x = 0.0f; // Pitch should only be used for arms rotation
+        playerT.rotation.y -= 90.0f; // Adapt rotation to model base orientation
+        auto t = playerT.GetTransformMat();
         auto transform = view * t;
         shader.SetUniformInt("dmg", player.second.onDmg);
         playerAvatar.Draw(transform);
 
         // Draw player hitbox
+        // TODO: Comment this block. Convert into a debugging function
         Math::Transform boxTf = pController.GetECB();
         auto mat = view * boxTf.GetTransformMat();
         shader.SetUniformMat4("transform", mat);

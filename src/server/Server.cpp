@@ -267,6 +267,7 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     auto playerYaw = cmd.camYaw;
     logger.LogInfo("Cam yaw is " + std::to_string(playerYaw));
     player.transform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
+    player.transform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
     // TODO: Update player yaw and pitch based on recv cam rotation
 }
 

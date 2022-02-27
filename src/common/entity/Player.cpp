@@ -26,29 +26,30 @@ Math::Transform PlayerState::GetTransform()
 
 // Functions
 
+// Note/TODO: Commented code in operators are in place due to wierd behaviour with prediction error correction
 Entity::PlayerState Entity::operator+(const Entity::PlayerState& a, const Entity::PlayerState& b)
 {
-    Entity::PlayerState res;
+    Entity::PlayerState res = a;
     res.pos = a.pos + b.pos;
-    res.rot = a.rot + b.rot;
+    //res.rot = a.rot + b.rot;
 
     return res;
 }
 
 Entity::PlayerState Entity::operator-(const Entity::PlayerState& a, const Entity::PlayerState& b)
 {
-    Entity::PlayerState res;
+    Entity::PlayerState res = a;
     res.pos = a.pos - b.pos;
-    res.rot = a.rot - b.rot;
+    //res.rot = a.rot - b.rot;
 
     return res;
 }
 
 Entity::PlayerState Entity::operator*(const Entity::PlayerState& a, float b)
 {
-    Entity::PlayerState res;
+    Entity::PlayerState res = a;
     res.pos = a.pos * b;
-    res.rot = a.rot * b;
+    //res.rot = a.rot * b;
 
     return res;
 }
