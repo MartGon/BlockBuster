@@ -3,6 +3,8 @@
 
 #include <rendering/Primitive.h>
 
+#include <debug/Debug.h>
+
 using namespace Game::Models;
 
 void Player::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
@@ -38,12 +40,17 @@ void Player::Draw(const glm::mat4& tMat)
     glEnable(GL_CULL_FACE);
 }
 
-void Player::SteerWheels(glm::vec3 moveDir /*, float facingAngle*/)
+void Player::SteerWheels(glm::vec3 moveDir, float facingAngle)
 {
-    // TODO: This should be the angle between the facing vector and the default wheel vector.
-    // In other words, It should be different according to the facing dir.
-    auto yaw = glm::degrees(glm::atan(-moveDir.z, moveDir.x));
-    wTransform.rotation.y = yaw + 90;
+    // We need to rotate the moveDir by the facing Angle
+    auto rotate = glm::rotate(glm::mat4{1.0f}, glm::radians(-facingAngle), glm::vec3{0.0f, 1.0f, 0.0f});
+    glm::vec3 offset = rotate * glm::vec4{moveDir, 1.0f};
+
+    auto yaw = 0.0f;
+    if(glm::length(moveDir) > 0.005f)
+        yaw = glm::degrees(glm::atan(-offset.z, offset.x));
+
+    wTransform.rotation.y = yaw;
 }
 
 void Player::SetArmsPivot(Math::Transform armsPivot)

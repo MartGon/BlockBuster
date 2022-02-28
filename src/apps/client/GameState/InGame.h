@@ -70,6 +70,7 @@ namespace BlockBuster
         Util::Time::Seconds TickToTime(uint32_t tick);
         void EntityInterpolation();
         void EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& a, const Networking::Snapshot& b, float alpha);
+        glm::vec3 GetLastMoveDir(Entity::ID playerId) const;
 
         // Rendering
         void DrawScene();
@@ -137,8 +138,8 @@ namespace BlockBuster
             bool rightFlashActive = false;
         };
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
-        std::unordered_map<Entity::ID, PlayerModelState> playerStateTable;
-        std::unordered_map<Entity::ID, Entity::Player> prevPlayerPos;
+        std::unordered_map<Entity::ID, Entity::Player> prevPlayerTable;
+        std::unordered_map<Entity::ID, PlayerModelState> playerModelStateTable;
         float PLAYER_SPEED = 5.f;
 
         //TODO: DEBUG. Remove on final version

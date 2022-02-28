@@ -65,12 +65,15 @@
 
 ## TODO - Alpha (Pacifist - Movement only)
 
-- Respawn points. They are objects.
+- Respawn points. They are objects. - DONE
     - Editor
         - Object tab. Add and select Tool
         - Assign Team Id (Spawn group could be useful, but do later)
         - Attach object to block. This objects moves with that block.
 
-- KillBoxes (Chore) or Set kill height (easier) (Map Options)
+
+- Rotate other players wheel, based on their last move dir. - DONE
+- Correct prediction errors. They're are affected by camera rotation. Sampled and used rot for prediction may be not the same.
+- Create custom map, for testing. Should be quite big. 
 - Launch game server from MatchMaking. Port, player num, map and gamemode as params
-        
+- KillBoxes (Chore) or Set kill height (easier) (Map Options)        

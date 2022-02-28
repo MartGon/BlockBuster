@@ -246,7 +246,7 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 
     fpsAvatar.Update(deltaTime);
 
-    for(auto& [playerId, playerState] : playerStateTable)
+    for(auto& [playerId, playerState] : playerModelStateTable)
     {
         playerState.idlePlayer.Update(deltaTime);
         playerState.shootPlayer.Update(deltaTime);
@@ -258,11 +258,11 @@ void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
     Math::Transform transform{playerState.pos, glm::vec3{playerState.rot, 0.0f}, glm::vec3{1.f, 1.0f, 1.f}};
     Entity::Player player{playerId, transform};
     playerTable[playerId] = player;
-    prevPlayerPos[playerId] = player;
+    prevPlayerTable[playerId] = player;
 
     // Setup player animator
-    playerStateTable[playerId] = PlayerModelState();
-    PlayerModelState& ps = playerStateTable[playerId];
+    playerModelStateTable[playerId] = PlayerModelState();
+    PlayerModelState& ps = playerModelStateTable[playerId];
 
     ps.idlePlayer.SetClip(playerAvatar.GetIdleAnim());
     ps.idlePlayer.SetTargetFloat("yPos", &ps.armsPivot.position.y);
@@ -278,8 +278,8 @@ void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
 void InGame::OnPlayerLeave(Entity::ID playerId)
 {
     playerTable.erase(playerId);
-    prevPlayerPos.erase(playerId);
-    playerStateTable.erase(playerId);
+    prevPlayerTable.erase(playerId);
+    playerModelStateTable.erase(playerId);
 }
 
 void InGame::RecvServerSnapshots()
@@ -496,8 +496,6 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     auto playerYaw = camera_.GetRotationDeg().y;
     a.pos = pController.UpdatePosition(playerPos, playerYaw, playerInput, map_.GetMap(), deltaTime);
 
-    playerAvatar.SteerWheels(Entity::PlayerInputToMove(playerInput));
-
     return a;
 }
 
@@ -630,6 +628,14 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
     playerTable[playerId].ApplyState(smoothPos);
 }
 
+glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const
+{
+    auto moveDir = prevPlayerTable.at(playerId).transform.position - playerTable.at(playerId).transform.position;
+    auto len = glm::length(moveDir);
+    moveDir = len > 0.005f ? moveDir / len : glm::vec3{0.0f};
+    return moveDir;
+}
+
 void InGame::HandleSDLEvents()
 {
     SDL_Event e;
@@ -704,7 +710,7 @@ void InGame::DrawScene()
             continue;
 
         // Start Debug
-        auto oldPos = prevPlayerPos[playerId].transform.position;
+        auto oldPos = prevPlayerTable[playerId].transform.position;
         auto newPos = player.second.transform.position;
         auto diff = newPos - oldPos;
         auto distDiff = glm::length(diff);
@@ -727,7 +733,7 @@ void InGame::DrawScene()
         // End debug
 
         // Apply changes to model
-        auto playerState = playerStateTable[playerId];
+        auto playerState = playerModelStateTable[playerId];
         auto playerT = player.second.transform;
         playerAvatar.SetArmsPivot(playerState.armsPivot);
         playerAvatar.SetFlashesActive(playerState.leftFlashActive);
@@ -735,6 +741,7 @@ void InGame::DrawScene()
         auto cPitch = std::min(std::max(playerT.rotation.x, 60.0f), 120.0f);
         auto pitch = -(cPitch- 90.0f);
         playerAvatar.RotateArms(pitch);
+        playerAvatar.SteerWheels(GetLastMoveDir(playerId), playerT.rotation.y);
 
         // Draw model
         playerT.rotation.x = 0.0f; // Pitch should only be used for arms rotation
@@ -751,7 +758,7 @@ void InGame::DrawScene()
         shader.SetUniformMat4("transform", mat);
         cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
     }
-    prevPlayerPos = playerTable;
+    prevPlayerTable = playerTable;
 
     // Draw fpsModel, always rendered
     auto proj = camera_.GetProjMat();
@@ -818,12 +825,12 @@ void InGame::DrawGUI()
             {
                 if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
                 {
-                    modelOffset = playerStateTable[playerId].armsPivot.position;
+                    modelOffset = playerModelStateTable[playerId].armsPivot.position;
                     modelScale =  playerAvatar.aTransform.scale;
                     modelRot =  playerAvatar.aTransform.rotation;
                 }
             }
-            ImGui::SliderFloat3("Offset", &playerStateTable[playerId].armsPivot.position.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Offset", &playerModelStateTable[playerId].armsPivot.position.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Scale", &fpsAvatar.idlePivot.scale.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Rotation", &fpsAvatar.idlePivot.rotation.x, -sliderPrecision, sliderPrecision);
             ImGui::InputFloat("Precision", &sliderPrecision);
@@ -841,7 +848,7 @@ void InGame::DrawGUI()
             if(ImGui::Button("Shoot"))
             {
                 fpsAvatar.PlayShootAnimation();
-                for(auto& [playerId, playerState] : playerStateTable)
+                for(auto& [playerId, playerState] : playerModelStateTable)
                 {
                     playerState.shootPlayer.Reset();
                     playerState.shootPlayer.Play();

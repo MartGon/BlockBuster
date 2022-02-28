@@ -13,13 +13,12 @@ namespace Game::Models
         void SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder, Rendering::Mesh& slope); // NOTE: This should be called before Start
         void Draw(const glm::mat4& tMat);
         
-        void SteerWheels(glm::vec3 moveDir);
+        void SteerWheels(glm::vec3 moveDir, float facingAngle);
         void SetArmsPivot(Math::Transform armsPivot);
         void SetFlashesActive(bool active);
         void SetFacing(float facingAngle);
         void RotateArms(float pitch);
         
-
         Animation::Clip* GetIdleAnim();
         Animation::Clip* GetShootAnim();
 

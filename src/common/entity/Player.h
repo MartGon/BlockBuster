@@ -67,7 +67,6 @@ namespace Entity
         static const float MAX_HEALTH;
         float shield = MAX_SHIELD;
         float health = MAX_HEALTH;
-        glm::vec3 lastMoveDir;
 
         ID teamId = 0;
 
