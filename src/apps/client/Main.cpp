@@ -61,7 +61,7 @@ int main(int argc, char** args)
             4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
-            filename, Log::Verbosity::INFO
+            filename, Log::Verbosity::DEBUG
         }
     };
 

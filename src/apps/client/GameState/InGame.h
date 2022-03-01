@@ -55,14 +55,14 @@ namespace BlockBuster
         void OnPlayerLeave(Entity::ID playerId);
         void RecvServerSnapshots();
         void UpdateNetworking();
-        void SendPlayerInput(Entity::PlayerInput playerInput);
+        void SendPlayerInput();
 
         // Networking - Prediction
         using InputReq = Networking::Packets::Client::Input::Req;
         Entity::PlayerController pController;
         void Predict(Entity::PlayerInput playerInput);
         void SmoothPlayerMovement();
-        Entity::PlayerState PredPlayerState(Entity::PlayerState a, Entity::PlayerInput playerInput, Util::Time::Seconds deltaTime);
+        Entity::PlayerState PredPlayerState(Entity::PlayerState a, Entity::PlayerInput playerInput, float playerYaw, Util::Time::Seconds deltaTime);
 
         // Networking - Entity Interpolation
         Util::Time::Seconds GetCurrentTime();

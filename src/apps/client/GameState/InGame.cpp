@@ -302,7 +302,7 @@ void InGame::UpdateNetworking()
     // Prediction
     Predict(input);
 
-    SendPlayerInput(input);
+    SendPlayerInput();
 
     // Player shots
     if(click)
@@ -340,7 +340,7 @@ void InGame::UpdateNetworking()
     }
 }
 
-void InGame::SendPlayerInput(Entity::PlayerInput input)
+void InGame::SendPlayerInput()
 {
     // Build batched player input batch
     auto cmdId = this->cmdId;
@@ -359,12 +359,8 @@ void InGame::SendPlayerInput(Entity::PlayerInput input)
         using InputPacket = Networking::Packets::Client::Input;
         auto inputPacket = std::make_unique<InputPacket>();
         
+        inputPacket->req = oldCmd->inputReq;
         inputPacket->req.reqId = reqId;
-        inputPacket->req.playerInput = oldCmd->inputReq.playerInput;
-
-        auto camRot = camera_.GetRotationDeg();
-        inputPacket->req.camYaw = camRot.y;
-        inputPacket->req.camPitch = camRot.x;
 
         batch.PushPacket(std::move(inputPacket));
     }
@@ -419,7 +415,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
 
                     // Re-calculate prediction
                     auto origin = realState;
-                    realState = PredPlayerState(realState, predict->inputReq.playerInput, serverTickRate);
+                    realState = PredPlayerState(realState, predict->inputReq.playerInput, predict->inputReq.camYaw, serverTickRate);
 
                     // Update history
                     predict->origin = origin;
@@ -448,8 +444,9 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     }
 
     // Run predicted command for this simulation
-    auto predState = PredPlayerState(preState, playerInput, serverTickRate);
-    Prediction p{InputReq{cmdId, playerInput}, preState, predState, now};
+    auto camRot = camera_.GetRotationDeg();
+    auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
+    Prediction p{InputReq{cmdId, playerInput, camRot.y, camRot.x}, preState, predState, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
 
@@ -471,7 +468,7 @@ void InGame::SmoothPlayerMovement()
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
         predOffset += deltaTime;
-        auto predPos = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, predOffset);
+        auto predPos = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, predOffset);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
@@ -488,13 +485,12 @@ void InGame::SmoothPlayerMovement()
     }
 }
 
-Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::PlayerInput playerInput, Util::Time::Seconds deltaTime)
+Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::PlayerInput playerInput, float playerYaw, Util::Time::Seconds deltaTime)
 {
     auto& player = playerTable[playerId];
     
-    auto playerPos = a.pos;
-    auto playerYaw = camera_.GetRotationDeg().y;
-    a.pos = pController.UpdatePosition(playerPos, playerYaw, playerInput, map_.GetMap(), deltaTime);
+    a.pos = pController.UpdatePosition(a.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
+    a.rot.y = playerYaw;
 
     return a;
 }
@@ -664,6 +660,7 @@ void InGame::HandleSDLEvents()
                 client_->quit = true;
             break;
         }
+        
         camController_.HandleSDLEvent(e);
     }
 }

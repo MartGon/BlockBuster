@@ -70,10 +70,7 @@ float Entity::GetDifference(PlayerState a, PlayerState b)
     auto distance = glm::length(a.pos - b.pos);
     auto diff = distance / glm::length(a.pos);
 
-    auto angleDist = glm::length(a.rot - b.rot);
-    auto aDiff = angleDist / glm::length(a.rot);
-
-    return std::max(diff, aDiff);
+    return diff;
 }
 
 Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerState b, float alpha)
