@@ -1,6 +1,7 @@
 SET(SOURCES
     Test.cpp
     Util.cpp
+    Math.cpp
 )
 
 add_executable(BlockBusterTests ${SOURCES})

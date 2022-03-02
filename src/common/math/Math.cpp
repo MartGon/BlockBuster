@@ -9,3 +9,8 @@ glm::vec3 Math::RotateVec3(const glm::mat4& rotMat, glm::vec3 offset)
 {
     return glm::round(rotMat * glm::vec4{offset, 1.0f});
 }
+
+bool Math::AreSame(float a, float b, float threshold)
+{
+    return std::abs(a - b) < threshold;
+}
