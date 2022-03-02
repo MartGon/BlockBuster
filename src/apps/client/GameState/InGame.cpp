@@ -92,7 +92,7 @@ void InGame::Start()
     // Map
     auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
     auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
-    LoadMap("resources/maps/TestMap.bbm");
+    LoadMap("resources/maps/Alpha2.bbm");
 
     // Networking
     auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
@@ -296,6 +296,9 @@ void InGame::UpdateNetworking()
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     auto click = mouseState & SDL_BUTTON_RIGHT;
 
+    // Update last cmdId. Note: Breaks prediction when removed
+    this->cmdId++;
+
     // Prediction
     Predict(input);
 
@@ -439,7 +442,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     // Run predicted command for this simulation
     auto camRot = camera_.GetRotationDeg();
     auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
-    Prediction p{InputReq{cmdId++, playerInput, camRot.y, camRot.x}, preState, predState, now};
+    Prediction p{InputReq{cmdId, playerInput, camRot.y, camRot.x}, preState, predState, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
 }
