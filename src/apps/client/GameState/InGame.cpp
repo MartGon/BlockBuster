@@ -296,9 +296,6 @@ void InGame::UpdateNetworking()
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     auto click = mouseState & SDL_BUTTON_RIGHT;
 
-    // Update lastCmdReq
-    this->cmdId++;
-
     // Prediction
     Predict(input);
 
@@ -437,23 +434,14 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     auto preState = playerTable[playerId].ExtractState();
     auto prevPred = predictionHistory_.Back();
     if(prevPred.has_value())
-    {
         preState = prevPred->dest;
-        Util::Time::Seconds diff = now - prevPred->time;
-        client_->logger->LogDebug("Prediction: Time between preds " + std::to_string(diff.count()));
-    }
 
     // Run predicted command for this simulation
     auto camRot = camera_.GetRotationDeg();
     auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
-    Prediction p{InputReq{cmdId, playerInput, camRot.y, camRot.x}, preState, predState, now};
+    Prediction p{InputReq{cmdId++, playerInput, camRot.y, camRot.x}, preState, predState, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
-
-#ifdef _DEBUG
-    auto dist = glm::length(predState.pos - preState.pos);
-    client_->logger->LogInfo("Prediction: PrevPos " + glm::to_string(preState.pos) + " PredPos " + glm::to_string(predState.pos) + " Dist " + std::to_string(dist));
-#endif
 }
 
 void InGame::SmoothPlayerMovement()
@@ -476,12 +464,6 @@ void InGame::SmoothPlayerMovement()
         auto errorCorrection = errorCorrectionDiff * weight;
         renderPos = predPos + errorCorrection;
         playerTable[playerId].ApplyState(renderPos);
-
-#ifdef _DEBUG
-        auto dist = glm::length(errorCorrection.pos);
-        if(dist > 0.005)
-            client_->logger->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
-#endif
     }
 }
 
@@ -615,11 +597,6 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
     auto state1 = s1.players.at(playerId);
     auto state2 = s2.players.at(playerId);
 
-#ifdef _DEBUG
-    auto diff = glm::length(state2.pos - state1.pos);
-    client_->logger->LogDebug("P1 " + glm::to_string(state1.pos) + " P2 " + glm::to_string(state2.pos) + " D " + std::to_string(diff));
-#endif
-
     auto smoothPos = Entity::Interpolate(state1, state2, alpha);
     playerTable[playerId].ApplyState(smoothPos);
 }
@@ -682,7 +659,6 @@ void InGame::Render()
     if(renderTime < minFrameInterval)
     {
         Util::Time::Seconds diff = minFrameInterval - renderTime;
-        //logger->LogInfo("Sleeping for " + std::to_string(diff.count()) + " s");
         //Util::Time::Sleep(diff);
     }
 }
