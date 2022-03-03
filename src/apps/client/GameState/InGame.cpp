@@ -686,26 +686,28 @@ void InGame::DrawScene()
             continue;
 
         // Start Debug
-        auto oldPos = prevPlayerTable[playerId].transform.position;
-        auto newPos = player.second.transform.position;
-        auto diff = newPos - oldPos;
-        auto distDiff = glm::length(diff);
-        if(distDiff > 0.05f)
         {
-            auto expectedDiff = PLAYER_SPEED *  deltaTime.count();
-            client_->logger->LogDebug("Render: Player " + std::to_string(player.first) + " Prev " + glm::to_string(oldPos)
-                + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
-
-            auto offset = glm::abs(distDiff - expectedDiff);
-            if(offset > 0.008f)
+            auto oldPos = prevPlayerTable[playerId].transform.position;
+            auto newPos = player.second.transform.position;
+            auto diff = newPos - oldPos;
+            auto distDiff = glm::length(diff);
+            if(distDiff > 0.05f)
             {
-                client_->logger->LogDebug("Render: Difference is bigger than expected: ");
-                client_->logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) 
-                    + " Offset " + std::to_string(offset) + " Frame interval " + std::to_string(deltaTime.count()));
+                auto expectedDiff = PLAYER_SPEED *  deltaTime.count();
+                client_->logger->LogDebug("Render: Player " + std::to_string(player.first) + " Prev " + glm::to_string(oldPos)
+                    + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
+
+                auto offset = glm::abs(distDiff - expectedDiff);
+                if(offset > 0.008f)
+                {
+                    client_->logger->LogDebug("Render: Difference is bigger than expected: ");
+                    client_->logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) 
+                        + " Offset " + std::to_string(offset) + " Frame interval " + std::to_string(deltaTime.count()));
+                }
             }
+            else
+                client_->logger->LogDebug("Player didn't move this frame");
         }
-        else
-            client_->logger->LogDebug("Player didn't move this frame");
         // End debug
 
         // Apply changes to model

@@ -58,7 +58,7 @@ int main(int argc, char** args)
             glm::radians(60.0f)
         },
         App::Configuration::OpenGLConfig{
-            4, 6, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, SHADERS_DIR
+            3, 0, SDL_GL_CONTEXT_PROFILE_CORE, 0, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
             filename, Log::Verbosity::DEBUG

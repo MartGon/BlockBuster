@@ -5,13 +5,7 @@
 
 namespace Entity
 {
-    struct PlayerHitBox
-    {
-        static const Math::Transform head;
-        static const Math::Transform body;
-        static const Math::Transform wheels; // This one should rotate with the wheels, so it's affected by moveDir
-    };
-
+    // PlayerInput
     enum Inputs
     {
         MOVE_DOWN,
@@ -32,7 +26,6 @@ namespace Entity
             return inputs[index];
         }
     };
-
     glm::vec3 PlayerInputToMove(PlayerInput input);
 
     struct PlayerState
@@ -40,8 +33,6 @@ namespace Entity
         glm::vec3 pos{0.0f};
         glm::vec2 rot{0.0f};
         bool onDmg = false;
-
-        Math::Transform GetTransform();
     };
     Entity::PlayerState operator+(const Entity::PlayerState& a, const Entity::PlayerState& b);
     Entity::PlayerState operator-(const Entity::PlayerState& a, const Entity::PlayerState& b);
@@ -53,16 +44,30 @@ namespace Entity
     using ID = uint8_t;
     struct Player
     {
+        // Statics
+
+        struct HitBox
+        {
+            static const Math::Transform head;
+            static const Math::Transform body;
+            static const Math::Transform wheels; // This one should rotate with the wheels, so it's affected by moveDir
+        };
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain
+
+
 
         PlayerState ExtractState() const;
         void ApplyState(PlayerState state);
+
+        Math::Transform GetTransform();
+        Math::Transform GetRenderTransform();
 
         ID id = 0;
         
         // State
         Math::Transform transform;
         bool onDmg = false;
+        // Health
         static const float MAX_SHIELD;
         static const float MAX_HEALTH;
         float shield = MAX_SHIELD;
@@ -71,7 +76,5 @@ namespace Entity
         ID teamId = 0;
 
         Weapon* weapon = nullptr;
-
-        bool IsHitByRay();
     };
 }

@@ -4,9 +4,9 @@
 using namespace Entity;
 
 // Player Hit boxes
-const Math::Transform PlayerHitBox::head{glm::vec3{0.0f, 1.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.5f, 1.0f, 1.5f}};
-const Math::Transform PlayerHitBox::body{glm::vec3{0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
-const Math::Transform PlayerHitBox::wheels{glm::vec3{0.0f, -1.75f, 0.0f}, glm::vec3{0.0f}, glm::vec3{3.5f,  1.25f, 2.0f}};
+const Math::Transform Player::HitBox::head{glm::vec3{0.0f, 1.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.5f, 1.0f, 1.5f}};
+const Math::Transform Player::HitBox::body{glm::vec3{0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
+const Math::Transform Player::HitBox::wheels{glm::vec3{0.0f, -1.75f, 0.0f}, glm::vec3{0.0f}, glm::vec3{3.5f,  1.25f, 2.0f}};
 
 // Player move collision boxes
 const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f, 4.5f, 2.0f}};
@@ -15,14 +15,6 @@ const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, gl
 
 const float Player::MAX_HEALTH = 100.0f;
 const float Player::MAX_SHIELD = 300.0f;
-
-// Player State
-
-Math::Transform PlayerState::GetTransform()
-{
-    Math::Transform t{pos, glm::vec3{rot, 0.0f}, glm::vec3{1.0f}};
-    return t;
-}
 
 // Functions
 
@@ -108,4 +100,17 @@ void Player::ApplyState(Entity::PlayerState s)
 {
     this->transform.position = s.pos;
     this->transform.rotation = glm::vec3{s.rot, 0.0f};
+}
+
+
+Math::Transform Player::GetTransform()
+{
+    return transform;
+}
+
+// Ignores pitch, and adapts rotation to player model
+Math::Transform Player::GetRenderTransform()
+{
+    Math::Transform t{transform.position, glm::vec3{0.0f, transform.rotation.y - 90.0f,  0.0f}, glm::vec3{1.0f}};
+    return t;
 }

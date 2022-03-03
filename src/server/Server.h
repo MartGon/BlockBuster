@@ -81,7 +81,6 @@ namespace BlockBuster
 
         // Misc
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
-        glm::vec3 GetRandomPos() const;
 
         // Match 
         // TODO: Should move these to their class/module

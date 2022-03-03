@@ -179,14 +179,14 @@ void Server::InitAI()
     ai.isAI = true;
     Entity::Player player;
     ai.player.id = 200;
-    ai.player.transform = Math::Transform{GetRandomPos(), glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
-    ai.targetPos = GetRandomPos();
+    //ai.player.transform = Math::Transform{GetRandomPos(), glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
+    //ai.targetPos = GetRandomPos();
     //clients[200] = ai;
 }
 
 void Server::InitMap()
 {
-    std::filesystem::path mapFile = "/home/defu/Projects/BlockBuster/resources/maps/TestMap.bbm";
+    std::filesystem::path mapFile = "./resources/maps/Alpha2.bbm";
     auto res = Game::Map::Map::LoadFromFile(mapFile);
     if(res.isOk())
     {
@@ -262,10 +262,10 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     auto& client = clients[peerId];
     auto& player = client.player;
 
-    auto& pController = client.pController;
     auto playerPos = player.transform.position;
     auto playerYaw = cmd.camYaw;
-    logger.LogInfo("Cam yaw is " + std::to_string(playerYaw));
+
+    auto& pController = client.pController;
     player.transform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
     player.transform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
 }
@@ -347,10 +347,8 @@ void Server::SendWorldUpdate()
     worldUpdate->snapShot = s;
 
     // Send snapshot with acks
-    for(auto pair : clients)
+    for(auto& [id, client] : clients)
     {
-        auto client = pair.second;
-
         if(client.isAI)
             continue;
         
@@ -360,22 +358,11 @@ void Server::SendWorldUpdate()
         auto packetBuf = worldUpdate->GetBuffer();
         ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
         
-        host->SendPacket(pair.first, 0, epacket);
+        host->SendPacket(id, 0, epacket);
     }
 }
 
 // Misc
-
-glm::vec3 Server::GetRandomPos() const
-{
-    glm::vec3 pos;
-    pos.x = Util::Random::Uniform(-7.0f, 7.0f);
-    pos.y = 5.15f;
-    //pos.z = Util::Random::Uniform(-7.0f, 7.0f);
-    pos.z = -7.0f;
-
-    return pos;
-}
 
 void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
 {
