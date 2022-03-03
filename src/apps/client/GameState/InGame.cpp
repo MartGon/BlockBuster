@@ -442,6 +442,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     // Run predicted command for this simulation
     auto camRot = camera_.GetRotationDeg();
     auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
+    predState.rot.x = camRot.x;
     Prediction p{InputReq{cmdId, playerInput, camRot.y, camRot.x}, preState, predState, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
