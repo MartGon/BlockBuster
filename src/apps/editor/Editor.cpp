@@ -402,6 +402,7 @@ void Editor::UpdateEditor()
     }
 
     // Draw chunk borders
+    const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
     if(drawChunkBorders)
         project.map.DrawChunkBorders(shader, cube, view, yellow);
 

@@ -313,9 +313,6 @@ namespace BlockBuster
             bool newColor = false;
             glm::vec4 colorPick;
 
-            const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
-            const glm::vec4 darkBlue = glm::vec4{20.f / 255.f, 0.0f, 0.5f, 1.0f};
-
             glm::ivec3 pointedBlockPos;
 
             // Tools - Cursor
@@ -352,7 +349,7 @@ namespace BlockBuster
             int objectType = Entity::GameObject::RESPAWN;
             glm::ivec3 selectedObj{0};
 
-            // GUIGL
+            // GUI
             GL::VertexArray gui_vao;
             PopUpState state = PopUpState::NONE;
             TabState tabState = TabState::TOOLS_TAB;

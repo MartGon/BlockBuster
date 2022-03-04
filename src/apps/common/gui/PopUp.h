@@ -31,19 +31,10 @@ namespace GUI
             isCloseable = closeable;
         }
 
-        inline void SetButtonVisible(bool visible)
-        {
-            isButtonVisible = visible;
-        }
-
+        
         inline void SetTitle(std::string title)
         {
             this->title = title;
-        }
-
-        inline void SetText(std::string text)
-        {
-            this->text = text;
         }
 
         inline void SetFlags(ImGuiWindowFlags flags)
@@ -51,21 +42,53 @@ namespace GUI
             this->flags = flags;
         }
 
+        void Draw();
+        virtual void OnDraw() = 0;
+
+    private:
+
+        ImGuiWindowFlags flags = ImGuiWindowFlags_None;
+        
+        bool isVisible = false;
+        bool isCloseable = false;
+        std::string title;
+    };
+
+    class BasicPopUp : public PopUp
+    {
+    public:
+        inline void SetButtonVisible(bool visible)
+        {
+            isButtonVisible = visible;
+        }
+
         inline void SetButtonCallback(std::function<void()> cb)
         {
             onButtonPress = cb;
         }
 
-        void Draw();
+        inline void SetText(std::string text)
+        {
+            this->text = text;
+        }
+
+        void OnDraw() override; 
 
     private:
 
-        ImGuiWindowFlags flags = ImGuiWindowFlags_None;
         bool isButtonVisible = false;
-        bool isVisible = false;
-        bool isCloseable = false;
-        std::string title;
         std::string text;
         std::function<void()> onButtonPress;
+    };
+
+    class GenericPopUp : public PopUp
+    {
+    public:
+        GenericPopUp(std::function<void()> content) : content{content} {}
+
+        void OnDraw() override;
+
+    private:
+        std::function<void()> content;
     };
 }

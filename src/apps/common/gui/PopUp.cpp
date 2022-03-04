@@ -13,22 +13,33 @@ void PopUp::Draw()
         if(!isVisible)
             ImGui::CloseCurrentPopup();
 
-        ImGui::Text("%s", text.c_str());
-
-        auto winWidth = ImGui::GetWindowWidth();
-        auto buttonWidth = ImGui::CalcTextSize("Accept").x + 8;
-        ImGui::SetCursorPosX(winWidth / 2.0f - buttonWidth / 2.0f);
-        if(isButtonVisible && ImGui::Button("Accept"))
-        {
-            isVisible = false;
-
-            if(onButtonPress)
-                onButtonPress();
-        }
+        OnDraw();
 
         ImGui::EndPopup();
     }
 
     if(isVisible)
         ImGui::OpenPopup(title.c_str());
+}
+
+void BasicPopUp::OnDraw()
+{
+    ImGui::Text("%s", text.c_str());
+
+    auto winWidth = ImGui::GetWindowWidth();
+    auto buttonWidth = ImGui::CalcTextSize("Accept").x + 8;
+    ImGui::SetCursorPosX(winWidth / 2.0f - buttonWidth / 2.0f);
+    if(isButtonVisible && ImGui::Button("Accept"))
+    {
+        SetVisible(false);
+
+        if(onButtonPress)
+            onButtonPress();
+    }
+
+}
+
+void GenericPopUp::OnDraw()
+{
+    content();
 }

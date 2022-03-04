@@ -63,7 +63,7 @@ namespace BlockBuster
 
         // GUI
         GL::VertexArray guiVao;
-        GUI::PopUp popUp;
+        GUI::BasicPopUp popUp;
         std::unique_ptr<MenuState::Base> menuState_;
 
         // GUI - Windows
