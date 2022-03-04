@@ -185,7 +185,7 @@ std::vector<glm::ivec3> Entity::PlayerController::GetCollisionBlocks(Game::Map::
 
 Math::Transform PlayerController::GetECB()
 {
-    auto mcb = Entity::Player::moveCollisionBox;
+    auto mcb = Entity::Player::GetMoveCollisionBox();
     auto ecb = this->transform;
     ecb.position += mcb.position;
     ecb.scale = mcb.scale;
@@ -200,7 +200,7 @@ Math::Transform PlayerController::GetECB()
 
 Math::Transform PlayerController::GetGCB()
 {
-    auto mcb = Entity::Player::moveCollisionBox;
+    auto mcb = Entity::Player::GetMoveCollisionBox();
     auto ecb = this->transform;
     ecb.position += mcb.position;
     ecb.scale = mcb.scale;

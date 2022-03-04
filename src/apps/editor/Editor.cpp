@@ -1548,7 +1548,7 @@ void Editor::UpdatePlayerMode()
         }
     }
 
-    const auto camOffset = glm::vec3{0.0f, player.height, 0.0f};
+    const auto camOffset = glm::vec3{0.0f, Entity::Player::camHeight, 0.0f};
     auto pos = camera.GetPos() - camOffset;
     auto yaw = camera.GetRotationDeg().y;
     auto input = Input::GetPlayerInput();

@@ -4,12 +4,16 @@
 using namespace Entity;
 
 // Player Hit boxes
-const Math::Transform Player::HitBox::head{glm::vec3{0.0f, 1.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.5f, 1.0f, 1.5f}};
-const Math::Transform Player::HitBox::body{glm::vec3{0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
-const Math::Transform Player::HitBox::wheels{glm::vec3{0.0f, -1.75f, 0.0f}, glm::vec3{0.0f}, glm::vec3{3.5f,  1.25f, 2.0f}};
+const Math::Transform Player::sHitBox::head{glm::vec3{0.0f, 1.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.5f, 1.0f, 1.5f}};
+const Math::Transform Player::sHitBox::body{glm::vec3{0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
+const Math::Transform Player::sHitBox::wheels{glm::vec3{0.0f, -1.75f, 0.0f}, glm::vec3{0.0f}, glm::vec3{3.5f,  1.25f, 2.0f}};
 
 // Player move collision boxes
 const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f, 4.5f, 2.0f}};
+
+// Player Misc
+float Player::scale = 0.8f;
+const float Player::camHeight = 1.75f;
 
 // Player stats
 
@@ -86,6 +90,29 @@ Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerSta
 
 // Player
 
+Math::Transform Player::GetMoveCollisionBox()
+{
+    auto mcb = moveCollisionBox;
+    mcb.scale = mcb.scale * scale;
+    return mcb;
+}
+
+Player::HitBox Player::GetHitBox()
+{
+    HitBox hitbox;
+
+    hitbox.body = Player::sHitBox::wheels;
+    hitbox.body.scale = hitbox.body.scale * scale;
+
+    hitbox.wheels = Player::sHitBox::wheels;
+    hitbox.wheels.scale = hitbox.wheels.scale * scale;
+
+    hitbox.head = Player::sHitBox::head;
+    hitbox.head.scale = hitbox.head.scale * scale;
+
+    return hitbox;
+}
+
 Entity::PlayerState Player::ExtractState() const
 {
     Entity::PlayerState s;
@@ -103,14 +130,26 @@ void Player::ApplyState(Entity::PlayerState s)
 }
 
 
-Math::Transform Player::GetTransform()
+Math::Transform Player::GetTransform() const
 {
+    auto t = transform;
+    t.scale = glm::vec3{scale};
     return transform;
 }
 
-// Ignores pitch, and adapts rotation to player model
-Math::Transform Player::GetRenderTransform()
+Math::Transform Player::GetRenderTransform() const
 {
-    Math::Transform t{transform.position, glm::vec3{0.0f, transform.rotation.y - 90.0f,  0.0f}, glm::vec3{1.0f}};
+    Math::Transform t{transform.position, glm::vec3{0.0f, transform.rotation.y - 90.0f,  0.0f}, glm::vec3{scale}};
     return t;
+}
+
+void Player::SetTransform(Math::Transform transform)
+{
+    this->transform = transform;
+}
+
+glm::vec3 Player::GetFPSCamPos() const
+{
+    auto heightOffset = camHeight * scale;
+    return transform.position + glm::vec3{0.0f, heightOffset, 0.0f};
 }

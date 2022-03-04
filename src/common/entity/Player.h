@@ -42,39 +42,61 @@ namespace Entity
     PlayerState Interpolate(PlayerState a, PlayerState b, float alpha);
 
     using ID = uint8_t;
-    struct Player
+    class Player
     {
-        // Statics
+    public:
 
         struct HitBox
         {
-            static const Math::Transform head;
-            static const Math::Transform body;
-            static const Math::Transform wheels; // This one should rotate with the wheels, so it's affected by moveDir
+            Math::Transform head;
+            Math::Transform body;
+            Math::Transform wheels; // This one should rotate with the wheels, so it's affected by moveDir
         };
-        static const Math::Transform moveCollisionBox; // Only affects collision with terrain
 
+        // Statics
+        static Math::Transform GetMoveCollisionBox();
+        static HitBox GetHitBox();
 
+        static float scale;
+        static const float camHeight;
+
+        static const float MAX_SHIELD;
+        static const float MAX_HEALTH;
 
         PlayerState ExtractState() const;
         void ApplyState(PlayerState state);
 
-        Math::Transform GetTransform();
-        Math::Transform GetRenderTransform();
+        // Returns transform. Rotation includes arms pitch. This shouldn't be used for rendering/collision detec.
+        Math::Transform GetTransform() const;
+        // Ignores pitch, and adapts rotation to player model
+        Math::Transform GetRenderTransform() const;
+
+        void SetTransform(Math::Transform transform);
+
+        glm::vec3 GetFPSCamPos() const;
 
         ID id = 0;
         
         // State
-        Math::Transform transform;
         bool onDmg = false;
+
         // Health
-        static const float MAX_SHIELD;
-        static const float MAX_HEALTH;
         float shield = MAX_SHIELD;
         float health = MAX_HEALTH;
 
         ID teamId = 0;
 
         Weapon* weapon = nullptr;
+    private:
+
+        static const Math::Transform moveCollisionBox; // Only affects collision with terrain
+        struct sHitBox
+        {
+            static const Math::Transform head;
+            static const Math::Transform body;
+            static const Math::Transform wheels;
+        };
+
+        Math::Transform transform;
     };
 }

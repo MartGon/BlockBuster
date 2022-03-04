@@ -73,8 +73,10 @@ void Server::InitNetworking()
         player.teamId = player.id;
         auto sIndex = FindSpawnPoint(player);
         auto spawn = map.GetRespawn(sIndex);
-        auto playerPos = Game::Map::ToRealPos(sIndex, map.GetBlockScale()) + glm::vec3{0.0f, player.moveCollisionBox.scale.y / 2.0f, 0.0f};
-        player.transform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
+        auto playerPos = ToSpawnPos(sIndex);
+        logger.LogInfo("SpawnPos " + glm::to_string(playerPos));
+        auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{1.0f}};
+        player.SetTransform(playerTransform);
         clients[peerId].player = player;
 
         // Inform client
@@ -262,12 +264,16 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     auto& client = clients[peerId];
     auto& player = client.player;
 
-    auto playerPos = player.transform.position;
+    auto playerTransform = player.GetTransform();
+    auto playerPos = playerTransform.position;
     auto playerYaw = cmd.camYaw;
 
     auto& pController = client.pController;
-    player.transform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
-    player.transform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
+    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
+    playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
+    player.SetTransform(playerTransform);
+
+    logger.LogInfo("MovePos " + glm::to_string(playerTransform.position));
 }
 
 void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)
@@ -316,7 +322,7 @@ void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)
             auto pos2 = s2.players.at(playerId).pos;
             auto smoothPos = pos1 * alpha + pos2 * (1 - alpha);
 
-            auto rewoundTrans = client.player.transform;
+            auto rewoundTrans = client.player.GetRenderTransform();
             rewoundTrans.position = smoothPos;
             auto collision = Collisions::RayAABBIntersection(ray, rewoundTrans.GetTransformMat());
             if(collision.intersects)
@@ -378,8 +384,8 @@ void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
 
     // Calculate how far behind the server is
     lag = afterSleepTime - nextTickDate;
-    logger.LogInfo("Server tick took " + std::to_string(simulationTime.count()) + " s");
-    logger.LogInfo("Server delay " + std::to_string(lag.count()));
+    //logger.LogInfo("Server tick took " + std::to_string(simulationTime.count()) + " s");
+    //logger.LogInfo("Server delay " + std::to_string(lag.count()));
 
     // Update next tick date
     nextTickDate = nextTickDate + TICK_RATE;
@@ -412,6 +418,16 @@ glm::ivec3 Server::FindSpawnPoint(Entity::Player player)
     return spawn;
 }
 
+glm::vec3 Server::ToSpawnPos(glm::ivec3 spawnPoint)
+{
+    auto blockCenter = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
+    auto mcb = Entity::Player::GetMoveCollisionBox();
+    auto offsetY = (mcb.scale.y / 2.0f) - mcb.position.y - map.GetBlockScale() / 2.0f;
+    auto pos = blockCenter + glm::vec3{0.0f, offsetY, 0.0f};
+
+    return pos;
+}
+
 bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
 {
     auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
@@ -421,7 +437,7 @@ bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
     {
         if(other.teamId != player.teamId)
         {
-            auto posA = other.transform.position;
+            auto posA = other.GetTransform().position;
             auto dist = glm::length(posA - spawnPos);
 
             if(dist < MIN_SPAWN_ENEMY_DISTANCE)

@@ -1354,7 +1354,7 @@ void BlockBuster::Editor::Editor::GUI()
                 {
                     ImGui::SliderFloat("Player speed", &player.speed, 0.01, 1);
                     ImGui::SliderFloat("Player gravity", &player.gravitySpeed, -0.05, -1);
-                    ImGui::SliderFloat("Player height", &player.height, 0.25, 5);
+                    //ImGui::SliderFloat("Player height", &player.height, 0.25, 5);
                 }
                 /*
                 if(ImGui::SliderFloat("Block Scale", &blockScale, 1, 5))

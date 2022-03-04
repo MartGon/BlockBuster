@@ -238,7 +238,7 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
     if(camMode == CameraMode::FPS)
     {
         auto player = playerTable[playerId];
-        auto camPos = player.transform.position + glm::vec3{0.0f, 1.75f, 0.0f};
+        auto camPos = player.GetFPSCamPos();
         camera_.SetPos(camPos);
     }
     else
@@ -255,8 +255,10 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 
 void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
 {
-    Math::Transform transform{playerState.pos, glm::vec3{playerState.rot, 0.0f}, glm::vec3{1.f, 1.0f, 1.f}};
-    Entity::Player player{playerId, transform};
+    Entity::Player player;
+    player.id = playerId;
+    player.ApplyState(playerState);
+
     playerTable[playerId] = player;
     prevPlayerTable[playerId] = player;
 
@@ -313,11 +315,12 @@ void InGame::UpdateNetworking()
 
         for(auto [id, player] : playerTable)
         {
-            auto collision = Collisions::RayAABBIntersection(ray, player.transform.GetTransformMat());
+            auto pt = player.GetRenderTransform();
+            auto collision = Collisions::RayAABBIntersection(ray, pt.GetTransformMat());
             if(collision.intersects)
             {
                 client_->logger->LogInfo("It collides with player " + std::to_string(id));
-                client_->logger->LogInfo("Player was at " + glm::to_string(player.transform.position));
+                client_->logger->LogInfo("Player was at " + glm::to_string(pt.position));
                 client_->logger->LogInfo("Command time is " + std::to_string(GetRenderTime().count()));
             }
         }
@@ -607,9 +610,13 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
 
 glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const
 {
-    auto moveDir = prevPlayerTable.at(playerId).transform.position - playerTable.at(playerId).transform.position;
+    auto pt1 = prevPlayerTable.at(playerId).GetTransform();
+    auto pt2 = playerTable.at(playerId).GetTransform();
+    auto moveDir = pt1.position - pt2.position;
+
     auto len = glm::length(moveDir);
     moveDir = len > 0.005f ? moveDir / len : glm::vec3{0.0f};
+
     return moveDir;
 }
 
@@ -680,22 +687,21 @@ void InGame::DrawScene()
     map_.Draw(chunkShader, view);
 
     // Draw players
-    for(auto player : playerTable)
+    for(auto [playerId, player] : playerTable)
     {
-        auto playerId = player.first;
         if(this->playerId == playerId && camController_.GetMode() == CameraMode::FPS)
             continue;
 
         // Start Debug
         {
-            auto oldPos = prevPlayerTable[playerId].transform.position;
-            auto newPos = player.second.transform.position;
+            auto oldPos = prevPlayerTable[playerId].GetTransform().position;
+            auto newPos = player.GetTransform().position;
             auto diff = newPos - oldPos;
             auto distDiff = glm::length(diff);
             if(distDiff > 0.05f)
             {
                 auto expectedDiff = PLAYER_SPEED *  deltaTime.count();
-                client_->logger->LogDebug("Render: Player " + std::to_string(player.first) + " Prev " + glm::to_string(oldPos)
+                client_->logger->LogDebug("Render: Player " + std::to_string(playerId) + " Prev " + glm::to_string(oldPos)
                     + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
 
                 auto offset = glm::abs(distDiff - expectedDiff);
@@ -713,7 +719,7 @@ void InGame::DrawScene()
 
         // Apply changes to model
         auto playerState = playerModelStateTable[playerId];
-        auto playerT = player.second.transform;
+        auto playerT = player.GetTransform();
         playerAvatar.SetArmsPivot(playerState.armsPivot);
         playerAvatar.SetFlashesActive(playerState.leftFlashActive);
         playerAvatar.SetFacing(facingAngle);
@@ -723,11 +729,10 @@ void InGame::DrawScene()
         playerAvatar.SteerWheels(GetLastMoveDir(playerId), playerT.rotation.y);
 
         // Draw model
-        playerT.rotation.x = 0.0f; // Pitch should only be used for arms rotation
-        playerT.rotation.y -= 90.0f; // Adapt rotation to model base orientation
+        playerT = player.GetRenderTransform();
         auto t = playerT.GetTransformMat();
         auto transform = view * t;
-        shader.SetUniformInt("dmg", player.second.onDmg);
+        shader.SetUniformInt("dmg", player.onDmg);
         playerAvatar.Draw(transform);
 
         // Draw player hitbox
