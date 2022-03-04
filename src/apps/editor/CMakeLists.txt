@@ -22,6 +22,7 @@ target_link_libraries(Editor
     Math 
     Entity 
     App
+    GUI
     Game
     
     Debug

@@ -371,21 +371,6 @@ void BlockBuster::Editor::Editor::ClosePopUp(bool accept)
     ImGui::CloseCurrentPopup();
 }
 
-// #### Widgets #### \\
-
-void BlockBuster::Editor::Editor::HelpMarker(const char* text)
-{
-    ImGui::TextDisabled("(?)");
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-        ImGui::TextUnformatted(text);
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
-    }
-}
-
 // #### GUI #### \\
 
 void BlockBuster::Editor::Editor::MenuBar()
@@ -593,7 +578,7 @@ void BlockBuster::Editor::Editor::HelpShortCutWindow()
 
             ImGui::Text("Camera mode");
             ImGui::SameLine();
-            HelpMarker("Editor Camera: Movement ignores the camera rotation. Can only rotate camera with arrows\n"
+            GUI::HelpMarker("Editor Camera: Movement ignores the camera rotation. Can only rotate camera with arrows\n"
                     "FPS Camera: Movement according to camera angle. Can rotate camera with mouse");
             ImGui::BulletText("Middle mouse button (hold) - Set FPS camera");
             ImGui::BulletText("F - Toggle FPS/Editor camera");
@@ -944,7 +929,7 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
             OpenPopUp(PopUpState::LOAD_TEXTURE);
         }
         ImGui::SameLine();
-        HelpMarker("Warning!: Every texture must be a square and have the same size and format (RGB/RGBA)");
+        GUI::HelpMarker("Warning!: Every texture must be a square and have the same size and format (RGB/RGBA)");
     }
 }
 

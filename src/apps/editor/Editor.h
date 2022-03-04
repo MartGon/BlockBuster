@@ -233,9 +233,6 @@ namespace BlockBuster
             void UpdatePopUp();
             void ClosePopUp(bool accept = false);
 
-            // Widgets
-            void HelpMarker(const char* text);
-
             // GUI
             void MenuBar();
 

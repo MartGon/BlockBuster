@@ -2,6 +2,7 @@ SET(SOURCES
     PopUp.cpp
     Text.cpp
     TextFactory.cpp
+    GUI.cpp
 )
 
 
