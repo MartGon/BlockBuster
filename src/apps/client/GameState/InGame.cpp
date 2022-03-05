@@ -298,7 +298,7 @@ void InGame::UpdateNetworking()
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     auto click = mouseState & SDL_BUTTON_RIGHT;
 
-    // Update last cmdId. Note: Breaks prediction when removed
+    // Update last cmdId. Note: Breaks prediction when removed. Should prolly be ++this->cmdId in Predict.
     this->cmdId++;
 
     // Prediction

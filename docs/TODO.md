@@ -73,7 +73,7 @@
 
 
 - Rotate other players wheel, based on their last move dir. - DONE
-- Correct prediction errors. They're are affected by camera rotation. Sampled and used rot for prediction may be not the same.
-- Create custom map, for testing. Should be quite big. 
+- Correct prediction errors. They're are affected by camera rotation. Sampled and used rot for prediction may be not the same. - DONE
+- Create custom map, for testing. Should be quite big. - DONE
 - Launch game server from MatchMaking. Port, player num, map and gamemode as params
 - KillBoxes (Chore) or Set kill height (easier) (Map Options)        

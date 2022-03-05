@@ -269,6 +269,7 @@ namespace BlockBuster
             // Rendering
             Rendering::RenderMgr renderMgr;
             GL::Shader shader;
+            GL::Shader paintShader;
             GL::Shader chunkShader;
             Rendering::Mesh cube;
             Rendering::Mesh slope;

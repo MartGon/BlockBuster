@@ -24,6 +24,7 @@ void Editor::Start()
     // Load shaders
     try{
         shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "circleVertex.glsl", "circleFrag.glsl");
+        paintShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
         chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
     }
     catch(const std::runtime_error& e)
@@ -344,7 +345,6 @@ void Editor::UpdateEditor()
         auto tMat = view * t.GetTransformMat();
         respawnModel.Draw(tMat);
     }
-    renderMgr.Render(camera);
 
     // Draw Cursor
     glDisable(GL_DEPTH_TEST);
@@ -389,22 +389,24 @@ void Editor::UpdateEditor()
         bool validCol = display.type == Game::DisplayType::COLOR && display.id < project.map.cPalette.GetCount();
         bool validDisplay = validTex || validCol;
 
-        shader.SetUniformMat4("transform", tMat);
-        shader.SetUniformInt("textureType", display.type);
-        shader.SetUniformInt("textureId", display.id);
-        shader.SetUniformInt("overrideColor", false);
+        paintShader.SetUniformMat4("transform", tMat);
+        paintShader.SetUniformInt("textureType", display.type);
+        paintShader.SetUniformInt("textureId", display.id);
+        paintShader.SetUniformInt("overrideColor", false);
 
-        shader.SetUniformInt("textureArray", 0);
-        shader.SetUniformInt("colorArray", 1);
+        paintShader.SetUniformInt("textureArray", 0);
+        paintShader.SetUniformInt("colorArray", 1);
 
         if(validDisplay)
-            mesh.Draw(shader, project.map.tPalette.GetTextureArray(), display.id);
+            mesh.Draw(paintShader, project.map.tPalette.GetTextureArray(), display.id);
     }
 
     // Draw chunk borders
     const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
     if(drawChunkBorders)
         project.map.DrawChunkBorders(shader, cube, view, yellow);
+
+    renderMgr.Render(camera);
 
     // Create GUI
     GUI();
