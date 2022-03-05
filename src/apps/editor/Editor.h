@@ -153,6 +153,7 @@ namespace BlockBuster
             // Selection cursor
             void DrawCursor(Math::Transform t);
             void DrawSelectCursor(glm::ivec3 pos);
+            void SetCursorState(bool enabled, glm::ivec3 pos, Game::BlockType blockType, Game::BlockRot rot);
             void EnumBlocksInSelection(std::function<void(glm::ivec3 pos, glm::ivec3 offset)> onEach);
             std::vector<BlockData> GetBlocksInSelection(bool globalPos = true);
             void SelectBlocks();

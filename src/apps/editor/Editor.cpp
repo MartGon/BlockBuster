@@ -510,8 +510,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 if(actionType == ActionType::LEFT_BUTTON)
                 {
                     if(IsDisplayValid())
-                    {
-                                                    
+                    {           
                         auto iNewPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
                         if(project.map.CanPlaceBlock(iNewPos))
                         {
@@ -523,18 +522,6 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                         }
                     }
                 }
-                else if(actionType == ActionType::HOVER)
-                {
-                    cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                    if(project.map.CanPlaceBlock(cursor.pos))
-                    {
-                        cursor.enabled = true;
-                        cursor.type = blockType;
-                        cursor.rot = rot;
-                    }
-                    else
-                        cursor.enabled = false;
-                }
                 else if(actionType == ActionType::RIGHT_BUTTON)
                 {
                     if(project.map.GetBlockCount() > 1)
@@ -542,6 +529,14 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                         auto action = std::make_unique<RemoveAction>(intersect.pos, block, &project.map);
                         DoToolAction(std::move(action));
                     }
+                }
+                else if(actionType == ActionType::HOVER)
+                {
+                    auto cursorPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
+                    if(project.map.CanPlaceBlock(cursor.pos))
+                        SetCursorState(true, cursorPos, blockType, rot);
+                    else
+                        cursor.enabled = false;
                 }
             }
             else
@@ -569,10 +564,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                     if(block.type == Game::BlockType::SLOPE)
                     {
                         auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
-
-                        cursor.enabled = true;
-                        cursor.pos = intersect.pos;
-                        cursor.type = Game::BlockType::BLOCK;
+                        SetCursorState(true, intersect.pos, Game::BlockType::BLOCK, cursor.rot);
                     }
                     else
                         cursor.enabled = false;
@@ -641,11 +633,10 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 }
                 else if(actionType == ActionType::HOVER)
                 {
-                    cursor.pos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
+                    auto cursorPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
                     if(project.map.CanPlaceBlock(cursor.pos))
                     {
-                        cursor.enabled = true;
-                        cursor.type = blockType;
+                        SetCursorState(true, cursorPos, blockType, cursor.rot);
                     }
                     else
                         cursor.enabled = false;
@@ -678,18 +669,10 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 }
                 else if(actionType == ActionType::HOVER)
                 {
-                    cursor.pos = oPos;
                     if(auto go = project.map.GetMap()->GetGameObject(oPos))
-                    {
-                        cursor.enabled = true;
-                        cursor.type = blockType;
-                    }
+                        SetCursorState(true, oPos, Game::BlockType::BLOCK, cursor.rot);
                     else if(auto go = project.map.GetMap()->GetGameObject(selectedObj))
-                    {
-                        cursor.pos = selectedObj;
-                        cursor.enabled = true;
-                        cursor.type = blockType;
-                    }
+                        SetCursorState(true, selectedObj, Game::BlockType::BLOCK, cursor.rot);
                     else
                         cursor.enabled = false;
                 }
@@ -791,6 +774,14 @@ void Editor::DrawSelectCursor(glm::ivec3 pos)
 
         DrawCursor(t);
     }
+}
+
+void Editor::SetCursorState(bool enabled, glm::ivec3 pos, Game::BlockType blockType, Game::BlockRot blockRot)
+{
+    cursor.enabled = enabled;
+    cursor.pos = pos;
+    cursor.type = blockType;
+    cursor.rot = blockRot;
 }
 
 void Editor::EnumBlocksInSelection(std::function<void(glm::ivec3, glm::ivec3)> onEach)
