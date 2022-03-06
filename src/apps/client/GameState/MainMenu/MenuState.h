@@ -65,6 +65,9 @@ namespace BlockBuster
 
             bool updatePending = false;
         private:
+
+            bool IsPlayerHost();
+            bool IsEveryoneReady();
             
             char chat[4096] = "\0";
             char chatLine[128] = "\0";

@@ -364,9 +364,22 @@ void Lobby::Update()
                 {
                     mainMenu_->ToggleReady();
                 }
-
                 ImGui::EndTable();
             }
+
+            if(!IsPlayerHost() || !IsEveryoneReady())
+                ImGui::PushDisabled();
+
+            ImGui::BeginChild("Start Game Button", ImVec2(0, 0), false, 0);
+            auto size = ImGui::GetContentRegionAvail();
+                if(ImGui::Button("Start Game", size))
+                {
+                    mainMenu_->GetLogger()->LogInfo("Starting game request sent!");
+                }
+            ImGui::EndChild();
+
+            if(!IsPlayerHost() || !IsEveryoneReady())
+                ImGui::PopDisabled();
 
             ImGui::EndTable();
         }
@@ -378,4 +391,26 @@ void Lobby::Update()
     }
 
     ImGui::End();
+}
+
+bool Lobby::IsPlayerHost()
+{
+    for(auto playerInfo : mainMenu_->currentGame->playersInfo)
+    {
+        if(mainMenu_->user == playerInfo.playerName)
+            return playerInfo.isHost;
+    }
+
+    return false;
+}
+
+bool Lobby::IsEveryoneReady()
+{
+    for(auto playerInfo : mainMenu_->currentGame->playersInfo)
+    {
+        if(!playerInfo.isHost && !playerInfo.isReady)
+            return false;
+    }
+
+    return true;
 }

@@ -234,7 +234,7 @@ void MainMenu::LeaveGame()
     {
         GetLogger()->LogInfo("Succesfullly left game");
 
-        // Open game info window
+        // Open Server Browser
         SetState(std::make_unique<MenuState::ServerBrowser>(this));
 
         // Remove current game;
@@ -362,7 +362,6 @@ void MainMenu::UpdateGame()
     lobby->updatePending = true;
     httpClient.Request("/update_game", nlohmann::to_string(body), onSuccess, onError);
 }
-
 
 
 void MainMenu::HandleSDLEvents()
