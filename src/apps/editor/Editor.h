@@ -52,10 +52,10 @@ namespace BlockBuster
             NOT_YZ
         };
 
-        class Editor : public App::App
+        class Editor : public App::AppI
         {
         public:
-            Editor(::App::Configuration config) : App{config} {}
+            Editor(::App::Configuration config) : AppI{config} {}
 
             void Start() override;
             void Update() override;

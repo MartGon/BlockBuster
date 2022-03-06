@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+using namespace App;
+
 void GLAPIENTRY ErrorCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* msg, const void* userParam)
 {
     if(severity != GL_DEBUG_SEVERITY_NOTIFICATION)
@@ -24,7 +26,7 @@ void GLAPIENTRY ErrorCallback(GLenum source, GLenum type, GLuint id, GLenum seve
 
 #endif
 
-App::App::App(Configuration config) : config{config}, logger{ServiceLocator::GetLogger()}
+AppI::AppI(Configuration config) : config{config}, logger{ServiceLocator::GetLogger()}
 {
     // SDL
     if(SDL_Init(0))
@@ -105,7 +107,7 @@ App::App::App(Configuration config) : config{config}, logger{ServiceLocator::Get
     ImGui_ImplOpenGL3_Init("#version 330");
 }
 
-App::App::~App()
+AppI::~AppI()
 {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -123,25 +125,34 @@ App::App::~App()
 
 // Protected
 
-glm::vec<2, int> App::App::GetWindowSize()
+glm::ivec2 AppI::GetWindowSize()
 {
-    glm::vec<2, int> size;
+    glm::ivec2 size;
     SDL_GetWindowSize(window_, &size.x, &size.y);
 
     return size;
 }
 
-glm::vec<2, int> App::App::GetMousePos()
+void AppI::SetWindowSize(glm::ivec2 size)
 {
-    glm::vec<2, int> mousePos;
+    auto width = size.x; auto height = size.y;
+    SDL_SetWindowSize(window_, width, height);
+    SDL_GetWindowSize(window_, &width, &height);
+    glViewport(0, 0, width, height);
+}
+
+glm::ivec2 AppI::GetMousePos()
+{
+    glm::ivec2 mousePos;
     SDL_GetMouseState(&mousePos.x, &mousePos.y);
     mousePos.y = GetWindowSize().y - mousePos.y;
 
     return mousePos;
 }
 
-void App::App::RenameMainWindow(const std::string& name)
+void AppI::RenameMainWindow(const std::string& name)
 {
+    // TODO: Move this to Editor.
     std::string title = "Editor - " + name;
     SDL_SetWindowTitle(window_, title.c_str());
 }

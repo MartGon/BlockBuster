@@ -1579,10 +1579,8 @@ void Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
         width = mode.w;
         height = mode.h;
     }
-    SDL_SetWindowSize(window_, width, height);
-
-    SDL_GetWindowSize(window_, &width, &height);
-    glViewport(0, 0, width, height);
+    SetWindowSize(glm::ivec2{width, height});
+    
     camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
     camera.SetParam(Rendering::Camera::Param::FOV, winConfig.fov);
     SDL_GL_SetSwapInterval(winConfig.vsync);

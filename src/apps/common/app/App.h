@@ -17,11 +17,11 @@
 
 namespace App
 {
-    class App
+    class AppI
     {
     public:
-        App(Configuration config);
-        virtual ~App();
+        AppI(Configuration config);
+        virtual ~AppI();
 
         virtual void Start() {};
         virtual void Update() = 0;
@@ -31,8 +31,9 @@ namespace App
         Configuration config;
     protected:
 
-        glm::vec<2, int> GetWindowSize();
-        glm::vec<2, int> GetMousePos();
+        glm::ivec2 GetWindowSize();
+        void SetWindowSize(glm::ivec2 size);
+        glm::ivec2 GetMousePos();
         void RenameMainWindow(const std::string& name);
 
         ImGuiIO* io_;

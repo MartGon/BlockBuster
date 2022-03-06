@@ -22,6 +22,9 @@ void MainMenu::Start()
     // Set default name
     popUp.SetTitle("Connecting");
     popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
+
+    SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
+    client_->SetWindowSize(glm::ivec2{800, 600});
 }
 
 void MainMenu::Shutdown()

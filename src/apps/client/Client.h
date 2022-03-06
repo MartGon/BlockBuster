@@ -29,7 +29,7 @@
 
 namespace BlockBuster
 {
-    class Client : public App::App
+    class Client : public App::AppI
     {
     friend class GameState;
     friend class MainMenu;

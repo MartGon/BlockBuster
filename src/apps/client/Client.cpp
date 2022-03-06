@@ -17,7 +17,7 @@
 
 using namespace BlockBuster;
 
-Client::Client(::App::Configuration config) : App{config}
+Client::Client(::App::Configuration config) : AppI{config}
 {
 }
 

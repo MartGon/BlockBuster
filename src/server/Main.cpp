@@ -6,9 +6,9 @@ int main(int argc, char** argv)
 {   
     argparse::ArgumentParser ap{"BlockBusterServer", "0.1a"};
     ap.add_argument("-a", "--address").default_value<std::string>("0.0.0.0");
-    ap.add_argument("-p", "--port").default_value<uint16_t>(8080);
+    ap.add_argument("-p", "--port").default_value<uint16_t>(8080).scan<'u', uint16_t>();
     ap.add_argument("-m", "--map").required();
-    ap.add_argument("-mp", "--max-players").default_value<uint8_t>(8);
+    ap.add_argument("-mp", "--max-players").default_value<uint8_t>(8).scan<'u', uint8_t>();
     ap.add_argument("-sp", "--starting-players").required().scan<'u', uint8_t>();
     ap.add_argument("-gm", "--gamemode").required();
 

@@ -367,6 +367,7 @@ void Lobby::Update()
                 ImGui::EndTable();
             }
 
+            // Start Game Button
             if(!IsPlayerHost() || !IsEveryoneReady())
                 ImGui::PushDisabled();
 

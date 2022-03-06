@@ -27,6 +27,10 @@ InGame::InGame(Client* client) : GameState{client}, host{ENet::HostFactory::Get(
 
 void InGame::Start()
 {
+    // Window
+    SDL_SetWindowResizable(this->client_->window_, SDL_TRUE);
+    client_->SetWindowSize(glm::ivec2{client_->config.window.resolutionW, client_->config.window.resolutionH});
+
     // GL features
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
