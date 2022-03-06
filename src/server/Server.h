@@ -61,6 +61,7 @@ namespace BlockBuster
     class Server
     {
     public:
+        Server(std::string address, uint16_t port, std::filesystem::path mapPath, uint8_t maxPlayers, uint8_t startingPlayers, std::string mode);
 
         void Start();
         void Run();
@@ -81,6 +82,14 @@ namespace BlockBuster
 
         // Misc
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
+
+        // Server params
+        std::string address;
+        uint16_t port;
+        std::filesystem::path mapPath;
+        uint8_t maxPlayers;
+        uint8_t startingPlayers;
+        std::string mode;
 
         // Match 
         // TODO: Should move these to their class/module

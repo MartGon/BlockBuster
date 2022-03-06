@@ -6,6 +6,12 @@
 using namespace BlockBuster;
 using namespace Networking::Packets::Client;
 
+Server::Server(std::string address, uint16_t port, std::filesystem::path mapPath, uint8_t maxPlayers, uint8_t startingPlayers, std::string mode) :
+    address{address}, port{port}, mapPath{mapPath}, maxPlayers{maxPlayers}, startingPlayers{startingPlayers}, mode{mode}
+{
+
+}
+
 void Server::Start()
 {
     InitLogger();
@@ -60,8 +66,8 @@ void Server::InitNetworking()
 {
     // Networking setup
     auto hostFactory = ENet::HostFactory::Get();
-    auto localhost = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
-    host = hostFactory->CreateHost(localhost, 4, 2);
+    auto localhost = ENet::Address::CreateByIPAddress(address, port).value();
+    host = hostFactory->CreateHost(localhost, maxPlayers, 2);
     logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));
     host->SetOnConnectCallback([this](auto peerId)
     {
@@ -188,8 +194,7 @@ void Server::InitAI()
 
 void Server::InitMap()
 {
-    std::filesystem::path mapFile = "./resources/maps/Alpha2.bbm";
-    auto res = Game::Map::Map::LoadFromFile(mapFile);
+    auto res = Game::Map::Map::LoadFromFile(mapPath);
     if(res.isOk())
     {
         auto mapPtr = std::move(res.unwrap());
@@ -197,7 +202,7 @@ void Server::InitMap()
     }
     else
     {
-        logger.LogError("Could not load map " + mapFile.string());
+        logger.LogError("Could not load map " + mapPath.string());
         std::exit(-1);
     }
 }
