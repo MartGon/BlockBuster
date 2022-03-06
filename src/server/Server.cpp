@@ -66,7 +66,7 @@ void Server::InitNetworking()
 {
     // Networking setup
     auto hostFactory = ENet::HostFactory::Get();
-    auto localhost = ENet::Address::CreateByIPAddress(address, port).value();
+    auto localhost = ENet::Address::CreateByDomain(address, port).value();
     host = hostFactory->CreateHost(localhost, maxPlayers, 2);
     logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));
     host->SetOnConnectCallback([this](auto peerId)

@@ -30,7 +30,7 @@ void MainMenu::Start()
 void MainMenu::Shutdown()
 {
     // Call LeaveGame and wait for it
-    if(lobby)
+    if(lobby && !enteringGame)
         LeaveGame();
 }
 
@@ -335,11 +335,24 @@ void MainMenu::UpdateGame()
                 // Set current game
                 currentGame = gameDetails;
 
-                // Update chat
-                lobby->OnGameInfoUpdate();
+                if(currentGame->game.state == "InGame")
+                {
+                    GetLogger()->LogInfo("Game Started!");
+                    auto address = currentGame->game.address.value();
+                    auto port = currentGame->game.serverPort.value();
+                    client_->LaunchGame(address, port);
 
-                // Call again
-                UpdateGame();
+                    httpClient.Disable();
+                    enteringGame = true;
+                }
+                else if(currentGame->game.state == "InLobby")
+                {
+                    // Update chat
+                    lobby->OnGameInfoUpdate();
+
+                    // Call again
+                    UpdateGame();
+                }
             }
         }
         // Handle game doesn't exist, etc.
@@ -366,6 +379,30 @@ void MainMenu::UpdateGame()
     httpClient.Request("/update_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
+void MainMenu::StartGame()
+{
+    if(!lobby)
+        return;
+    
+    nlohmann::json body;
+    body["game_id"] = currentGame->game.id;
+    body["player_id"] = userId;
+
+    auto onSuccess = [this](httplib::Response& res)
+    {
+        if(res.status == 200)
+            GetLogger()->LogInfo("Succesfully sent start game");
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        auto errorCode = static_cast<int>(err);
+        
+        GetLogger()->LogError("Could not start game. Error Code: " + std::to_string(errorCode));
+    };
+
+    httpClient.Request("/start_game", nlohmann::to_string(body), onSuccess, onError);
+}
 
 void MainMenu::HandleSDLEvents()
 {

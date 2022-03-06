@@ -46,6 +46,7 @@ namespace BlockBuster
         void ToggleReady();
         void SendChatMsg(std::string msg);
         void UpdateGame();
+        void StartGame();
 
         // Inputs
         void HandleSDLEvents();
@@ -82,6 +83,10 @@ namespace BlockBuster
             uint16_t ping;
             std::vector<std::string> chat;
 
+            std::optional<std::string> address;
+            std::optional<uint16_t> serverPort;
+            std::string state;
+
             static GameInfo FromJson(nlohmann::json game)
             {
                 GameInfo gameInfo;
@@ -99,6 +104,16 @@ namespace BlockBuster
                     auto str = msg.get<std::string>();
                     gameInfo.chat.push_back(str);
                 }
+
+                auto address = game.at("address");
+                if(!address.is_null())
+                    gameInfo.address = address.get<std::string>();
+                
+                auto port = game.at("port");
+                if(!port.is_null())
+                    gameInfo.serverPort = port.get<uint16_t>();
+
+                gameInfo.state = game.at("state").get<std::string>();
                 
                 return gameInfo;
             }
@@ -143,5 +158,6 @@ namespace BlockBuster
         };
         std::optional<GameDetails> currentGame;
         MenuState::Lobby* lobby = nullptr;
+        bool enteringGame = false;
     };
 }

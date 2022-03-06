@@ -138,6 +138,15 @@ void ServerBrowser::Update()
 
 // #### CREATE GAME #### \\
 
+void CreateGame::OnEnter()
+{
+    std::string placeholderName = mainMenu_->user + "'s game";
+    strcpy(gameName, placeholderName.c_str());
+
+    strcpy(map, "Kobra");
+    strcpy(mode, "DeathMatch");
+}
+
 void CreateGame::Update()
 {
     auto displaySize = ImGui::GetIO().DisplaySize;
@@ -159,7 +168,7 @@ void CreateGame::Update()
         if(ImGui::BeginCombo("Map", map, comboFlags))
         {   
             bool selected = std::strcmp("Kobra", map) == 0;
-            if(ImGui::Selectable("Kobra", selected))
+            if(ImGui::Selectable("Kobra", true))
             {
                 std::strcpy(map, "Kobra");
             }
@@ -169,7 +178,7 @@ void CreateGame::Update()
         if(ImGui::BeginCombo("Mode", mode, comboFlags))
         {
             bool selected = std::strcmp("DeathMatch", mode) == 0;
-            if(ImGui::Selectable("DeathMatch", selected))
+            if(ImGui::Selectable("DeathMatch", true))
             {
                 std::strcpy(mode, "DeathMatch");
             }
@@ -375,7 +384,7 @@ void Lobby::Update()
             auto size = ImGui::GetContentRegionAvail();
                 if(ImGui::Button("Start Game", size))
                 {
-                    mainMenu_->GetLogger()->LogInfo("Starting game request sent!");
+                    mainMenu_->StartGame();
                 }
             ImGui::EndChild();
 

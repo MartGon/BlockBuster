@@ -24,13 +24,25 @@ namespace HTTP
         }
         ~AsyncClient()
         {
+            /*
             if(reqThread.joinable())
-                reqThread.join();
+                reqThread.join(); // NOTE: After detach, this is never executed
+            */
         }
 
         inline void SetReadTimeout(Util::Time::Seconds seconds)
         {
             timeout = seconds;
+        }
+
+        inline void Disable()
+        {
+            enabled = false;
+        }
+
+        inline void Enable()
+        {
+            enabled = true;
         }
 
         void Request(const std::string& path, const std::string& body, RespHandler respHandler, ErrHandler errHandler);
@@ -60,5 +72,6 @@ namespace HTTP
         std::thread reqThread;
         std::atomic_bool connecting = false;
         Util::Ring<Response, 16> responses;
+        bool enabled = true;
     };
 }

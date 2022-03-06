@@ -44,6 +44,7 @@ namespace BlockBuster
         public:
             CreateGame(MainMenu* mainMenu) : Base(mainMenu){}
 
+            void OnEnter() override;
             void Update() override;
         private:
             char gameName[32] = "\0";

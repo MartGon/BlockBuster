@@ -24,7 +24,7 @@ Client::Client(::App::Configuration config) : AppI{config}
 void Client::Start()
 {
     state = std::make_unique<MainMenu>(this);
-    //state = std::make_unique<InGame>(this);
+    //nextState = std::make_unique<InGame>(this, "localhost", 8081);
     state->Start();
 }
 
@@ -36,9 +36,23 @@ void Client::Shutdown()
 void Client::Update()
 {
     state->Update();
+
+    if(nextState)
+    {
+        state->Shutdown();
+
+        state = std::move(nextState);
+        state->Start();
+        nextState = nullptr;
+    }
 }
 
 bool Client::Quit()
 {
     return quit;
+}
+
+void Client::LaunchGame(std::string address, uint16_t port)
+{
+    nextState = std::make_unique<InGame>(this, address, port);
 }

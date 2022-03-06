@@ -6,6 +6,9 @@ using namespace HTTP;
 
 void AsyncClient::Request(const std::string& path, const std::string& body, RespHandler respHandler, ErrHandler errHandler)
 {
+    if(!enabled)
+        return;
+
     connecting = true;
 
     reqThread = std::thread{

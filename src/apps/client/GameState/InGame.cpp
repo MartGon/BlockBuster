@@ -21,7 +21,8 @@
 using namespace BlockBuster;
 using namespace ::App::Client;
 
-InGame::InGame(Client* client) : GameState{client}, host{ENet::HostFactory::Get()->CreateHost(1, 2)}
+InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort) : 
+    GameState{client}, serverDomain{serverDomain}, serverPort{serverPort}, host{ENet::HostFactory::Get()->CreateHost(1, 2)}
 {
 }
 
@@ -99,7 +100,7 @@ void InGame::Start()
     LoadMap("resources/maps/Alpha2.bbm");
 
     // Networking
-    auto serverAddress = ENet::Address::CreateByIPAddress("127.0.0.1", 8081).value();
+    auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
     host.SetOnConnectCallback([this](auto id)
     {
         this->serverId = id;
@@ -180,9 +181,10 @@ void InGame::Start()
     });
     host.Connect(serverAddress);
 
+    client_->logger->LogInfo("Connecting to server at " + serverAddress.GetHostIP() + ":" + std::to_string(serverAddress.GetPort()));
     // Connect to server
     auto attempts = 0;
-    while(!connected && attempts < 5)
+    while(!connected && attempts < 10)
     {
         Util::Time::Sleep(Util::Time::Millis{500});
         client_->logger->LogInfo("Connecting to server...");

@@ -43,7 +43,11 @@ namespace BlockBuster
         bool Quit() override;
         
     private:
+
+        void LaunchGame(std::string address, uint16_t port);
+
         std::unique_ptr<GameState> state;
+        std::unique_ptr<GameState> nextState;
 
         // App
         bool quit = false;

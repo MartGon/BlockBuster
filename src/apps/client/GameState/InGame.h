@@ -37,7 +37,7 @@ namespace BlockBuster
     class InGame : public GameState
     {
     public:
-        InGame(Client* client);
+        InGame(Client* client, std::string serverDomain, uint16_t serverPort);
         
         void Start() override;
         void Update() override;
@@ -152,6 +152,8 @@ namespace BlockBuster
         float facingAngle = 0;
 
         // Networking
+        std::string serverDomain;
+        uint16_t serverPort;
         ENet::Host host;
         ENet::PeerId serverId = 0;
         uint8_t playerId = 0;
