@@ -27,7 +27,7 @@ void Client::Start()
     //state = std::make_unique<InGame>(this, "localhost", 8081);
     state->Start();
     
-    LaunchGame("localhost", 8081);
+    //LaunchGame("localhost", 8081);
 }
 
 void Client::Shutdown()

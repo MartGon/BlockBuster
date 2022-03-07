@@ -44,7 +44,7 @@ int main(int argc, char** args)
     if(argc > 1)
         id = args[1];
 
-    std::string filename = std::string("./client-") + id + ".log";
+    std::string filename = std::string("./logs/client-") + id + ".log";
     App::Configuration config{
         App::Configuration::WindowConfig{
             "Client",

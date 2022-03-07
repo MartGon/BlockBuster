@@ -53,7 +53,7 @@ void Server::InitLogger()
     auto clogger = std::make_unique<Log::ConsoleLogger>();
     auto flogger = std::make_unique<Log::FileLogger>();
     std::filesystem::path logFile = "server.log";
-    flogger->OpenLogFile("server.log");
+    flogger->OpenLogFile("./logs/server.log");
     if(!flogger->IsOk())
         clogger->LogError("Could not create log file " + logFile.string());
 
