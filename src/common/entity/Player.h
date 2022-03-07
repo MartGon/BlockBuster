@@ -19,7 +19,12 @@ namespace Entity
 
     struct PlayerInput
     {
-        bool inputs[Inputs::MAX];
+        bool inputs[Inputs::MAX] = {false, false, false,
+                                    false, false};
+
+        // NOTE: This is needed to suppress Valgrind error
+        // Hint: https://stackoverflow.com/questions/19364942/points-to-uninitialised-bytes-valgrind-errors
+        bool padding[8 - Inputs::MAX] = {false, false, false};
 
         bool& operator[](uint32_t index)
         {

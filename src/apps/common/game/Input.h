@@ -6,4 +6,5 @@ namespace Input
 {
     Entity::PlayerInput GetPlayerInput();
     Entity::PlayerInput GetPlayerInputNumpad();
+    Entity::PlayerInput GetPlayerInputDummy();
 }

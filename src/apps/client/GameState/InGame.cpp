@@ -97,7 +97,8 @@ void InGame::Start()
     // Map
     auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
     auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
-    LoadMap("resources/maps/Alpha2.bbm");
+    LoadMap("./resources/maps/Alpha2.bbm");
+    //LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
 
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
@@ -831,6 +832,7 @@ void InGame::DrawGUI()
             modelScale =  t.scale;
             modelRot =  t.rotation;
 
+            /*
             if(ImGui::InputInt("ID", (int*)&playerId))
             {
                 if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
@@ -841,7 +843,7 @@ void InGame::DrawGUI()
                     modelScale =  t.scale;
                     modelRot =  t.rotation;
                 }
-            }
+            }*/
             ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
             ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);

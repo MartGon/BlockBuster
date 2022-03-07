@@ -2,6 +2,8 @@
 
 #include <SDL2/SDL.h>
 
+#include <debug/Debug.h>
+
 Entity::PlayerInput Input::GetPlayerInput()
 {
     Entity::PlayerInput input;
@@ -28,6 +30,13 @@ Entity::PlayerInput Input::GetPlayerInputNumpad()
 
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     input[Entity::SHOOT] = mouseState & SDL_BUTTON_LEFT;
+
+    return input;
+}
+
+Entity::PlayerInput Input::GetPlayerInputDummy()
+{
+    Entity::PlayerInput input;
 
     return input;
 }
