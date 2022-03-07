@@ -2,6 +2,8 @@
 
 #include <util/Random.h>
 
+#include <algorithm>
+
 namespace Util::Vector
 {
     template<typename T>
@@ -16,5 +18,11 @@ namespace Util::Vector
         }
 
         return res;
+    }
+
+    template<typename T>
+    bool Contains(const std::vector<T>& vec, const T& value)
+    {
+        return std::find(vec.begin(), vec.end(), value) != vec.end();
     }
 }

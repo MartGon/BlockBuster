@@ -3,6 +3,7 @@
 #include <util/Buffer.h>
 #include <util/Ring.h>
 #include <util/Random.h>
+#include <util/Container.h>
 
 TEST_CASE("Buffer tests")
 {
@@ -124,11 +125,25 @@ TEST_CASE("Queue")
 
 TEST_CASE("Random")
 {
-    uint32_t max = 2;
-    for(int i = 0; i < 100; i++)
+    const int tests = 100;
+    SUBCASE("Uniform")
     {
-        uint32_t random = Util::Random::Uniform(0, max);
-        bool inRange = random >= 0 && random <= max;
-        CHECK(inRange == true);
+        uint32_t max = 2;
+        for(int i = 0; i < tests; i++)
+        {
+            uint32_t random = Util::Random::Uniform(0, max);
+            bool inRange = random >= 0 && random <= max;
+            CHECK(inRange == true);
+        }
+    }
+    SUBCASE("PickRandom")
+    {
+        std::vector<int> vec = {1, 7, 9, 18};
+
+        for(int i = 0; i < tests; i++)
+        {
+            auto val = *Util::Vector::PickRandom(vec);
+            CHECK(Util::Vector::Contains(vec, val) == true);
+        }
     }
 }
