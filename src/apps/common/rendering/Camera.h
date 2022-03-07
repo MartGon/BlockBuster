@@ -19,6 +19,7 @@ namespace Rendering
         void SetParam(Param param, float value);
         void SetPos(glm::vec3 pos);
         void SetRotation(float pitch, float yaw);
+        void SetRotationDeg(float pitch, float yaw);
         void SetTarget(glm::vec3 target);
 
         float GetParam(Param param) const;

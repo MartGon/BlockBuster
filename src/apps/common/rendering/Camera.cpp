@@ -23,6 +23,12 @@ void Rendering::Camera::SetRotation(float pitch, float yaw)
     UpdateViewMat();
 }
 
+void Rendering::Camera::SetRotationDeg(float pitch, float yaw)
+{
+    auto rotation = glm::radians(glm::vec2{pitch, yaw});
+    SetRotation(rotation.x, rotation.y);
+}
+
 void Rendering::Camera::SetTarget(glm::vec3 target)
 {
     auto front = glm::normalize(target - pos_);

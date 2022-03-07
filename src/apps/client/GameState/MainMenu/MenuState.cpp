@@ -142,7 +142,6 @@ void CreateGame::OnEnter()
 {
     std::string placeholderName = mainMenu_->user + "'s game";
     strcpy(gameName, placeholderName.c_str());
-
     strcpy(map, "Kobra");
     strcpy(mode, "DeathMatch");
 }

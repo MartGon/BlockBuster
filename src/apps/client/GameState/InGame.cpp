@@ -281,6 +281,14 @@ void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
     ps.shootPlayer.SetTargetFloat("zPos", &ps.armsPivot.position.z);
     ps.shootPlayer.SetTargetBool("left-flash", &ps.leftFlashActive);
     ps.shootPlayer.SetTargetBool("right-flash", &ps.rightFlashActive);
+
+    // Set rotation sent by server to main player
+    if(this->playerId == playerId)
+    {
+        auto camRot = camera_.GetRotationDeg();
+        camera_.SetRotationDeg(camRot.x, playerState.rot.y + 90.0f);
+        GetLogger()->LogInfo("Starting yaw " + std::to_string(playerState.rot.y));
+    }
 }
 
 void InGame::OnPlayerLeave(Entity::ID playerId)
