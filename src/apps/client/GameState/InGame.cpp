@@ -485,6 +485,12 @@ void InGame::SmoothPlayerMovement()
         auto errorCorrection = errorCorrectionDiff * weight;
         renderPos = predPos + errorCorrection;
         playerTable[playerId].ApplyState(renderPos);
+
+        #ifdef _DEBUG
+                auto dist = glm::length(errorCorrection.pos);
+                if(dist > 0.005)
+                    client_->logger->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
+        #endif
     }
 }
 
@@ -819,18 +825,26 @@ void InGame::DrawGUI()
 
         if(ImGui::Begin("Transform"))
         {
+            auto t = playerTable[playerId].GetTransform();
+            GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
+            modelOffset = t.position;
+            modelScale =  t.scale;
+            modelRot =  t.rotation;
+
             if(ImGui::InputInt("ID", (int*)&playerId))
             {
                 if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
                 {
-                    modelOffset = playerModelStateTable[playerId].armsPivot.position;
-                    modelScale =  playerAvatar.aTransform.scale;
-                    modelRot =  playerAvatar.aTransform.rotation;
+                    auto t = playerTable[playerId].GetTransform();
+                    GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
+                    modelOffset = t.position;
+                    modelScale =  t.scale;
+                    modelRot =  t.rotation;
                 }
             }
-            ImGui::SliderFloat3("Offset", &playerModelStateTable[playerId].armsPivot.position.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Scale", &fpsAvatar.idlePivot.scale.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Rotation", &fpsAvatar.idlePivot.rotation.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
             ImGui::InputFloat("Precision", &sliderPrecision);
             ImGui::InputFloat("Facing Angle", &facingAngle);
             if(ImGui::Button("Apply"))
@@ -878,6 +892,7 @@ void InGame::LoadMap(std::filesystem::path filePath)
     if(!file.is_open())
     {
         client_->logger->LogError("Could not open file " + filePath.string());
+        std::exit(-1);
         return;
     }
 

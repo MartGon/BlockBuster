@@ -117,9 +117,9 @@ namespace BlockBuster
 
         // Metrics
         Util::Time::SteadyPoint preSimulationTime;
-        Util::Time::Seconds simulationLag;
-        Util::Time::Seconds deltaTime;
-        Util::Time::Seconds minFrameInterval;
+        Util::Time::Seconds simulationLag{0.0};
+        Util::Time::Seconds deltaTime{0.0};
+        Util::Time::Seconds minFrameInterval{0.0};
         double maxFPS = 60.0;
 
         // GUI
@@ -153,7 +153,7 @@ namespace BlockBuster
 
         // Networking
         std::string serverDomain;
-        uint16_t serverPort;
+        uint16_t serverPort = 0;
         ENet::Host host;
         ENet::PeerId serverId = 0;
         uint8_t playerId = 0;

@@ -399,9 +399,11 @@ void MainMenu::StartGame()
         auto errorCode = static_cast<int>(err);
         
         GetLogger()->LogError("Could not start game. Error Code: " + std::to_string(errorCode));
+        httpClient.Enable();
     };
 
     httpClient.Request("/start_game", nlohmann::to_string(body), onSuccess, onError);
+    httpClient.Disable();
 }
 
 void MainMenu::HandleSDLEvents()

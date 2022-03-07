@@ -83,7 +83,7 @@ void WorldUpdate::OnRead(Util::Buffer::Reader reader)
     {
         auto id = reader.Read<Entity::ID>();
         auto playerState = reader.Read<Entity::PlayerState>();
-        snapShot.players[id] = playerState;
+        snapShot.players.insert({id, playerState});
     }
 }
 
