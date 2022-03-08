@@ -1,4 +1,5 @@
 #include <Editor.h>
+#include <EditorGUI.h>
 
 #include <iostream>
 #include <debug/Debug.h>
@@ -9,11 +10,17 @@
 // #### GUI - PopUps #### \\
 
 using namespace BlockBuster::Editor;
+using namespace BlockBuster;
 using namespace Entity;
 
-void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& params)
+EditorGUI::EditorGUI(Editor& editor) : editor{&editor}
 {
-    auto displaySize = io_->DisplaySize;
+
+}
+
+void EditorGUI::EditTextPopUp(const EditorGUI::EditTextPopUpParams& params)
+{
+    auto displaySize = editor->io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
     bool onPopUp = state == params.popUpState;
     if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
@@ -58,7 +65,7 @@ void BlockBuster::Editor::Editor::EditTextPopUp(const EditTextPopUpParams& param
     }
 }
 
-void BlockBuster::Editor::Editor::BasicPopUp(const BasicPopUpParams& params)
+void EditorGUI::BasicPopUp(const BasicPopUpParams& params)
 {
     bool onPopUp = this->state == params.state;
     if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
@@ -73,29 +80,29 @@ void BlockBuster::Editor::Editor::BasicPopUp(const BasicPopUpParams& params)
     }
 }
 
-void BlockBuster::Editor::Editor::OpenMapPopUp()
+void EditorGUI::OpenMapPopUp()
 {
     std::string errorPrefix = "Could not open map ";
-    auto onAccept = std::bind(&BlockBuster::Editor::Editor::OpenProject, this);
+    auto onAccept = [this](){return this->editor->OpenProject();};
     auto onCancel = [](){};
     EditTextPopUpParams params{PopUpState::OPEN_MAP, "Open Map", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
     EditTextPopUp(params);
 }
 
-void BlockBuster::Editor::Editor::SaveAsPopUp()
+void EditorGUI::SaveAsPopUp()
 {
     std::string errorPrefix = "Could not save map ";
-    auto onAccept = [this](){this->SaveProject(); return Util::CreateSuccess<bool>(true);};
+    auto onAccept = [this](){this->editor->SaveProject(); return Util::CreateSuccess<bool>(true);};
     auto onCancel = [](){};
     EditTextPopUpParams params{PopUpState::SAVE_AS, "Save As", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
     EditTextPopUp(params);
 }
 
-void BlockBuster::Editor::Editor::LoadTexturePopUp()
+void EditorGUI::LoadTexturePopUp()
 {
     std::string errorPrefix = "Could not open texture ";
     auto onAccept = [this](){
-            auto res = this->LoadTexture();
+            auto res = this->editor->LoadTexture();
             return res;
     };
     auto onCancel = [](){};
@@ -136,14 +143,15 @@ static std::string DisplayModeToString(SDL_DisplayMode mode)
     return std::to_string(mode.w) + " x " + std::to_string(mode.h) + " " + std::to_string(mode.refresh_rate) + " Hz";
 }
 
-void BlockBuster::Editor::Editor::VideoOptionsPopUp()
+void EditorGUI::VideoOptionsPopUp()
 {
-    auto displaySize = io_->DisplaySize;
+    auto displaySize = editor->io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
     bool onPopUp = state == PopUpState::VIDEO_SETTINGS;
     if(ImGui::BeginPopupModal("Video", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
     {   
+        auto preConfig = editor->preConfig;
         std::string resolution = DisplayModeToString(preConfig.resolutionW, preConfig.resolutionH, preConfig.refreshRate);
         if(ImGui::BeginCombo("Resolution", resolution.c_str()))
         {
@@ -178,8 +186,8 @@ void BlockBuster::Editor::Editor::VideoOptionsPopUp()
 
         if(ImGui::Button("Accept"))
         {
-            ApplyVideoOptions(preConfig);
-            config.window = preConfig;
+            editor->ApplyVideoOptions(preConfig);
+            editor->config.window = preConfig;
 
             ClosePopUp(true);
         }
@@ -187,7 +195,7 @@ void BlockBuster::Editor::Editor::VideoOptionsPopUp()
         ImGui::SameLine();
         if(ImGui::Button("Apply"))
         {
-            ApplyVideoOptions(preConfig);
+            editor->ApplyVideoOptions(preConfig);
         }
 
         ImGui::SameLine();
@@ -205,9 +213,9 @@ void BlockBuster::Editor::Editor::VideoOptionsPopUp()
     }
 }
 
-void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
+void EditorGUI::UnsavedWarningPopUp()
 {
-    auto displaySize = io_->DisplaySize;
+    auto displaySize = editor->io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
     bool onPopUp = state == PopUpState::UNSAVED_WARNING;
@@ -221,7 +229,7 @@ void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
 
             if(std::strlen(fileName) > 0)
             {
-                SaveProject();
+                editor->SaveProject();
                 onWarningExit();
             }
             else
@@ -231,7 +239,7 @@ void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
 
         if(ImGui::Button("Don't Save"))
         {
-            unsaved = false;
+            editor->unsaved = false;
             ClosePopUp();
 
             onWarningExit();
@@ -251,7 +259,7 @@ void BlockBuster::Editor::Editor::UnsavedWarningPopUp()
     }
 }
 
-void BlockBuster::Editor::Editor::GoToBlockPopUp()
+void EditorGUI::GoToBlockPopUp()
 {
     auto inPopUp = [this](){
         
@@ -259,8 +267,8 @@ void BlockBuster::Editor::Editor::GoToBlockPopUp()
 
         if(ImGui::Button("Accept"))
         {
-            glm::vec3 cameraPos = (glm::vec3)this->goToPos * this->project.map.GetBlockScale();
-            this->camera.SetPos(cameraPos);
+            glm::vec3 cameraPos = Game::Map::ToRealPos(goToPos, editor->project.map.GetBlockScale());
+            editor->camera.SetPos(cameraPos);
             ClosePopUp();
         }
 
@@ -273,13 +281,13 @@ void BlockBuster::Editor::Editor::GoToBlockPopUp()
     BasicPopUp({PopUpState::GO_TO_BLOCK, "Go to block", inPopUp});
 }
 
-void BlockBuster::Editor::Editor::SetTextureFolderPopUp()
+void EditorGUI::SetTextureFolderPopUp()
 {
     std::string errorPrefix = "Could not set texture folder ";
     auto onAccept = [this](){
         if(std::filesystem::is_directory(this->textureFolderPath))
         {
-            this->project.map.textureFolder = this->textureFolderPath;
+            editor->project.map.textureFolder = this->textureFolderPath;
             
             return Util::CreateSuccess<bool>(true);
         }
@@ -292,61 +300,61 @@ void BlockBuster::Editor::Editor::SetTextureFolderPopUp()
     EditTextPopUp(params);
 }
 
-void BlockBuster::Editor::Editor::OpenWarningPopUp(std::function<void()> onExit)
+void EditorGUI::OpenWarningPopUp(std::function<void()> onExit)
 {
     OpenPopUp(PopUpState::UNSAVED_WARNING);
     onWarningExit = onExit;
 }
 
-void BlockBuster::Editor::Editor::InitPopUps()
+void EditorGUI::InitPopUps()
 {
     popUps[NONE].update = []{};
 
     popUps[SAVE_AS].name = "Save As";
-    popUps[SAVE_AS].update = std::bind(&BlockBuster::Editor::Editor::SaveAsPopUp, this);
+    popUps[SAVE_AS].update = std::bind(&EditorGUI::SaveAsPopUp, this);
 
     popUps[OPEN_MAP].name = "Open Map";
-    popUps[OPEN_MAP].update = std::bind(&BlockBuster::Editor::Editor::OpenMapPopUp, this);
+    popUps[OPEN_MAP].update = std::bind(&EditorGUI::OpenMapPopUp, this);
 
     popUps[LOAD_TEXTURE].name = "Load Texture";
-    popUps[LOAD_TEXTURE].update = std::bind(&BlockBuster::Editor::Editor::LoadTexturePopUp, this);
+    popUps[LOAD_TEXTURE].update = std::bind(&EditorGUI::LoadTexturePopUp, this);
 
     popUps[UNSAVED_WARNING].name = "Unsaved content";
-    popUps[UNSAVED_WARNING].update = std::bind(&BlockBuster::Editor::Editor::UnsavedWarningPopUp, this);
+    popUps[UNSAVED_WARNING].update = std::bind(&EditorGUI::UnsavedWarningPopUp, this);
 
     popUps[VIDEO_SETTINGS].name = "Video";
-    popUps[VIDEO_SETTINGS].update = std::bind(&BlockBuster::Editor::Editor::VideoOptionsPopUp, this);
+    popUps[VIDEO_SETTINGS].update = std::bind(&EditorGUI::VideoOptionsPopUp, this);
     popUps[VIDEO_SETTINGS].onOpen = [this](){
-        preConfig = config.window;
+        editor->preConfig = editor->config.window;
     };
     popUps[VIDEO_SETTINGS].onClose = [this](bool accept){
         if(!accept)
         {
-            ApplyVideoOptions(config.window);
-            preConfig = config.window;
+            editor->ApplyVideoOptions(editor->config.window);
+            editor->preConfig = editor->config.window;
         }
     };
 
     popUps[GO_TO_BLOCK].name = "Go to block";
     popUps[GO_TO_BLOCK].onOpen = [this](){
-        this->goToPos = Game::Map::ToGlobalPos(camera.GetPos(), this->project.map.GetBlockScale());
+        this->goToPos = Game::Map::ToGlobalPos(editor->camera.GetPos(), editor->project.map.GetBlockScale());
     };
-    popUps[GO_TO_BLOCK].update = std::bind(&BlockBuster::Editor::Editor::GoToBlockPopUp, this);
+    popUps[GO_TO_BLOCK].update = std::bind(&EditorGUI::GoToBlockPopUp, this);
 
     popUps[SET_TEXTURE_FOLDER].name = "Set Texture Folder";
     popUps[SET_TEXTURE_FOLDER].onOpen = [this](){
-        std::strcpy(this->textureFolderPath, this->project.map.textureFolder.string().c_str());
+        std::strcpy(this->textureFolderPath, editor->project.map.textureFolder.string().c_str());
     };
-    popUps[SET_TEXTURE_FOLDER].update = std::bind(&BlockBuster::Editor::Editor::SetTextureFolderPopUp, this);
+    popUps[SET_TEXTURE_FOLDER].update = std::bind(&EditorGUI::SetTextureFolderPopUp, this);
 }
 
-void BlockBuster::Editor::Editor::OpenPopUp(PopUpState puState)
+void EditorGUI::OpenPopUp(PopUpState puState)
 {
     if(state == PopUpState::NONE)
         this->state = puState;
 }
 
-void BlockBuster::Editor::Editor::UpdatePopUp()
+void EditorGUI::UpdatePopUp()
 {
     // Open if not open yet
     auto name = popUps[state].name.c_str();
@@ -364,7 +372,7 @@ void BlockBuster::Editor::Editor::UpdatePopUp()
     }
 }
 
-void BlockBuster::Editor::Editor::ClosePopUp(bool accept)
+void EditorGUI::ClosePopUp(bool accept)
 {
     popUps[state].onClose(accept);
     this->state = NONE;
@@ -373,7 +381,7 @@ void BlockBuster::Editor::Editor::ClosePopUp(bool accept)
 
 // #### GUI #### \\
 
-void BlockBuster::Editor::Editor::MenuBar()
+void EditorGUI::MenuBar()
 {
     // Pop Ups
     UpdatePopUp();
@@ -413,14 +421,12 @@ void BlockBuster::Editor::Editor::MenuBar()
         {
             if(ImGui::MenuItem("Undo", "Ctrl + Z"))
             {
-                std::cout << "Undoing\n";
-                UndoToolAction();
+                editor->UndoToolAction();
             }
 
             if(ImGui::MenuItem("Redo", "Ctrl + Shift + Z"))
             {
-                DoToolAction();
-                std::cout << "Redoing\n";
+                editor->DoToolAction();
             }
 
             ImGui::Separator();
@@ -428,7 +434,6 @@ void BlockBuster::Editor::Editor::MenuBar()
             if(ImGui::MenuItem("Go to Block", "Ctrl + G"))
             {
                 OpenPopUp(PopUpState::GO_TO_BLOCK);
-                std::cout << "Going to block\n";
             }
 
             ImGui::EndMenu();
@@ -475,9 +480,9 @@ void BlockBuster::Editor::Editor::MenuBar()
 
 // #### GUI - Misc #### \\
 
-void BlockBuster::Editor::Editor::SyncGUITextures()
+void EditorGUI::SyncGUITextures()
 {
-    auto& tPalette = project.map.tPalette;
+    auto& tPalette = editor->project.map.tPalette;
     auto tCount = tPalette.GetCount();
 
     guiTextures.clear();
@@ -495,20 +500,20 @@ void BlockBuster::Editor::Editor::SyncGUITextures()
 
 // #### GUI - File Menu #### \\
 
-void BlockBuster::Editor::Editor::MenuNewMap()
+void EditorGUI::MenuNewMap()
 {
-    if(unsaved)
+    if(editor->unsaved)
     {
-        auto onExit = std::bind(&BlockBuster::Editor::Editor::NewProject, this);
+        auto onExit = [this](){editor->NewProject();};
         OpenWarningPopUp(onExit);
     }
     else
-        NewProject();
+        editor->NewProject();
 }
 
-void BlockBuster::Editor::Editor::MenuOpenMap()
+void EditorGUI::MenuOpenMap()
 {
-    if(unsaved)
+    if(editor->unsaved)
     {
         auto onExit = [this](){OpenPopUp(PopUpState::OPEN_MAP);};
         OpenWarningPopUp(onExit);
@@ -517,22 +522,22 @@ void BlockBuster::Editor::Editor::MenuOpenMap()
         OpenPopUp(PopUpState::OPEN_MAP);
 }
 
-void BlockBuster::Editor::Editor::MenuSave()
+void EditorGUI::MenuSave()
 {
-    if(newMap)
+    if(editor->newMap)
         OpenPopUp(PopUpState::SAVE_AS);
     else
-        SaveProject();
+        editor->SaveProject();
 }
 
-void BlockBuster::Editor::Editor::MenuSaveAs()
+void EditorGUI::MenuSaveAs()
 {
     OpenPopUp(PopUpState::SAVE_AS);
 }
 
 // #### GUI - Help #### \\
 
-void BlockBuster::Editor::Editor::HelpShortCutWindow()
+void EditorGUI::HelpShortCutWindow()
 {
     if(!showShortcutWindow)
         return;
@@ -657,15 +662,10 @@ void BlockBuster::Editor::Editor::HelpShortCutWindow()
 
 // #### GUI - Tools #### \\
 
-void Editor::ToolsTab()
+void EditorGUI::ToolsTab()
 {
     if(ImGui::IsItemActive())
         tabState = TabState::TOOLS_TAB;
-
-    bool pbSelected = tool == PLACE_BLOCK;
-    bool rotbSelected = tool == ROTATE_BLOCK;
-    bool paintSelected = tool == PAINT_BLOCK;
-    bool selectSelected = tool == SELECT_BLOCKS;
 
     ImGui::SetCursorPosX(0);
     auto tableFlags = ImGuiTableFlags_::ImGuiTableFlags_SizingFixedFit;
@@ -698,28 +698,28 @@ void Editor::ToolsTab()
         {
             ImGui::TableNextColumn();
             ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
-            if(ImGui::Selectable("Place", &pbSelected, 0, ImVec2{0, 0}))
+            if(ImGui::Selectable("Place", editor->tool == Editor::PLACE_BLOCK, 0, ImVec2{0, 0}))
             {
-                SelectTool(PLACE_BLOCK);
+                editor->SelectTool(Editor::PLACE_BLOCK);
             }
 
             ImGui::TableNextColumn();
-            if(ImGui::Selectable("Rotate", &rotbSelected, 0, ImVec2{0, 0}))
+            if(ImGui::Selectable("Rotate", editor->tool == Editor::ROTATE_BLOCK, 0, ImVec2{0, 0}))
             {
-                SelectTool(ROTATE_BLOCK);
+                editor->SelectTool(Editor::ROTATE_BLOCK);
             }
 
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            if(ImGui::Selectable("Paint", &paintSelected, 0, ImVec2{0, 0}))
+            if(ImGui::Selectable("Paint", editor->tool == Editor::PAINT_BLOCK, 0, ImVec2{0, 0}))
             {
-                SelectTool(PAINT_BLOCK);
+                editor->SelectTool(Editor::PAINT_BLOCK);
             }
 
             ImGui::TableNextColumn();
-            if(ImGui::Selectable("Select", selectSelected, 0, ImVec2{0, 0}))
+            if(ImGui::Selectable("Select", editor->tool == Editor::SELECT_BLOCKS, 0, ImVec2{0, 0}))
             {
-                SelectTool(SELECT_BLOCKS);
+                editor->SelectTool(Editor::SELECT_BLOCKS);
             }
 
             ImGui::PopStyleVar();
@@ -735,15 +735,15 @@ void Editor::ToolsTab()
         {
             ImGui::TableNextColumn();
             ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
-            if(ImGui::Selectable("Place", tool == PLACE_OBJECT, 0, ImVec2{0, 0}))
+            if(ImGui::Selectable("Place", editor->tool == Editor::PLACE_OBJECT, 0, ImVec2{0, 0}))
             {
-                SelectTool(PLACE_OBJECT);
+                editor->SelectTool(Editor::PLACE_OBJECT);
             }
 
             ImGui::TableNextColumn();
-            if(ImGui::Selectable("Select", tool == SELECT_OBJECT, 0, ImVec2{0, 0}))
+            if(ImGui::Selectable("Select", editor->tool == Editor::SELECT_OBJECT, 0, ImVec2{0, 0}))
             {
-                SelectTool(SELECT_OBJECT);
+                editor->SelectTool(Editor::SELECT_OBJECT);
             }
             ImGui::PopStyleVar();
 
@@ -760,7 +760,7 @@ void Editor::ToolsTab()
     }
 }
 
-void Editor::PlaceBlockGUI()
+void EditorGUI::PlaceBlockGUI()
 {
     
     if(ImGui::BeginTable("##Place Block Options Table", 2, 0, ImVec2{0, 0}))
@@ -789,7 +789,7 @@ void Editor::PlaceBlockGUI()
     }
 }
 
-void BlockBuster::Editor::Editor::SelectBlockTypeGUI()
+void EditorGUI::SelectBlockTypeGUI()
 {
     ImGui::Text("Block Type");
     ImGui::SameLine();
@@ -798,7 +798,7 @@ void BlockBuster::Editor::Editor::SelectBlockTypeGUI()
     ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
 }
 
-void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
+void EditorGUI::SelectBlockDisplayGUI()
 {
     ImGui::Text("Display Type");
     ImGui::SameLine();
@@ -819,7 +819,7 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
 
     glm::vec2 region = ImGui::GetContentRegionAvail();
     int columns = glm::max(1, glm::min((int)(region.x / effectiveSize.x), MAX_COLUMNS));
-    int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : project.map.cPalette.GetCount();
+    int entries = displayType == Game::DisplayType::TEXTURE ? guiTextures.size() : editor->project.map.cPalette.GetCount();
     int minRows = glm::max((int)glm::ceil((float)entries / (float)columns), 1);
     int rows = glm::min(MAX_ROWS, minRows);
     glm::vec2 tableSize = ImVec2{effectiveSize.x * columns + scrollbarOffsetX, effectiveSize.y * rows};
@@ -870,7 +870,8 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
             }
             else if(displayType == Game::DisplayType::COLOR)
             {
-                auto color = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(i).data.color);
+                auto pCol = editor->project.map.cPalette.GetMember(i).data.color;
+                auto color = Rendering::Uint8ColorToFloat(pCol);
                 ImGui::ColorButton("## color", color);
             }
         }       
@@ -881,7 +882,8 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
 
     if(displayType == Game::DisplayType::COLOR)
     {
-        auto color = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(colorId).data.color);
+        auto pCol = editor->project.map.cPalette.GetMember(colorId).data.color;
+        auto color = Rendering::Uint8ColorToFloat(pCol);
         if(ImGui::Button("New Color"))
         {
             ImGui::OpenPopup("Color Picker");
@@ -907,15 +909,15 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
             if(displayType == Game::DisplayType::COLOR)
             {
                 auto color = Rendering::FloatColorToUint8(colorPick);
-                if(!project.map.cPalette.HasColor(color))
+                if(!editor->project.map.cPalette.HasColor(color))
                 {
                     if(newColor)
                     {
-                        auto res = project.map.cPalette.AddColor(color);
+                        auto res = editor->project.map.cPalette.AddColor(color);
                         colorId = res.data.id;
                     }
                     else
-                        project.map.cPalette.SetColor(colorId, color);
+                        editor->project.map.cPalette.SetColor(colorId, color);
                 }
             }
 
@@ -933,7 +935,7 @@ void BlockBuster::Editor::Editor::SelectBlockDisplayGUI()
     }
 }
 
-void BlockBuster::Editor::Editor::RotateBlockGUI()
+void EditorGUI::RotateBlockGUI()
 {
     ImGui::Text("Axis");
 
@@ -943,7 +945,7 @@ void BlockBuster::Editor::Editor::RotateBlockGUI()
     ImGui::RadioButton("Z", &axis,Game::RotationAxis::Z);
 }
 
-void Editor::SelectBlocksGUI()
+void EditorGUI::SelectBlocksGUI()
 {
     if(ImGui::BeginTable("##Select Scale", 4))
     {
@@ -956,14 +958,14 @@ void Editor::SelectBlocksGUI()
         ImGui::Text("Scale");
         ImGui::TableNextColumn();
         
-        auto flag = movingSelection ? ImGuiInputTextFlags_ReadOnly : 0;
-        ImGui::InputInt("X", &cursor.scale.x, 1, 1, flag);
+        auto flag = editor->movingSelection ? ImGuiInputTextFlags_ReadOnly : 0;
+        ImGui::InputInt("X", &editor->cursor.scale.x, 1, 1, flag);
         ImGui::TableNextColumn();
-        ImGui::InputInt("Y", &cursor.scale.y, 1, 1, flag);
+        ImGui::InputInt("Y", &editor->cursor.scale.y, 1, 1, flag);
         ImGui::TableNextColumn();
-        ImGui::InputInt("Z", &cursor.scale.z, 1, 1, flag);
+        ImGui::InputInt("Z", &editor->cursor.scale.z, 1, 1, flag);
 
-        cursor.scale = glm::max(cursor.scale, glm::ivec3{1, 1, 1});
+        editor->cursor.scale = glm::max(editor->cursor.scale, glm::ivec3{1, 1, 1});
 
         ImGui::EndTable();
     }
@@ -979,7 +981,7 @@ void Editor::SelectBlocksGUI()
         ImGui::Text("Position");
         ImGui::TableNextColumn();
 
-        auto nextPos = cursor.pos;
+        auto nextPos = editor->cursor.pos;
         bool hasSelectionMoved = false;
         hasSelectionMoved |= ImGui::InputInt("X", &nextPos.x, 1);
         ImGui::TableNextColumn();
@@ -988,7 +990,7 @@ void Editor::SelectBlocksGUI()
         hasSelectionMoved |= ImGui::InputInt("Z", &nextPos.z, 1);
         ImGui::TableNextColumn();
         if(hasSelectionMoved)
-            MoveSelectionCursor(nextPos);
+            editor->MoveSelectionCursor(nextPos);
 
         ImGui::EndTable();
     }
@@ -1017,13 +1019,13 @@ void Editor::SelectBlocksGUI()
         if(ImGui::BeginTable("###Select Tools Pad", 2, 0, ImVec2{100, 0}))
         {
             const std::array<const char*, 4> names = std::array<const char*, 4>{"Move", "Edit", "Rotate", "Fill"};
-            for(unsigned int i = SelectSubTool::MOVE; i < SelectSubTool::END; i++)
+            for(unsigned int i = Editor::SelectSubTool::MOVE; i < Editor::SelectSubTool::END; i++)
             {
-                auto subTool = static_cast<SelectSubTool>(i);
+                auto subTool = static_cast<Editor::SelectSubTool>(i);
                 ImGui::TableNextColumn();
                 ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_SelectableTextAlign, {0.5, 0});
-                if(ImGui::Selectable(names[i], &selectTool, subTool))
-                    OnChooseSelectSubTool(selectTool);
+                if(ImGui::Selectable(names[i], &editor->selectTool, subTool))
+                    editor->OnChooseSelectSubTool(editor->selectTool);
 
                 ImGui::PopStyleVar();
             }
@@ -1033,29 +1035,29 @@ void Editor::SelectBlocksGUI()
         }
 
         ImGui::TableNextColumn();
-        switch (selectTool)
+        switch (editor->selectTool)
         {
-            case SelectSubTool::MOVE:
+            case Editor::SelectSubTool::MOVE:
             {
-                const char* label = movingSelection ? "Stop Moving" : "Start Moving";
-                ImVec4 color = movingSelection ? ImVec4{1.0f, 0.0f, 0.0f, 1.0f} : ImVec4{0.0f, 1.0f, 0.0f, 1.0f};
+                const char* label = editor->movingSelection ? "Stop Moving" : "Start Moving";
+                ImVec4 color = editor->movingSelection ? ImVec4{1.0f, 0.0f, 0.0f, 1.0f} : ImVec4{0.0f, 1.0f, 0.0f, 1.0f};
                 ImGui::PushStyleColor(ImGuiCol_Button, color);
                 if(ImGui::Button(label))
                 {
-                    movingSelection = !movingSelection;
-                    if(movingSelection)
-                        SelectBlocks();
+                    editor->movingSelection = !editor->movingSelection;
+                    if(editor->movingSelection)
+                        editor->SelectBlocks();
                     else
-                        ClearSelection();
+                        editor->ClearSelection();
                 }
                 ImGui::PopStyleColor();
 
                 #ifdef _DEBUG
-                ImGui::Text("Selected %zu blocks", selection.size());
+                ImGui::Text("Selected %zu blocks", editor->selection.size());
                 ImVec2 size {0, 40};
                 if(ImGui::BeginTable("Selection", 1, ImGuiTableFlags_Hideable | ImGuiTableFlags_ScrollY, size))
                 {
-                    for(auto pair : selection)
+                    for(auto pair : editor->selection)
                     {
                         ImGui::TableNextColumn();
                         std::string str = "Block pos: " + Debug::ToString(pair.first);
@@ -1067,35 +1069,35 @@ void Editor::SelectBlocksGUI()
             }
             break;
             
-            case SelectSubTool::EDIT:
+            case Editor::SelectSubTool::EDIT:
             {
                 if(ImGui::Button("Copy"))
                 {
-                    CopySelection();
+                    editor->CopySelection();
                 }
                 ImGui::SameLine();
 
                 if(ImGui::Button("Cut"))
                 {
-                    CutSelection();
+                    editor->CutSelection();
                 }
                 ImGui::SameLine();
 
                 if(ImGui::Button("Paste"))
                 {
-                    PasteSelection();
+                    editor->PasteSelection();
                 }
                 ImGui::SameLine();
 
                 if(ImGui::Button("Remove"))
                 {
-                    RemoveSelection();
+                    editor->RemoveSelection();
                 }
                 ImGui::SameLine();
                 break;
             }
 
-            case SelectSubTool::ROTATE_OR_MIRROR:
+            case Editor::SelectSubTool::ROTATE_OR_MIRROR:
             {
                 if(ImGui::BeginTable("## Rotate or Mirror", 2))
                 {
@@ -1127,7 +1129,7 @@ void Editor::SelectBlocksGUI()
 
                     if(ImGui::Button("Rotate selection"))
                     {
-                        auto res = RotateSelection(selectRotAxis, selectRotType);
+                        auto res = editor->RotateSelection(selectRotAxis, selectRotType);
                         selectRotErrorText = res.info;
                     }
 
@@ -1149,7 +1151,7 @@ void Editor::SelectBlocksGUI()
 
                     if(ImGui::Button("Mirror selection"))
                     {
-                        auto res = MirrorSelection(selectMirrorPlane);
+                        auto res = editor->MirrorSelection(selectMirrorPlane);
                         selectRotErrorText = res.info;
                     }
 
@@ -1163,23 +1165,23 @@ void Editor::SelectBlocksGUI()
                 break;
             }
 
-            case SelectSubTool::FILL_OR_PAINT:
+            case Editor::SelectSubTool::FILL_OR_PAINT:
             {
                 if(ImGui::Button("Fill"))
                 {
-                    FillSelection();
+                    editor->FillSelection();
                 }
 
                 ImGui::SameLine();
                 if(ImGui::Button("Replace"))
                 {
-                    ReplaceSelection();
+                    editor->ReplaceSelection();
                 }
 
                 ImGui::SameLine();
                 if(ImGui::Button("Paint"))
                 {
-                    PaintSelection();
+                    editor->PaintSelection();
                 }
 
                 PlaceBlockGUI();
@@ -1194,23 +1196,23 @@ void Editor::SelectBlocksGUI()
     }
 }
 
-void Editor::PlaceObjectGUI()
+void EditorGUI::PlaceObjectGUI()
 {
     if(ImGui::Combo("Object Type", &objectType, Entity::GameObject::objectTypesToString, Entity::GameObject::COUNT))
     {
-        placedGo.type = static_cast<Entity::GameObject::Type>(objectType);
+        editor->placedGo.type = static_cast<Entity::GameObject::Type>(objectType);
     }
 
     ImGui::Dummy(ImVec2{10, 0}); ImGui::SameLine();
     ImGui::Text("Object Properties");
-    auto propertiesTemplate = GameObject::GetPropertyTemplate(placedGo.type);
+    auto propertiesTemplate = GameObject::GetPropertyTemplate(editor->placedGo.type);
     for(auto p : propertiesTemplate)
     {
-        PropertyInput(&placedGo, p.name.c_str(), p.type);
+        PropertyInput(&editor->placedGo, p.name.c_str(), p.type);
     }
 }
 
-void BlockBuster::Editor::Editor::PropertyInput(Entity::GameObject* go, const char* key, GameObject::Property::Type type)
+void EditorGUI::PropertyInput(Entity::GameObject* go, const char* key, GameObject::Property::Type type)
 {
     switch(type)
     {
@@ -1247,36 +1249,36 @@ void BlockBuster::Editor::Editor::PropertyInput(Entity::GameObject* go, const ch
 
 // #### GUI - Base #### \\
 
-void Editor::ToolOptionsGUI()
+void EditorGUI::ToolOptionsGUI()
 {
-    switch (tool)
+    switch (editor->tool)
     {
-    case PLACE_BLOCK:
+    case Editor::PLACE_BLOCK:
         PlaceBlockGUI();
         break;
 
-    case PAINT_BLOCK:
+    case Editor::PAINT_BLOCK:
         SelectBlockDisplayGUI();
         break;
 
-    case ROTATE_BLOCK:
+    case Editor::ROTATE_BLOCK:
         RotateBlockGUI();
         break;
 
-    case SELECT_BLOCKS:
+    case Editor::SELECT_BLOCKS:
         SelectBlocksGUI();
         break;
     
-    case PLACE_OBJECT:
+    case Editor::PLACE_OBJECT:
         PlaceObjectGUI();
         break;
 
-    case SELECT_OBJECT:
-        if(project.map.GetMap()->GetGameObject(selectedObj))
+    case Editor::SELECT_OBJECT:
+        if(editor->project.map.GetMap()->GetGameObject(selectedObj))
         {
             PlaceObjectGUI();
             if(ImGui::Button("Apply Changes"))
-                EditGameObject();
+                editor->EditGameObject();
         }
         else
             ImGui::Text("No object selected. Click in an object to select it");
@@ -1287,17 +1289,17 @@ void Editor::ToolOptionsGUI()
     }
 }
 
-void BlockBuster::Editor::Editor::GUI()
+void EditorGUI::GUI()
 {
     // Clear GUI buffer
     ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(window_);
+    ImGui_ImplSDL2_NewFrame(editor->window_);
     ImGui::NewFrame();
 
     HelpShortCutWindow();
 
     bool open;
-    auto displaySize = io_->DisplaySize;
+    auto displaySize = editor->io_->DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{0, 0}, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2{(float)displaySize.x, 0}, ImGuiCond_Always);
     auto windowFlags = ImGuiWindowFlags_::ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar;
@@ -1325,20 +1327,20 @@ void BlockBuster::Editor::Editor::GUI()
                 {
                     ImGui::Text("Select Tool - Cursor Display");
                     ImGui::SameLine();
-                    ImGui::RadioButton("Single Block", &cursor.mode, CursorMode::SCALED);
+                    ImGui::RadioButton("Single Block", &editor->cursor.mode, Editor::CursorMode::SCALED);
                     ImGui::SameLine();
-                    ImGui::RadioButton("Multiple Blocks", &cursor.mode, CursorMode::BLOCKS);
-                    ImGui::Checkbox("Show cursor (Place/Rotate/Paint Tools)", &cursor.show);
+                    ImGui::RadioButton("Multiple Blocks", &editor->cursor.mode, Editor::CursorMode::BLOCKS);
+                    ImGui::Checkbox("Show cursor (Place/Rotate/Paint Tools)", &editor->cursor.show);
                 }
                 if(ImGui::CollapsingHeader("Camera"))
                 {
-                    ImGui::SliderFloat("Movement speed", &cameraController.moveSpeed, 0.05f, 2.f);
-                    ImGui::SliderFloat("Rotation speed", &cameraController.rotSpeed, glm::radians(0.25f), glm::radians(4.0f));
+                    ImGui::SliderFloat("Movement speed", &editor->cameraController.moveSpeed, 0.05f, 2.f);
+                    ImGui::SliderFloat("Rotation speed", &editor->cameraController.rotSpeed, glm::radians(0.25f), glm::radians(4.0f));
                 }
                 if(ImGui::CollapsingHeader("Player Mode"))
                 {
-                    ImGui::SliderFloat("Player speed", &player.speed, 0.01, 1);
-                    ImGui::SliderFloat("Player gravity", &player.gravitySpeed, -0.05, -1);
+                    ImGui::SliderFloat("Player speed", &editor->player.speed, 0.01, 1);
+                    ImGui::SliderFloat("Player gravity", &editor->player.gravitySpeed, -0.05, -1);
                     //ImGui::SliderFloat("Player height", &player.height, 0.25, 5);
                 }
                 /*
@@ -1359,35 +1361,35 @@ void BlockBuster::Editor::Editor::GUI()
 
                 if(ImGui::CollapsingHeader("Camera info"))
                 {
-                    auto cameraRot = camera.GetRotation();                
+                    auto cameraRot = editor->camera.GetRotation();                
                     ImGui::SliderFloat2("Rotation", &cameraRot.x, 0.0f, glm::two_pi<float>(), "%.3f", ImGuiSliderFlags_NoInput);
-                    auto cameraPos = camera.GetPos();
+                    auto cameraPos = editor->camera.GetPos();
                     ImGui::InputFloat3("Global Position", &cameraPos.x, "%.3f", ImGuiInputTextFlags_ReadOnly);
-                    auto chunkPos = Game::Map::ToChunkIndex(cameraPos, blockScale);
+                    auto chunkPos = Game::Map::ToChunkIndex(cameraPos, editor->project.map.GetBlockScale());
                     ImGui::InputInt3("Chunk", &chunkPos.x, ImGuiInputTextFlags_ReadOnly);
-                    auto blockPos = Game::Map::ToGlobalPos(cameraPos, blockScale);
+                    auto blockPos = Game::Map::ToGlobalPos(cameraPos, editor->project.map.GetBlockScale());
                     ImGui::InputInt3("Block", &blockPos.x, ImGuiInputTextFlags_ReadOnly);
                 }
                 if(ImGui::CollapsingHeader("Cursor Info"))
                 {
-                    auto cursorChunk = Game::Map::ToChunkIndex(cursor.pos);
+                    auto cursorChunk = Game::Map::ToChunkIndex(editor->cursor.pos);
                     ImGui::InputInt3("Cursor Chunk Location", &cursorChunk.x, ImGuiInputTextFlags_ReadOnly);
-                    auto cursorBlock = cursor.pos;
+                    auto cursorBlock = editor->cursor.pos;
                     ImGui::InputInt3("Cursor Block Location", &cursorBlock.x, ImGuiInputTextFlags_ReadOnly);
 
-                    auto pointedChunk = Game::Map::ToChunkIndex(pointedBlockPos);
+                    auto pointedChunk = Game::Map::ToChunkIndex(editor->pointedBlockPos);
                     ImGui::InputInt3("Pointed Chunk Location", &pointedChunk.x, ImGuiInputTextFlags_ReadOnly);
-                    auto pointedBlockLoc = pointedBlockPos;
+                    auto pointedBlockLoc = editor->pointedBlockPos;
                     ImGui::InputInt3("Pointed Block Location", &pointedBlockLoc.x, ImGuiInputTextFlags_ReadOnly);
 
-                    auto hittingBlock = intersecting;
+                    auto hittingBlock = editor->intersecting;
                     ImGui::Checkbox("Intersecting", &hittingBlock);
 
                     glm::vec3 blockRot{0.0f};
                     int type = -1;
-                    if(intersecting)
+                    if(editor->intersecting)
                     {
-                        auto pointedBlock = project.map.GetBlock(pointedBlockPos);
+                        auto pointedBlock = editor->project.map.GetBlock(editor->pointedBlockPos);
                         blockRot = pointedBlock.GetRotation();
                         type = pointedBlock.type;
                     }
@@ -1409,7 +1411,7 @@ void BlockBuster::Editor::Editor::GUI()
                     auto prevModelId = modelId;
                     if(ImGui::InputInt("ID", (int*)&modelId))
                     {
-                        if(auto sm = respawnModel.model->GetSubModel(modelId))
+                        if(auto sm = editor->respawnModel.model->GetSubModel(modelId))
                         {
                             modelOffset = sm->transform.position;
                             modelScale = sm->transform.scale;
@@ -1421,7 +1423,7 @@ void BlockBuster::Editor::Editor::GUI()
                     ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
                     ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
                     ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
-                    if(auto sm = respawnModel.model->GetSubModel(modelId))
+                    if(auto sm = editor->respawnModel.model->GetSubModel(modelId))
                     {
                         sm->transform.position = modelOffset;
                         sm->transform.scale = modelScale;
@@ -1449,7 +1451,7 @@ void BlockBuster::Editor::Editor::GUI()
     // Draw GUI
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), gui_vao.GetHandle());
-    auto windowSize = GetWindowSize();
+    auto windowSize = editor->GetWindowSize();
     int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
     ImGui_ImplOpenGL3_RestoreState(scissor_box);
 }

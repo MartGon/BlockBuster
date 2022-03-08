@@ -66,7 +66,7 @@ void Editor::Start()
     bool mapLoaded = false;
     if(!mapName.empty() && mapName.size() < 16)
     {
-        std::strcpy(fileName, mapName.c_str());
+        std::strcpy(gui.fileName, mapName.c_str());
         mapLoaded = OpenProject().type == Util::ResultType::SUCCESS;
     }
     
@@ -80,7 +80,7 @@ void Editor::Start()
     cursor.show = GetConfigOption("showCursor", "1") == "1";
 
     // GUI
-    InitPopUps();
+    gui.InitPopUps();
 }
 
 void Editor::Update()
@@ -111,7 +111,7 @@ bool Editor::Quit()
 
 void Editor::Shutdown()
 {
-    config.options["Map"] = std::string(fileName);
+    config.options["Map"] = std::string(gui.fileName);
     config.options["MapsFolder"] = mapsFolder.string();
     config.options["showCursor"] = std::to_string(cursor.show);
     config.options["camMoveSpeed"] = std::to_string(cameraController.moveSpeed);
@@ -135,19 +135,19 @@ glm::vec4 Editor::GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor, glm::
 
 Util::Result<bool> Editor::LoadTexture()
 {
-    if(project.map.tPalette.GetCount() >= MAX_TEXTURES)
+    if(project.map.tPalette.GetCount() >= gui.MAX_TEXTURES)
         return Util::CreateError<bool>("Maximum of textures reached");
 
-    if(IsTextureInPalette(project.map.textureFolder, textureFilename))
+    if(IsTextureInPalette(project.map.textureFolder, gui.textureFilename))
         return Util::CreateError<bool>("Texture is already in palette");
 
-    auto res = project.map.tPalette.AddTexture(project.map.textureFolder, textureFilename, false);
+    auto res = project.map.tPalette.AddTexture(project.map.textureFolder, gui.textureFilename, false);
     if(res.type == Util::ResultType::ERROR)
     {
         return Util::CreateError<bool>(res.err.info);
     }
     else
-        SyncGUITextures();
+        gui.SyncGUITextures();
 
     return Util::CreateSuccess<bool>(true);
 }
@@ -169,7 +169,7 @@ void Editor::NewProject()
     // Init project
     project = Project{};
     project.Init();
-    SyncGUITextures();
+    gui.SyncGUITextures();
 
     // Camera
     camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
@@ -186,14 +186,14 @@ void Editor::NewProject()
     project.map.textureFolder = "./";
 
     // Filename
-    fileName[0] = '\0';
+    gui.fileName[0] = '\0';
 
     ClearActionHistory();
 }
 
 void Editor::SaveProject()
 {
-    std::filesystem::path mapPath = mapsFolder / fileName;
+    std::filesystem::path mapPath = mapsFolder / gui.fileName; 
 
     // Write project file
     // Camera
@@ -205,7 +205,7 @@ void Editor::SaveProject()
     project.cursorScale = cursor.scale;
     ::WriteProjectToFile(project, mapPath);
 
-    RenameMainWindow(fileName);
+    RenameMainWindow(gui.fileName);
 
     // Update flag
     newMap = false;
@@ -214,7 +214,7 @@ void Editor::SaveProject()
 
 Util::Result<bool> Editor::OpenProject()
 {
-    std::filesystem::path mapPath = mapsFolder / fileName;
+    std::filesystem::path mapPath = mapsFolder / gui.fileName;
     Project temp = ::ReadProjectFromFile(mapPath);
 
     auto res = Util::CreateError<bool>("Could not open project");
@@ -224,17 +224,17 @@ Util::Result<bool> Editor::OpenProject()
     {
         // Move to main project if it's ok
         project = std::move(temp);
-        SyncGUITextures();
+        gui.SyncGUITextures();
 
         // Window
-        RenameMainWindow(fileName);
+        RenameMainWindow(gui.fileName);
 
         // Update flag
         newMap = false;
         unsaved = false;
 
         // Color Palette
-        colorPick = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(0).data.color);
+        gui.colorPick = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(0).data.color);
 
         // Clear history
         ClearActionHistory();
@@ -403,13 +403,13 @@ void Editor::UpdateEditor()
 
     // Draw chunk borders
     const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
-    if(drawChunkBorders)
+    if(gui.drawChunkBorders)
         project.map.DrawChunkBorders(shader, cube, view, yellow);
 
     renderMgr.Render(camera);
 
     // Create GUI
-    GUI();
+    gui.GUI();
 }
 
 void Editor::SetCameraMode(::App::Client::CameraMode mode)
@@ -466,7 +466,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
     Game::RayBlockIntersection intersect;
 
 #ifdef _DEBUG
-    if (optimizeIntersection)
+    if (gui.optimizeIntersection)
     {
 #endif
         intersect = Game::CastRayFirst(project.map.GetMap(), ray, blockScale);
@@ -504,7 +504,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 auto block = *intersect.block;
                 auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
                 Game::BlockRot rot{Game::RotType::ROT_0, Game::RotType::ROT_0};
-                if(blockType == Game::BlockType::SLOPE)
+                if(gui.blockType == Game::BlockType::SLOPE)
                     rot.y = static_cast<Game::RotType>(glm::round(camera.GetRotation().y / glm::half_pi<float>()) - 1);
 
                 if(actionType == ActionType::LEFT_BUTTON)
@@ -515,7 +515,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                         if(project.map.CanPlaceBlock(iNewPos))
                         {
                             auto display = GetBlockDisplay(); 
-                            auto block = Game::Block{blockType, rot, display};
+                            auto block = Game::Block{gui.blockType, rot, display};
                             auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &project.map);
 
                             DoToolAction(std::move(action));
@@ -533,8 +533,8 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 else if(actionType == ActionType::HOVER)
                 {
                     auto cursorPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                    if(project.map.CanPlaceBlock(cursor.pos))
-                        SetCursorState(true, cursorPos, blockType, rot);
+                    if(project.map.CanPlaceBlock(cursorPos))
+                        SetCursorState(true, cursorPos, gui.blockType, rot);
                     else
                         cursor.enabled = false;
                 }
@@ -554,7 +554,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 {
                     if(block.type == Game::BlockType::SLOPE)
                     {
-                        Game::BlockRot blockRot = GetNextValidRotation(block.rot, axis, actionType == ActionType::LEFT_BUTTON);
+                        Game::BlockRot blockRot = GetNextValidRotation(block.rot, gui.axis, actionType == ActionType::LEFT_BUTTON);
 
                         DoToolAction(std::make_unique<RotateAction>(intersect.pos, &block, &project.map, blockRot));
                     }
@@ -634,9 +634,9 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 else if(actionType == ActionType::HOVER)
                 {
                     auto cursorPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
-                    if(project.map.CanPlaceBlock(cursor.pos))
+                    if(project.map.CanPlaceBlock(cursorPos))
                     {
-                        SetCursorState(true, cursorPos, blockType, cursor.rot);
+                        SetCursorState(true, cursorPos, gui.blockType, cursor.rot);
                     }
                     else
                         cursor.enabled = false;
@@ -671,8 +671,8 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 {
                     if(auto go = project.map.GetMap()->GetGameObject(oPos))
                         SetCursorState(true, oPos, Game::BlockType::BLOCK, cursor.rot);
-                    else if(auto go = project.map.GetMap()->GetGameObject(selectedObj))
-                        SetCursorState(true, selectedObj, Game::BlockType::BLOCK, cursor.rot);
+                    else if(auto go = project.map.GetMap()->GetGameObject(gui.selectedObj))
+                        SetCursorState(true, gui.selectedObj, Game::BlockType::BLOCK, cursor.rot);
                     else
                         cursor.enabled = false;
                 }
@@ -1263,7 +1263,7 @@ void Editor::FillSelection()
     {
         if(this->project.map.IsNullBlock(pos))
         {
-            Game::Block block{this->blockType, Game::BlockRot{}, this->GetBlockDisplay()};
+            Game::Block block{this->gui.blockType, Game::BlockRot{}, this->GetBlockDisplay()};
             auto placeAction = std::make_unique<PlaceBlockAction>(pos, block, &this->project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
@@ -1279,7 +1279,7 @@ void Editor::ReplaceSelection()
     {
         if(!this->project.map.IsNullBlock(pos))
         {
-            Game::Block block{this->blockType, Game::BlockRot{}, this->GetBlockDisplay()};
+            Game::Block block{this->gui.blockType, Game::BlockRot{}, this->GetBlockDisplay()};
             auto placeAction = std::make_unique<UpdateBlockAction>(pos, block, &project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
@@ -1320,13 +1320,13 @@ void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
         auto sym = key.keysym.sym;
         if(sym == SDLK_ESCAPE)
         {
-            if(state != PopUpState::NONE)
-                ClosePopUp();
+            if(gui.state != EditorGUI::PopUpState::NONE)
+                gui.ClosePopUp();
             else
                 Exit();
         }
 
-        if(state != PopUpState::NONE)
+        if(gui.state != EditorGUI::PopUpState::NONE)
             return;
 
         // Select tool
@@ -1385,16 +1385,16 @@ void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
 
         // File Menu
         if(sym == SDLK_n && io.KeyCtrl)
-            MenuNewMap();
+            gui.MenuNewMap();
 
         if(sym == SDLK_s && io.KeyCtrl)
-            MenuSave();
+            gui.MenuSave();
 
         if(sym == SDLK_s && io.KeyCtrl && io.KeyShift)
-            MenuSaveAs();
+            gui.MenuSaveAs();
 
         if(sym == SDLK_o && io.KeyCtrl)
-            MenuOpenMap();
+            gui.MenuOpenMap();
 
         // Edit
         if(sym == SDLK_z && io.KeyCtrl && !io.KeyShift)
@@ -1405,7 +1405,7 @@ void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
 
         if(sym == SDLK_g && io.KeyCtrl)
         {
-            OpenPopUp(PopUpState::GO_TO_BLOCK);
+            gui.OpenPopUp(EditorGUI::PopUpState::GO_TO_BLOCK);
         }
 
         // Editor navigation
@@ -1416,26 +1416,26 @@ void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
         if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && !io.KeyAlt)
         {
             if(tool == Tool::PLACE_BLOCK)
-                blockType = static_cast<Game::BlockType>(sym - SDLK_0);
+                gui.blockType = static_cast<Game::BlockType>(sym - SDLK_0);
             if(tool == Tool::ROTATE_BLOCK)
-                axis = static_cast<Game::RotationAxis>(sym - SDLK_0);
+                gui.axis = static_cast<Game::RotationAxis>(sym - SDLK_0);
             if(tool == Tool::PAINT_BLOCK)
-                displayType = static_cast<Game::DisplayType>(sym - SDLK_1);
+                gui.displayType = static_cast<Game::DisplayType>(sym - SDLK_1);
         }
 
         if(sym >= SDLK_1 && sym <= SDLK_3 && !io.KeyCtrl && io.KeyAlt)
-            tabState = static_cast<TabState>(sym - SDLK_1);
+            gui.tabState = static_cast<EditorGUI::TabState>(sym - SDLK_1);
     }
 }
 
 Game::Display Editor::GetBlockDisplay()
 {
     Game::Display display;
-    display.type = displayType;
-    if(displayType == Game::DisplayType::COLOR)
-        display.id = colorId;
-    else if(displayType == Game::DisplayType::TEXTURE)
-        display.id = textureId;
+    display.type = gui.displayType;
+    if(gui.displayType == Game::DisplayType::COLOR)
+        display.id = gui.colorId;
+    else if(gui.displayType == Game::DisplayType::TEXTURE)
+        display.id = gui.textureId;
 
     return display;
 }
@@ -1451,17 +1451,17 @@ bool Editor::IsDisplayValid()
 
 void Editor::SetBlockDisplay(Game::Display display)
 {
-    displayType = display.type;
-    if(displayType == Game::DisplayType::TEXTURE)
-        textureId = display.id;
-    else if(displayType == Game::DisplayType::COLOR)
-        colorId = display.id;
+    gui.displayType = display.type;
+    if(gui.displayType == Game::DisplayType::TEXTURE)
+        gui.textureId = display.id;
+    else if(gui.displayType == Game::DisplayType::COLOR)
+        gui.colorId = display.id;
 }
 
 void Editor::SetUnsaved(bool unsaved)
 {
     this->unsaved = unsaved;
-    std::string mapName = std::strlen(fileName) > 0 ? fileName : "New Map";
+    std::string mapName = std::strlen(gui.fileName) > 0 ? gui.fileName : "New Map";
     if(unsaved)
         RenameMainWindow(mapName + std::string("*"));
     else
@@ -1475,7 +1475,7 @@ void Editor::Exit()
         if(playerMode)
             playerMode = false;
 
-        OpenWarningPopUp(std::bind(&Editor::Exit, this));
+        gui.OpenWarningPopUp(std::bind(&Editor::Exit, this));
         if(cameraController.GetMode() != ::App::Client::CameraMode::EDITOR)
             SetCameraMode(::App::Client::CameraMode::EDITOR);
     }
@@ -1489,14 +1489,14 @@ void Editor::Editor::SelectGameObject(glm::ivec3 pos)
     {
         // Copy data to placedGo
         placedGo = *object;
-        selectedObj = pos;
+        gui.selectedObj = pos;
     }
 }
 
 void Editor::EditGameObject()
 {
-    auto place = std::make_unique<PlaceObjectAction>(placedGo, &project.map, selectedObj);
-    auto remove = std::make_unique<RemoveObjectAction>(&project.map, selectedObj);
+    auto place = std::make_unique<PlaceObjectAction>(placedGo, &project.map, gui.selectedObj);
+    auto remove = std::make_unique<RemoveObjectAction>(&project.map, gui.selectedObj);
     auto batch = std::make_unique<BatchedAction>();
     batch->AddAction(std::move(remove));
     batch->AddAction(std::move(place));

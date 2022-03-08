@@ -23,8 +23,8 @@
 #include <imgui/backends/imgui_impl_opengl3.h>
 
 #include <Project.h>
-
 #include <ToolAction.h>
+#include <EditorGUI.h>
 
 #include <functional>
 
@@ -42,18 +42,10 @@ namespace BlockBuster
     {
         using BlockData = std::pair<glm::ivec3, Game::Block>;
 
-        enum class MirrorPlane
-        {
-            XY,
-            XZ,
-            YZ,
-            NOT_XY,
-            NOT_XZ,
-            NOT_YZ
-        };
-
         class Editor : public App::AppI
         {
+        friend class EditorGUI;
+
         public:
             Editor(::App::Configuration config) : AppI{config} {}
 
@@ -65,27 +57,6 @@ namespace BlockBuster
         private:
 
             // Enums
-            enum PopUpState
-            {
-                NONE,
-                SAVE_AS,
-                OPEN_MAP,
-                LOAD_TEXTURE,
-                UNSAVED_WARNING,
-                VIDEO_SETTINGS,
-                GO_TO_BLOCK,
-                SET_TEXTURE_FOLDER,
-                MAX
-            };
-
-            enum TabState
-            {
-                TOOLS_TAB,
-                OPTIONS_TAB,
-
-                DEBUG_TAB
-            };
-
             enum class CursorMode
             {
                 BLOCKS,
@@ -145,7 +116,7 @@ namespace BlockBuster
             void UndoToolAction();
             void ClearActionHistory();
 
-            // Paint tool
+            // Paint tool - TODO: Could move this to GUI (Get/Set)
             Game::Display GetBlockDisplay();
             bool IsDisplayValid();
             void SetBlockDisplay(Game::Display display);
@@ -188,82 +159,6 @@ namespace BlockBuster
             void ApplyVideoOptions(::App::Configuration::WindowConfig& config);
             std::string GetConfigOption(const std::string& key, std::string defaultValue = "");
 
-            // GUI - PopUps
-            struct PopUp
-            {
-                std::string name;
-                std::function<void()> update;
-                std::function<void()> onOpen = []{};
-                std::function<void(bool)> onClose = [](bool){};
-            }; 
-            struct EditTextPopUpParams
-            {
-                PopUpState popUpState;
-                std::string name;
-                char* textBuffer; 
-                size_t bufferSize;
-                std::function<Util::Result<bool>()> onAccept;
-                std::function<void()> onCancel;
-                std::string errorPrefix;
-
-                bool& onError;
-                std::string& errorText;
-            };
-            struct BasicPopUpParams
-            {
-                PopUpState state;
-                std::string name;
-                std::function<void()> inPopUp;
-            };
-
-            void EditTextPopUp(const EditTextPopUpParams& params);
-            void BasicPopUp(const BasicPopUpParams& params);
-
-            void OpenMapPopUp();
-            void SaveAsPopUp();
-            void LoadTexturePopUp();
-            void VideoOptionsPopUp();
-            void UnsavedWarningPopUp();
-            void GoToBlockPopUp();
-            void SetTextureFolderPopUp();
-
-            void OpenWarningPopUp(std::function<void()> onExit);
-
-            void InitPopUps();
-            void OpenPopUp(PopUpState puState);
-            void UpdatePopUp();
-            void ClosePopUp(bool accept = false);
-
-            // GUI
-            void MenuBar();
-
-            // GUI - Misc
-            void SyncGUITextures();
-
-            // Menu - File
-            void MenuNewMap();
-            void MenuOpenMap();
-            void MenuSave();
-            void MenuSaveAs();
-
-            // GUI - Help
-            void HelpShortCutWindow();
-
-            // Tools - GUI
-            void ToolsTab();
-            void PlaceBlockGUI();
-            void SelectBlockTypeGUI();
-            void SelectBlockDisplayGUI();
-            void RotateBlockGUI();
-            void SelectBlocksGUI();
-            void PlaceObjectGUI();
-
-            // GameObject
-            void PropertyInput(Entity::GameObject* go, const char* key, Entity::GameObject::Property::Type type);
-
-            void ToolOptionsGUI();
-            void GUI();
-
             // Project
             Project project;
 
@@ -284,35 +179,15 @@ namespace BlockBuster
             // Editor
             bool quit = false;
             bool unsaved = true;
-            std::function<void()> onWarningExit;
-            glm::ivec3 goToPos;
+
+            // GUI
+            EditorGUI gui{*this};
 
             // Tools
             Tool tool = PLACE_BLOCK;
+            glm::ivec3 pointedBlockPos;
             unsigned int actionIndex = 0;
             std::vector<std::unique_ptr<BlockBuster::Editor::ToolAction>> actionHistory;
-
-            // Tool - Place
-            Game::BlockType blockType = Game::BlockType::BLOCK;
-
-            // Tool - Rotate
-            Game::RotationAxis axis = Game::RotationAxis::Y;
-
-            // Tool - Paint
-            Game::DisplayType displayType = Game::DisplayType::COLOR;
-            int textureId = 0;
-            int colorId = 0;
-
-            char textureFilename[32] = "texture.png";
-
-            const int MAX_TEXTURES = 32;
-            std::vector<ImGui::Impl::Texture> guiTextures;
-
-            bool pickingColor = false;
-            bool newColor = false;
-            glm::vec4 colorPick;
-
-            glm::ivec3 pointedBlockPos;
 
             // Tools - Cursor
             struct Cursor{
@@ -337,29 +212,11 @@ namespace BlockBuster
             // Tools - Copy/Cut
             std::vector<BlockData> clipboard;
 
-            // Tools - Select - Rotate or Mirror
-            Game::RotationAxis selectRotAxis = Game::RotationAxis::Y;
-            MirrorPlane selectMirrorPlane = MirrorPlane::XY;
-            Game::RotType selectRotType = Game::RotType::ROT_90;
-            std::string selectRotErrorText;
-
             // Objects
             Entity::GameObject placedGo;
-            int objectType = Entity::GameObject::RESPAWN;
-            glm::ivec3 selectedObj{0};
-
-            // GUI
-            GL::VertexArray gui_vao;
-            PopUpState state = PopUpState::NONE;
-            TabState tabState = TabState::TOOLS_TAB;
-            bool onError = false;
-            std::string errorText;
-            PopUp popUps[PopUpState::MAX];
 
             // File
             std::filesystem::path mapsFolder = ".";
-            char fileName[16];
-            char textureFolderPath[128] = "";
             const int magicNumber = 0xB010F0;
             bool newMap = true;
 
@@ -368,23 +225,6 @@ namespace BlockBuster
 
             // Options
             float blockScale = 2.0f;
-
-            // Debug
-            #ifdef _DEBUG
-                uint32_t modelId = 2;
-                float sliderPrecision = 5.0f;
-                glm::vec3 modelOffset{0.0f};
-                glm::vec3 modelRot{0.0f};
-                glm::vec3 modelScale{1.0f};
-                bool showDemo = false;
-                bool newMapSys = true;
-                bool optimizeIntersection = true;
-                bool useTextureArray = true;
-            #endif
-            bool drawChunkBorders = false;
-
-            // Help
-            bool showShortcutWindow = false;
 
             // Test
             bool playerMode = false;
