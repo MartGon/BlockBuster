@@ -502,6 +502,9 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     a.pos = pController.UpdatePosition(a.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
     a.rot.y = playerYaw;
 
+    if(playerInput[Entity::SHOOT] /*&& a.CanShoot()*/)
+        fpsAvatar.PlayShootAnimation();
+
     return a;
 }
 
