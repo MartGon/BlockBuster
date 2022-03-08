@@ -379,7 +379,27 @@ void EditorGUI::ClosePopUp(bool accept)
     ImGui::CloseCurrentPopup();
 }
 
-// #### GUI #### \\
+// #### GUI - Misc #### \\
+
+void EditorGUI::SyncGUITextures()
+{
+    auto& tPalette = editor->project.map.tPalette;
+    auto tCount = tPalette.GetCount();
+
+    guiTextures.clear();
+    guiTextures.reserve(tCount);
+    for(unsigned int i = 0; i < tCount; i++)
+    {
+        auto res = tPalette.GetMember(i);
+        auto handle = tPalette.GetTextureArray()->GetHandle();
+        ImGui::Impl::ExtraData ea;
+        ea.array = ImGui::Impl::TextureArrayData{res.data.id};
+        auto texture = ImGui::Impl::Texture{handle, ImGui::Impl::TextureType::TEXTURE_ARRAY, ea};
+        guiTextures.push_back(texture);
+    }
+}
+
+// #### GUI - File Menu #### \\
 
 void EditorGUI::MenuBar()
 {
@@ -477,28 +497,6 @@ void EditorGUI::MenuBar()
         ImGui::EndMenuBar();
     }
 }
-
-// #### GUI - Misc #### \\
-
-void EditorGUI::SyncGUITextures()
-{
-    auto& tPalette = editor->project.map.tPalette;
-    auto tCount = tPalette.GetCount();
-
-    guiTextures.clear();
-    guiTextures.reserve(tCount);
-    for(unsigned int i = 0; i < tCount; i++)
-    {
-        auto res = tPalette.GetMember(i);
-        auto handle = tPalette.GetTextureArray()->GetHandle();
-        ImGui::Impl::ExtraData ea;
-        ea.array = ImGui::Impl::TextureArrayData{res.data.id};
-        auto texture = ImGui::Impl::Texture{handle, ImGui::Impl::TextureType::TEXTURE_ARRAY, ea};
-        guiTextures.push_back(texture);
-    }
-}
-
-// #### GUI - File Menu #### \\
 
 void EditorGUI::MenuNewMap()
 {
