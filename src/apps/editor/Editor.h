@@ -99,6 +99,8 @@ namespace BlockBuster::Editor
         void UpdateEditor();
         void SetCameraMode(::App::Client::CameraMode cameraMode);
         void HandleKeyShortCut(const SDL_KeyboardEvent& e);
+        void HandleWindowEvent(SDL_WindowEvent winEvent);
+        void RenameMainWindow();
         void SetUnsaved(bool unsaved);
         void Exit();
 
@@ -150,7 +152,6 @@ namespace BlockBuster::Editor
         void EditGameObject();
 
         // Options
-        void HandleWindowEvent(SDL_WindowEvent winEvent);
         void ApplyVideoOptions(::App::Configuration::WindowConfig& config);
         std::string GetConfigOption(const std::string& key, std::string defaultValue = "");
 

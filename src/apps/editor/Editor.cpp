@@ -175,8 +175,11 @@ void Editor::NewProject()
     camera.SetPos(glm::vec3 {0.0f, 6.0f, 6.0f});
     camera.SetTarget(glm::vec3{0.0f});
 
+    // Filename
+    gui.fileName[0] = '\0';
+
     // Window
-    RenameMainWindow("New Map");
+    RenameMainWindow();
 
     // Flags
     newMap = true;
@@ -184,9 +187,6 @@ void Editor::NewProject()
 
     // Texturefolder
     project.map.textureFolder = "./";
-
-    // Filename
-    gui.fileName[0] = '\0';
 
     ClearActionHistory();
 }
@@ -205,7 +205,7 @@ void Editor::SaveProject()
     project.cursorScale = cursor.scale;
     ::WriteProjectToFile(project, mapPath);
 
-    RenameMainWindow(gui.fileName);
+    RenameMainWindow();
 
     // Update flag
     newMap = false;
@@ -226,12 +226,12 @@ Util::Result<bool> Editor::OpenProject()
         project = std::move(temp);
         gui.SyncGUITextures();
 
-        // Window
-        RenameMainWindow(gui.fileName);
-
         // Update flag
         newMap = false;
         unsaved = false;
+
+        // Window
+        RenameMainWindow();
 
         // Color Palette
         gui.colorPick = Rendering::Uint8ColorToFloat(project.map.cPalette.GetMember(0).data.color);
@@ -415,6 +415,29 @@ void Editor::UpdateEditor()
 void Editor::SetCameraMode(::App::Client::CameraMode mode)
 {
     cameraController.SetMode(mode);
+}
+
+void Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
+{
+    if(winEvent.event == SDL_WINDOWEVENT_RESIZED)
+    {
+        int width = winEvent.data1;
+        int height = winEvent.data2;
+        auto flags = SDL_GetWindowFlags(window_);
+        glViewport(0, 0, width, height);
+        camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
+    }
+}
+
+void Editor::RenameMainWindow()
+{
+    
+    std::string mapName = std::strlen(gui.fileName) > 0 ? gui.fileName : "New Map";
+    std::string title = "Editor - " + mapName;
+    if(unsaved)
+        title = title + "*";
+    
+    AppI::RenameMainWindow(title);
 }
 
 void Editor::SelectTool(Tool newTool)
@@ -1461,11 +1484,7 @@ void Editor::SetBlockDisplay(Game::Display display)
 void Editor::SetUnsaved(bool unsaved)
 {
     this->unsaved = unsaved;
-    std::string mapName = std::strlen(gui.fileName) > 0 ? gui.fileName : "New Map";
-    if(unsaved)
-        RenameMainWindow(mapName + std::string("*"));
-    else
-        RenameMainWindow(mapName);
+    RenameMainWindow();
 }
 
 void Editor::Exit()
@@ -1551,18 +1570,6 @@ void Editor::UpdatePlayerMode()
 }
 
 // #### Options #### \\
-
-void Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
-{
-    if(winEvent.event == SDL_WINDOWEVENT_RESIZED)
-    {
-        int width = winEvent.data1;
-        int height = winEvent.data2;
-        auto flags = SDL_GetWindowFlags(window_);
-        glViewport(0, 0, width, height);
-        camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
-    }
-}
 
 void Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
 {

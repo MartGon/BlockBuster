@@ -152,7 +152,5 @@ glm::ivec2 AppI::GetMousePos()
 
 void AppI::RenameMainWindow(const std::string& name)
 {
-    // TODO: Move this to Editor.
-    std::string title = "Editor - " + name;
-    SDL_SetWindowTitle(window_, title.c_str());
+    SDL_SetWindowTitle(window_, name.c_str());
 }
