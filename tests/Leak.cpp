@@ -13,5 +13,5 @@ TEST_CASE("Get Input")
     if(input[Entity::MOVE_DOWN])
         a = 1;
 
-    CHECK(a == 1);
+    CHECK(a == 0);
 }

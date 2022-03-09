@@ -5,6 +5,7 @@
 
 namespace Entity
 {
+    // TODO: Move all of these inside Player class
     // PlayerInput
     enum Inputs
     {
@@ -38,6 +39,8 @@ namespace Entity
         glm::vec3 pos{0.0f};
         glm::vec2 rot{0.0f};
         bool onDmg = false;
+
+        // TODO: Add weapon state in here. Should hold info such as currentAmmo and timeLeftToShoot
     };
     Entity::PlayerState operator+(const Entity::PlayerState& a, const Entity::PlayerState& b);
     Entity::PlayerState operator-(const Entity::PlayerState& a, const Entity::PlayerState& b);
