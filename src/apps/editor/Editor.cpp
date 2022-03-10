@@ -440,31 +440,40 @@ void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
             auto nextPos = cursor.pos;
             auto scale = cursor.scale;
 
-            auto moveOrScale = [&nextPos, &scale, &sym, this](Sint32 key, glm::ivec3 offset)
+            auto moveOrScale = [&nextPos, &scale, &sym, this](Sint32 key, glm::ivec3 offset, float yawDeg)
             {
                 if(sym == key)
                 {
+                    auto rotMat = glm::rotate(glm::mat4{1}, glm::radians(yawDeg), glm::vec3{0.0f, 1.0f, 0.0f});
+                    offset = rotMat * glm::vec4{offset, 1.0f};
+
                     if(!this->io_->KeyCtrl)
+                    {
                         nextPos += offset;
-                    else if(!movingSelection)
+                    }
+                    else
                         scale += offset;
                 }
             };
 
+            auto camYaw = camera.GetRotationDeg().y;
+            auto rotAngle = (glm::round((camYaw / 90.0f)) - 1) * 90.0f;
+
             // X axis
-            moveOrScale(SDLK_KP_4, glm::ivec3{-1, 0, 0});
-            moveOrScale(SDLK_KP_6, glm::ivec3{1, 0, 0});
+            moveOrScale(SDLK_KP_4, glm::ivec3{-1, 0, 0}, rotAngle);
+            moveOrScale(SDLK_KP_6, glm::ivec3{1, 0, 0}, rotAngle);
 
             // Y axis
-            moveOrScale(SDLK_KP_7, glm::ivec3{0, 1, 0});
-            moveOrScale(SDLK_KP_9, glm::ivec3{0, -1, 0});
+            moveOrScale(SDLK_KP_7, glm::ivec3{0, 1, 0}, 0.0f);
+            moveOrScale(SDLK_KP_9, glm::ivec3{0, -1, 0}, 0.0f);
 
             // Z axis
-            moveOrScale(SDLK_KP_8, glm::ivec3{0, 0, -1});
-            moveOrScale(SDLK_KP_2, glm::ivec3{0, 0, 1});
+            moveOrScale(SDLK_KP_8, glm::ivec3{0, 0, -1}, rotAngle);
+            moveOrScale(SDLK_KP_2, glm::ivec3{0, 0, 1}, rotAngle);
 
             bool hasMoved = nextPos != cursor.pos;
-            cursor.scale = glm::max(scale, glm::ivec3{1, 1, 1});
+            if(!movingSelection)
+                cursor.scale = glm::max(scale, glm::ivec3{1, 1, 1});
             if(hasMoved)
                 MoveSelectionCursor(nextPos);
         }
@@ -973,7 +982,6 @@ void Editor::SetBlockDisplay(Game::Display display)
         gui.colorId = display.id;
 }
 
-
 // #### Selection Cursor #### \\
 
 void Editor::DrawCursor(Math::Transform t)
@@ -1198,9 +1206,9 @@ Editor::Result Editor::RotateSelection(Game::RotationAxis axis, Game::RotType ro
 
     // Calculate rot matrix
     glm::ivec3 rotAxis = glm::vec3{0, 1, 0};
-    if(axis ==Game::RotationAxis::X)
+    if(axis == Game::RotationAxis::X)
         rotAxis = glm::vec3{1, 0, 0};
-    else if(axis ==Game::RotationAxis::Z)
+    else if(axis == Game::RotationAxis::Z)
         rotAxis = glm::vec3{0, 0, 1};
     glm::mat3 rotMat = glm::rotate(glm::mat4{1}, glm::radians(angle), glm::vec3{rotAxis});
 

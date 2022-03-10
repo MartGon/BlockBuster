@@ -1165,6 +1165,8 @@ void EditorGUI::SelectBlocksGUI()
 
             case Editor::SelectSubTool::FILL_OR_PAINT:
             {
+                PlaceBlockGUI();
+
                 if(ImGui::Button("Fill"))
                 {
                     editor->FillSelection();
@@ -1181,8 +1183,6 @@ void EditorGUI::SelectBlocksGUI()
                 {
                     editor->PaintSelection();
                 }
-
-                PlaceBlockGUI();
             }
 
             default:
