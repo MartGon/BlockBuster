@@ -1185,9 +1185,9 @@ Editor::Result Editor::RotateSelection(Game::RotationAxis axis, Game::RotType ro
     //Check cursor is a square in the involved axis;
     if(rotType == Game::RotType::ROT_90)
     {
-        bool canRotateX = axis ==Game::RotationAxis::X && cursor.scale.y == cursor.scale.z;
-        bool canRotateY = axis ==Game::RotationAxis::Y && cursor.scale.x == cursor.scale.z;
-        bool canRotateZ = axis ==Game::RotationAxis::Z && cursor.scale.x == cursor.scale.y;
+        bool canRotateX = axis == Game::RotationAxis::X && cursor.scale.y == cursor.scale.z;
+        bool canRotateY = axis == Game::RotationAxis::Y && cursor.scale.x == cursor.scale.z;
+        bool canRotateZ = axis == Game::RotationAxis::Z && cursor.scale.x == cursor.scale.y;
         bool canRotate = canRotateX || canRotateY || canRotateZ;
 
         if(!canRotate)
@@ -1200,9 +1200,6 @@ Editor::Result Editor::RotateSelection(Game::RotationAxis axis, Game::RotType ro
 
     auto lselection = GetBlocksInSelection();
     float angle = rotType == Game::RotType::ROT_90 ? 90.0f : 180.0f;
-
-    std::vector<std::pair<glm::vec3, Game::Block>> rotSelection;
-    rotSelection.reserve(lselection.size());
 
     // Calculate rot matrix
     glm::ivec3 rotAxis = glm::vec3{0, 1, 0};
@@ -1218,182 +1215,35 @@ Editor::Result Editor::RotateSelection(Game::RotationAxis axis, Game::RotType ro
 
     // Batched action
     auto batch = std::make_unique<BatchedAction>();
+    auto removeBatch = std::make_unique<BatchedAction>();
+    auto placeBatch = std::make_unique<BatchedAction>();
 
-    for(auto bData : lselection)
+    for(auto& [pos, block] : lselection)
     {
-        glm::vec3 offset = glm::vec3{bData.first} - center;
+        glm::vec3 offset = glm::vec3{pos} - center;
         glm::vec3 rotOffset = rotMat * offset;
-        rotSelection.push_back({rotOffset, bData.second});
+        removeBatch->AddAction(std::make_unique<RemoveAction>(pos, block, &project.map));
 
-        batch->AddAction(std::make_unique<RemoveAction>(bData.first, bData.second, &project.map));
-    }
-
-    for(auto bData : rotSelection)
-    {
-        // Rotate slope
-        if(bData.second.type == Game::BlockType::SLOPE)
+        // TODO: Here, we should rotate the transform and then extract the angles.
+        if(block.type == Game::BlockType::SLOPE)
         {
-            auto bRot = bData.second.rot;
-            if(axis ==Game::RotationAxis::Y)
+            int dot = glm::round(glm::dot(offset, rotOffset));
+            bool positive = axis == Game::RotationAxis::Y;
+            if(dot == 0 || dot == 1)
+                block.rot = Game::GetNextValidRotation(block.rot, axis, positive);
+            if(dot == -1)
             {
-                bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                if(rotType == Game::RotType::ROT_180)
-                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-            }
-            else if(axis ==Game::RotationAxis::Z)
-            {
-                if(rotType == Game::RotType::ROT_90)
-                {
-                    if(bRot.y == Game::RotType::ROT_0)
-                    {
-                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                    }
-                    else if(bRot.y == Game::RotType::ROT_90)
-                    {
-                        if(bRot.z == Game::RotType::ROT_180)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                        }
-                        else if(bRot.z == Game::RotType::ROT_90)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, false);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, false);
-                        }
-                        else if(bRot.z == Game::RotType::ROT_270)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                        }   
-                        else
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                        }
-                    }
-                    else if(bRot.y == Game::RotType::ROT_180)
-                    {
-                        bData.second.rot = GetNextValidRotation(bData.second.rot, axis, false);
-                    }
-                    else if(bRot.y == Game::RotType::ROT_270)
-                    {
-                        if(bRot.z == Game::RotType::ROT_180)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                        }
-                        else if(bRot.z == Game::RotType::ROT_90)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, false);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                        }
-                        else if(bRot.z == Game::RotType::ROT_270)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, false);
-                        }   
-                        else
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                        }
-                    }
-                }
-                else if(rotType == Game::RotType::ROT_180)
-                {
-                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-                    bData.second.rot = GetNextValidRotation(bData.second.rot, axis, true);
-
-                    if(bRot.y == Game::RotType::ROT_90 || bRot.y == Game::ROT_270)
-                    {
-                        bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                        bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                    }
-                }
-            }
-            else if(axis ==Game::RotationAxis::X)
-            {
-                if(rotType == Game::RotType::ROT_90)
-                {
-                    if(bRot.y == Game::RotType::ROT_0)
-                    {
-                        if(bRot.z == Game::RotType::ROT_90)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, false);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                        }
-                        else if(bRot.z == Game::RotType::ROT_180)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);    
-                        }
-                        else if(bRot.z == Game::RotType::ROT_270)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, false);
-                        }
-                        else
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                        }
-                    }
-                    else if(bRot.y == Game::RotType::ROT_90)
-                    {
-                        bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                    }
-                    else if(bRot.y == Game::RotType::ROT_180)
-                    {
-                        if(bRot.z == Game::RotType::ROT_90)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, false);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, false);
-                        }
-                        else if(bRot.z == Game::RotType::ROT_180)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);    
-                        }
-                        else if(bRot.z == Game::RotType::ROT_270)
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                        }
-                        else
-                        {
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                            bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                        }
-                    }
-                    else if(bRot.y == Game::RotType::ROT_270)
-                    {
-                        bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, false);
-                    }
-                }
-                else if(rotType == Game::RotType::ROT_180)
-                {
-                    bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-                    bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Z, true);
-
-                    if(bRot.y == Game::RotType::ROT_0 || bRot.y == Game::ROT_180)
-                    {
-                        bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                        bData.second.rot = GetNextValidRotation(bData.second.rot,Game::RotationAxis::Y, true);
-                    }
-                }
+                block.rot = Game::GetNextValidRotation(block.rot, axis, positive);
+                block.rot = Game::GetNextValidRotation(block.rot, axis, positive);
             }
         }
 
-        glm::ivec3 absPos = glm::round(center + bData.first);
-        batch->AddAction(std::make_unique<PlaceBlockAction>(absPos, bData.second, &project.map));
+        glm::ivec3 absPos = glm::round(center + rotOffset);
+        placeBatch->AddAction(std::make_unique<PlaceBlockAction>(absPos, block, &project.map));
     }
 
-    if(rotType == Game::ROT_90)
-    {
-        // Rotate scale
-        auto cs = cursor.scale;
-        cursor.scale = axis ==Game::RotationAxis::Y ? glm::ivec3{cs.z, cs.y, cs.x} : glm::ivec3{cs.y, cs.x, cs.z};
-    }
+    batch->AddAction(std::move(removeBatch));
+    batch->AddAction(std::move(placeBatch));
 
     DoToolAction(std::move(batch));
 
