@@ -26,12 +26,13 @@ Game::BlockRot Game::GetNextValidRotation(Game::BlockRot rot, Game::RotationAxis
     auto sign = positive ? 1 : -1;
     if(axis == Game::RotationAxis::Y)
     {
+        // TODO: This may cause collision issues. If that's the case, put back to ROT_180. It screws selection rotation (X/Z axis) in editor tho.
         int8_t i8rot = Math::OverflowSumInt<int8_t>(blockRot.y, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
         blockRot.y = static_cast<Game::RotType>(i8rot);
     }
     else if(axis == Game::RotationAxis::Z)
     {
-        int8_t i8rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_180);
+        int8_t i8rot = Math::OverflowSumInt<int8_t>(blockRot.z, sign, Game::RotType::ROT_0, Game::RotType::ROT_270);
         blockRot.z = static_cast<Game::RotType>(i8rot);
     }
 
