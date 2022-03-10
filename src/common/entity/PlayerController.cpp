@@ -61,6 +61,38 @@ glm::vec3 Entity::PlayerController::UpdatePosition(glm::vec3 pos, float yaw, Ent
     return transform.position;
 }
 
+Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, Util::Time::Seconds deltaTime)
+{
+    const auto weaponType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
+    switch(weapon.state)
+    {
+        case Weapon::State::IDLE:
+        {
+            if(input[Entity::SHOOT] && Entity::HasAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType))
+            {
+                weapon.state = Weapon::State::SHOOTING;
+                weapon.cooldown = weaponType.cooldown;
+                weapon.ammoState = Entity::UseAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType);
+            }
+        }
+        break;
+        case Weapon::State::SHOOTING:
+        {
+            weapon.cooldown -= deltaTime;
+            if(weapon.cooldown.count() <= 0.0)
+                weapon.state = Weapon::State::IDLE;
+        }
+        break;
+        case Weapon::State::RELOADING:
+        {
+
+        }
+        break;
+    }
+
+    return weapon;
+}
+
 struct Intersection
 {
     Game::Block block;

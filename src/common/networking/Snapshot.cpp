@@ -11,10 +11,10 @@ Util::Buffer Snapshot::ToBuffer() const
 
     // Players' state
     buffer.Write<uint8_t>(players.size());
-    for(auto player : players)
+    for(auto& [id, state] : players)
     {
-        buffer.Write(player.first);
-        buffer.Write(player.second);
+        buffer.Write(id);
+        buffer.Write(state);
     }
 
     return buffer;

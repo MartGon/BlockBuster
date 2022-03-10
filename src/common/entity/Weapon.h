@@ -1,10 +1,39 @@
 #pragma once
 
 #include <stdint.h>
+#include <unordered_map>
+
+#include <util/BBTime.h>
 
 namespace Entity
 {
     class Weapon;
+    class WeaponType;
+
+    enum WeaponTypeID : uint8_t
+    {
+        NONE,
+        SNIPER,
+        RIFLE,
+        SMG
+    };
+    class WeaponMgr
+    {
+    public:
+        static const std::unordered_map<WeaponTypeID, WeaponType> weaponTypes;
+    };
+
+    enum class AmmoType
+    {
+        AMMO,
+        OVERHEAT,
+        INFINITE
+    };
+    union AmmoTypeData
+    {
+        float overheatRate;
+        uint32_t magazineSize;
+    };
 
     class WeaponType
     {
@@ -15,16 +44,10 @@ namespace Entity
             BURST,
             AUTO,
         };
-
-        enum class AmmoType
-        {
-            AMMO,
-            OVERHEAT,
-            INFINITE
-        };
         
+        WeaponTypeID id;
         FiringMode firingMode;
-        float rateOfFire; // Shots per sec
+        Util::Time::Seconds cooldown; // Shots per sec
         float baseDmg;
         float maxRange; // Damage will be reduced across range. if distance > maxRange => dmg = baseDmg * max(0, (1 - (distance - maxRange) / maxRange));
         float baseSpread; // Size of the crosshair
@@ -34,36 +57,41 @@ namespace Entity
         uint32_t soundPackId;
 
         AmmoType ammoType;
-        union
-        {
-            float overheatRate;
-            uint32_t magazineSize;
-        };
+        AmmoTypeData ammoData;
 
-        Weapon* CreateInstance();
+        Weapon CreateInstance() const;
     };
 
-    static WeaponType sniper;
-
     class Weapon
-    {  
-        const WeaponType* type;
-        // Use an ID instead, this has to be sent over the network
+    { 
+    friend class WeaponType;
 
+    public:
+        WeaponTypeID weaponTypeId = WeaponTypeID::NONE;
+        
         // TODO: Maybe this should be only on Player
-        enum class WeaponState
+        enum class State
         {
             IDLE,
             SHOOTING,
             RELOADING,
         };
-        WeaponState state = WeaponState::IDLE;
+        State state = State::IDLE;
 
-        union
+        Util::Time::Seconds cooldown{0.0f};
+        union AmmoState
         {
+            uint32_t magazine;
             float overheat;
-            uint32_t ammoInMag;
-        };
+        } ammoState;
     };
+
+    // Weapon
+    bool HasShot(Weapon s1, Weapon s2);
+
+    // Ammo
+    Weapon::AmmoState ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType);
+    Weapon::AmmoState UseAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType);
+    bool HasAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType);
 
 }

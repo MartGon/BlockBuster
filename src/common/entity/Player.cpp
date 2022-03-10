@@ -20,7 +20,46 @@ const float Player::camHeight = 1.75f;
 const float Player::MAX_HEALTH = 100.0f;
 const float Player::MAX_SHIELD = 300.0f;
 
-// Functions
+// PlayerInput
+
+glm::vec3 Entity::PlayerInputToMove(PlayerInput input)
+{
+    glm::vec3 moveDir{0.0f};
+    moveDir.x = input[Entity::MOVE_RIGHT] - input[Entity::MOVE_LEFT];
+    moveDir.z = input[Entity::MOVE_DOWN] - input[Entity::MOVE_UP];
+    if(moveDir.x != 0.0f && moveDir.z != 0.0f)
+        moveDir = glm::normalize(moveDir);  
+
+    return moveDir;
+}
+
+
+// PlayerState
+
+PlayerState::PlayerState()
+{
+
+}
+
+
+bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState& b)
+{
+    // Pos
+    auto distance = glm::length(a.pos - b.pos);
+    bool posError = distance > 0.005f;
+    bool same = !posError;
+
+    // Weapon state
+    auto wsA = a.weaponState; auto wsB = b.weaponState;
+    if(wsA.weaponTypeId != WeaponTypeID::NONE)
+    {
+        bool stateError = wsA.state != wsB.state;
+        bool cdError = std::abs((wsA.cooldown - wsB.cooldown).count()) > 0.05;
+        same = !stateError && !cdError;
+    }
+
+    return same;
+}
 
 // Note/TODO: Commented code in operators are in place due to wierd behaviour with prediction error correction
 Entity::PlayerState Entity::operator+(const Entity::PlayerState& a, const Entity::PlayerState& b)
@@ -50,28 +89,9 @@ Entity::PlayerState Entity::operator*(const Entity::PlayerState& a, float b)
     return res;
 }
 
-glm::vec3 Entity::PlayerInputToMove(PlayerInput input)
-{
-    glm::vec3 moveDir{0.0f};
-    moveDir.x = input[Entity::MOVE_RIGHT] - input[Entity::MOVE_LEFT];
-    moveDir.z = input[Entity::MOVE_DOWN] - input[Entity::MOVE_UP];
-    if(moveDir.x != 0.0f && moveDir.z != 0.0f)
-        moveDir = glm::normalize(moveDir);  
-
-    return moveDir;
-}
-
-float Entity::GetDifference(PlayerState a, PlayerState b)
-{
-    auto distance = glm::length(a.pos - b.pos);
-    auto diff = distance / glm::length(a.pos);
-
-    return diff;
-}
-
 Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerState b, float alpha)
 {
-    Entity::PlayerState res;
+    Entity::PlayerState res = a;
 
     auto pos1 = a.pos;
     auto pos2 = b.pos;
@@ -119,6 +139,7 @@ Entity::PlayerState Player::ExtractState() const
 
     s.pos = this->transform.position;
     s.rot = glm::vec2{transform.rotation};
+    s.weaponState = weapon;
 
     return s;
 }
@@ -127,6 +148,7 @@ void Player::ApplyState(Entity::PlayerState s)
 {
     this->transform.position = s.pos;
     this->transform.rotation = glm::vec3{s.rot, 0.0f};
+    this->weapon = s.weaponState;
 }
 
 

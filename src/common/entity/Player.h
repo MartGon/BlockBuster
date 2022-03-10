@@ -34,19 +34,21 @@ namespace Entity
     };
     glm::vec3 PlayerInputToMove(PlayerInput input);
 
-    struct PlayerState
+    class PlayerState
     {
+    public:
+        PlayerState();
         glm::vec3 pos{0.0f};
         glm::vec2 rot{0.0f};
         bool onDmg = false;
 
-        // TODO: Add weapon state in here. Should hold info such as currentAmmo and timeLeftToShoot
+        Weapon weaponState;
     };
+    bool operator==(const Entity::PlayerState& a, const Entity::PlayerState& b);
     Entity::PlayerState operator+(const Entity::PlayerState& a, const Entity::PlayerState& b);
     Entity::PlayerState operator-(const Entity::PlayerState& a, const Entity::PlayerState& b);
     Entity::PlayerState operator*(const Entity::PlayerState& a, float b);
 
-    float GetDifference(PlayerState a, PlayerState b);
     PlayerState Interpolate(PlayerState a, PlayerState b, float alpha);
 
     using ID = uint8_t;
@@ -94,7 +96,7 @@ namespace Entity
 
         ID teamId = 0;
 
-        Weapon* weapon = nullptr;
+        Weapon weapon;
     private:
 
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain

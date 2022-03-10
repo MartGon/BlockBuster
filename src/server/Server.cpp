@@ -80,6 +80,7 @@ void Server::InitNetworking()
         auto sIndex = FindSpawnPoint(player);
         auto spawn = map.GetRespawn(sIndex);
         auto playerPos = ToSpawnPos(sIndex);
+        player.weapon = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
         logger.LogInfo("SpawnPos " + glm::to_string(playerPos));
         auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{1.0f}};
         player.SetTransform(playerTransform);
@@ -277,6 +278,9 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
     playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
     player.SetTransform(playerTransform);
+
+    player.weapon = pController.UpdateWeapon(player.weapon, cmd.playerInput, TICK_RATE);
+    logger.LogInfo("Player Ammo " + std::to_string(player.weapon.ammoState.magazine));
 
     logger.LogInfo("MovePos " + glm::to_string(playerTransform.position));
 }

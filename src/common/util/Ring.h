@@ -33,6 +33,11 @@ namespace Util
             return capacity_;
         }
 
+        inline void Clear()
+        {
+            return vector_.clear();
+        }
+
         void Set(int32_t index, T val)
         {
             index = index >= 0 ? index : GetSize() + index;

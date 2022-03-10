@@ -92,13 +92,13 @@ void InGame::Start()
     camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, client_->config.window.fov);
     camController_ = ::App::Client::CameraController{&camera_, {client_->window_, client_->io_}, ::App::Client::CameraMode::EDITOR};
-    camController_.SetMode(::App::Client::CameraMode::FPS);
+    //camController_.SetMode(::App::Client::CameraMode::FPS);
 
     // Map
     auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
     auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
-    LoadMap("./resources/maps/Alpha2.bbm");
-    //LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
+    //LoadMap("./resources/maps/Alpha2.bbm");
+    LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
 
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
@@ -397,54 +397,64 @@ void InGame::Predict(Entity::PlayerInput playerInput)
 
     auto& player = playerTable[playerId];
 
-    // Discard old commands
-    std::optional<Prediction> prediction = predictionHistory_.Front();
-    while(prediction && prediction->inputReq.reqId < lastAck)
+    // Check prediction errors
+    if(!predictionHistory_.Empty() && predictionHistory_.Front()->inputReq.reqId >= this->lastAck)
     {
-        prediction = predictionHistory_.PopFront();
-    }
-    
-    // Checking prediction errors
-    auto lastSnapshot = snapshotHistory.Back();
-    if(prediction && lastSnapshot.has_value())
-    {
-        auto& playerPositions = lastSnapshot->players;
-        bool hasPlayerData = playerPositions.find(playerId) != playerPositions.end();
-        if(hasPlayerData)
+        // Discard old commands
+        std::optional<Prediction> prediction;
+        GetLogger()->LogDebug("Prediction: ACK " + std::to_string(this->lastAck));
+        do
         {
-            auto newState = lastSnapshot->players[playerId];
-            auto pState = prediction->dest;
-            auto diff = Entity::GetDifference(newState, pState);
+            prediction = predictionHistory_.Front();
+            GetLogger()->LogDebug("Prediction: Discarding prediction for " + std::to_string(prediction->inputReq.reqId));
+        } while(prediction && prediction->inputReq.reqId < lastAck);
 
-            // On error
-            if(diff >= 0.005)
+        // Checking prediction errors
+        auto lastSnapshot = snapshotHistory.Back();
+        if(prediction && lastSnapshot.has_value())
+        {
+            auto& playerPositions = lastSnapshot->players;
+            bool hasPlayerData = playerPositions.find(playerId) != playerPositions.end();
+            if(hasPlayerData)
             {
-                client_->logger->LogError("Prediction: Error on prediction");
-                client_->logger->LogError("Prediction: Tick " + std::to_string(lastSnapshot->serverTick) + " ACK " + std::to_string(this->lastAck));
-                client_->logger->LogError("Prediction: D " + std::to_string(diff) + " P " + glm::to_string(pState.pos) + " S " + glm::to_string(newState.pos));
+                auto newState = lastSnapshot->players[playerId];
+                auto pState = prediction->dest;
 
-                // Accept player pos
-                auto realState = newState;
-
-                // Run prev commands again
-                for(auto i = 0; i < predictionHistory_.GetSize(); i++)
+                // On error
+                auto areSame = newState == pState;
+                if(!areSame)
                 {
-                    auto predict = predictionHistory_.At(i);
+                    client_->logger->LogError("Prediction: Error on prediction");
+                    client_->logger->LogError("Prediction: Prediction Id " + std::to_string(prediction->inputReq.reqId) + " ACK " + std::to_string(this->lastAck));
+                    auto diff = glm::length(pState.pos - newState.pos);
+                    if(diff > 0.005f)
+                        client_->logger->LogError("Prediction: D " + std::to_string(diff) + " P " + glm::to_string(pState.pos) + " S " + glm::to_string(newState.pos));
 
-                    // Re-calculate prediction
-                    auto origin = realState;
-                    realState = PredPlayerState(realState, predict->inputReq.playerInput, predict->inputReq.camYaw, serverTickRate);
+                    // Accept player pos
+                    auto realState = newState;
 
-                    // Update history
-                    predict->origin = origin;
-                    predict->dest = realState;
-                    predictionHistory_.Set(i, predict.value());
+                    // Run prev commands again
+                    for(auto i = 0; i < predictionHistory_.GetSize(); i++)
+                    {
+                        auto predict = predictionHistory_.At(i);
+                        GetLogger()->LogDebug("Prediction: Repeting prediction for " + std::to_string(predict->inputReq.reqId));
+
+                        // Re-calculate prediction
+                        auto origin = realState;
+                        realState = PredPlayerState(origin, predict->inputReq.playerInput, predict->inputReq.camYaw, serverTickRate);
+                        GetLogger()->LogDebug("Prediction: Predicted pos is " + glm::to_string(predict->dest.pos));
+
+                        // Update history
+                        predict->origin = origin;
+                        predict->dest = realState;
+                        predictionHistory_.Set(i, predict.value());
+                    }
+
+                    // Update error correction values
+                    auto renderState = playerTable[playerId].ExtractState();
+                    errorCorrectionDiff = renderState - realState;
+                    errorCorrectionStart = Util::Time::GetTime();
                 }
-
-                // Update error correction values
-                auto renderState = playerTable[playerId].ExtractState();
-                errorCorrectionDiff = renderState - realState;
-                errorCorrectionStart = Util::Time::GetTime();
             }
         }
     }
@@ -499,13 +509,15 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
 {
     auto& player = playerTable[playerId];
     
-    a.pos = pController.UpdatePosition(a.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
-    a.rot.y = playerYaw;
+    Entity::PlayerState nextState = a;
+    nextState.pos = pController.UpdatePosition(a.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
+    nextState.rot.y = playerYaw;
 
-    if(playerInput[Entity::SHOOT] /*&& a.CanShoot()*/)
+    nextState.weaponState = pController.UpdateWeapon(a.weaponState, playerInput, deltaTime);
+    if(Entity::HasShot(a.weaponState, nextState.weaponState))
         fpsAvatar.PlayShootAnimation();
 
-    return a;
+    return nextState;
 }
 
 Util::Time::Seconds InGame::TickToTime(uint32_t tick)
@@ -628,8 +640,17 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
     auto state1 = s1.players.at(playerId);
     auto state2 = s2.players.at(playerId);
 
-    auto smoothPos = Entity::Interpolate(state1, state2, alpha);
-    playerTable[playerId].ApplyState(smoothPos);
+    auto oldState = playerTable[playerId].ExtractState();
+    auto newState = Entity::Interpolate(state1, state2, alpha);
+
+    if(Entity::HasShot(oldState.weaponState, newState.weaponState))
+    {
+        auto& modelState = playerModelStateTable.at(playerId);
+        modelState.shootPlayer.Reset();
+        modelState.shootPlayer.Play();
+    }
+
+    playerTable[playerId].ApplyState(newState);
 }
 
 glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const
