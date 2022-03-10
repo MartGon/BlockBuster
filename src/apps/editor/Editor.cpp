@@ -417,6 +417,122 @@ void Editor::SetCameraMode(::App::Client::CameraMode mode)
     cameraController.SetMode(mode);
 }
 
+void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
+{
+    auto& io = ImGui::GetIO();
+    if(key.type == SDL_KEYDOWN)
+    {
+        auto sym = key.keysym.sym;
+        if(sym == SDLK_ESCAPE)
+        {
+            if(gui.state != EditorGUI::PopUpState::NONE)
+                gui.ClosePopUp();
+            else
+                Exit();
+        }
+
+        if(gui.state != EditorGUI::PopUpState::NONE)
+            return;
+
+        // Select tool
+        if(tool == Tool::SELECT_BLOCKS)
+        {
+            auto nextPos = cursor.pos;
+            auto scale = cursor.scale;
+
+            auto moveOrScale = [&nextPos, &scale, &sym, this](Sint32 key, glm::ivec3 offset)
+            {
+                if(sym == key)
+                {
+                    if(!this->io_->KeyCtrl)
+                        nextPos += offset;
+                    else if(!movingSelection)
+                        scale += offset;
+                }
+            };
+
+            // X axis
+            moveOrScale(SDLK_KP_4, glm::ivec3{-1, 0, 0});
+            moveOrScale(SDLK_KP_6, glm::ivec3{1, 0, 0});
+
+            // Y axis
+            moveOrScale(SDLK_KP_7, glm::ivec3{0, 1, 0});
+            moveOrScale(SDLK_KP_9, glm::ivec3{0, -1, 0});
+
+            // Z axis
+            moveOrScale(SDLK_KP_8, glm::ivec3{0, 0, -1});
+            moveOrScale(SDLK_KP_2, glm::ivec3{0, 0, 1});
+
+            bool hasMoved = nextPos != cursor.pos;
+            cursor.scale = glm::max(scale, glm::ivec3{1, 1, 1});
+            if(hasMoved)
+                MoveSelectionCursor(nextPos);
+        }
+
+        // Camera mode
+        if(sym == SDLK_f)
+        {
+            auto mode = cameraController.GetMode() == ::App::Client::CameraMode::EDITOR ? ::App::Client::CameraMode::FPS : ::App::Client::CameraMode::EDITOR;
+            SetCameraMode(mode);
+        }
+        
+        // Editor/Player Mode toggle
+        if(sym == SDLK_p)
+        {
+            playerMode = !playerMode;
+            logger->LogDebug("Player mode enabled: " + std::to_string(playerMode));
+            if(playerMode)
+            {
+                //player.transform.position = camera.GetPos();
+                SetCameraMode(::App::Client::CameraMode::FPS);
+            }
+        }
+
+        // File Menu
+        if(sym == SDLK_n && io.KeyCtrl)
+            gui.MenuNewMap();
+
+        if(sym == SDLK_s && io.KeyCtrl)
+            gui.MenuSave();
+
+        if(sym == SDLK_s && io.KeyCtrl && io.KeyShift)
+            gui.MenuSaveAs();
+
+        if(sym == SDLK_o && io.KeyCtrl)
+            gui.MenuOpenMap();
+
+        // Edit
+        if(sym == SDLK_z && io.KeyCtrl && !io.KeyShift)
+            UndoToolAction();
+
+        if(sym == SDLK_z && io.KeyCtrl && io.KeyShift)
+            DoToolAction();
+
+        if(sym == SDLK_g && io.KeyCtrl)
+        {
+            gui.OpenPopUp(EditorGUI::PopUpState::GO_TO_BLOCK);
+        }
+
+        // Editor navigation
+        if(sym >= SDLK_1 &&  sym <= SDLK_4 && io.KeyCtrl)
+            SelectTool(static_cast<Tool>(sym - SDLK_1));
+
+        // Select display/blocktype/axis
+        if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && !io.KeyAlt)
+        {
+            if(tool == Tool::PLACE_BLOCK)
+                gui.blockType = static_cast<Game::BlockType>(sym - SDLK_0);
+            if(tool == Tool::ROTATE_BLOCK)
+                gui.axis = static_cast<Game::RotationAxis>(sym - SDLK_0);
+            if(tool == Tool::PAINT_BLOCK)
+                gui.displayType = static_cast<Game::DisplayType>(sym - SDLK_1);
+        }
+
+        if(sym >= SDLK_1 && sym <= SDLK_3 && !io.KeyCtrl && io.KeyAlt)
+            gui.tabState = static_cast<EditorGUI::TabState>(sym - SDLK_1);
+    }
+}
+
 void Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
 {
     if(winEvent.event == SDL_WINDOWEVENT_RESIZED)
@@ -439,6 +555,77 @@ void Editor::RenameMainWindow()
     
     AppI::RenameMainWindow(title);
 }
+
+void Editor::SetUnsaved(bool unsaved)
+{
+    this->unsaved = unsaved;
+    RenameMainWindow();
+}
+
+void Editor::Exit()
+{
+    if(unsaved)
+    {
+        if(playerMode)
+            playerMode = false;
+
+        gui.OpenWarningPopUp(std::bind(&Editor::Exit, this));
+        if(cameraController.GetMode() != ::App::Client::CameraMode::EDITOR)
+            SetCameraMode(::App::Client::CameraMode::EDITOR);
+    }
+    else
+        quit = true;
+}
+
+// #### Test Mode #### \\
+
+void Editor::UpdatePlayerMode()
+{
+    SDL_Event e;
+    ImGuiIO& io = ImGui::GetIO();
+    while(SDL_PollEvent(&e) != 0)
+    {
+        ImGui_ImplSDL2_ProcessEvent(&e);
+
+        switch(e.type)
+        {
+        case SDL_KEYDOWN:
+            if(e.key.keysym.sym == SDLK_ESCAPE)
+                Exit();
+            if(e.key.keysym.sym == SDLK_p)
+            {
+                playerMode = !playerMode;
+                logger->LogDebug("Player mode enabled: " + std::to_string(playerMode));
+                if(playerMode)
+                {
+                    SetCameraMode(::App::Client::CameraMode::FPS);
+                }
+                else
+                    SetCameraMode(::App::Client::CameraMode::EDITOR);
+            }
+            break;
+        case SDL_QUIT:
+            Exit();
+            break;
+        case SDL_WINDOWEVENT:
+            HandleWindowEvent(e.window);
+            break;
+        case SDL_MOUSEMOTION:
+            cameraController.HandleSDLEvent(e);
+            break;
+        }
+    }
+
+    const auto camOffset = glm::vec3{0.0f, Entity::Player::camHeight, 0.0f};
+    auto pos = camera.GetPos() - camOffset;
+    auto yaw = camera.GetRotationDeg().y;
+    auto input = Input::GetPlayerInput();
+    auto playerPos = player.UpdatePosition(pos, yaw, input, project.map.GetMap(), Util::Time::Seconds{0.016666f}) + camOffset;
+    camera.SetPos(playerPos);
+}
+
+
+// #### Tools General #### \\
 
 void Editor::SelectTool(Tool newTool)
 {
@@ -754,6 +941,41 @@ void Editor::ClearActionHistory()
     actionHistory.clear();
 }
 
+// #### Paint Tool #### \\
+
+Game::Display Editor::GetBlockDisplay()
+{
+    Game::Display display;
+    display.type = gui.displayType;
+    if(gui.displayType == Game::DisplayType::COLOR)
+        display.id = gui.colorId;
+    else if(gui.displayType == Game::DisplayType::TEXTURE)
+        display.id = gui.textureId;
+
+    return display;
+}
+
+bool Editor::IsDisplayValid()
+{
+    auto display = GetBlockDisplay();
+    auto texCount = project.map.tPalette.GetCount();
+    bool isValidTexture = display.type == Game::DisplayType::TEXTURE && display.id < texCount;
+    bool isColor = display.type == Game::DisplayType::COLOR;
+    return isColor || isValidTexture;
+}
+
+void Editor::SetBlockDisplay(Game::Display display)
+{
+    gui.displayType = display.type;
+    if(gui.displayType == Game::DisplayType::TEXTURE)
+        gui.textureId = display.id;
+    else if(gui.displayType == Game::DisplayType::COLOR)
+        gui.colorId = display.id;
+}
+
+
+// #### Selection Cursor #### \\
+
 void Editor::DrawCursor(Math::Transform t)
 {
     // Draw cursor
@@ -805,6 +1027,27 @@ void Editor::SetCursorState(bool enabled, glm::ivec3 pos, Game::BlockType blockT
     cursor.pos = pos;
     cursor.type = blockType;
     cursor.rot = blockRot;
+}
+
+void Editor::MoveSelectionCursor(glm::ivec3 nextPos)
+{
+    if(movingSelection)
+    {
+        glm::ivec3 offset = nextPos - cursor.pos;
+        if(CanMoveSelection(offset))
+            MoveSelection(offset);
+    }
+    else
+        cursor.pos = nextPos;
+}
+
+// #### Select Tool #### \\
+
+void Editor::OnChooseSelectSubTool(SelectSubTool subTool)
+{
+    // Always stop moving selection
+    movingSelection = false;
+    ClearSelection();
 }
 
 void Editor::EnumBlocksInSelection(std::function<void(glm::ivec3, glm::ivec3)> onEach)
@@ -885,17 +1128,7 @@ void Editor::MoveSelection(glm::ivec3 offset)
     DoToolAction(std::make_unique<MoveSelectionAction>(&project.map, selection, offset, &cursor.pos, &selection));
 }
 
-void Editor::MoveSelectionCursor(glm::ivec3 nextPos)
-{
-    if(movingSelection)
-    {
-        glm::ivec3 offset = nextPos - cursor.pos;
-        if(CanMoveSelection(offset))
-            MoveSelection(offset);
-    }
-    else
-        cursor.pos = nextPos;
-}
+// #### Select Tool - Edit #### \\
 
 void Editor::CopySelection()
 {
@@ -1328,179 +1561,7 @@ void Editor::PaintSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-void Editor::OnChooseSelectSubTool(SelectSubTool subTool)
-{
-    // Always stop moving selection
-    movingSelection = false;
-    ClearSelection();
-}
-
-void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
-{
-    auto& io = ImGui::GetIO();
-    if(key.type == SDL_KEYDOWN)
-    {
-        auto sym = key.keysym.sym;
-        if(sym == SDLK_ESCAPE)
-        {
-            if(gui.state != EditorGUI::PopUpState::NONE)
-                gui.ClosePopUp();
-            else
-                Exit();
-        }
-
-        if(gui.state != EditorGUI::PopUpState::NONE)
-            return;
-
-        // Select tool
-        if(tool == Tool::SELECT_BLOCKS)
-        {
-            auto nextPos = cursor.pos;
-            auto scale = cursor.scale;
-
-            auto moveOrScale = [&nextPos, &scale, &sym, this](Sint32 key, glm::ivec3 offset)
-            {
-                if(sym == key)
-                {
-                    if(!this->io_->KeyCtrl)
-                        nextPos += offset;
-                    else if(!movingSelection)
-                        scale += offset;
-                }
-            };
-
-            // X axis
-            moveOrScale(SDLK_KP_4, glm::ivec3{-1, 0, 0});
-            moveOrScale(SDLK_KP_6, glm::ivec3{1, 0, 0});
-
-            // Y axis
-            moveOrScale(SDLK_KP_7, glm::ivec3{0, 1, 0});
-            moveOrScale(SDLK_KP_9, glm::ivec3{0, -1, 0});
-
-            // Z axis
-            moveOrScale(SDLK_KP_8, glm::ivec3{0, 0, -1});
-            moveOrScale(SDLK_KP_2, glm::ivec3{0, 0, 1});
-
-            bool hasMoved = nextPos != cursor.pos;
-            cursor.scale = glm::max(scale, glm::ivec3{1, 1, 1});
-            if(hasMoved)
-                MoveSelectionCursor(nextPos);
-        }
-
-        // Camera mode
-        if(sym == SDLK_f)
-        {
-            auto mode = cameraController.GetMode() == ::App::Client::CameraMode::EDITOR ? ::App::Client::CameraMode::FPS : ::App::Client::CameraMode::EDITOR;
-            SetCameraMode(mode);
-        }
-        
-        // Editor/Player Mode toggle
-        if(sym == SDLK_p)
-        {
-            playerMode = !playerMode;
-            logger->LogDebug("Player mode enabled: " + std::to_string(playerMode));
-            if(playerMode)
-            {
-                //player.transform.position = camera.GetPos();
-                SetCameraMode(::App::Client::CameraMode::FPS);
-            }
-        }
-
-        // File Menu
-        if(sym == SDLK_n && io.KeyCtrl)
-            gui.MenuNewMap();
-
-        if(sym == SDLK_s && io.KeyCtrl)
-            gui.MenuSave();
-
-        if(sym == SDLK_s && io.KeyCtrl && io.KeyShift)
-            gui.MenuSaveAs();
-
-        if(sym == SDLK_o && io.KeyCtrl)
-            gui.MenuOpenMap();
-
-        // Edit
-        if(sym == SDLK_z && io.KeyCtrl && !io.KeyShift)
-            UndoToolAction();
-
-        if(sym == SDLK_z && io.KeyCtrl && io.KeyShift)
-            DoToolAction();
-
-        if(sym == SDLK_g && io.KeyCtrl)
-        {
-            gui.OpenPopUp(EditorGUI::PopUpState::GO_TO_BLOCK);
-        }
-
-        // Editor navigation
-        if(sym >= SDLK_1 &&  sym <= SDLK_4 && io.KeyCtrl)
-            SelectTool(static_cast<Tool>(sym - SDLK_1));
-
-        // Select display/blocktype/axis
-        if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && !io.KeyAlt)
-        {
-            if(tool == Tool::PLACE_BLOCK)
-                gui.blockType = static_cast<Game::BlockType>(sym - SDLK_0);
-            if(tool == Tool::ROTATE_BLOCK)
-                gui.axis = static_cast<Game::RotationAxis>(sym - SDLK_0);
-            if(tool == Tool::PAINT_BLOCK)
-                gui.displayType = static_cast<Game::DisplayType>(sym - SDLK_1);
-        }
-
-        if(sym >= SDLK_1 && sym <= SDLK_3 && !io.KeyCtrl && io.KeyAlt)
-            gui.tabState = static_cast<EditorGUI::TabState>(sym - SDLK_1);
-    }
-}
-
-Game::Display Editor::GetBlockDisplay()
-{
-    Game::Display display;
-    display.type = gui.displayType;
-    if(gui.displayType == Game::DisplayType::COLOR)
-        display.id = gui.colorId;
-    else if(gui.displayType == Game::DisplayType::TEXTURE)
-        display.id = gui.textureId;
-
-    return display;
-}
-
-bool Editor::IsDisplayValid()
-{
-    auto display = GetBlockDisplay();
-    auto texCount = project.map.tPalette.GetCount();
-    bool isValidTexture = display.type == Game::DisplayType::TEXTURE && display.id < texCount;
-    bool isColor = display.type == Game::DisplayType::COLOR;
-    return isColor || isValidTexture;
-}
-
-void Editor::SetBlockDisplay(Game::Display display)
-{
-    gui.displayType = display.type;
-    if(gui.displayType == Game::DisplayType::TEXTURE)
-        gui.textureId = display.id;
-    else if(gui.displayType == Game::DisplayType::COLOR)
-        gui.colorId = display.id;
-}
-
-void Editor::SetUnsaved(bool unsaved)
-{
-    this->unsaved = unsaved;
-    RenameMainWindow();
-}
-
-void Editor::Exit()
-{
-    if(unsaved)
-    {
-        if(playerMode)
-            playerMode = false;
-
-        gui.OpenWarningPopUp(std::bind(&Editor::Exit, this));
-        if(cameraController.GetMode() != ::App::Client::CameraMode::EDITOR)
-            SetCameraMode(::App::Client::CameraMode::EDITOR);
-    }
-    else
-        quit = true;
-}
+// #### Object Tools #### \\
 
 void Editor::Editor::SelectGameObject(glm::ivec3 pos)
 {
@@ -1520,53 +1581,6 @@ void Editor::EditGameObject()
     batch->AddAction(std::move(remove));
     batch->AddAction(std::move(place));
     DoToolAction(std::move(batch));
-}
-
-// #### Test Mode #### \\
-
-void Editor::UpdatePlayerMode()
-{
-    SDL_Event e;
-    ImGuiIO& io = ImGui::GetIO();
-    while(SDL_PollEvent(&e) != 0)
-    {
-        ImGui_ImplSDL2_ProcessEvent(&e);
-
-        switch(e.type)
-        {
-        case SDL_KEYDOWN:
-            if(e.key.keysym.sym == SDLK_ESCAPE)
-                Exit();
-            if(e.key.keysym.sym == SDLK_p)
-            {
-                playerMode = !playerMode;
-                logger->LogDebug("Player mode enabled: " + std::to_string(playerMode));
-                if(playerMode)
-                {
-                    SetCameraMode(::App::Client::CameraMode::FPS);
-                }
-                else
-                    SetCameraMode(::App::Client::CameraMode::EDITOR);
-            }
-            break;
-        case SDL_QUIT:
-            Exit();
-            break;
-        case SDL_WINDOWEVENT:
-            HandleWindowEvent(e.window);
-            break;
-        case SDL_MOUSEMOTION:
-            cameraController.HandleSDLEvent(e);
-            break;
-        }
-    }
-
-    const auto camOffset = glm::vec3{0.0f, Entity::Player::camHeight, 0.0f};
-    auto pos = camera.GetPos() - camOffset;
-    auto yaw = camera.GetRotationDeg().y;
-    auto input = Input::GetPlayerInput();
-    auto playerPos = player.UpdatePosition(pos, yaw, input, project.map.GetMap(), Util::Time::Seconds{0.016666f}) + camOffset;
-    camera.SetPos(playerPos);
 }
 
 // #### Options #### \\

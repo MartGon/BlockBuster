@@ -125,6 +125,10 @@ namespace BlockBuster::Editor
         void DrawCursor(Math::Transform t);
         void DrawSelectCursor(glm::ivec3 pos);
         void SetCursorState(bool enabled, glm::ivec3 pos, Game::BlockType blockType, Game::BlockRot rot);
+        void MoveSelectionCursor(glm::ivec3 nextPos);
+
+        // Select Tool
+        void OnChooseSelectSubTool(SelectSubTool subTool);
         void EnumBlocksInSelection(std::function<void(glm::ivec3 pos, glm::ivec3 offset)> onEach);
         std::vector<BlockData> GetBlocksInSelection(bool globalPos = true);
         void SelectBlocks();
@@ -132,9 +136,8 @@ namespace BlockBuster::Editor
         bool CanMoveSelection(glm::ivec3 offset);
         bool IsBlockInSelection(glm::ivec3 pos);
         void MoveSelection(glm::ivec3 offset);
-        void MoveSelectionCursor(glm::ivec3 nextPos);
 
-        // Select Tool
+        // Select Tool - Edit
         void CopySelection();
         void RemoveSelection();
         void CutSelection();
@@ -145,8 +148,7 @@ namespace BlockBuster::Editor
         void FillSelection();
         void ReplaceSelection();
         void PaintSelection();
-        void OnChooseSelectSubTool(SelectSubTool subTool);
-
+        
         // Object Tool
         void SelectGameObject(glm::ivec3 pos);
         void EditGameObject();
