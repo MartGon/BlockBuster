@@ -13,7 +13,9 @@ namespace Rendering
             FOV,
             ASPECT_RATIO,
             NEAR,
-            FAR
+            FAR,
+
+            MAX
         };
 
         void SetParam(Param param, float value);
@@ -38,7 +40,7 @@ namespace Rendering
 
         void UpdateViewMat();
 
-        float params_[4] = {glm::radians(45.0f), 16.f/9.f, 0.1f, 100.f};
+        float params_[MAX] = {glm::radians(45.0f), 16.f/9.f, 0.1f, 100.f};
         glm::vec3 pos_;
         // Pitch (X Axis), Yaw (Y Axis)
         glm::vec2 rotation_{glm::radians(0.0f), glm::radians(90.0f)};
