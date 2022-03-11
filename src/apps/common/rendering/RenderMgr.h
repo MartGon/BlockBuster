@@ -36,6 +36,7 @@ namespace Rendering
         void AddDrawReq(AlphaType type, DrawReq dr);
         void DrawList(std::vector<DrawReq>* list);
 
+        // TODO: Should do something about this hardcoded value
         Model models[16];
         uint8_t inUse = 0;
         std::vector<DrawReq> opaqueReq;

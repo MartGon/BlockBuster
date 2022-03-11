@@ -69,7 +69,6 @@ namespace Entity
     public:
         WeaponTypeID weaponTypeId = WeaponTypeID::NONE;
         
-        // TODO: Maybe this should be only on Player
         enum class State
         {
             IDLE,
