@@ -38,4 +38,8 @@ namespace Math
 
     // Floats
     bool AreSame(float a, float b, float threshold = 0.005f);
+
+    glm::mat4 GetPerspectiveMat(float fov, float aspectRatio, float near = 0.1f, float far = 100.f);
+    glm::mat4 GetViewMat(glm::vec3 pos, glm::vec2 orientation);
+    glm::vec3 GetFront(glm::vec2 orientation);
 }

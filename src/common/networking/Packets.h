@@ -142,6 +142,9 @@ namespace Networking
                     Entity::PlayerInput playerInput;
                     float camYaw;
                     float camPitch;
+                    float fov; // This is affected player's zoom level
+                    float aspectRatio;
+                    Util::Time::Seconds renderTime;
                 };
 
                 Input() : Packet{OpcodeClient::OPCODE_CLIENT_INPUT}

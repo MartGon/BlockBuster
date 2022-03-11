@@ -8,7 +8,7 @@ void Rendering::Camera::SetParam(Param param, float value)
 {
     params_[param] = value;
 
-    projMat_ = glm::perspective(params_[FOV], params_[ASPECT_RATIO], params_[NEAR], params_[FAR]);
+    projMat_ = Math::GetPerspectiveMat(params_[FOV], params_[ASPECT_RATIO], params_[NEAR], params_[FAR]);
 }
 
 void Rendering::Camera::SetPos(glm::vec3 pos)
@@ -82,16 +82,7 @@ glm::mat4 Rendering::Camera::GetProjViewMat() const
 
 void Rendering::Camera::UpdateViewMat()
 {
-    auto pitch = rotation_.x;
-    auto yaw = rotation_.y;
-
-    glm::vec3 front;
-    front.x = glm::sin(pitch) * glm::cos(yaw);
-    front.y = glm::cos(pitch);
-    front.z = glm::sin(pitch) * -glm::sin(yaw);
-    front = glm::normalize(front);
-
-    auto target = pos_ + front;
-    front_ = front;
+    front_ = Math::GetFront(rotation_);
+    auto target = pos_ + front_;
     viewMat_ = glm::lookAt(pos_, target, UP);
 }

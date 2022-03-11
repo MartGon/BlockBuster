@@ -37,7 +37,11 @@ namespace BlockBuster
 
     struct ShotCommand
     {
-        Networking::Command::User::PlayerShot playerShot;
+        Entity::ID playerId;
+        glm::vec3 origin;
+        glm::vec2 playerOrientation; // In radians
+        float fov; // In radians
+        float aspectRatio;
         Util::Time::Seconds commandTime;
     };
 
@@ -77,7 +81,7 @@ namespace BlockBuster
         // Networking
         void HandleClientInput(ENet::PeerId peerId, InputReq pm);
         void HandleClientsInput();
-        void HandleShootCommand(BlockBuster::ShotCommand shotCmd);
+        void HandleShootCommand(ShotCommand sc);
         void SendWorldUpdate();
 
         // Misc

@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <math/Transform.h>
+#include <math/BBMath.h>
 
 namespace Collisions
 {
@@ -14,6 +15,7 @@ namespace Collisions
 
         glm::vec3 GetDir() const;
     };
+    Collisions::Ray ScreenToWorldRay(const glm::mat4& projViewmat, glm::vec2 screenPos, glm::vec2 screenSize);
 
     struct RayIntersection
     {

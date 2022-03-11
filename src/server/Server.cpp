@@ -235,12 +235,6 @@ void Server::HandleClientsInput()
                     logger.LogWarning("No cmd handled for player " + std::to_string(peerId) + " waiting for buffer to refill ");
                     client.state = BufferingState::REFILLING;
                 }
-
-                // Consume shoot commands
-                if(auto sc = client.shotBuffer.PopFront())
-                {
-                    HandleShootCommand(sc.value());
-                }
             }
         }
         /*
@@ -279,17 +273,22 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
     player.SetTransform(playerTransform);
 
+    auto oldWepState = player.weapon;
     player.weapon = pController.UpdateWeapon(player.weapon, cmd.playerInput, TICK_RATE);
     logger.LogInfo("Player Ammo " + std::to_string(player.weapon.ammoState.magazine));
+
+    if(Entity::HasShot(oldWepState, player.weapon))
+    {
+        ShotCommand sc{player.id, player.GetFPSCamPos(), glm::radians(playerTransform.rotation), cmd.fov, cmd.aspectRatio, cmd.renderTime};
+        HandleShootCommand(sc);
+    }
 
     logger.LogInfo("MovePos " + glm::to_string(playerTransform.position));
 }
 
-void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)
+void Server::HandleShootCommand(ShotCommand sc)
 {
-    auto sc = &shotCmd;
-    auto commandTime = sc->commandTime;
-    //commandTime = Util::Time::Seconds(sc->playerShot.clientTime);
+    auto commandTime = sc.commandTime;
     logger.LogInfo("Command time is " + std::to_string(commandTime.count()));
 
     // Find first snapshot before commandTime
@@ -317,12 +316,19 @@ void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)
         auto ws = Math::GetWeights(t1.count(), t2.count(), commandTime.count());
         auto alpha = ws.x;
 
-        // Perform interpolation and shot
-        auto shot = &sc->playerShot;
-        logger.LogInfo("Handling player shot from " + glm::to_string(shot->origin) + " to " + glm::to_string(shot->dir));
-        Collisions::Ray ray{shot->origin, shot->dir};
+        // Calculate client projViewMat
+        auto projMat = Math::GetPerspectiveMat(sc.fov, sc.aspectRatio);
+        auto viewMat = Math::GetViewMat(sc.origin, sc.playerOrientation);
+        auto projViewMat = projMat * viewMat;
+
+        // Perform shot
+        Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
+        logger.LogInfo("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
         for(auto& [id, client] : clients)
         {
+            if(id == sc.playerId)
+                continue;
+
             auto playerId = client.player.id;
             bool s1HasData = s1.players.find(playerId) != s1.players.end();
             bool s2HasData = s2.players.find(playerId) != s2.players.end();
@@ -331,15 +337,20 @@ void Server::HandleShootCommand(BlockBuster::ShotCommand shotCmd)
             auto pos2 = s2.players.at(playerId).pos;
             auto smoothPos = pos1 * alpha + pos2 * (1 - alpha);
 
-            auto rewoundTrans = client.player.GetRenderTransform();
-            rewoundTrans.position = smoothPos;
-            auto collision = Collisions::RayAABBIntersection(ray, rewoundTrans.GetTransformMat());
+            // TODO: Premature check. If this is true, we can be more precise to check for a headshot. Need to rotate wheels according to lastMoveDir
+            // TODO: Need also to check for a collision with a block, before hitting the player
+            auto moveColBox = Entity::Player::GetMoveCollisionBox();
+            moveColBox.position += smoothPos;
+
+            auto collision = Collisions::RayAABBIntersection(ray, moveColBox.GetTransformMat());
             if(collision.intersects)
             {
                 client.player.onDmg = true;
-                logger.LogInfo("Shot from player " + std::to_string(id) + " has hit player " + std::to_string(client.player.id));
-                logger.LogInfo("Player was at " + glm::to_string(smoothPos));
+                logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has hit player " + std::to_string(id));
             }
+            else
+                logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has NOT hit player " + std::to_string(id));
+             logger.LogInfo("Player was at " + glm::to_string(smoothPos));
         }
     }
 }

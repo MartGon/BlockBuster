@@ -320,42 +320,6 @@ void InGame::UpdateNetworking()
     Predict(input);
 
     SendPlayerInput();
-
-    // Player shots
-    if(click)
-    {
-        client_->logger->LogInfo("Player is clicking");
-        auto ray = Rendering::ScreenToWorldRay(camera_, client_->GetMousePos(), client_->GetWindowSize());
-        client_->logger->LogInfo("Shooting from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.dest));
-
-        for(auto [id, player] : playerTable)
-        {
-            auto pt = player.GetRenderTransform();
-            auto collision = Collisions::RayAABBIntersection(ray, pt.GetTransformMat());
-            if(collision.intersects)
-            {
-                client_->logger->LogInfo("It collides with player " + std::to_string(id));
-                client_->logger->LogInfo("Player was at " + glm::to_string(pt.position));
-                client_->logger->LogInfo("Command time is " + std::to_string(GetRenderTime().count()));
-            }
-        }
-
-        Networking::Command::Header header;
-        header.type = Networking::Command::PLAYER_SHOT;
-
-        Networking::Command::User::PlayerShot playerShot;
-        playerShot.origin = ray.origin;
-        playerShot.dir = ray.dest;
-        playerShot.clientTime = GetRenderTime().count();
-
-        Networking::Command::Payload payload;
-        payload.playerShot = playerShot;
-
-        Networking::Command cmd{header, payload};
-
-        ENet::SentPacket sentPacket{&cmd, sizeof(cmd), 0};
-        //host.SendPacket(serverId, 0, sentPacket);
-    }
 }
 
 void InGame::SendPlayerInput()
@@ -471,7 +435,11 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     auto camRot = camera_.GetRotationDeg();
     auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
     predState.rot.x = camRot.x;
-    Prediction p{InputReq{cmdId, playerInput, camRot.y, camRot.x}, preState, predState, now};
+    auto fov = camera_.GetParam(Rendering::Camera::FOV);
+    auto aspectRatio = camera_.GetParam(Rendering::Camera::ASPECT_RATIO);
+    InputReq inputReq{cmdId, playerInput, camRot.y, camRot.x, fov, aspectRatio, GetRenderTime()};
+
+    Prediction p{inputReq, preState, predState, now};
     predictionHistory_.PushBack(p);
     predOffset = predOffset - serverTickRate;
 }
