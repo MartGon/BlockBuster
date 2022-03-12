@@ -285,6 +285,9 @@ void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
     ps.shootPlayer.SetTargetBool("left-flash", &ps.leftFlashActive);
     ps.shootPlayer.SetTargetBool("right-flash", &ps.rightFlashActive);
 
+    ps.shootPlayer.SetTargetFloat("yPos", &ps.armsPivot.position.y);
+    ps.shootPlayer.SetTargetFloat("pitch", &ps.armsPivot.rotation.x);
+
     // Set rotation sent by server to main player
     if(this->playerId == playerId)
     {
@@ -648,6 +651,8 @@ void InGame::HandleSDLEvents()
         case SDL_KEYDOWN:
             if(e.key.keysym.sym == SDLK_f)
                 drawMode = drawMode == GL_FILL ? GL_LINE : GL_FILL;
+            if(e.key.keysym.sym == SDLK_r)
+                fpsAvatar.PlayReloadAnimation();
             if(e.key.keysym.sym == SDLK_p)
             {
                 using namespace ::App::Client;
@@ -893,6 +898,7 @@ void InGame::DrawGUI()
                 fpsAvatar.PlayShootAnimation();
                 for(auto& [playerId, playerState] : playerModelStateTable)
                 {
+                    playerState.shootPlayer.SetClip(playerAvatar.GetReloadAnim());
                     playerState.shootPlayer.Reset();
                     playerState.shootPlayer.Play();
                     break;

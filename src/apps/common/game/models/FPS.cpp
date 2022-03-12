@@ -35,6 +35,15 @@ void FPS::Update(Util::Time::Seconds deltaTime)
 void FPS::PlayShootAnimation()
 {
     idlePlayer.Pause();
+    shootPlayer.SetClip(&shoot);
+    shootPlayer.Reset();
+    shootPlayer.Play();
+}
+
+void FPS::PlayReloadAnimation()
+{
+    idlePlayer.Pause();
+    shootPlayer.SetClip(&reload);
     shootPlayer.Reset();
     shootPlayer.Play();
 }
@@ -118,6 +127,27 @@ void FPS::InitAnimations()
     shoot.keyFrames = {sF1, sF2, sF3};
     shoot.fps = 60;
 
+        // Reload animation
+    Animation::Sample rs1{
+        {
+            {"yPos", 0.0f},
+            {"pitch", 0.0f},
+        }
+
+    };
+    Animation::KeyFrame rf1{rs1, 0};    
+    Animation::Sample rs2{
+        {
+            {"yPos", -1.5f},
+            {"pitch", -90.0f},
+        }
+    };
+
+    Animation::KeyFrame rf2{rs2, 30};
+    Animation::KeyFrame rf3{rs2, 120};
+    Animation::KeyFrame rf4{rs1, 150};
+    reload.keyFrames = {rf1, rf2, rf3, rf4};
+
     // Set idle clip
     idlePlayer.SetClip(&idle);
     idlePlayer.SetTargetFloat("yPos", &idlePivot.position.y);
@@ -134,4 +164,8 @@ void FPS::InitAnimations()
     shootPlayer.SetOnDoneCallback([this](){
         this->idlePlayer.Resume();
     });
+
+    // Set reload params
+    shootPlayer.SetTargetFloat("yPos", &idlePivot.position.y);
+    shootPlayer.SetTargetFloat("pitch", &idlePivot.rotation.x);
 }

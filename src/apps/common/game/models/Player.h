@@ -21,6 +21,7 @@ namespace Game::Models
         
         Animation::Clip* GetIdleAnim();
         Animation::Clip* GetShootAnim();
+        Animation::Clip* GetReloadAnim();
 
         Math::Transform armsPivot;
         Math::Transform bTransform;
@@ -47,5 +48,6 @@ namespace Game::Models
         // Animations
         Animation::Clip idle;
         Animation::Clip shoot; 
+        Animation::Clip reload;
     };
 }

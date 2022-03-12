@@ -15,6 +15,7 @@ namespace Game::Models
         void Update(Util::Time::Seconds deltaTime);
 
         void PlayShootAnimation();
+        void PlayReloadAnimation();
         
         Math::Transform idlePivot;
     private:
@@ -36,6 +37,7 @@ namespace Game::Models
         // Animations
         Animation::Clip idle;
         Animation::Clip shoot; // TODO: Keep var tracking last shooting arm, alternate arm after each shot. 
+        Animation::Clip reload;
 
         // Anim Players
         Animation::Player idlePlayer;

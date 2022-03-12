@@ -81,6 +81,11 @@ Animation::Clip* Player::GetShootAnim()
     return &shoot;
 }
 
+Animation::Clip* Player::GetReloadAnim()
+{
+    return &reload;
+}
+
 void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     // Get model handlers
@@ -216,4 +221,25 @@ void Player::InitAnimations()
     Animation::KeyFrame sF3{sS3, 20};
     shoot.keyFrames = {sF1, sF2, sF3};
     shoot.fps = 60;
+
+    // Reload animation
+    Animation::Sample rs1{
+        {
+            {"yPos", 0.0f},
+            {"pitch", 0.0f},
+        }
+
+    };
+    Animation::KeyFrame rf1{rs1, 0};    
+    Animation::Sample rs2{
+        {
+            {"yPos", -0.75f},
+            {"pitch", -45.0f},
+        }
+    };
+
+    Animation::KeyFrame rf2{rs2, 30};
+    Animation::KeyFrame rf3{rs2, 120};
+    Animation::KeyFrame rf4{rs1, 150};
+    reload.keyFrames = {rf1, rf2, rf3, rf4};
 }
