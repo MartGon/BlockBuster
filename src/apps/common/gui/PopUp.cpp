@@ -8,6 +8,7 @@ void PopUp::Draw()
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
     bool* showClose = isCloseable ? &isVisible : nullptr;
+    bool wasOpen = isVisible;
     if(ImGui::BeginPopupModal(title.c_str(), showClose, flags))
     {
         if(!isVisible)
@@ -16,6 +17,10 @@ void PopUp::Draw()
         OnDraw();
 
         ImGui::EndPopup();
+    }
+    else if(wasOpen)
+    {
+        OnClose();
     }
 
     if(isVisible)
@@ -41,5 +46,12 @@ void BasicPopUp::OnDraw()
 
 void GenericPopUp::OnDraw()
 {
-    content();
+    if(content)
+        content();
+}
+
+void GenericPopUp::OnClose()
+{
+    if(onClose)
+        onClose();
 }

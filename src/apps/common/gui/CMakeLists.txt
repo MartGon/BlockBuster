@@ -1,5 +1,6 @@
 SET(SOURCES
     PopUp.cpp
+    PopUpMgr.h
     Text.cpp
     TextFactory.cpp
     GUI.cpp

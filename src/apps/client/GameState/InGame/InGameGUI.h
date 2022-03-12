@@ -4,6 +4,9 @@
 
 #include <util/BBTime.h>
 
+#include <gui/PopUp.h>
+#include <gui/PopUpMgr.h>
+
 namespace BlockBuster
 {
     class InGame;
@@ -20,13 +23,32 @@ namespace BlockBuster
 
     private:
 
+        void DebugWindow();
+        void RenderStatsWindow();
+        void NetworkStatsWindow();
+
         InGame* inGame;
 
         // GUI
         GL::VertexArray guiVao;
 
+        // Fonts
         GUI::FontFamily* pixelFont = nullptr;
         GUI::Text text;
+
+        // PopUps
+        enum PopUpState
+        {
+            MENU,
+            OPTIONS,
+
+            MAX
+        };
+        GUI::PopUpMgr<GUI::GenericPopUp, PopUpState::MAX> puMgr;
+
+        // Game options
+        float sensitivity = 1.0f;
+        bool sound = true;
 
         // Metrics
         double maxFPS = 60.0;

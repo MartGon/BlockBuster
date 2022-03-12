@@ -30,7 +30,6 @@ namespace GUI
         {
             isCloseable = closeable;
         }
-
         
         inline void SetTitle(std::string title)
         {
@@ -44,6 +43,7 @@ namespace GUI
 
         void Draw();
         virtual void OnDraw() = 0;
+        virtual void OnClose() = 0;
 
     private:
 
@@ -51,7 +51,7 @@ namespace GUI
         
         bool isVisible = false;
         bool isCloseable = false;
-        std::string title;
+        std::string title = "Title";
     };
 
     class BasicPopUp : public PopUp
@@ -72,7 +72,8 @@ namespace GUI
             this->text = text;
         }
 
-        void OnDraw() override; 
+        void OnDraw() override;
+        void OnClose() override {};
 
     private:
 
@@ -84,11 +85,22 @@ namespace GUI
     class GenericPopUp : public PopUp
     {
     public:
-        GenericPopUp(std::function<void()> content) : content{content} {}
+
+        inline void SetOnDraw(std::function<void()> content)
+        {
+            this->content = content;
+        }
+
+        inline void SetOnClose(std::function<void()> onClose)
+        {
+            this->onClose = onClose;
+        }
 
         void OnDraw() override;
+        void OnClose() override;
 
     private:
         std::function<void()> content;
+        std::function<void()> onClose;
     };
 }

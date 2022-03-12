@@ -90,9 +90,9 @@ int main(int argc, char** args)
     }
     catch (const std::out_of_range& e)
     {
-        App::ServiceLocator::GetLogger()->LogError(std::string("Configuration file is corrupted:") + e.what() + '\n');
-        App::ServiceLocator::GetLogger()->LogError("Either fix or remove it to generate the default one\n");
-        App::ServiceLocator::GetLogger()->Flush();
+        cLogger->LogError(std::string("Configuration file is corrupted:") + e.what() + '\n');
+        cLogger->LogError("Either fix or remove it to generate the default one\n");
+        cLogger->Flush();
         std::exit(-1);
     }
     catch (const std::exception& e)
