@@ -29,18 +29,21 @@
 #include <networking/Snapshot.h>
 #include <networking/Packets.h>
 
-#include <gui/TextFactory.h>
+#include <GameState/InGame/InGameGUI.h>
 
 
 namespace BlockBuster
 {
     class InGame : public GameState
     {
+    friend class InGameGUI;
+
     public:
         InGame(Client* client, std::string serverDomain, uint16_t serverPort);
         
         void Start() override;
         void Update() override;
+        void Shutdown() override;
 
     private:
 
@@ -116,19 +119,6 @@ namespace BlockBuster
         int drawMode = GL_FILL;
         ::App::Client::CameraController camController_;
 
-        // Metrics
-        Util::Time::SteadyPoint preSimulationTime;
-        Util::Time::Seconds simulationLag{0.0};
-        Util::Time::Seconds deltaTime{0.0};
-        Util::Time::Seconds minFrameInterval{0.0};
-        double maxFPS = 60.0;
-
-        // GUI
-        GL::VertexArray guiVao;
-
-        GUI::FontFamily* pixelFont = nullptr;
-        GUI::Text text;
-
         // Player transforms
         struct PlayerModelState
         {
@@ -143,14 +133,11 @@ namespace BlockBuster
         std::unordered_map<Entity::ID, PlayerModelState> playerModelStateTable;
         float PLAYER_SPEED = 5.f;
 
-        //TODO: DEBUG. Remove on final version
-        // Player Model
-        uint32_t modelId = 0;
-        float sliderPrecision = 2.0f;
-        glm::vec3 modelOffset{0.0f};
-        glm::vec3 modelScale{1.0f};
-        glm::vec3 modelRot{0.0f};
-        float facingAngle = 0;
+        // Simulation
+        Util::Time::SteadyPoint preSimulationTime;
+        Util::Time::Seconds simulationLag{0.0};
+        Util::Time::Seconds deltaTime{0.0};
+        Util::Time::Seconds minFrameInterval{0.0};
 
         // Networking
         std::string serverDomain;
@@ -184,5 +171,8 @@ namespace BlockBuster
         const Util::Time::Seconds EXTRAPOLATION_DURATION{0.25};
         Networking::Snapshot extrapolatedSnapshot;
         Util::Time::Seconds offsetTime{0};
+
+        // GUI
+        InGameGUI inGameGui{*this};
     };
 }

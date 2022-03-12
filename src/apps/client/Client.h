@@ -34,6 +34,8 @@ namespace BlockBuster
     friend class GameState;
     friend class MainMenu;
     friend class InGame;
+    friend class InGameGUI;
+
     public:
         Client(::App::Configuration config);
 

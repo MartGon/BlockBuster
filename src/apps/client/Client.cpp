@@ -12,7 +12,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include <GameState/InGame.h>
+#include <GameState/InGame/InGame.h>
 #include <GameState/MainMenu/MainMenu.h>
 
 using namespace BlockBuster;

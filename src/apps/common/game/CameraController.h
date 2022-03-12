@@ -37,6 +37,7 @@ namespace App::Client
 
         float moveSpeed = 0.25f;
         float rotSpeed = glm::radians(1.0f);
+        float rotMod = 1.0f;
         
     private:
 

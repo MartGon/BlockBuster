@@ -104,7 +104,7 @@ void CameraController::UpdateFPSCameraRotation(const SDL_MouseMotionEvent& motio
     auto yaw = cameraRot.y;
 
     pitch = glm::max(glm::min(pitch + motion.yrel * rotSpeed  / 10.0f, glm::pi<float>() - rotSpeed), rotSpeed);
-    yaw = yaw - motion.xrel * rotSpeed / 10.0f;
+    yaw = yaw - motion.xrel * rotSpeed / 10.0f * rotMod;
     camera_->SetRotation(pitch, yaw);
 }
 

@@ -1,4 +1,4 @@
-#include <GameState/InGame.h>
+#include <GameState/InGame/InGame.h>
 
 #include <Client.h>
 
@@ -69,9 +69,6 @@ void InGame::Start()
 
     // Init font
     std::filesystem::path fontPath = std::filesystem::path{RESOURCES_DIR} / "fonts/Pixel.ttf";
-    pixelFont = GUI::TextFactory::Get()->LoadFont(fontPath);
-    text = pixelFont->CreateText();
-    text.SetText("See ya");
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
@@ -94,6 +91,8 @@ void InGame::Start()
     camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, client_->config.window.fov);
     camController_ = ::App::Client::CameraController{&camera_, {client_->window_, client_->io_}, ::App::Client::CameraMode::EDITOR};
+    auto sensitivity = std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
+    camController_.rotMod = sensitivity;
     //camController_.SetMode(::App::Client::CameraMode::FPS);
 
     // Map
@@ -101,6 +100,9 @@ void InGame::Start()
     auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
     //LoadMap("./resources/maps/Alpha2.bbm");
     LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
+
+    // UI
+    inGameGui.Start();
 
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
@@ -239,6 +241,11 @@ void InGame::Update()
         client_->logger->LogInfo("Update: Delta time " + std::to_string(deltaTime.count()));
         client_->logger->LogInfo("Update: Simulation lag " + std::to_string(simulationLag.count()));
     }
+}
+
+void InGame::Shutdown()
+{
+    client_->config.options["Sensitivity"] = std::to_string(camController_.rotMod);
 }
 
 void InGame::DoUpdate(Util::Time::Seconds deltaTime)
@@ -692,7 +699,7 @@ void InGame::Render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     DrawScene();
-    DrawGUI();
+    inGameGui.DrawGUI(textShader);
 
     // Swap buffers
     SDL_GL_SwapWindow(client_->window_);
@@ -754,7 +761,6 @@ void InGame::DrawScene()
         auto playerT = player.GetTransform();
         playerAvatar.SetArmsPivot(playerState.armsPivot);
         playerAvatar.SetFlashesActive(playerState.leftFlashActive);
-        playerAvatar.SetFacing(facingAngle);
         auto cPitch = std::min(std::max(playerT.rotation.x, 60.0f), 120.0f);
         auto pitch = -(cPitch- 90.0f);
         playerAvatar.RotateArms(pitch);
@@ -804,120 +810,6 @@ void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)
     auto mat = viewProjMat * box.GetTransformMat();
     shader.SetUniformMat4("transform", mat);
     cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
-}
-
-void InGame::DrawGUI()
-{
-    // Clear GUI buffer
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(client_->window_);
-    ImGui::NewFrame();
-
-    bool isOpen = true;
-    if(connected)
-    {
-        if(ImGui::Begin("Network Stats"))
-        {
-            auto info = host.GetPeerInfo(serverId);
-
-            ImGui::Text("Config");
-            ImGui::Separator();
-            ImGui::Text("Server tick rate: %.2f ms", serverTickRate.count());
-
-            ImGui::Text("Latency");
-            ImGui::Separator();
-            ImGui::Text("Ping:");ImGui::SameLine();ImGui::Text("%i ms", info.roundTripTimeMs);
-            ImGui::Text("Ping variance: %i", info.roundTripTimeVariance);
-
-            ImGui::Text("Packets");
-            ImGui::Separator();
-            ImGui::Text("Packets sent: %i", info.packetsSent);
-            ImGui::Text("Packets ack: %i", info.packetsAck);
-            ImGui::Text("Packets lost: %i", info.packetsLost);
-            ImGui::Text("Packet loss: %i", info.packetLoss);
-
-            ImGui::Text("Bandwidth");
-            ImGui::Separator();
-            ImGui::Text("In: %i B/s", info.incomingBandwidth);
-            ImGui::Text("Out: %i B/s", info.outgoingBandwidth);
-        }
-        ImGui::End();
-
-        if(ImGui::Begin("Rendering Stats"))
-        {
-            ImGui::Text("Latency");
-            ImGui::Separator();
-            uint64_t frameIntervalMs = deltaTime.count() * 1e3;
-            ImGui::Text("Frame interval (delta time):");ImGui::SameLine();ImGui::Text("%lu ms", frameIntervalMs);
-            uint64_t fps = 1.0 / deltaTime.count();
-            ImGui::Text("FPS: %lu", fps);
-
-            ImGui::InputDouble("Max FPS", &maxFPS, 1.0, 5.0, "%.0f");
-            minFrameInterval = Util::Time::Seconds(1.0 / maxFPS);
-            ImGui::Text("Min Frame interval:");ImGui::SameLine();ImGui::Text("%f ms", minFrameInterval.count());
-        }
-        ImGui::End();
-
-        if(ImGui::Begin("Transform"))
-        {
-            auto t = playerTable[playerId].GetTransform();
-            GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
-            modelOffset = t.position;
-            modelScale =  t.scale;
-            modelRot =  t.rotation;
-
-            /*
-            if(ImGui::InputInt("ID", (int*)&playerId))
-            {
-                if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
-                {
-                    auto t = playerTable[playerId].GetTransform();
-                    GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
-                    modelOffset = t.position;
-                    modelScale =  t.scale;
-                    modelRot =  t.rotation;
-                }
-            }*/
-            ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
-            ImGui::InputFloat("Precision", &sliderPrecision);
-            ImGui::InputFloat("Facing Angle", &facingAngle);
-            if(ImGui::Button("Apply"))
-            {
-                // Edit player model
-                if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
-                {
-                    playerAvatar.aTransform.position = modelOffset;
-                    playerAvatar.aTransform.scale = modelScale;
-                    playerAvatar.aTransform.rotation = modelRot;
-                }
-            }
-            if(ImGui::Button("Shoot"))
-            {
-                fpsAvatar.PlayShootAnimation();
-                for(auto& [playerId, playerState] : playerModelStateTable)
-                {
-                    playerState.shootPlayer.SetClip(playerAvatar.GetReloadAnim());
-                    playerState.shootPlayer.Reset();
-                    playerState.shootPlayer.Play();
-                    break;
-                }
-            }
-        }
-        ImGui::End();
-    }
-    
-    // Draw GUI
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), guiVao.GetHandle());
-    auto windowSize = client_->GetWindowSize();
-    int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
-    ImGui_ImplOpenGL3_RestoreState(scissor_box);
-
-    text.SetColor(glm::vec4{0.0f, 1.0f, 0.0f, 1.0f});
-    text.SetScale(2.0f);
-    text.Draw(textShader, glm::vec2{0.0f, 0.0f}, glm::vec2{(float)windowSize.x, (float)windowSize.y});
 }
 
 // TODO: Redundancy with Project::Load

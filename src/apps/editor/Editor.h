@@ -155,7 +155,6 @@ namespace BlockBuster::Editor
 
         // Options
         void ApplyVideoOptions(::App::Configuration::WindowConfig& config);
-        std::string GetConfigOption(const std::string& key, std::string defaultValue = "");
 
         // Project
         Project project;

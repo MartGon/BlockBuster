@@ -154,3 +154,16 @@ void AppI::RenameMainWindow(const std::string& name)
 {
     SDL_SetWindowTitle(window_, name.c_str());
 }
+
+std::string AppI::GetConfigOption(const std::string& key, std::string defaultValue)
+{
+    std::string ret = defaultValue;
+    auto it = config.options.find(key);
+
+    if(it != config.options.end())
+    {
+        ret = it->second;
+    }
+
+    return ret;
+}

@@ -35,6 +35,8 @@ namespace App
         void SetWindowSize(glm::ivec2 size);
         glm::ivec2 GetMousePos();
         void RenameMainWindow(const std::string& name);
+        
+        std::string GetConfigOption(const std::string& key, std::string defaultValue);
 
         ImGuiIO* io_;
         SDL_Window* window_;

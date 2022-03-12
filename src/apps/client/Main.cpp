@@ -82,6 +82,26 @@ int main(int argc, char** args)
         cLogger->LogError(msg);
     }
 
+    // Load config
+    std::filesystem::path configPath("./client.ini");
+    try
+    {
+        config = App::LoadConfig(configPath);
+    }
+    catch (const std::out_of_range& e)
+    {
+        App::ServiceLocator::GetLogger()->LogError(std::string("Configuration file is corrupted:") + e.what() + '\n');
+        App::ServiceLocator::GetLogger()->LogError("Either fix or remove it to generate the default one\n");
+        App::ServiceLocator::GetLogger()->Flush();
+        std::exit(-1);
+    }
+    catch (const std::exception& e)
+    {
+        App::ServiceLocator::GetLogger()->LogError(std::string(e.what()) + '\n');
+        App::ServiceLocator::GetLogger()->LogInfo("Loading default config\n");
+    }
+
+    // Set logger
     cLogger->SetVerbosity(config.log.verbosity);
     App::ServiceLocator::SetLogger(std::move(cLogger));
     
@@ -94,6 +114,8 @@ int main(int argc, char** args)
         client.Update();
     }
     client.Shutdown();
+
+    App::WriteConfig(client.config, configPath);
 
     return 0;
 }

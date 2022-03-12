@@ -1616,17 +1616,3 @@ void Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
 
     SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }
-
-std::string Editor::GetConfigOption(const std::string& key, std::string defaultValue)
-{
-    std::string ret = defaultValue;
-    auto it = config.options.find(key);
-
-    if(it != config.options.end())
-    {
-        ret = it->second;
-    }
-
-    return ret;
-}
-
