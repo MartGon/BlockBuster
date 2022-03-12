@@ -1,12 +1,19 @@
 #include <entity/Player.h>
 #include <math/Interpolation.h>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 using namespace Entity;
 
 // Player Hit boxes
-const Math::Transform Player::sHitBox::head{glm::vec3{0.0f, 1.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.5f, 1.0f, 1.5f}};
-const Math::Transform Player::sHitBox::body{glm::vec3{0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
-const Math::Transform Player::sHitBox::wheels{glm::vec3{0.0f, -1.75f, 0.0f}, glm::vec3{0.0f}, glm::vec3{3.5f,  1.25f, 2.0f}};
+const Player::HitBox Player::sHitbox = {
+    Math::Transform{glm::vec3{0.0f, 1.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.5f, 1.0f, 1.5f}}, // HEAD
+    Math::Transform{glm::vec3{0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}}, // BODY
+    Math::Transform{glm::vec3{0.0f, -1.75f, 0.0f}, glm::vec3{0.0f}, glm::vec3{3.5f,  1.25f, 2.0f}} // WHEELS
+};
+
+// Dmg mod
+const float Player::dmgMod[Player::HitBoxType::MAX] = {1.25f, 1.0f, 0.75f};
 
 // Player move collision boxes
 const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f, 4.5f, 2.0f}};
@@ -40,7 +47,6 @@ PlayerState::PlayerState()
 {
 
 }
-
 
 bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState& b)
 {
@@ -108,6 +114,16 @@ Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerSta
     return res;
 }
 
+glm::vec3 Entity::GetLastMoveDir(Entity::PlayerState s1, Entity::PlayerState s2)
+{
+    auto moveDir = s2.pos - s1.pos;
+
+    auto len = glm::length(moveDir);
+    moveDir = len > 0.005f ? moveDir / len : glm::vec3{0.0f};
+
+    return moveDir;
+}
+
 // Player
 
 Math::Transform Player::GetMoveCollisionBox()
@@ -120,18 +136,31 @@ Math::Transform Player::GetMoveCollisionBox()
 Player::HitBox Player::GetHitBox()
 {
     HitBox hitbox;
-
-    hitbox.body = Player::sHitBox::wheels;
-    hitbox.body.scale = hitbox.body.scale * scale;
-
-    hitbox.wheels = Player::sHitBox::wheels;
-    hitbox.wheels.scale = hitbox.wheels.scale * scale;
-
-    hitbox.head = Player::sHitBox::head;
-    hitbox.head.scale = hitbox.head.scale * scale;
+    for(uint8_t i = HitBoxType::HEAD; i < HitBoxType::MAX; i++)
+    {
+        hitbox[i] = Player::sHitbox[i];
+        hitbox[i].position = hitbox[i].position * scale;
+        hitbox[i].scale = hitbox[i].scale * scale;
+    }
 
     return hitbox;
 }
+
+float Player::GetDmgMod(HitBoxType type)
+{
+    return dmgMod[type];
+}
+
+float Player::GetWheelsRotation(glm::vec3 moveDir, float defaultAngle)
+{
+    auto yaw = defaultAngle;
+    if(glm::length(moveDir) > 0.005f)
+        yaw = glm::degrees(glm::atan(-moveDir.z, moveDir.x));
+
+    return yaw;
+}
+
+// Serialization
 
 Entity::PlayerState Player::ExtractState() const
 {
@@ -141,6 +170,8 @@ Entity::PlayerState Player::ExtractState() const
     s.rot = glm::vec2{transform.rotation};
     s.weaponState = weapon;
 
+    s.onDmg = this->onDmg;
+
     return s;
 }
 
@@ -149,6 +180,8 @@ void Player::ApplyState(Entity::PlayerState s)
     this->transform.position = s.pos;
     this->transform.rotation = glm::vec3{s.rot, 0.0f};
     this->weapon = s.weaponState;
+    
+    this->onDmg = s.onDmg;
 }
 
 

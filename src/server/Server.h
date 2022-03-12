@@ -84,8 +84,16 @@ namespace BlockBuster
         void HandleShootCommand(ShotCommand sc);
         void SendWorldUpdate();
 
-        // Misc
+        // Simulation
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
+
+        // Spawns 
+        // TODO: Should move these to their class/module
+        static const float MIN_SPAWN_ENEMY_DISTANCE;
+        glm::ivec3 FindSpawnPoint(Entity::Player player);
+        glm::vec3 ToSpawnPos(glm::ivec3 spawnPoint);
+        std::vector<Entity::Player> GetPlayers() const;
+        bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const;
 
         // Server params
         std::string address;
@@ -94,14 +102,6 @@ namespace BlockBuster
         uint8_t maxPlayers;
         uint8_t startingPlayers;
         std::string mode;
-
-        // Match 
-        // TODO: Should move these to their class/module
-        static const float MIN_SPAWN_ENEMY_DISTANCE;
-        glm::ivec3 FindSpawnPoint(Entity::Player player);
-        glm::vec3 ToSpawnPos(glm::ivec3 spawnPoint);
-        std::vector<Entity::Player> GetPlayers() const;
-        bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const;
 
         // Networking
         std::optional<ENet::Host> host;
@@ -116,9 +116,12 @@ namespace BlockBuster
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
 
+        // Spawns
+
         // World
         Game::Map::Map map;
 
+        // Logs        
         Log::ComposedLogger logger;
     };
 }

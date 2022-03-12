@@ -111,3 +111,39 @@ Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::R
 
     return intersect;
 }
+
+Game::RayPlayerCollision Game::RayCollidesWithPlayer(Collisions::Ray ray, glm::vec3 playerPos, float playerYaw, glm::vec3 lastMoveDir)
+{
+    using HitBoxType = Entity::Player::HitBoxType;
+    
+    Game::RayPlayerCollision ret;
+    for(uint8_t i = HitBoxType::HEAD; i < HitBoxType::MAX; i++)
+    {
+        auto rot = i == HitBoxType::WHEELS ? Entity::Player::GetWheelsRotation(lastMoveDir, playerYaw + 90.0f) : playerYaw;
+        auto hbt = static_cast<HitBoxType>(i);
+        auto rpc = RayCollidesWithPlayerHitbox(ray, playerPos, rot, hbt);
+        if(!ret.collides)
+            ret = rpc;
+        else if(rpc.collides)
+        {
+            auto newLen = rpc.intersection.GetRayLength(ray);
+            auto oldLen = ret.intersection.GetRayLength(ray);
+            if(newLen < oldLen)
+                ret = rpc;
+        }
+    }
+
+    return ret;
+}
+
+Game::RayPlayerCollision Game::RayCollidesWithPlayerHitbox(Collisions::Ray ray, glm::vec3 playerPos, float playerYaw, Entity::Player::HitBoxType type)
+{
+    auto playerHitbox = Entity::Player::GetHitBox();
+    auto t = playerHitbox[type];
+    t.position += playerPos;
+    t.rotation.y = playerYaw;
+
+    auto collision = Collisions::RayAABBIntersection(ray, t.GetTransformMat());
+    Game::RayPlayerCollision rpc{collision.intersects, type, collision};
+    return rpc;
+}

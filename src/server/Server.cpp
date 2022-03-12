@@ -1,6 +1,8 @@
 
 #include <Server.h>
 
+#include <entity/Game.h>
+
 #include <util/Container.h>
 
 using namespace BlockBuster;
@@ -321,9 +323,17 @@ void Server::HandleShootCommand(ShotCommand sc)
         auto viewMat = Math::GetViewMat(sc.origin, sc.playerOrientation);
         auto projViewMat = projMat * viewMat;
 
-        // Perform shot
+        // Get Ray
         Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
         logger.LogInfo("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
+
+        // Check collision with block
+        auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
+        auto bColDist = std::numeric_limits<float>::max();
+        if(bCol.intersection.intersects)
+            bColDist = bCol.intersection.GetRayLength(ray);
+
+        // Check collision with players. This allows collaterals
         for(auto& [id, client] : clients)
         {
             if(id == sc.playerId)
@@ -333,24 +343,30 @@ void Server::HandleShootCommand(ShotCommand sc)
             bool s1HasData = s1.players.find(playerId) != s1.players.end();
             bool s2HasData = s2.players.find(playerId) != s2.players.end();
 
-            auto pos1 = s1.players.at(playerId).pos;
-            auto pos2 = s2.players.at(playerId).pos;
-            auto smoothPos = pos1 * alpha + pos2 * (1 - alpha);
+            if(!s1HasData || s2HasData)
+                continue;
 
-            // TODO: Premature check. If this is true, we can be more precise to check for a headshot. Need to rotate wheels according to lastMoveDir
-            // TODO: Need also to check for a collision with a block, before hitting the player
-            auto moveColBox = Entity::Player::GetMoveCollisionBox();
-            moveColBox.position += smoothPos;
+            // Calculate player pos that client views
+            auto ps1 = s1.players.at(playerId);
+            auto ps2 = s2.players.at(playerId);
+            auto smoothState = Entity::Interpolate(ps1, ps2, alpha);
 
-            auto collision = Collisions::RayAABBIntersection(ray, moveColBox.GetTransformMat());
-            if(collision.intersects)
+            auto lastMoveDir = Entity::GetLastMoveDir(ps1, ps2);
+            auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.pos, smoothState.rot.y, lastMoveDir);
+            if(rpc.collides)
             {
-                client.player.onDmg = true;
-                logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has hit player " + std::to_string(id));
+                auto colDist = rpc.intersection.GetRayLength(ray);
+                if(colDist < bColDist)
+                {
+                    logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has hit player " + std::to_string(id));
+                    client.player.onDmg = true;
+                }
+                else
+                    logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has hit block " + glm::to_string(bCol.pos));
             }
             else
                 logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has NOT hit player " + std::to_string(id));
-             logger.LogInfo("Player was at " + glm::to_string(smoothPos));
+            logger.LogInfo("Player was at " + glm::to_string(smoothState.pos));
         }
     }
 }

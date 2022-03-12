@@ -74,6 +74,7 @@ namespace BlockBuster
 
         // Rendering
         void DrawScene();
+        void DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box);
         void DrawGUI();
         void Render();
 

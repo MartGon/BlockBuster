@@ -29,6 +29,13 @@ glm::vec3 Ray::GetDir() const
 
 // RayIntersections
 
+float Collisions::RayIntersection::GetRayLength(Ray ray) const
+{
+    auto vec = colPoint - ray.origin;
+    
+    return glm::length(vec);
+}
+
 RayIntersection Collisions::RayAABBIntersection(Ray modelRay, glm::vec3 boxSize)
 {
     auto rayOrigin = modelRay.origin;
@@ -47,14 +54,18 @@ RayIntersection Collisions::RayAABBIntersection(Ray modelRay, glm::vec3 boxSize)
     auto step2 = glm::step(glm::vec3{t1.z, t1.x, t1.y}, t1);
     auto normal = -glm::sign(rayDir) * step1 * step2;
 
-    return RayIntersection{intersection, glm::vec2{tN, tF}, normal};
+    auto colPoint = tN * rayDir + rayOrigin;
+
+    return RayIntersection{intersection, glm::vec2{tN, tF}, normal, colPoint};
 }
 
 RayIntersection Collisions::RayAABBIntersection(Ray worldRay, glm::mat4 modelMat)
 {
     auto modelRay = ToModelSpace(worldRay, modelMat);
     auto intersection = RayAABBIntersection(modelRay, glm::vec3{0.5f});
-    intersection.normal = ToWorldSpace(intersection.normal, modelMat);
+    intersection.normal = NormalToWorldSpace(intersection.normal, modelMat);
+    intersection.colPoint = ToWorldSpace(intersection.colPoint, modelMat);
+
     return intersection;
 }
 
@@ -103,7 +114,7 @@ RayIntersection Collisions::RaySlopeIntersection(Ray worldRay, glm::mat4 modelMa
 {
     auto modelRay = ToModelSpace(worldRay, modelMat);
     auto intersection = RaySlopeIntersection(modelRay, glm::vec3{0.5f});
-    intersection.normal = ToWorldSpace(intersection.normal, modelMat);
+    intersection.normal = NormalToWorldSpace(intersection.normal, modelMat);
     return intersection;
 }
 
@@ -117,7 +128,13 @@ Ray Collisions::ToModelSpace(Ray ray, glm::mat4 modelMat)
     return Ray{modelRayOrigin, modelRayDest};
 }
 
-glm::vec3 Collisions::ToWorldSpace(glm::vec3 normal, glm::mat4 modelMat)
+glm::vec3 Collisions::ToWorldSpace(glm::vec3 vec, glm::mat4 modelMat)
+{
+    vec = glm::vec3{modelMat * glm::vec4{vec, 1.0f}};
+    return vec;
+}
+
+glm::vec3 Collisions::NormalToWorldSpace(glm::vec3 normal, glm::mat4 modelMat)
 {
     glm::mat4 rotMat = glm::mat4{glm::mat3{modelMat}};
     normal = glm::normalize(glm::vec3{rotMat * glm::vec4{normal, 1.0f}});

@@ -15,6 +15,8 @@
 #include <networking/Networking.h>
 #include <game/Input.h>
 
+#include <entity/Game.h>
+
 #include <iostream>
 #include <algorithm>
 
@@ -623,12 +625,9 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
 
 glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const
 {
-    auto pt1 = prevPlayerTable.at(playerId).GetTransform();
-    auto pt2 = playerTable.at(playerId).GetTransform();
-    auto moveDir = pt1.position - pt2.position;
-
-    auto len = glm::length(moveDir);
-    moveDir = len > 0.005f ? moveDir / len : glm::vec3{0.0f};
+    auto ps1 = prevPlayerTable.at(playerId).ExtractState();
+    auto ps2 = playerTable.at(playerId).ExtractState();
+    auto moveDir = Entity::GetLastMoveDir(ps1, ps2);
 
     return moveDir;
 }
@@ -659,6 +658,21 @@ void InGame::HandleSDLEvents()
             // TODO: Remove before release
             if(e.key.keysym.sym == SDLK_ESCAPE)
                 client_->quit = true;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            {
+                for(auto [playerId, player] : playerTable)
+                {
+                    auto mousePos = client_->GetMousePos();
+                    auto winSize = client_->GetWindowSize();
+                    auto ray = Rendering::ScreenToWorldRay(camera_, mousePos, glm::vec2{winSize.x, winSize.y});
+                    auto playerTransform = playerTable[playerId].GetRenderTransform();
+                    auto lastMoveDir = GetLastMoveDir(playerId);
+                    auto collision = Game::RayCollidesWithPlayer(ray, playerTransform.position, playerTransform.rotation.y, lastMoveDir);
+                    if(collision.collides)
+                        std::cout << "Collision with " << std::to_string(collision.hitboxType) << "\n";
+                }
+            }
             break;
         }
         
@@ -739,29 +753,52 @@ void InGame::DrawScene()
         auto cPitch = std::min(std::max(playerT.rotation.x, 60.0f), 120.0f);
         auto pitch = -(cPitch- 90.0f);
         playerAvatar.RotateArms(pitch);
-        playerAvatar.SteerWheels(GetLastMoveDir(playerId), playerT.rotation.y);
+        auto lmd = GetLastMoveDir(playerId);
+        playerAvatar.SteerWheels(lmd, playerT.rotation.y);
 
         // Draw model
         playerT = player.GetRenderTransform();
         auto t = playerT.GetTransformMat();
         auto transform = view * t;
-        shader.SetUniformInt("dmg", player.onDmg);
+        shader.SetUniformInt("dmg", player.onDmg); // TODO: Comment this or change color when player is dmg
         playerAvatar.Draw(transform);
 
-        // Draw player hitbox
-        // TODO: Comment this block. Convert into a debugging function
+        // Draw player move collision box
         Math::Transform boxTf = pController.GetECB();
-        auto mat = view * boxTf.GetTransformMat();
-        shader.SetUniformMat4("transform", mat);
-        cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
+        //DrawCollisionBox(view, boxTf);
+
+        // Draw player hitbox
+        auto playerHitbox = Entity::Player::GetHitBox();
+        using HitBoxType = Entity::Player::HitBoxType;
+        for(uint8_t i = HitBoxType::HEAD; i < HitBoxType::WHEELS; i++)
+        {
+            auto t = playerHitbox[i];
+            t.position += playerT.position;
+            t.rotation.y = playerT.rotation.y;
+
+            DrawCollisionBox(view, t);
+        }
+        auto wt = playerHitbox[HitBoxType::WHEELS];
+        wt.position += playerT.position;
+        wt.rotation.y = Entity::Player::GetWheelsRotation(lmd, playerT.rotation.y + 90.0f);
+
+        DrawCollisionBox(view, wt);
     }
     prevPlayerTable = playerTable;
 
-    // Draw fpsModel, always rendered
-    auto proj = camera_.GetProjMat();
-    fpsAvatar.Draw(proj);
-
     renderMgr.Render(camera_);
+
+    // Draw fpsModel, always rendered last
+    auto proj = camera_.GetProjMat();
+    shader.SetUniformInt("dmg", 0);
+    fpsAvatar.Draw(proj);
+}
+
+void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)
+{
+    auto mat = viewProjMat * box.GetTransformMat();
+    shader.SetUniformMat4("transform", mat);
+    cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
 }
 
 void InGame::DrawGUI()

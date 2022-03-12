@@ -50,22 +50,45 @@ namespace Entity
     Entity::PlayerState operator*(const Entity::PlayerState& a, float b);
 
     PlayerState Interpolate(PlayerState a, PlayerState b, float alpha);
+    glm::vec3 GetLastMoveDir(PlayerState s1, PlayerState s2);
 
     using ID = uint8_t;
     class Player
     {
     public:
 
+        enum HitBoxType : uint8_t
+        {
+            HEAD,
+            BODY,
+            WHEELS,
+
+            MAX
+        };
         struct HitBox
         {
-            Math::Transform head;
-            Math::Transform body;
-            Math::Transform wheels; // This one should rotate with the wheels, so it's affected by moveDir
+            Math::Transform hitboxes[HitBoxType::MAX];
+
+            // NOTE: This may be needed to suppress Valgrind error
+            Math::Transform padding[8 - HitBoxType::MAX] = {Math::Transform{}, Math::Transform{}, 
+                Math::Transform{}, Math::Transform{}, Math::Transform{}};
+
+            inline Math::Transform& operator[](uint8_t index)
+            {
+                return hitboxes[index];
+            }
+
+            inline Math::Transform operator[](uint8_t index) const
+            {
+                return hitboxes[index];
+            }
         };
 
         // Statics
         static Math::Transform GetMoveCollisionBox();
         static HitBox GetHitBox();
+        static float GetDmgMod(HitBoxType type);
+        static float GetWheelsRotation(glm::vec3 lastMoveDir, float defaultAngle = 0.0f);
 
         static float scale;
         static const float camHeight;
@@ -73,9 +96,11 @@ namespace Entity
         static const float MAX_SHIELD;
         static const float MAX_HEALTH;
 
+        // Serialization
         PlayerState ExtractState() const;
         void ApplyState(PlayerState state);
 
+        // Transforms
         // Returns transform. Rotation includes arms pitch. This shouldn't be used for rendering/collision detec.
         Math::Transform GetTransform() const;
         // Ignores pitch, and adapts rotation to player model
@@ -85,6 +110,7 @@ namespace Entity
 
         glm::vec3 GetFPSCamPos() const;
 
+        // Data
         ID id = 0;
         
         // State
@@ -100,12 +126,8 @@ namespace Entity
     private:
 
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain
-        struct sHitBox
-        {
-            static const Math::Transform head;
-            static const Math::Transform body;
-            static const Math::Transform wheels;
-        };
+        static const HitBox sHitbox;
+        static const float dmgMod[HitBoxType::MAX];
 
         Math::Transform transform;
     };

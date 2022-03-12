@@ -1,7 +1,8 @@
 #include <models/Player.h>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include <rendering/Primitive.h>
+
+#include <entity/Player.h>
 
 #include <debug/Debug.h>
 
@@ -46,11 +47,7 @@ void Player::SteerWheels(glm::vec3 moveDir, float facingAngle)
     auto rotate = glm::rotate(glm::mat4{1.0f}, glm::radians(-facingAngle), glm::vec3{0.0f, 1.0f, 0.0f});
     glm::vec3 offset = rotate * glm::vec4{moveDir, 1.0f};
 
-    auto yaw = 0.0f;
-    if(glm::length(moveDir) > 0.005f)
-        yaw = glm::degrees(glm::atan(-offset.z, offset.x));
-
-    wTransform.rotation.y = yaw;
+    wTransform.rotation.y = Entity::Player::GetWheelsRotation(offset);
 }
 
 void Player::SetArmsPivot(Math::Transform armsPivot)

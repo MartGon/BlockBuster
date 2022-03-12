@@ -22,6 +22,9 @@ namespace Collisions
         bool intersects = false;
         glm::vec2 ts;
         glm::vec3 normal;
+        glm::vec3 colPoint;
+
+        float GetRayLength(Ray ray) const;
     };
 
     RayIntersection RayAABBIntersection(Ray modelRay, glm::vec3 boxSize);
@@ -29,7 +32,8 @@ namespace Collisions
     RayIntersection RaySlopeIntersection(Ray modelRay, glm::vec3 boxSize);
     RayIntersection RaySlopeIntersection(Ray worldRay, glm::mat4 modelMat);
     Ray ToModelSpace(Ray ray, glm::mat4 modelMat);
-    glm::vec3 ToWorldSpace(glm::vec3 normal, glm::mat4 modelMat);
+    glm::vec3 ToWorldSpace(glm::vec3 vec, glm::mat4 modelMat);
+    glm::vec3 NormalToWorldSpace(glm::vec3 normal, glm::mat4 modelMat);
 
     // AABB
     struct AABBIntersection
