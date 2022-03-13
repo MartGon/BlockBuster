@@ -3,6 +3,7 @@
 #include <memory>
 #include <unordered_map>
 #include <filesystem>
+#include <optional>
 
 #include <SDL2/SDL.h>
 
@@ -43,13 +44,16 @@ namespace Audio
     struct AudioSource
     {
         ALuint handle = 0;
-
-        float pitch = 1;
-        float gain = 1.0f;
-        glm::vec3 pos;
-        glm::vec3 velocity;
-        bool looping = false;
         ID audioId = -1;
+
+        struct Params{
+            float pitch = 1;
+            float gain = 1.0f;
+            float orientation = 0.0f; // radians
+            glm::vec3 pos;
+            glm::vec3 velocity;
+            bool looping = false;
+        } params;
     };
 
     class AudioMgr
@@ -72,9 +76,14 @@ namespace Audio
 
         // Audio sources
         ID CreateSource();
-        void SetSourceParams(ID sourceId, glm::vec3 pos, bool looping = false, float gain = 1.0f , float pitch = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
+        void SetSourceParams(ID sourceId, glm::vec3 pos, float orientation = 0.0f, bool looping = false, float gain = 1.0f , float pitch = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
+        void SetSourceParams(ID sourceId, AudioSource::Params params);
         void SetSourceAudio(ID source, ID audioFile);
+        std::optional<AudioSource::Params> GetSourceParams(ID srcId);
         void PlaySource(ID srcId);
+
+        // Listener
+        void SetListenerParams(glm::vec3 pos, float orientation = 0.0f, float gain = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
 
         // Config
         inline void SetEnabled(bool enabled)
@@ -101,6 +110,9 @@ namespace Audio
         ID lastId = 0;
 
         bool enabled = true;
+
+        // General params
+        float refDistance = 1.0f;
 
         AudioMgr();
     };

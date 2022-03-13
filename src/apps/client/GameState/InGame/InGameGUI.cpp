@@ -202,6 +202,21 @@ void InGameGUI::DebugWindow()
                 break;
             }
         }
+
+        ImGui::Text("Audio");
+        ImGui::Separator();
+
+        auto params = inGame->audioMgr->GetSourceParams(0);
+        if(ImGui::SliderFloat("Gain", &params->gain, 0.0f, 1.0f))
+            inGame->audioMgr->SetSourceParams(0, *params);
+        if(ImGui::SliderFloat3("Pos", &params->pos.x, 0.0f, 1000.0f))
+            inGame->audioMgr->SetSourceParams(0, *params);
+
+        if(ImGui::Button("Play audio"))
+        {
+            inGame->audioMgr->PlaySource(0);
+        }
+
     }
     ImGui::End();
 }

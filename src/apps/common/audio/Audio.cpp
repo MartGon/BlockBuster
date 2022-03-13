@@ -66,14 +66,6 @@ void AudioMgr::Update()
 {
     if(!enabled)
         return;
-
-    for(auto& [id, source] : sources)
-    {
-        ALint state;
-        alGetSourcei(source.handle, AL_SOURCE_STATE, &state);
-        if(state == AL_PLAYING)
-            alSourcePlay(source.handle);
-    }
 }
 
 // Audio Files
@@ -94,7 +86,7 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::string name, std::file
         auto audioSpec = file.audioSpec;
         if(audioSpec.channels == 1 && audioSpec.format == AUDIO_U8)
             format = AL_FORMAT_MONO8;
-        else if(audioSpec.channels == 1 && audioSpec.format == AUDIO_U16)
+        else if(audioSpec.channels == 1 && (audioSpec.format == AUDIO_U16 || audioSpec.format == AUDIO_S16LSB))
             format = AL_FORMAT_MONO16;
         else if(audioSpec.channels == 2 && audioSpec.format == AUDIO_U8)
             format = AL_FORMAT_STEREO8;
@@ -102,7 +94,7 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::string name, std::file
             format = AL_FORMAT_STEREO16;
         else
         {
-            std::cerr << "ERROR: unrecognised wave format: " << std::to_string(audioSpec.channels) << " channels, " << audioSpec.format << " bps" << std::endl;
+            std::cerr << "ERROR: unrecognised wave format: " << std::to_string(audioSpec.channels) << " channels, " << std::hex << audioSpec.format << " bps" << std::endl;
             return Err(INVALID_FORMAT);
         }
 
@@ -129,6 +121,9 @@ ID AudioMgr::CreateSource()
     AudioSource source;
     alGenSources(1, &source.handle);
     SetSourceParams(source);
+
+    alSourcef(source.handle, AL_REFERENCE_DISTANCE, refDistance);
+    alSourcei(source.handle, AL_SOURCE_RELATIVE, AL_FALSE);
     
     auto id = lastSourceId++;
     sources[id] = std::move(source);
@@ -136,19 +131,26 @@ ID AudioMgr::CreateSource()
     return id;
 }
 
-void AudioMgr::SetSourceParams(ID sourceId, glm::vec3 pos, bool looping, float gain, float pitch, glm::vec3 velocity)
+void AudioMgr::SetSourceParams(ID sourceId, glm::vec3 pos, float orientation, bool looping, float gain, float pitch, glm::vec3 velocity)
 {
     if(Util::Map::Contains(sources, sourceId))
     {
         auto& source = sources[sourceId];
-        source.pos = pos;
-        source.looping = looping;
-        source.gain = gain;
-        source.pitch = pitch;
-        source.velocity = velocity;
+        auto& params = source.params;
+        params.pos = pos;
+        params.orientation = orientation;
+        params.looping = looping;
+        params.gain = gain;
+        params.pitch = pitch;
+        params.velocity = velocity;
 
         SetSourceParams(source);
     }
+}
+
+void AudioMgr::SetSourceParams(ID sourceId, AudioSource::Params params)
+{
+    SetSourceParams(sourceId, params.pos, params.orientation, params.looping, params.gain, params.pitch, params.velocity);
 }
 
 void AudioMgr::SetSourceAudio(ID srcId, ID audioFile)
@@ -171,17 +173,42 @@ void AudioMgr::PlaySource(ID srcId)
     }
 }
 
+// Listener
+
+void AudioMgr::SetListenerParams(glm::vec3 pos, float orientation, float gain, glm::vec3 vel)
+{
+    alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
+    glm::vec3 rot = glm::vec3{glm::cos(orientation), 0.0f, glm::sin(orientation)};
+    ALfloat ori[]={rot.x, rot.y, rot.z, 0.0, 1.0, 0.0};
+    alListenerfv(AL_ORIENTATION, ori);
+    alListenerf(AL_GAIN, gain);
+    alListener3f(AL_VELOCITY, vel.x, vel.y, vel.z);
+}
+
 // Private
 
 void AudioMgr::SetSourceParams(AudioSource source)
 {
-    alSourcef(source.handle, AL_PITCH, source.pitch);
-    alSourcef(source.handle, AL_GAIN, source.gain);
-    alSource3f(source.handle, AL_POSITION, source.pos.x, source.pos.y, source.pos.z);
-    alSource3f(source.handle, AL_VELOCITY, source.velocity.x, source.velocity.y, source.velocity.z);
-    alSourcei(source.handle, AL_LOOPING, source.looping);
+    auto params = source.params;
+    alSourcef(source.handle, AL_PITCH, params.pitch);
+    alSourcef(source.handle, AL_GAIN, params.gain);
+    alSource3f(source.handle, AL_POSITION, params.pos.x, params.pos.y, params.pos.z);
+    glm::vec3 rot = glm::vec3{glm::cos(params.orientation), 0.0f, glm::sin(params.orientation)};
+    ALfloat ori[]={rot.x, rot.y, rot.z, 0.0, 1.0, 0.0};
+    alSourcefv(source.handle, AL_ORIENTATION, ori);
+    alSource3f(source.handle, AL_VELOCITY, params.velocity.x, params.velocity.y, params.velocity.z);
+    alSourcei(source.handle, AL_LOOPING, params.looping);
     auto& file = files[source.audioId];
     alSourcei(source.handle, AL_BUFFER, file.alBuffer);
+}
+
+std::optional<AudioSource::Params> AudioMgr::GetSourceParams(ID srcId)
+{
+    std::optional<AudioSource::Params> params;
+    if(Util::Map::Contains(sources, srcId))
+        params = sources[srcId].params;
+
+    return params;
 }
 
 // Audio File

@@ -109,11 +109,15 @@ void InGame::Start()
     // Audio
     audioMgr = audioMgr->Get();
     audioMgr->Init();
-    auto res = audioMgr->LoadWAV("Sniper", "/home/defu/Projects/BlockBuster/resources/audio/sniper.wav");
+    // TODO: Make this failproof. If it isn't found. Simpy return id, log, and play nothing. Maybe return -1 id, then check in Play. LoadWAVOrNull
+    auto res = audioMgr->LoadWAV("Sniper", "/home/defu/Projects/BlockBuster/resources/audio/tone.wav");
 
     if(res.isOk())
     {
         auto srcId = audioMgr->CreateSource();
+        Audio::AudioSource::Params audioParams;
+        audioParams.pos.x = -100;
+        audioMgr->SetSourceParams(srcId, audioParams);
         audioMgr->SetSourceAudio(srcId, res.unwrap());
         audioMgr->PlaySource(srcId);
     }
@@ -247,6 +251,7 @@ void InGame::Update()
         EntityInterpolation();
         SmoothPlayerMovement();
         Render();
+        UpdateAudio();
 
         deltaTime = (Util::Time::GetTime() - preSimulationTime);
         simulationLag += deltaTime;
@@ -846,6 +851,7 @@ void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)
 
 void InGame::UpdateAudio()
 {
+    audioMgr->SetListenerParams(camera_.GetPos(), camera_.GetRotation().y);
     audioMgr->Update();
 }
 
