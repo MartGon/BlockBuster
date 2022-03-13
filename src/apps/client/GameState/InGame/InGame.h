@@ -30,6 +30,8 @@
 #include <networking/Snapshot.h>
 #include <networking/Packets.h>
 
+#include <audio/Audio.h>
+
 #include <GameState/InGame/InGameGUI.h>
 
 namespace BlockBuster
@@ -80,6 +82,9 @@ namespace BlockBuster
         void DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box);
         void DrawGUI();
         void Render();
+
+        // Audio
+        void UpdateAudio();
 
         // Map
         void LoadMap(std::filesystem::path filePath);
@@ -173,6 +178,9 @@ namespace BlockBuster
 
         // GUI
         InGameGUI inGameGui{*this};
+
+        // Audio
+        Audio::AudioMgr* audioMgr = nullptr;
 
         // Scene
         ::App::Client::Map map_;

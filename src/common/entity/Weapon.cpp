@@ -6,7 +6,7 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
     {
         WeaponTypeID::SNIPER, 
         {
-            WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{1.0f}, 100.0f, 
+            WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, 100.0f, 
             300.0f, 0.0f, 0.0f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
         }
     }

@@ -29,6 +29,8 @@ target_link_libraries(Client
     Game
     freetype
     GUI
+    Audio
+    OpenAL
 
     EnetW
     enet
@@ -43,6 +45,7 @@ target_include_directories(Client PUBLIC
     ${DEPS_FOLDER}/imgui
     ${DEPS_FOLDER}/enet/include
     ${DEPS_FOLDER}/json/include
+    ${DEPS_FOLDER}/openal-soft/include
     ${COMMON_DIR} 
     ${APPS_COMMON_DIR}
 )

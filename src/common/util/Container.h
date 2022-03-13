@@ -26,3 +26,12 @@ namespace Util::Vector
         return std::find(vec.begin(), vec.end(), value) != vec.end();
     }
 }
+
+namespace Util::Map
+{
+    template <typename Map, typename T>
+    bool Contains(const Map& map, T key)
+    {
+        return map.find(key) != map.end();
+    }
+}

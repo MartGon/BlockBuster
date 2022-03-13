@@ -106,6 +106,18 @@ void InGame::Start()
     // UI
     inGameGui.Start();
 
+    // Audio
+    audioMgr = audioMgr->Get();
+    audioMgr->Init();
+    auto res = audioMgr->LoadWAV("Sniper", "/home/defu/Projects/BlockBuster/resources/audio/sniper.wav");
+
+    if(res.isOk())
+    {
+        auto srcId = audioMgr->CreateSource();
+        audioMgr->SetSourceAudio(srcId, res.unwrap());
+        audioMgr->PlaySource(srcId);
+    }
+
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
     host.SetOnConnectCallback([this](auto id)
@@ -828,6 +840,13 @@ void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)
     auto mat = viewProjMat * box.GetTransformMat();
     shader.SetUniformMat4("transform", mat);
     cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
+}
+
+// Audio
+
+void InGame::UpdateAudio()
+{
+    audioMgr->Update();
 }
 
 // TODO: Redundancy with Project::Load
