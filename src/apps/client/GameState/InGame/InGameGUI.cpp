@@ -51,12 +51,30 @@ void InGameGUI::Start()
     auto onDrawOptions = [this](){
         ImGui::Text("Gameplay");
         ImGui::Separator();
-        ImGui::SliderFloat("Sensitivity", &sensitivity, 0.1f, 5.0f, "%.2f");
+        ImGui::SliderFloat("Sensitivity", &gameOptions.sensitivity, 0.1f, 5.0f, "%.2f");
 
         ImGui::Text("Sound");
         ImGui::Separator();
-        ImGui::Checkbox("Sound enabled", &sound);
+        ImGui::Checkbox("Sound enabled", &gameOptions.audioEnabled);
+        ImGui::SliderInt("General",  &gameOptions.audioGeneral, 0, 100);
+
+        auto winWidth = ImGui::GetWindowWidth();
+        auto aW = ImGui::CalcTextSize("Apply").x + 8;
+        auto aeW = ImGui::CalcTextSize("Apply and exit").x + 8;
+        auto totalWidth = aW + aeW;
+        ImGui::SetCursorPosX(winWidth / 2.0f - totalWidth / 2.0f);
+        if(ImGui::Button("Apply"))
+            this->inGame->ApplyGameOptions(this->gameOptions);
+        ImGui::SameLine();
+        if(ImGui::Button("Apply and exit"))
+        {
+            this->inGame->ApplyGameOptions(this->gameOptions);
+            CloseMenu();
+        }
     };
+    options.SetOnOpen([this](){
+        this->gameOptions = this->inGame->gameOptions;
+    });
     options.SetOnClose([this](){
         this->puMgr.SetCur(PopUpState::MENU);
     });

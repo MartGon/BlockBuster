@@ -7,6 +7,8 @@
 #include <gui/PopUp.h>
 #include <gui/PopUpMgr.h>
 
+#include <GameState/InGame/InGameFwd.h>
+
 namespace BlockBuster
 {
     class InGame;
@@ -52,8 +54,7 @@ namespace BlockBuster
         GUI::PopUpMgr<PopUpState::MAX> puMgr;
 
         // Game options
-        float sensitivity = 1.0f;
-        bool sound = true;
+        GameOptions gameOptions;
 
         // Metrics
         double maxFPS = 60.0;

@@ -28,6 +28,8 @@ InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort) :
 {
 }
 
+// Public
+
 void InGame::Start()
 {
     // Window
@@ -67,8 +69,8 @@ void InGame::Start()
         this->client_->logger->LogError(e.what());
     }
 
-    // Init font
-    std::filesystem::path fontPath = std::filesystem::path{RESOURCES_DIR} / "fonts/Pixel.ttf";
+    // Load config
+    LoadGameOptions();
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
@@ -245,8 +247,10 @@ void InGame::Update()
 
 void InGame::Shutdown()
 {
-    client_->config.options["Sensitivity"] = std::to_string(camController_.rotMod);
+    WriteGameOptions();
 }
+
+// Update
 
 void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 {
@@ -323,6 +327,8 @@ void InGame::HandleSDLEvents()
             camController_.HandleSDLEvent(e);
     }
 }
+
+// Networking
 
 void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
 {
@@ -421,6 +427,8 @@ void InGame::SendPlayerInput()
     ENet::SentPacket sentPacket{batchBuffer->GetData(), batchBuffer->GetSize(), 0};
     host.SendPacket(serverId, 0, sentPacket);
 }
+
+// Networking Prediction
 
 void InGame::Predict(Entity::PlayerInput playerInput)
 {
@@ -555,6 +563,8 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
 
     return nextState;
 }
+
+// Networking Entity Interpolation
 
 Util::Time::Seconds InGame::TickToTime(uint32_t tick)
 {
@@ -698,7 +708,7 @@ glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const
     return moveDir;
 }
 
-
+// Rendering
 
 void InGame::Render()
 {
@@ -844,4 +854,30 @@ void InGame::LoadMap(std::filesystem::path filePath)
     auto bufferSize = ReadFromFile<uint32_t>(file);
     Util::Buffer buffer = ReadFromFile(file, bufferSize);
     map_ = App::Client::Map::FromBuffer(buffer.GetReader());
+}
+
+// Game Config
+
+void InGame::LoadGameOptions()
+{
+    gameOptions.sensitivity= std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
+    gameOptions.audioEnabled = std::atoi(client_->GetConfigOption("audioEnabled", "1").c_str());
+    gameOptions.audioGeneral = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioGeneral","100").c_str())));
+}
+
+void InGame::WriteGameOptions()
+{
+    client_->config.options["Sensitivity"] = std::to_string(gameOptions.sensitivity);
+    client_->config.options["audioEnabled"] = std::to_string(gameOptions.audioEnabled);
+    client_->config.options["audioGeneral"] = std::to_string(gameOptions.audioGeneral);
+}
+
+void InGame::ApplyGameOptions(GameOptions options)
+{
+    // Update saved values
+    gameOptions = options;
+
+    // Apply changes
+    camController_.rotMod = gameOptions.sensitivity;
+    // TODO: 
 }

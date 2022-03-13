@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GameState/GameState.h>
+#include <GameState/InGame/InGameFwd.h>
 
 #include <gl/Shader.h>
 #include <gl/VertexArray.h>
@@ -30,7 +31,6 @@
 #include <networking/Packets.h>
 
 #include <GameState/InGame/InGameGUI.h>
-
 
 namespace BlockBuster
 {
@@ -84,40 +84,10 @@ namespace BlockBuster
         // Map
         void LoadMap(std::filesystem::path filePath);
 
-        // GameState
-        std::unique_ptr<GameState> gameState;
-
-        // Scene
-        ::App::Client::Map map_;
-
-        // Rendering
-            // Mgr
-        Rendering::RenderMgr renderMgr;
-
-            // Shaders
-        GL::Shader shader;
-        GL::Shader chunkShader;
-        GL::Shader quadShader;
-        GL::Shader textShader;
-
-            // Textures
-        GL::Texture flashTexture;
-
-            // Meshes
-        Rendering::Mesh quad;
-        Rendering::Mesh cylinder;
-        Rendering::Mesh sphere;
-        Rendering::Mesh cube;
-        Rendering::Mesh slope;
-
-            // Models
-        Game::Models::Player playerAvatar;
-        Game::Models::FPS fpsAvatar;
-
-            // Camera
-        Rendering::Camera camera_;
-        int drawMode = GL_FILL;
-        ::App::Client::CameraController camController_;
+        // Game Config 
+        void LoadGameOptions();
+        void ApplyGameOptions(GameOptions options);
+        void WriteGameOptions();
 
         // Player transforms
         struct PlayerModelState
@@ -172,7 +142,42 @@ namespace BlockBuster
         Networking::Snapshot extrapolatedSnapshot;
         Util::Time::Seconds offsetTime{0};
 
+        // Rendering
+            // Mgr
+        Rendering::RenderMgr renderMgr;
+
+            // Shaders
+        GL::Shader shader;
+        GL::Shader chunkShader;
+        GL::Shader quadShader;
+        GL::Shader textShader;
+
+            // Textures
+        GL::Texture flashTexture;
+
+            // Meshes
+        Rendering::Mesh quad;
+        Rendering::Mesh cylinder;
+        Rendering::Mesh sphere;
+        Rendering::Mesh cube;
+        Rendering::Mesh slope;
+
+            // Models
+        Game::Models::Player playerAvatar;
+        Game::Models::FPS fpsAvatar;
+
+            // Camera
+        Rendering::Camera camera_;
+        int drawMode = GL_FILL;
+        ::App::Client::CameraController camController_;
+
         // GUI
         InGameGUI inGameGui{*this};
+
+        // Scene
+        ::App::Client::Map map_;
+
+        // Config
+        GameOptions gameOptions;
     };
 }

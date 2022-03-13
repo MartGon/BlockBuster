@@ -44,6 +44,7 @@ namespace GUI
 
         void Draw();
         virtual void OnDraw() = 0;
+        virtual void OnOpen() = 0;
         virtual void OnClose() = 0;
 
     private:
@@ -74,6 +75,7 @@ namespace GUI
         }
 
         void OnDraw() override;
+        void OnOpen() override {};
         void OnClose() override {};
 
     private:
@@ -92,16 +94,23 @@ namespace GUI
             this->content = content;
         }
 
+        inline void SetOnOpen(std::function<void()> onOpen)
+        {
+            this->onOpen = onOpen;
+        }
+
         inline void SetOnClose(std::function<void()> onClose)
         {
             this->onClose = onClose;
         }
 
         void OnDraw() override;
+        void OnOpen() override;
         void OnClose() override;
 
     private:
         std::function<void()> content;
+        std::function<void()> onOpen;
         std::function<void()> onClose;
     };
 }

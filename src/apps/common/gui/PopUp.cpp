@@ -9,7 +9,10 @@ void PopUp::Draw()
 
     auto titleStr = title.c_str();
     if(isVisible && !ImGui::IsPopupOpen(titleStr))
+    {
         ImGui::OpenPopup(titleStr);
+        OnOpen();
+    }
 
     bool* showClose = isCloseable ? &isVisible : nullptr;
     bool wasOpen = isVisible;
@@ -52,6 +55,12 @@ void GenericPopUp::OnDraw()
 {
     if(content)
         content();
+}
+
+void GenericPopUp::OnOpen()
+{
+    if(onOpen)
+        onOpen();
 }
 
 void GenericPopUp::OnClose()
