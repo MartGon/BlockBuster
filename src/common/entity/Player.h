@@ -20,6 +20,9 @@ namespace Entity
 
     struct PlayerInput
     {
+        PlayerInput();
+        PlayerInput(bool defult);
+
         bool inputs[Inputs::MAX] = {false, false, false,
                                     false, false};
 
@@ -27,11 +30,17 @@ namespace Entity
         // Hint: https://stackoverflow.com/questions/19364942/points-to-uninitialised-bytes-valgrind-errors
         bool padding[8 - Inputs::MAX] = {false, false, false};
 
+        bool operator[](uint32_t index) const
+        {
+            return inputs[index];
+        }
+
         bool& operator[](uint32_t index)
         {
             return inputs[index];
         }
     };
+    PlayerInput operator&(const PlayerInput& a, const PlayerInput& b);
     glm::vec3 PlayerInputToMove(PlayerInput input);
 
     class PlayerState
@@ -44,10 +53,10 @@ namespace Entity
 
         Weapon weaponState;
     };
-    bool operator==(const Entity::PlayerState& a, const Entity::PlayerState& b);
-    Entity::PlayerState operator+(const Entity::PlayerState& a, const Entity::PlayerState& b);
-    Entity::PlayerState operator-(const Entity::PlayerState& a, const Entity::PlayerState& b);
-    Entity::PlayerState operator*(const Entity::PlayerState& a, float b);
+    bool operator==(const PlayerState& a, const PlayerState& b);
+    PlayerState operator+(const PlayerState& a, const PlayerState& b);
+    PlayerState operator-(const PlayerState& a, const PlayerState& b);
+    PlayerState operator*(const PlayerState& a, float b);
 
     PlayerState Interpolate(PlayerState a, PlayerState b, float alpha);
     glm::vec3 GetLastMoveDir(PlayerState s1, PlayerState s2);

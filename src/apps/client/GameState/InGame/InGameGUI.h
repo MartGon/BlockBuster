@@ -21,6 +21,10 @@ namespace BlockBuster
         void Start();
         void DrawGUI(GL::Shader& textShader);
 
+        void OpenMenu();
+        void CloseMenu();
+        bool IsMenuOpen();
+
     private:
 
         void DebugWindow();
@@ -41,10 +45,11 @@ namespace BlockBuster
         {
             MENU,
             OPTIONS,
+            WARNING,
 
             MAX
         };
-        GUI::PopUpMgr<GUI::GenericPopUp, PopUpState::MAX> puMgr;
+        GUI::PopUpMgr<PopUpState::MAX> puMgr;
 
         // Game options
         float sensitivity = 1.0f;

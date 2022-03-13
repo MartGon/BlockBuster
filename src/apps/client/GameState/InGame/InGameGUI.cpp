@@ -28,22 +28,34 @@ void InGameGUI::Start()
     auto onDrawMenu = [this](){
         auto size = ImGui::CalcTextSize("Exit Game ");
         size.y = 0;
-        ImGui::Button("Resume", size);
+        if(ImGui::Button("Resume", size))
+            this->CloseMenu();
+
         if(ImGui::Button("Options", size))
             this->puMgr.SetCur(PopUpState::OPTIONS);
-        ImGui::Button("Exit Game", size);
+
+        if(ImGui::Button("Exit Game", size))
+            this->puMgr.SetCur(PopUpState::WARNING);
     };
     menu.SetOnDraw(onDrawMenu);
     menu.SetFlags(flags);
     menu.SetTitle("Menu");
     menu.SetVisible(true);
     menu.SetCloseable(true);
-    puMgr.Set(MENU, menu);
+    menu.SetOnClose([this](){
+        this->CloseMenu();
+    });
+    puMgr.Set(MENU, std::make_unique<GUI::GenericPopUp>(menu));
 
     // Options Pop Up
     GUI::GenericPopUp options;
     auto onDrawOptions = [this](){
+        ImGui::Text("Gameplay");
+        ImGui::Separator();
         ImGui::SliderFloat("Sensitivity", &sensitivity, 0.1f, 5.0f, "%.2f");
+
+        ImGui::Text("Sound");
+        ImGui::Separator();
         ImGui::Checkbox("Sound enabled", &sound);
     };
     options.SetOnClose([this](){
@@ -54,7 +66,19 @@ void InGameGUI::Start()
     options.SetOnDraw(onDrawOptions);
     options.SetVisible(true);
     options.SetCloseable(true);
-    puMgr.Set(OPTIONS, options);
+    puMgr.Set(OPTIONS, std::make_unique<GUI::GenericPopUp>(options));
+
+    // Warning pop up
+    GUI::BasicPopUp warning;
+    warning.SetTitle("Exit Game");
+    warning.SetText("Are you sure?");
+    warning.SetButtonVisible(true);
+    warning.SetCloseable(true);
+    warning.SetFlags(flags);
+    warning.SetButtonCallback([this](){
+        this->inGame->client_->quit = true;
+    });
+    puMgr.Set(WARNING, std::make_unique<GUI::BasicPopUp>(warning));
 
     puMgr.SetCur(MENU);
 }
@@ -85,6 +109,28 @@ void InGameGUI::DrawGUI(GL::Shader& textShader)
     text.SetColor(glm::vec4{0.0f, 1.0f, 0.0f, 1.0f});
     text.SetScale(2.0f);
     text.Draw(textShader, glm::vec2{0.0f, 0.0f}, glm::vec2{(float)windowSize.x, (float)windowSize.y});
+}
+
+void InGameGUI::OpenMenu()
+{
+    puMgr.SetCur(InGameGUI::MENU);
+
+    // TODO: This can variate according to cameraMode
+    SDL_SetWindowGrab(this->inGame->client_->window_, SDL_FALSE);
+    SDL_SetRelativeMouseMode(SDL_FALSE);
+}
+
+void InGameGUI::CloseMenu()
+{
+    puMgr.SetCur(-1);
+
+    SDL_SetWindowGrab(this->inGame->client_->window_, SDL_TRUE);
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+}
+
+bool InGameGUI::IsMenuOpen()
+{
+    return puMgr.IsOpen();
 }
 
 void InGameGUI::DebugWindow()

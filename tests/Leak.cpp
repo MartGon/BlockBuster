@@ -7,7 +7,7 @@
 // The used function is not a linear interpolation.
 TEST_CASE("Get Input")
 {
-    auto input = Input::GetPlayerInputNumpad();
+    auto input = Input::GetPlayerInputNumpad(Entity::PlayerInput{false});
 
     int a = 0;
     if(input[Entity::MOVE_DOWN])

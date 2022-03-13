@@ -269,6 +269,63 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
     }
 }
 
+void InGame::HandleSDLEvents()
+{
+    SDL_Event e;
+    
+    while(SDL_PollEvent(&e) != 0)
+    {
+        ImGui_ImplSDL2_ProcessEvent(&e);
+
+        switch(e.type)
+        {
+        case SDL_QUIT:
+            client_->quit = true;
+            break;
+        case SDL_KEYDOWN:
+            if(e.key.keysym.sym == SDLK_f)
+                drawMode = drawMode == GL_FILL ? GL_LINE : GL_FILL;
+            if(e.key.keysym.sym == SDLK_r)
+                fpsAvatar.PlayReloadAnimation();
+            if(e.key.keysym.sym == SDLK_p)
+            {
+                using namespace ::App::Client;
+                auto mode = this->camController_.GetMode();
+                auto nextMode = mode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
+                this->camController_.SetMode(nextMode);
+            }
+            if(e.key.keysym.sym == SDLK_ESCAPE)
+            {
+                if(!inGameGui.IsMenuOpen())
+                {
+                    inGameGui.OpenMenu();
+                }
+                else 
+                    inGameGui.CloseMenu();
+            }
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            {
+                for(auto [playerId, player] : playerTable)
+                {
+                    auto mousePos = client_->GetMousePos();
+                    auto winSize = client_->GetWindowSize();
+                    auto ray = Rendering::ScreenToWorldRay(camera_, mousePos, glm::vec2{winSize.x, winSize.y});
+                    auto playerTransform = playerTable[playerId].GetRenderTransform();
+                    auto lastMoveDir = GetLastMoveDir(playerId);
+                    auto collision = Game::RayCollidesWithPlayer(ray, playerTransform.position, playerTransform.rotation.y, lastMoveDir);
+                    if(collision.collides)
+                        std::cout << "Collision with " << std::to_string(collision.hitboxType) << "\n";
+                }
+            }
+            break;
+        }
+        
+        if(!inGameGui.IsMenuOpen())
+            camController_.HandleSDLEvent(e);
+    }
+}
+
 void InGame::OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState)
 {
     Entity::Player player;
@@ -321,7 +378,8 @@ void InGame::UpdateNetworking()
     client_->logger->LogInfo("Input: Sending player inputs");
 
     // Sample player input
-    auto input = Input::GetPlayerInputNumpad();
+    auto mask = inGameGui.IsMenuOpen() ? Entity::PlayerInput{false} : Entity::PlayerInput{true};
+    auto input = Input::GetPlayerInputNumpad(mask);
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     auto click = mouseState & SDL_BUTTON_RIGHT;
 
@@ -642,55 +700,7 @@ glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const
     return moveDir;
 }
 
-void InGame::HandleSDLEvents()
-{
-    SDL_Event e;
-    
-    while(SDL_PollEvent(&e) != 0)
-    {
-        ImGui_ImplSDL2_ProcessEvent(&e);
 
-        switch(e.type)
-        {
-        case SDL_QUIT:
-            client_->quit = true;
-            break;
-        case SDL_KEYDOWN:
-            if(e.key.keysym.sym == SDLK_f)
-                drawMode = drawMode == GL_FILL ? GL_LINE : GL_FILL;
-            if(e.key.keysym.sym == SDLK_r)
-                fpsAvatar.PlayReloadAnimation();
-            if(e.key.keysym.sym == SDLK_p)
-            {
-                using namespace ::App::Client;
-                auto mode = this->camController_.GetMode();
-                auto nextMode = mode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
-                this->camController_.SetMode(nextMode);
-            }
-            // TODO: Remove before release
-            if(e.key.keysym.sym == SDLK_ESCAPE)
-                client_->quit = true;
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-            {
-                for(auto [playerId, player] : playerTable)
-                {
-                    auto mousePos = client_->GetMousePos();
-                    auto winSize = client_->GetWindowSize();
-                    auto ray = Rendering::ScreenToWorldRay(camera_, mousePos, glm::vec2{winSize.x, winSize.y});
-                    auto playerTransform = playerTable[playerId].GetRenderTransform();
-                    auto lastMoveDir = GetLastMoveDir(playerId);
-                    auto collision = Game::RayCollidesWithPlayer(ray, playerTransform.position, playerTransform.rotation.y, lastMoveDir);
-                    if(collision.collides)
-                        std::cout << "Collision with " << std::to_string(collision.hitboxType) << "\n";
-                }
-            }
-            break;
-        }
-        
-        camController_.HandleSDLEvent(e);
-    }
-}
 
 void InGame::Render()
 {

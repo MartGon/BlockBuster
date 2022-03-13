@@ -4,7 +4,7 @@
 
 #include <debug/Debug.h>
 
-Entity::PlayerInput Input::GetPlayerInput()
+Entity::PlayerInput Input::GetPlayerInput(Entity::PlayerInput mask)
 {
     Entity::PlayerInput input;
     auto state = SDL_GetKeyboardState(nullptr);
@@ -16,10 +16,12 @@ Entity::PlayerInput Input::GetPlayerInput()
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     input[Entity::SHOOT] = mouseState & SDL_BUTTON_LEFT;
 
+    input = input & mask;
+
     return input;
 }
 
-Entity::PlayerInput Input::GetPlayerInputNumpad()
+Entity::PlayerInput Input::GetPlayerInputNumpad(Entity::PlayerInput mask)
 {
     Entity::PlayerInput input;
     auto state = SDL_GetKeyboardState(nullptr);
@@ -31,12 +33,16 @@ Entity::PlayerInput Input::GetPlayerInputNumpad()
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     input[Entity::SHOOT] = mouseState & SDL_BUTTON_LEFT;
 
+    input = input & mask;
+
     return input;
 }
 
-Entity::PlayerInput Input::GetPlayerInputDummy()
+Entity::PlayerInput Input::GetPlayerInputDummy(Entity::PlayerInput mask)
 {
     Entity::PlayerInput input;
+
+    input = input & mask;
 
     return input;
 }

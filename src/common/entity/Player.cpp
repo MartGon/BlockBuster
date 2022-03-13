@@ -29,6 +29,26 @@ const float Player::MAX_SHIELD = 300.0f;
 
 // PlayerInput
 
+PlayerInput::PlayerInput()
+{
+
+}
+
+PlayerInput::PlayerInput(bool defult)
+{
+    for(uint8_t i = Inputs::MOVE_DOWN; i < Inputs::MAX; i++)
+        inputs[i] = defult;
+}
+
+PlayerInput Entity::operator&(const PlayerInput& a, const PlayerInput& b)
+{
+    PlayerInput input;
+    for(uint8_t i = Inputs::MOVE_DOWN; i < Inputs::MAX; i++)
+        input[i] = a[i] & b[i];
+
+    return input;
+}
+
 glm::vec3 Entity::PlayerInputToMove(PlayerInput input)
 {
     glm::vec3 moveDir{0.0f};
@@ -39,7 +59,6 @@ glm::vec3 Entity::PlayerInputToMove(PlayerInput input)
 
     return moveDir;
 }
-
 
 // PlayerState
 

@@ -10,6 +10,7 @@ namespace GUI
     class PopUp
     {
     public:
+        virtual ~PopUp() {}
 
         inline bool IsVisible() const
         {
