@@ -40,7 +40,6 @@ void InGameGUI::Start()
     menu.SetOnDraw(onDrawMenu);
     menu.SetFlags(flags);
     menu.SetTitle("Menu");
-    menu.SetVisible(true);
     menu.SetCloseable(true);
     menu.SetOnClose([this](){
         this->CloseMenu();
@@ -64,23 +63,24 @@ void InGameGUI::Start()
     options.SetTitle("Options");
     options.SetFlags(flags);
     options.SetOnDraw(onDrawOptions);
-    options.SetVisible(true);
     options.SetCloseable(true);
     puMgr.Set(OPTIONS, std::make_unique<GUI::GenericPopUp>(options));
 
     // Warning pop up
-    GUI::BasicPopUp warning;
+    GUI::GenericPopUp warning;
     warning.SetTitle("Exit Game");
-    warning.SetText("Are you sure?");
-    warning.SetButtonVisible(true);
-    warning.SetCloseable(true);
     warning.SetFlags(flags);
-    warning.SetButtonCallback([this](){
-        this->inGame->client_->quit = true;
+    warning.SetOnDraw([this](){
+        ImGui::Text("Are you sure?");
+        auto size = ImGui::CalcTextSize("Yes ");
+        size.y = 0;
+        if(ImGui::Button("Yes", size))
+            this->inGame->client_->quit = true;
+        ImGui::SameLine();
+        if(ImGui::Button("No", size))
+            this->CloseMenu();
     });
-    puMgr.Set(WARNING, std::make_unique<GUI::BasicPopUp>(warning));
-
-    puMgr.SetCur(MENU);
+    puMgr.Set(WARNING, std::make_unique<GUI::GenericPopUp>(warning));
 }
 
 void InGameGUI::DrawGUI(GL::Shader& textShader)
@@ -115,7 +115,6 @@ void InGameGUI::OpenMenu()
 {
     puMgr.SetCur(InGameGUI::MENU);
 
-    // TODO: This can variate according to cameraMode
     SDL_SetWindowGrab(this->inGame->client_->window_, SDL_FALSE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
 }
@@ -124,8 +123,11 @@ void InGameGUI::CloseMenu()
 {
     puMgr.SetCur(-1);
 
-    SDL_SetWindowGrab(this->inGame->client_->window_, SDL_TRUE);
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    if(this->inGame->camController_.GetMode() != App::Client::CameraMode::EDITOR)
+    {
+        SDL_SetWindowGrab(this->inGame->client_->window_, SDL_TRUE);
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+    }
 }
 
 bool InGameGUI::IsMenuOpen()

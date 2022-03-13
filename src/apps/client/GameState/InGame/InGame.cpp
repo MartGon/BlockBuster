@@ -297,9 +297,7 @@ void InGame::HandleSDLEvents()
             if(e.key.keysym.sym == SDLK_ESCAPE)
             {
                 if(!inGameGui.IsMenuOpen())
-                {
                     inGameGui.OpenMenu();
-                }
                 else 
                     inGameGui.CloseMenu();
             }
