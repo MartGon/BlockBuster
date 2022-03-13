@@ -18,6 +18,10 @@ namespace Audio
 {
     using ID = uint16_t;
 
+    // Streamed data params
+    static const uint BUFFERS_NUM = 4;
+    static const uint BUFFER_SIZE = 65536; // 32kb
+
     class AudioFile
     {
     public:
@@ -39,6 +43,13 @@ namespace Audio
 
         // OpenAl
         ALuint alBuffer = 0;
+        ALenum format = 0;
+
+        // Implementantion
+        bool isStreamed = false;
+        ALuint streamBuffers[BUFFERS_NUM] = {0, 0, 0, 0};
+        uint32_t cursor = 0;
+        bool isPlaying = false;
     };
 
     struct AudioSource
@@ -50,8 +61,8 @@ namespace Audio
             float pitch = 1;
             float gain = 1.0f;
             float orientation = 0.0f; // radians
-            glm::vec3 pos;
-            glm::vec3 velocity;
+            glm::vec3 pos = glm::vec3{0.0f};
+            glm::vec3 velocity = glm::vec3{0.0f};
             bool looping = false;
         } params;
     };
@@ -72,7 +83,7 @@ namespace Audio
             INVALID_PATH,
             INVALID_FORMAT
         };
-        Result<ID, LoadWAVError> LoadWAV(std::string name, std::filesystem::path path);
+        Result<ID, LoadWAVError> LoadWAV(std::string name, std::filesystem::path path, bool isStreamed = false);
 
         // Audio sources
         ID CreateSource();
@@ -81,6 +92,7 @@ namespace Audio
         void SetSourceAudio(ID source, ID audioFile);
         std::optional<AudioSource::Params> GetSourceParams(ID srcId);
         void PlaySource(ID srcId);
+        void UpdateStreamedAudio(AudioSource& source);
 
         // Listener
         void SetListenerParams(glm::vec3 pos, float orientation = 0.0f, float gain = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});

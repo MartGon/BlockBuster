@@ -110,7 +110,7 @@ void InGame::Start()
     audioMgr = audioMgr->Get();
     audioMgr->Init();
     // TODO: Make this failproof. If it isn't found. Simpy return id, log, and play nothing. Maybe return -1 id, then check in Play. LoadWAVOrNull
-    auto res = audioMgr->LoadWAV("Sniper", "/home/defu/Projects/BlockBuster/resources/audio/tone.wav");
+    auto res = audioMgr->LoadWAV("Sniper", "/home/defu/Projects/BlockBuster/resources/audio/Soundtrack.wav", true);
 
     if(res.isOk())
     {

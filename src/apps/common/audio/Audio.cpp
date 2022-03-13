@@ -1,6 +1,7 @@
 #include <Audio.h>
 
 #include <iostream>
+#include <cstring>
 
 #include <util/Container.h>
 
@@ -66,11 +67,16 @@ void AudioMgr::Update()
 {
     if(!enabled)
         return;
+
+    for(auto& [id, source] : sources)
+    {
+        UpdateStreamedAudio(source)    ;
+    }
 }
 
 // Audio Files
 
-Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::string name, std::filesystem::path path)
+Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::string name, std::filesystem::path path, bool isStreamed)
 {
     AudioFile file;
     auto res = SDL_LoadWAV(path.c_str(), &file.audioSpec, &file.wavBuffer, &file.wavLength);
@@ -97,10 +103,17 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::string name, std::file
             std::cerr << "ERROR: unrecognised wave format: " << std::to_string(audioSpec.channels) << " channels, " << std::hex << audioSpec.format << " bps" << std::endl;
             return Err(INVALID_FORMAT);
         }
+        file.format = format;
 
-        // Gen OpenAL buffer
-        alGenBuffers(1, &file.alBuffer);
-        alBufferData(file.alBuffer, format, file.wavBuffer, file.wavLength, audioSpec.freq);
+        file.isStreamed = isStreamed;
+        if(isStreamed)
+            alGenBuffers(4, file.streamBuffers);
+        else
+        {
+            // Gen OpenAL buffer
+            alGenBuffers(1, &file.alBuffer);
+            alBufferData(file.alBuffer, format, file.wavBuffer, file.wavLength, audioSpec.freq);
+        }
 
         // Import file
         files[id] = std::move(file);
@@ -112,6 +125,44 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::string name, std::file
     }
 
     return result;
+}
+
+void AudioMgr::UpdateStreamedAudio(AudioSource& source)
+{
+    auto& audio = files[source.audioId];
+    if(audio.isStreamed)
+    {
+        ALint state;
+        alGetSourcei(source.handle, AL_SOURCE_STATE, &state);
+        if(state == AL_PLAYING)
+        {
+            ALint buffersRead = 0;
+            alGetSourcei(source.handle, AL_BUFFERS_PROCESSED, &buffersRead);
+
+            if(buffersRead < 0)
+                return;
+            
+            while(buffersRead-- > 0)
+            {
+                ALuint buffer;
+                alSourceUnqueueBuffers(source.handle, 1, &buffer);
+                
+                auto dataPlayed = audio.cursor;
+                auto size = dataPlayed + BUFFER_SIZE > audio.wavLength ? audio.wavLength - dataPlayed : BUFFER_SIZE;
+                auto bufferSrc = audio.wavBuffer + audio.cursor;
+            
+                alBufferData(buffer, audio.format, bufferSrc, size, audio.audioSpec.freq);
+                alSourceQueueBuffers(source.handle, 1, &buffer);
+
+                audio.cursor += size;
+            }
+        }
+        else if(audio.isPlaying)
+        {
+            alSourceUnqueueBuffers(source.handle, 4, audio.streamBuffers);
+            audio.isPlaying = false;
+        }
+    }
 }
 
 // Audio Sources
@@ -169,7 +220,22 @@ void AudioMgr::PlaySource(ID srcId)
     if(Util::Map::Contains(sources, srcId))
     {
         auto& source = sources[srcId];
-        alSourcePlay(source.handle);
+        auto& audio = files[source.audioId];
+        if(audio.isStreamed)
+        {
+            for(auto i = 0; i < Audio::BUFFERS_NUM; ++i)
+            {
+                auto offset = i * BUFFER_SIZE;
+                alBufferData(audio.streamBuffers[i], audio.format, audio.wavBuffer + offset, BUFFER_SIZE, audio.audioSpec.freq);
+            }
+            audio.cursor = BUFFERS_NUM * BUFFER_SIZE;
+
+            alSourceQueueBuffers(source.handle, BUFFERS_NUM, audio.streamBuffers);
+            alSourcePlay(source.handle);
+            audio.isPlaying = true;
+        }
+        else
+            alSourcePlay(source.handle);
     }
 }
 
@@ -217,6 +283,9 @@ AudioFile::~AudioFile()
 {
     alDeleteBuffers(1, &alBuffer);
     SDL_FreeWAV(wavBuffer);
+
+    if(isStreamed)
+        alDeleteBuffers(4, streamBuffers);
 }
 
 AudioFile::AudioFile(AudioFile&& other)
@@ -234,6 +303,12 @@ AudioFile& AudioFile::operator=(AudioFile&& other)
     this->audioSpec = other.audioSpec;
     this->name = other.name;
     this->wavLength = other.wavLength;
+    this->format = other.format;
+    
+    this->isStreamed = other.isStreamed;
+    std::memcpy(this->streamBuffers, other.streamBuffers, BUFFERS_NUM * sizeof(ALuint));
+    std::memset(other.streamBuffers, 0, BUFFERS_NUM * sizeof(ALuint));
+    this->cursor = other.cursor;
 
     other.alBuffer = 0;
     other.wavBuffer = nullptr;
