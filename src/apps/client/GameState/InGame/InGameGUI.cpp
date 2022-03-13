@@ -23,13 +23,19 @@ void InGameGUI::Start()
 
     // Menu PopUp
     GUI::GenericPopUp menu;
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse 
+        | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
     auto onDrawMenu = [this](){
-        ImGui::Button("Resume");
-        if(ImGui::Button("Options"))
+        auto size = ImGui::CalcTextSize("Exit Game ");
+        size.y = 0;
+        ImGui::Button("Resume", size);
+        if(ImGui::Button("Options", size))
             this->puMgr.SetCur(PopUpState::OPTIONS);
-        ImGui::Button("Exit Game");
+        ImGui::Button("Exit Game", size);
     };
     menu.SetOnDraw(onDrawMenu);
+    menu.SetFlags(flags);
+    menu.SetTitle("Menu");
     menu.SetVisible(true);
     menu.SetCloseable(true);
     puMgr.Set(MENU, menu);
@@ -43,6 +49,8 @@ void InGameGUI::Start()
     options.SetOnClose([this](){
         this->puMgr.SetCur(PopUpState::MENU);
     });
+    options.SetTitle("Options");
+    options.SetFlags(flags);
     options.SetOnDraw(onDrawOptions);
     options.SetVisible(true);
     options.SetCloseable(true);

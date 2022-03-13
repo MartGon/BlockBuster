@@ -16,6 +16,11 @@ namespace GUI
 
         void SetCur(int index)
         {
+            for(auto i = 0; i < size; i++)
+            {
+                popUps[i].SetVisible(false);
+            }
+
             if(index < size && index >= -1)
             {
                 cur = index;
@@ -25,8 +30,10 @@ namespace GUI
 
         void DrawCur()
         {
-            if(cur != -1)
-                popUps[cur].Draw();
+            for(auto i = 0; i < size; i++)
+            {
+                popUps[i].Draw();
+            }
         }
 
     private:

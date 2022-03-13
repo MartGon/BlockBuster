@@ -7,9 +7,13 @@ void PopUp::Draw()
     auto displaySize = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
 
+    auto titleStr = title.c_str();
+    if(isVisible && !ImGui::IsPopupOpen(titleStr))
+        ImGui::OpenPopup(titleStr);
+
     bool* showClose = isCloseable ? &isVisible : nullptr;
     bool wasOpen = isVisible;
-    if(ImGui::BeginPopupModal(title.c_str(), showClose, flags))
+    if(ImGui::BeginPopupModal(titleStr, showClose, flags))
     {
         if(!isVisible)
             ImGui::CloseCurrentPopup();
@@ -24,7 +28,7 @@ void PopUp::Draw()
     }
 
     if(isVisible)
-        ImGui::OpenPopup(title.c_str());
+        ImGui::OpenPopup(titleStr);
 }
 
 void BasicPopUp::OnDraw()
