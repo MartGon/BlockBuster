@@ -1,5 +1,7 @@
 #include <PopUp.h>
 
+#include <gui/GUI.h>
+
 using namespace GUI;
 
 void PopUp::Draw()
@@ -40,7 +42,7 @@ void BasicPopUp::OnDraw()
 
     auto winWidth = ImGui::GetWindowWidth();
     auto buttonWidth = ImGui::CalcTextSize("Accept").x + 8;
-    ImGui::SetCursorPosX(winWidth / 2.0f - buttonWidth / 2.0f);
+    GUI::CenterSection(buttonWidth, winWidth);
     if(isButtonVisible && ImGui::Button("Accept"))
     {
         SetVisible(false);

@@ -12,3 +12,8 @@ void GUI::HelpMarker(const char* text)
         ImGui::EndTooltip();
     }
 }
+
+void GUI::CenterSection(float sWidth, float regionWidth)
+{
+    ImGui::SetCursorPosX(regionWidth/ 2.0f - sWidth / 2.0f);
+}

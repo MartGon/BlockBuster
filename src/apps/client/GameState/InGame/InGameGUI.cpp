@@ -61,8 +61,8 @@ void InGameGUI::Start()
         auto winWidth = ImGui::GetWindowWidth();
         auto aW = ImGui::CalcTextSize("Apply").x + 8;
         auto aeW = ImGui::CalcTextSize("Apply and exit").x + 8;
-        auto totalWidth = aW + aeW;
-        ImGui::SetCursorPosX(winWidth / 2.0f - totalWidth / 2.0f);
+
+        GUI::CenterSection(aW + aeW, winWidth);
         if(ImGui::Button("Apply"))
             this->inGame->ApplyGameOptions(this->gameOptions);
         ImGui::SameLine();
@@ -92,6 +92,8 @@ void InGameGUI::Start()
         ImGui::Text("Are you sure?");
         auto size = ImGui::CalcTextSize("Yes ");
         size.y = 0;
+
+        GUI::CenterSection(size.x * 2, ImGui::GetWindowWidth());
         if(ImGui::Button("Yes", size))
             this->inGame->client_->quit = true;
         ImGui::SameLine();
