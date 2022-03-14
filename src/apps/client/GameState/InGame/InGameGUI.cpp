@@ -139,7 +139,7 @@ void InGameGUI::DrawGUI(GL::Shader& textShader)
 
     text.SetColor(glm::vec4{0.0f, 1.0f, 0.0f, 1.0f});
     text.SetScale(2.0f);
-    text.Draw(textShader, glm::vec2{0.0f, 0.0f}, glm::vec2{(float)windowSize.x, (float)windowSize.y});
+    //text.Draw(textShader, glm::vec2{0.0f, 0.0f}, glm::vec2{(float)windowSize.x, (float)windowSize.y});
 }
 
 void InGameGUI::OpenMenu()

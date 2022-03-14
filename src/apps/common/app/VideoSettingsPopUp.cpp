@@ -79,7 +79,8 @@ void VideoSettingsPopUp::OnDraw()
 
     if(ImGui::Button("Accept"))
     {
-        app->ApplyVideoOptions(winConfig);
+        // Trick so the OnClose function applies the good config
+        oldWinConfig = winConfig;
         app->config.window = winConfig;
         Close();
     }
@@ -93,7 +94,6 @@ void VideoSettingsPopUp::OnDraw()
     ImGui::SameLine();
     if(ImGui::Button("Cancel"))
     {   
-        app->ApplyVideoOptions(oldWinConfig);
         Close();
     }
 }
