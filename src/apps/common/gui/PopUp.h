@@ -77,7 +77,7 @@ namespace GUI
 
     private:
 
-        ImGuiWindowFlags flags = ImGuiWindowFlags_None;
+        ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;
         
         bool isVisible = false;
         bool isCloseable = false;
@@ -138,6 +138,68 @@ namespace GUI
 
     private:
         std::function<void()> content;
+        std::function<void()> onOpen;
+        std::function<void()> onClose;
+    };
+
+    class EditTextPopUp : public PopUp
+    {
+    public:
+
+        inline void SetLabel(std::string label)
+        {
+            this->label = label;
+        }
+
+        inline void SetStringSize(std::size_t size)
+        {
+            textBuffer.resize(size);
+        }
+
+        inline void SetPlaceHolder(std::string str)
+        {
+            textBuffer = str;
+        }
+
+        inline void SetErrorText(std::string err)
+        {
+            errorText = err;
+        }
+
+        inline void SetOnAccept(std::function<bool(std::string)> onAccept)
+        {
+            this->onAccept = onAccept;
+        }
+
+        inline void SetOnCancel(std::function<void()> onCancel)
+        {
+            this->onCancel = onCancel;
+        }
+
+        inline void SetOnOpen(std::function<void()> onOpen)
+        {
+            this->onOpen = onOpen;
+        }
+
+        inline void SetOnClose(std::function<void()> onClose)
+        {
+            this->onClose = onClose;
+        }
+
+        void OnDraw() override;
+        void OnOpen() override;
+        void OnClose() override;
+
+    private:
+        std::string label = "Label";
+        std::string textBuffer = "Placeholder";
+        std::string errorText;
+        
+        bool onError = false;
+
+        std::function<bool(std::string)> onAccept = [](std::string){return true;};
+        std::function<void()> onCancel;
+
         std::function<void()> onOpen;
         std::function<void()> onClose;
     };

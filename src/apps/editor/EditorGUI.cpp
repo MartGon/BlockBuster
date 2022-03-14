@@ -18,149 +18,60 @@ EditorGUI::EditorGUI(Editor& editor) : editor{&editor}, videoSettingsPopUp{edito
 
 }
 
-void EditorGUI::EditTextPopUp(const EditorGUI::EditTextPopUpParams& params)
+void EditorGUI::OpenWarningPopUp(std::function<void()> onExit)
 {
-    auto displaySize = editor->io_->DisplaySize;
-    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-    bool onPopUp = state == params.popUpState;
-    if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-    {   
-        bool accept = ImGui::InputText("File name", params.textBuffer, params.bufferSize, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsNoBlank);
-        bool empty = std::strlen(params.textBuffer) <= 0;
-
-        Util::Result<bool> res = Util::CreateSuccess<bool>(true);
-        if((ImGui::Button("Accept") || accept) && !empty)
-        {
-            res = params.onAccept();
-
-            if(res.type == Util::ResultType::SUCCESS)
-            {
-                params.onError = false;
-                
-                ClosePopUp();
-            }
-            else
-            {
-                params.onError = true;
-                params.errorText = params.errorPrefix + params.textBuffer + ": " + res.err.info + '\n';
-            }
-        }
-
-        ImGui::SameLine();
-        if(ImGui::Button("Cancel"))
-        {
-            params.onCancel();
-
-            ClosePopUp();
-        }
-
-        if(params.onError)
-            ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", params.errorText.c_str());
-
-        ImGui::EndPopup();
-    }
-    else if(state == params.popUpState)
-    {
-        ClosePopUp();
-    }
+    puMgr.Open(UNSAVED_WARNING);
+    onWarningExit = onExit;
 }
 
-void EditorGUI::BasicPopUp(const BasicPopUpParams& params)
+void EditorGUI::InitPopUps()
 {
-    bool onPopUp = this->state == params.state;
-    if(ImGui::BeginPopupModal(params.name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        params.inPopUp();
+    GUI::EditTextPopUp saveAs;
+    saveAs.SetTitle("Save As");
+    saveAs.SetStringSize(16);
+    saveAs.SetOnOpen([this](){
+        auto sa = puMgr.GetAs<GUI::EditTextPopUp>(SAVE_AS);
+        sa->SetPlaceHolder(this->fileName);
+    });
+    saveAs.SetOnAccept([this](std::string map){
+        std::strcpy(fileName, map.data());
+        this->editor->SaveProject(); return true;
+    });
+    puMgr.Set(SAVE_AS, std::make_unique<GUI::EditTextPopUp>(saveAs));
 
-        ImGui::EndPopup();
-    }
-    else if(this->state == params.state)
-    {
-        ClosePopUp();
-    }
-}
+    GUI::EditTextPopUp openMap;
+    openMap.SetTitle("Open Map");
+    openMap.SetStringSize(16);
+    openMap.SetErrorText("Could not open map");
+    openMap.SetOnOpen([this](){
+        auto om = puMgr.GetAs<GUI::EditTextPopUp>(OPEN_MAP);
+        om->SetPlaceHolder(this->fileName);
+    });
+    openMap.SetOnAccept([this](std::string map){
+        std::strcpy(fileName, map.data());
+        auto res = this->editor->OpenProject(); return res.IsSuccess();
+    });
+    puMgr.Set(OPEN_MAP, std::make_unique<GUI::EditTextPopUp>(openMap));
 
-void EditorGUI::OpenMapPopUp()
-{
-    std::string errorPrefix = "Could not open map ";
-    auto onAccept = [this](){return this->editor->OpenProject();};
-    auto onCancel = [](){};
-    EditTextPopUpParams params{PopUpState::OPEN_MAP, "Open Map", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
-    EditTextPopUp(params);
-}
+    GUI::EditTextPopUp loadTexture;
+    loadTexture.SetTitle("Load Texture");
+    loadTexture.SetPlaceHolder("texture.png");
+    loadTexture.SetStringSize(32);
+    loadTexture.SetOnAccept([this](std::string path){
+        std::strcpy(textureFilename, path.data());
+        auto res = this->editor->LoadTexture();
+        return res.IsSuccess();
+    });
+    puMgr.Set(LOAD_TEXTURE, std::make_unique<GUI::EditTextPopUp>(loadTexture));
 
-void EditorGUI::SaveAsPopUp()
-{
-    std::string errorPrefix = "Could not save map ";
-    auto onAccept = [this](){this->editor->SaveProject(); return Util::CreateSuccess<bool>(true);};
-    auto onCancel = [](){};
-    EditTextPopUpParams params{PopUpState::SAVE_AS, "Save As", fileName, 32, onAccept, onCancel, errorPrefix, onError, errorText};
-    EditTextPopUp(params);
-}
-
-void EditorGUI::LoadTexturePopUp()
-{
-    std::string errorPrefix = "Could not open texture ";
-    auto onAccept = [this](){
-            auto res = this->editor->LoadTexture();
-            return res;
-    };
-    auto onCancel = [](){};
-    EditTextPopUpParams params{PopUpState::LOAD_TEXTURE, "Load Texture", textureFilename, 32, onAccept, onCancel, errorPrefix, onError, errorText};
-    EditTextPopUp(params);
-}
-
-static std::vector<SDL_DisplayMode> GetDisplayModes()
-{
-    std::vector<SDL_DisplayMode> displayModes;
-
-    int displays = SDL_GetNumVideoDisplays();
-    for(int i = 0; i < 1; i++)
-    {
-        auto numDisplayModes = SDL_GetNumDisplayModes(i);
-
-        displayModes.reserve(numDisplayModes);
-        for(int j = 0; j < numDisplayModes; j++)
-        {
-            SDL_DisplayMode mode;
-            if(!SDL_GetDisplayMode(i, j, &mode))
-            {
-                displayModes.push_back(mode);
-            }
-        }
-    }
-
-    return displayModes;
-}
-
-static std::string DisplayModeToString(int w, int h, int rr)
-{
-    return std::to_string(w) + " x " + std::to_string(h) + " " + std::to_string(rr) + " Hz";
-}
-
-static std::string DisplayModeToString(SDL_DisplayMode mode)
-{
-    return std::to_string(mode.w) + " x " + std::to_string(mode.h) + " " + std::to_string(mode.refresh_rate) + " Hz";
-}
-
-void EditorGUI::VideoOptionsPopUp()
-{
-    videoSettingsPopUp.Draw();
-}
-
-void EditorGUI::UnsavedWarningPopUp()
-{
-    auto displaySize = editor->io_->DisplaySize;
-    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-
-    bool onPopUp = state == PopUpState::UNSAVED_WARNING;
-    if(ImGui::BeginPopupModal(popUps[UNSAVED_WARNING].name.c_str(), &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-    {
+    GUI::GenericPopUp unsavedWarning;
+    unsavedWarning.SetTitle("Unsaved Content");
+    unsavedWarning.SetOnDraw([this](){
         ImGui::Text("There's unsaved content.\nWhat would you like to do?");
 
         if(ImGui::Button("Save"))
         {
-            ClosePopUp();
+            this->puMgr.Close();
 
             if(std::strlen(fileName) > 0)
             {
@@ -175,147 +86,82 @@ void EditorGUI::UnsavedWarningPopUp()
         if(ImGui::Button("Don't Save"))
         {
             editor->unsaved = false;
-            ClosePopUp();
+            this->puMgr.Close();
 
-            onWarningExit();
+            this->onWarningExit();
         }
         ImGui::SameLine();
 
         if(ImGui::Button("Cancel"))
         {
-            ClosePopUp();
+            this->puMgr.Close();
         }
+    });
+    puMgr.Set(UNSAVED_WARNING, std::make_unique<GUI::GenericPopUp>(unsavedWarning));
 
-        ImGui::EndPopup();
-    }
-    else if(state == PopUpState::UNSAVED_WARNING)
-    {
-        ClosePopUp();
-    }
-}
+    App::VideoSettingsPopUp videoPopUp{*this->editor};
+    puMgr.Set(VIDEO_SETTINGS, std::make_unique<App::VideoSettingsPopUp>(videoPopUp));
 
-void EditorGUI::GoToBlockPopUp()
-{
-    auto inPopUp = [this](){
-        
+    GUI::GenericPopUp goToBlock;
+    goToBlock.SetTitle("Go to block");
+    goToBlock.SetOnOpen([this](){
+        this->goToPos = Game::Map::ToGlobalPos(editor->camera.GetPos(), editor->project.map.GetBlockScale());
+    });
+    goToBlock.SetOnDraw([this](){
         ImGui::InputInt3("Position", &goToPos.x);
 
         if(ImGui::Button("Accept"))
         {
             glm::vec3 cameraPos = Game::Map::ToRealPos(goToPos, editor->project.map.GetBlockScale());
             editor->camera.SetPos(cameraPos);
-            ClosePopUp();
+            puMgr.Close();
         }
 
         ImGui::SameLine();
         if(ImGui::Button("Cancel"))
         {
-            ClosePopUp();
+            puMgr.Close();
         }
-    };
-    BasicPopUp({PopUpState::GO_TO_BLOCK, "Go to block", inPopUp});
-}
+    });
+    puMgr.Set(GO_TO_BLOCK, std::make_unique<GUI::GenericPopUp>(goToBlock));
 
-void EditorGUI::SetTextureFolderPopUp()
-{
-    std::string errorPrefix = "Could not set texture folder ";
-    auto onAccept = [this](){
+    GUI::EditTextPopUp setTextureFolder;
+    setTextureFolder.SetStringSize(128);
+    setTextureFolder.SetTitle("Set Texture Folder");
+    setTextureFolder.SetLabel("Texture Folder");
+    setTextureFolder.SetErrorText("Could not set texture folder");
+    setTextureFolder.SetOnOpen([this](){
+        std::strcpy(this->textureFolderPath, editor->project.map.textureFolder.string().c_str());
+        auto stf = this->puMgr.GetAs<GUI::EditTextPopUp>(SET_TEXTURE_FOLDER);
+        stf->SetPlaceHolder(this->textureFolderPath);
+    });
+    setTextureFolder.SetOnAccept([this](auto path){
+        std::strcpy(this->textureFolderPath, path.data());
         if(std::filesystem::is_directory(this->textureFolderPath))
         {
             editor->project.map.textureFolder = this->textureFolderPath;
             
-            return Util::CreateSuccess<bool>(true);
+            return true;
         }
         else
-            return Util::CreateError<bool>("Path is not a folder");
-    };
-    auto onCancel = [](){};
-    EditTextPopUpParams params{PopUpState::SET_TEXTURE_FOLDER, "Set Texture Folder", textureFolderPath, 128, onAccept, 
-        onCancel, errorPrefix, onError, errorText};
-    EditTextPopUp(params);
-}
-
-void EditorGUI::OpenWarningPopUp(std::function<void()> onExit)
-{
-    OpenPopUp(PopUpState::UNSAVED_WARNING);
-    onWarningExit = onExit;
-}
-
-void EditorGUI::InitPopUps()
-{
-    popUps[NONE].update = []{};
-
-    popUps[SAVE_AS].name = "Save As";
-    popUps[SAVE_AS].update = std::bind(&EditorGUI::SaveAsPopUp, this);
-
-    popUps[OPEN_MAP].name = "Open Map";
-    popUps[OPEN_MAP].update = std::bind(&EditorGUI::OpenMapPopUp, this);
-
-    popUps[LOAD_TEXTURE].name = "Load Texture";
-    popUps[LOAD_TEXTURE].update = std::bind(&EditorGUI::LoadTexturePopUp, this);
-
-    popUps[UNSAVED_WARNING].name = "Unsaved content";
-    popUps[UNSAVED_WARNING].update = std::bind(&EditorGUI::UnsavedWarningPopUp, this);
-
-    popUps[VIDEO_SETTINGS].name = videoSettingsPopUp.GetTile();
-    popUps[VIDEO_SETTINGS].update = std::bind(&EditorGUI::VideoOptionsPopUp, this);
-    popUps[VIDEO_SETTINGS].onOpen = [this](){
-        //videoSettingsPopUp.SetVisible(true);
-        
-    };
-    popUps[VIDEO_SETTINGS].onClose = [this](bool accept){
-
-    };
-    videoSettingsPopUp.SetOnClose([this](){
-        this->state = NONE;
+            return false;
     });
-
-    popUps[GO_TO_BLOCK].name = "Go to block";
-    popUps[GO_TO_BLOCK].onOpen = [this](){
-        this->goToPos = Game::Map::ToGlobalPos(editor->camera.GetPos(), editor->project.map.GetBlockScale());
-    };
-    popUps[GO_TO_BLOCK].update = std::bind(&EditorGUI::GoToBlockPopUp, this);
-
-    popUps[SET_TEXTURE_FOLDER].name = "Set Texture Folder";
-    popUps[SET_TEXTURE_FOLDER].onOpen = [this](){
-        std::strcpy(this->textureFolderPath, editor->project.map.textureFolder.string().c_str());
-    };
-    popUps[SET_TEXTURE_FOLDER].update = std::bind(&EditorGUI::SetTextureFolderPopUp, this);
+    puMgr.Set(SET_TEXTURE_FOLDER, std::make_unique<GUI::EditTextPopUp>(setTextureFolder));
 }
 
-void EditorGUI::OpenPopUp(PopUpState puState)
+void EditorGUI::OpenPopUp(PopUpState state)
 {
-    if(state == PopUpState::NONE)
-        this->state = puState;
+    puMgr.Open(state);
 }
 
-void EditorGUI::UpdatePopUp()
+void EditorGUI::ClosePopUp()
 {
-    // Open if not open yet
-    auto name = popUps[state].name.c_str();
-    bool isOpen = ImGui::IsPopupOpen(name);
-    if(this->state != PopUpState::NONE && !isOpen)
-    {
-        popUps[state].onOpen();
-        
-        if(this->state == PopUpState::VIDEO_SETTINGS)
-            videoSettingsPopUp.SetVisible(true);
-        else
-            ImGui::OpenPopup(name);
-    }
-
-    // Render each popup data
-    for(int s = NONE; s < MAX; s++)
-    {
-        popUps[s].update();
-    }
+    puMgr.Close();
 }
 
-void EditorGUI::ClosePopUp(bool accept)
+bool EditorGUI::IsAnyPopUpOpen()
 {
-    popUps[state].onClose(accept);
-    this->state = NONE;
-    ImGui::CloseCurrentPopup();
+    return puMgr.IsOpen();
 }
 
 // #### GUI - Misc #### \\
@@ -343,7 +189,7 @@ void EditorGUI::SyncGUITextures()
 void EditorGUI::MenuBar()
 {
     // Pop Ups
-    UpdatePopUp();
+    puMgr.Update();
 
     if(ImGui::BeginMenuBar())
     {
@@ -392,7 +238,7 @@ void EditorGUI::MenuBar()
 
             if(ImGui::MenuItem("Go to Block", "Ctrl + G"))
             {
-                OpenPopUp(PopUpState::GO_TO_BLOCK);
+                puMgr.Open(PopUpState::GO_TO_BLOCK);
             }
 
             ImGui::EndMenu();
@@ -403,7 +249,7 @@ void EditorGUI::MenuBar()
             
             if(ImGui::MenuItem("Set Texture Folder"))
             {
-                OpenPopUp(PopUpState::SET_TEXTURE_FOLDER);
+                puMgr.Open(PopUpState::SET_TEXTURE_FOLDER);
             }
 
             ImGui::EndMenu();
@@ -413,7 +259,7 @@ void EditorGUI::MenuBar()
         {
             if(ImGui::MenuItem("Video", "Ctrl + Shift + G"))
             {
-                OpenPopUp(PopUpState::VIDEO_SETTINGS);
+                puMgr.Open(PopUpState::VIDEO_SETTINGS);
             }
 
             #ifdef _DEBUG

@@ -47,12 +47,24 @@ namespace GUI
             return false;
         }
 
-        inline void DrawCur()
+        inline void Update()
         {
             for(auto i = 0; i < size; i++)
             {
                 popUps[i]->Draw();
             }
+        }
+
+        template<typename T>
+        inline T* GetAs(int index)
+        {
+            T* ret = nullptr;
+            if(index < size && index >= 0)
+            {
+                ret = static_cast<T*>(popUps[index].get());
+            }
+
+            return ret;
         }
 
     private:

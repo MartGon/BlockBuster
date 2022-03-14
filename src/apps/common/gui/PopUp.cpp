@@ -2,6 +2,8 @@
 
 #include <gui/GUI.h>
 
+#include <cstring>
+
 using namespace GUI;
 
 void PopUp::Draw()
@@ -13,7 +15,6 @@ void PopUp::Draw()
     if(isVisible && !ImGui::IsPopupOpen(titleStr))
     {
         ImGui::OpenPopup(titleStr);
-        OnOpen();
     }
 
     bool* showClose = isCloseable ? &isVisible : nullptr;
@@ -61,6 +62,53 @@ void GenericPopUp::OnOpen()
 }
 
 void GenericPopUp::OnClose()
+{
+    if(onClose)
+        onClose();
+}
+
+void EditTextPopUp::OnDraw()
+{
+    auto capacity = textBuffer.capacity();
+    bool accept = ImGui::InputText(label.c_str(), textBuffer.data(), capacity, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_CharsNoBlank);
+    bool empty = std::strlen(textBuffer.data()) == 0;
+
+    if((ImGui::Button("Accept") || accept) && !empty)
+    {
+        bool res = onAccept(textBuffer.data());
+
+        if(res)
+        {
+            onError = false;
+            
+            Close();
+        }
+        else
+        {
+            onError = true;
+        }
+    }
+
+    ImGui::SameLine();
+    if(ImGui::Button("Cancel"))
+    {
+        if(onCancel)
+            onCancel();
+
+        Close();
+    }
+
+    if(onError)
+        ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", errorText.c_str());
+}
+
+void EditTextPopUp::OnOpen()
+{
+    if(onOpen)
+        onOpen();
+}
+
+void EditTextPopUp::OnClose()
 {
     if(onClose)
         onClose();

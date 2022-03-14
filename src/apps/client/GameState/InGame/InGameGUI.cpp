@@ -127,7 +127,7 @@ void InGameGUI::DrawGUI(GL::Shader& textShader)
         DebugWindow();
         NetworkStatsWindow();
         RenderStatsWindow();
-        puMgr.DrawCur();
+        puMgr.Update();
     }
     
     // Draw GUI

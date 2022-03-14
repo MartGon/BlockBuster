@@ -425,13 +425,13 @@ void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
         auto sym = key.keysym.sym;
         if(sym == SDLK_ESCAPE)
         {
-            if(gui.state != EditorGUI::PopUpState::NONE)
+            if(gui.IsAnyPopUpOpen())
                 gui.ClosePopUp();
             else
                 Exit();
         }
 
-        if(gui.state != EditorGUI::PopUpState::NONE)
+        if(gui.IsAnyPopUpOpen())
             return;
 
         // Select tool

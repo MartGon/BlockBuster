@@ -3,6 +3,7 @@
 #include <EditorFwd.h>
 
 #include <VideoSettingsPopUp.h>
+#include <gui/PopUpMgr.h>
 
 namespace BlockBuster::Editor
 {
@@ -17,7 +18,6 @@ namespace BlockBuster::Editor
 
         enum PopUpState
         {
-            NONE,
             SAVE_AS,
             OPEN_MAP,
             LOAD_TEXTURE,
@@ -36,38 +36,6 @@ namespace BlockBuster::Editor
             DEBUG_TAB
         };
 
-        struct PopUp
-        {
-            std::string name;
-            std::function<void()> update;
-            std::function<void()> onOpen = []{};
-            std::function<void(bool)> onClose = [](bool){};
-        }; 
-
-        struct EditTextPopUpParams
-        {
-            PopUpState popUpState;
-            std::string name;
-            char* textBuffer; 
-            size_t bufferSize;
-            std::function<Util::Result<bool>()> onAccept;
-            std::function<void()> onCancel;
-            std::string errorPrefix;
-
-            bool& onError;
-            std::string& errorText;
-        };
-
-        struct BasicPopUpParams
-        {
-            PopUpState state;
-            std::string name;
-            std::function<void()> inPopUp;
-        };
-
-        void EditTextPopUp(const EditTextPopUpParams& params);
-        void BasicPopUp(const BasicPopUpParams& params);
-
         void OpenMapPopUp();
         void SaveAsPopUp();
         void LoadTexturePopUp();
@@ -78,9 +46,9 @@ namespace BlockBuster::Editor
         void OpenWarningPopUp(std::function<void()> onExit);
 
         void InitPopUps();
-        void UpdatePopUp();
         void OpenPopUp(PopUpState puState);
-        void ClosePopUp(bool accept = false);
+        void ClosePopUp();
+        bool IsAnyPopUpOpen();
 
         // GUI - Misc
         void SyncGUITextures();
@@ -117,9 +85,8 @@ namespace BlockBuster::Editor
         const int MAX_TEXTURES = 32;
         std::vector<ImGui::Impl::Texture> guiTextures;
 
-        PopUp popUps[PopUpState::MAX];
+        GUI::PopUpMgr<PopUpState::MAX> puMgr;
         App::VideoSettingsPopUp videoSettingsPopUp;
-        PopUpState state = PopUpState::NONE;
         TabState tabState = TabState::TOOLS_TAB;
         bool pickingColor = false;
         bool newColor = false;
