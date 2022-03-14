@@ -10,7 +10,7 @@ namespace App
     class VideoSettingsPopUp : public GUI::PopUp
     {
     public:
-        VideoSettingsPopUp(AppI& app) : app{&app} {}
+        VideoSettingsPopUp(AppI& app);
 
         inline void SetOnClose(std::function<void()> onClose)
         {
@@ -26,6 +26,7 @@ namespace App
 
         AppI* app = nullptr;
         Configuration::WindowConfig winConfig;
+        Configuration::WindowConfig oldWinConfig;
         Configuration::OpenGLConfig glConfig;
     };
 }

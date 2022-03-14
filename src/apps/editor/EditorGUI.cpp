@@ -13,7 +13,7 @@ using namespace BlockBuster::Editor;
 using namespace BlockBuster;
 using namespace Entity;
 
-EditorGUI::EditorGUI(Editor& editor) : editor{&editor}
+EditorGUI::EditorGUI(Editor& editor) : editor{&editor}, videoSettingsPopUp{editor}
 {
 
 }
@@ -145,72 +145,7 @@ static std::string DisplayModeToString(SDL_DisplayMode mode)
 
 void EditorGUI::VideoOptionsPopUp()
 {
-    auto displaySize = editor->io_->DisplaySize;
-    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
-
-    bool onPopUp = state == PopUpState::VIDEO_SETTINGS;
-    if(ImGui::BeginPopupModal("Video", &onPopUp, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize))
-    {   
-        auto preConfig = editor->preConfig;
-        std::string resolution = DisplayModeToString(preConfig.resolutionW, preConfig.resolutionH, preConfig.refreshRate);
-        if(ImGui::BeginCombo("Resolution", resolution.c_str()))
-        {
-            auto displayModes = GetDisplayModes();
-            for(auto& mode : displayModes)
-            {
-                bool selected = preConfig.mode == mode.w && preConfig.mode == mode.h && preConfig.refreshRate == mode.refresh_rate;
-                if(ImGui::Selectable(DisplayModeToString(mode).c_str(), selected))
-                {
-                    preConfig.resolutionW = mode.w;
-                    preConfig.resolutionH = mode.h;
-                    preConfig.refreshRate = mode.refresh_rate;
-                }
-            }
-
-            ImGui::EndCombo();
-        }
-
-        ImGui::Text("Window Mode");
-        ImGui::RadioButton("Windowed", &preConfig.mode, ::App::Configuration::WindowMode::WINDOW); ImGui::SameLine();
-        ImGui::RadioButton("Fullscreen", &preConfig.mode, ::App::Configuration::WindowMode::FULLSCREEN); ImGui::SameLine();
-        ImGui::RadioButton("Borderless", &preConfig.mode, ::App::Configuration::WindowMode::BORDERLESS);
-
-        ImGui::Checkbox("Vsync", &preConfig.vsync);
-
-        int fov = glm::degrees(preConfig.fov);
-        if(ImGui::SliderInt("FOV", &fov, 45, 90))
-        {
-            preConfig.fov = glm::radians((float)fov);
-            std::cout << "Preconfig fov is " << preConfig.fov << "\n";
-        }
-
-        if(ImGui::Button("Accept"))
-        {
-            editor->ApplyVideoOptions(preConfig);
-            editor->config.window = preConfig;
-
-            ClosePopUp(true);
-        }
-
-        ImGui::SameLine();
-        if(ImGui::Button("Apply"))
-        {
-            editor->ApplyVideoOptions(preConfig);
-        }
-
-        ImGui::SameLine();
-        if(ImGui::Button("Cancel"))
-        {
-            ClosePopUp(false);
-        }
-
-        ImGui::EndPopup();
-    }
-    // Triggered when X button is pressed, same effect as cancel
-    else if(state == PopUpState::VIDEO_SETTINGS)
-    {
-        ClosePopUp(false);
-    }
+    videoSettingsPopUp.Draw();
 }
 
 void EditorGUI::UnsavedWarningPopUp()
@@ -322,18 +257,18 @@ void EditorGUI::InitPopUps()
     popUps[UNSAVED_WARNING].name = "Unsaved content";
     popUps[UNSAVED_WARNING].update = std::bind(&EditorGUI::UnsavedWarningPopUp, this);
 
-    popUps[VIDEO_SETTINGS].name = "Video";
+    popUps[VIDEO_SETTINGS].name = videoSettingsPopUp.GetTile();
     popUps[VIDEO_SETTINGS].update = std::bind(&EditorGUI::VideoOptionsPopUp, this);
     popUps[VIDEO_SETTINGS].onOpen = [this](){
-        editor->preConfig = editor->config.window;
+        //videoSettingsPopUp.SetVisible(true);
+        
     };
     popUps[VIDEO_SETTINGS].onClose = [this](bool accept){
-        if(!accept)
-        {
-            editor->ApplyVideoOptions(editor->config.window);
-            editor->preConfig = editor->config.window;
-        }
+
     };
+    videoSettingsPopUp.SetOnClose([this](){
+        this->state = NONE;
+    });
 
     popUps[GO_TO_BLOCK].name = "Go to block";
     popUps[GO_TO_BLOCK].onOpen = [this](){
@@ -362,7 +297,11 @@ void EditorGUI::UpdatePopUp()
     if(this->state != PopUpState::NONE && !isOpen)
     {
         popUps[state].onOpen();
-        ImGui::OpenPopup(name);
+        
+        if(this->state == PopUpState::VIDEO_SETTINGS)
+            videoSettingsPopUp.SetVisible(true);
+        else
+            ImGui::OpenPopup(name);
     }
 
     // Render each popup data

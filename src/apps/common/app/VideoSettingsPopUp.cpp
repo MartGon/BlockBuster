@@ -4,6 +4,11 @@
 
 using namespace App;
 
+VideoSettingsPopUp::VideoSettingsPopUp(AppI& app) : app{&app}
+{
+    SetTitle("Video Settings"); // Bug: This glitches everything, for some reason
+}
+
 static std::vector<SDL_DisplayMode> GetDisplayModes()
 {
     std::vector<SDL_DisplayMode> displayModes;
@@ -88,7 +93,8 @@ void VideoSettingsPopUp::OnDraw()
 
     ImGui::SameLine();
     if(ImGui::Button("Cancel"))
-    {
+    {   
+        app->ApplyVideoOptions(oldWinConfig);
         SetVisible(false);
     }
 }
@@ -96,6 +102,7 @@ void VideoSettingsPopUp::OnDraw()
 void VideoSettingsPopUp::OnOpen()
 {
     winConfig = app->config.window;
+    oldWinConfig = app->config.window;
 }
 
 void VideoSettingsPopUp::OnClose()

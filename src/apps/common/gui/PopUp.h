@@ -31,6 +31,11 @@ namespace GUI
         {
             isCloseable = closeable;
         }
+
+        inline std::string GetTile()
+        {
+            return this->title;
+        }
         
         inline void SetTitle(std::string title)
         {

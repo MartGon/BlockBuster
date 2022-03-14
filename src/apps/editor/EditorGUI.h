@@ -2,6 +2,8 @@
 
 #include <EditorFwd.h>
 
+#include <VideoSettingsPopUp.h>
+
 namespace BlockBuster::Editor
 {
     class Editor;
@@ -116,6 +118,7 @@ namespace BlockBuster::Editor
         std::vector<ImGui::Impl::Texture> guiTextures;
 
         PopUp popUps[PopUpState::MAX];
+        App::VideoSettingsPopUp videoSettingsPopUp;
         PopUpState state = PopUpState::NONE;
         TabState tabState = TabState::TOOLS_TAB;
         bool pickingColor = false;
