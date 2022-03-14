@@ -155,6 +155,28 @@ void AppI::RenameMainWindow(const std::string& name)
     SDL_SetWindowTitle(window_, name.c_str());
 }
 
+void AppI::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
+{
+    auto width = winConfig.resolutionW;
+    auto height = winConfig.resolutionH;
+    SDL_SetWindowFullscreen(window_, winConfig.mode);
+
+    if(winConfig.mode == ::App::Configuration::FULLSCREEN)
+    {
+        SDL_SetWindowDisplayMode(window_, NULL);
+        auto display = SDL_GetWindowDisplayIndex(window_);
+        SDL_DisplayMode mode;
+        SDL_GetDesktopDisplayMode(display, &mode);
+        width = mode.w;
+        height = mode.h;
+    }
+    SetWindowSize(glm::ivec2{width, height});
+    
+    SDL_GL_SetSwapInterval(winConfig.vsync);
+
+    SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+}
+
 std::string AppI::GetConfigOption(const std::string& key, std::string defaultValue)
 {
     std::string ret = defaultValue;

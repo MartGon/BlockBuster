@@ -47,6 +47,8 @@ namespace BlockBuster
         void Update() override;
         void Shutdown() override;
 
+        void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) override;
+
     private:
 
         void DoUpdate(Util::Time::Seconds deltaTime);

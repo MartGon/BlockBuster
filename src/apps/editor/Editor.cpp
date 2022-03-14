@@ -1595,24 +1595,9 @@ void Editor::EditGameObject()
 
 void Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
 {
-    auto width = winConfig.resolutionW;
-    auto height = winConfig.resolutionH;
-    SDL_SetWindowFullscreen(window_, winConfig.mode);
+    AppI::ApplyVideoOptions(winConfig);
 
-    if(winConfig.mode == ::App::Configuration::FULLSCREEN)
-    {
-        SDL_SetWindowDisplayMode(window_, NULL);
-        auto display = SDL_GetWindowDisplayIndex(window_);
-        SDL_DisplayMode mode;
-        SDL_GetDesktopDisplayMode(display, &mode);
-        width = mode.w;
-        height = mode.h;
-    }
-    SetWindowSize(glm::ivec2{width, height});
-    
-    camera.SetParam(camera.ASPECT_RATIO, (float) width / (float) height);
+    auto winSize = GetWindowSize();
+    camera.SetParam(camera.ASPECT_RATIO, (float) winSize.x/ (float) winSize.y);
     camera.SetParam(Rendering::Camera::Param::FOV, winConfig.fov);
-    SDL_GL_SetSwapInterval(winConfig.vsync);
-
-    SDL_SetWindowPosition(window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 }

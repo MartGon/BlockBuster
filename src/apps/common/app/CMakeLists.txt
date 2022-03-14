@@ -2,6 +2,7 @@ SET(SOURCES
 
     App.cpp
     Configuration.cpp
+    VideoSettingsPopUp.cpp
 )
 
 

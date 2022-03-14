@@ -48,6 +48,8 @@ namespace BlockBuster
 
         void LaunchGame(std::string address, uint16_t port);
 
+        void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) override;
+
         std::unique_ptr<GameState> state;
         std::unique_ptr<GameState> nextState;
 

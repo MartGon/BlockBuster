@@ -1,7 +1,8 @@
 #include <GameState/InGame/InGameGUI.h>
-
 #include <GameState/InGame/InGame.h>
+
 #include <Client.h>
+#include <VideoSettingsPopUp.h>
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
@@ -26,13 +27,16 @@ void InGameGUI::Start()
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse 
         | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
     auto onDrawMenu = [this](){
-        auto size = ImGui::CalcTextSize("Exit Game ");
+        auto size = ImGui::CalcTextSize("Video Settings ");
         size.y = 0;
         if(ImGui::Button("Resume", size))
             this->CloseMenu();
 
         if(ImGui::Button("Options", size))
             this->puMgr.SetCur(PopUpState::OPTIONS);
+
+        if(ImGui::Button("Video Settings", size))
+            this->puMgr.SetCur(PopUpState::VIDEO_SETTINGS);
 
         if(ImGui::Button("Exit Game", size))
             this->puMgr.SetCur(PopUpState::WARNING);
@@ -83,6 +87,14 @@ void InGameGUI::Start()
     options.SetOnDraw(onDrawOptions);
     options.SetCloseable(true);
     puMgr.Set(OPTIONS, std::make_unique<GUI::GenericPopUp>(options));
+
+    // Video pop up
+    auto videoSettings = std::make_unique<App::VideoSettingsPopUp>(*inGame->client_);
+    videoSettings->SetOnClose([this](){
+        CloseMenu();
+        std::cout << "Closing menu\n";
+    });
+    puMgr.Set(VIDEO_SETTINGS, std::move(videoSettings));
 
     // Warning pop up
     GUI::GenericPopUp warning;

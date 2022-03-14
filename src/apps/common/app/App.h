@@ -19,6 +19,7 @@ namespace App
 {
     class AppI
     {
+    friend class VideoSettingsPopUp;
     public:
         AppI(Configuration config);
         virtual ~AppI();
@@ -36,6 +37,8 @@ namespace App
         glm::ivec2 GetMousePos();
         void RenameMainWindow(const std::string& name);
         
+        virtual void ApplyVideoOptions(Configuration::WindowConfig& winConfig);
+
         std::string GetConfigOption(const std::string& key, std::string defaultValue);
 
         ImGuiIO* io_;

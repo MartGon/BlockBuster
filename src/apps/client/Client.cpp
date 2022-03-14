@@ -58,3 +58,10 @@ void Client::LaunchGame(std::string address, uint16_t port)
 {
     nextState = std::make_unique<InGame>(this, address, port);
 }
+
+void Client::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)
+{
+    AppI::ApplyVideoOptions(winConfig);
+    
+    this->state->ApplyVideoOptions(winConfig);
+}

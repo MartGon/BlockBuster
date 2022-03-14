@@ -109,8 +109,12 @@ void InGame::Start()
     // Audio
     audioMgr = audioMgr->Get();
     audioMgr->Init();
-    // TODO: Make this failproof. If it isn't found. Simpy return id, log, and play nothing. Maybe return -1 id, then check in Play. LoadWAVOrNull
-    auto [id, err] = audioMgr->LoadStreamedWAVOrNull("/home/defu/Projects/BlockBuster/resources/audio/Soundtrack.wav");
+
+    std::filesystem::path soundTrackPath = "/home/defu/Projects/BlockBuster/resources/audio/Soundtrack.wav";
+    auto [id, err] = audioMgr->LoadStreamedWAVOrNull(soundTrackPath);
+    if(err != Audio::AudioMgr::LoadWAVError::NO_ERROR)
+        GetLogger()->LogError("Could not find audio file" + soundTrackPath.string() + ". Err: " + std::to_string(err));
+
     auto srcId = audioMgr->CreateSource();
     Audio::AudioSource::Params audioParams;
     audioParams.pos.x = -100;
@@ -261,6 +265,13 @@ void InGame::Update()
 void InGame::Shutdown()
 {
     WriteGameOptions();
+}
+
+void InGame::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)
+{
+    auto winSize = client_->GetWindowSize();
+    camera_.SetParam(camera_.ASPECT_RATIO, (float) winSize.x/ (float) winSize.y);
+    camera_.SetParam(Rendering::Camera::Param::FOV, winConfig.fov);
 }
 
 // Update

@@ -154,7 +154,7 @@ namespace BlockBuster::Editor
         void EditGameObject();
 
         // Options
-        void ApplyVideoOptions(::App::Configuration::WindowConfig& config);
+        void ApplyVideoOptions(::App::Configuration::WindowConfig& config) override;
 
         // Project
         Project project;

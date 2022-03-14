@@ -47,6 +47,7 @@ namespace BlockBuster
         {
             MENU,
             OPTIONS,
+            VIDEO_SETTINGS,
             WARNING,
 
             MAX

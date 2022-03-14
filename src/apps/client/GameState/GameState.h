@@ -2,6 +2,8 @@
 
 #include <mglogger/MGLogger.h>
 
+#include <app/App.h>
+
 namespace BlockBuster
 {
     class Client;
@@ -15,6 +17,8 @@ namespace BlockBuster
         virtual void Start(){};
         virtual void Update() = 0;
         virtual void Shutdown(){};
+
+        virtual void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) {};
 
     protected:
 
