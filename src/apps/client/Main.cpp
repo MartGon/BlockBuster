@@ -68,14 +68,18 @@ int main(int argc, char** args)
     // Init logger
     auto cLogger = std::make_unique<Log::ComposedLogger>();
     auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
-    consoleLogger->Disable();
+    //consoleLogger->Disable();
+    //consoleLogger->SetVerbosity(Log::Verbosity::ERROR);
     cLogger->AddLogger(std::move(consoleLogger));
     
     auto filelogger = std::make_unique<Log::FileLogger>();
     filelogger->OpenLogFile(config.log.logFile);
     
     if(filelogger->IsOk())
+    {
+        filelogger->SetVerbosity(config.log.verbosity);
         cLogger->AddLogger(std::move(filelogger));
+    }
     else
     {
         std::string msg = "Could not open log file: " + config.log.logFile.string() + '\n';
@@ -102,7 +106,7 @@ int main(int argc, char** args)
     }
 
     // Set logger
-    cLogger->SetVerbosity(config.log.verbosity);
+    //cLogger->SetVerbosity(config.log.verbosity);
     App::ServiceLocator::SetLogger(std::move(cLogger));
     
     // Start client

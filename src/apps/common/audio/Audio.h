@@ -26,10 +26,10 @@ namespace Audio
     struct AudioSource
     {
         ALuint handle = 0;
-        ID audioId = -1;
+        ID audioId = 0;
 
         struct Params{
-            float pitch = 1;
+            float pitch = 1.0f;
             float gain = 1.0f;
             float orientation = 0.0f; // radians
             glm::vec3 pos = glm::vec3{0.0f};

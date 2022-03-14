@@ -14,7 +14,7 @@ namespace GUI
                 popUps[index] = std::move(popUp);
         }
 
-        inline void SetCur(int index)
+        inline void Open(int index)
         {
             for(auto i = 0; i < size; i++)
             {
@@ -24,7 +24,15 @@ namespace GUI
             if(index < size && index >= 0)
             {
                 cur = index;
-                popUps[cur]->SetVisible(true);
+                popUps[cur]->Open();
+            }
+        }
+
+        inline void Close()
+        {
+            for(auto i = 0; i < size; i++)
+            {
+                popUps[i]->Close();
             }
         }
 

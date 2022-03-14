@@ -28,12 +28,7 @@ void PopUp::Draw()
         ImGui::EndPopup();
     }
     else if(wasOpen)
-    {
         OnClose();
-    }
-
-    if(isVisible)
-        ImGui::OpenPopup(titleStr);
 }
 
 void BasicPopUp::OnDraw()

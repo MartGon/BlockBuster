@@ -28,6 +28,17 @@ namespace BlockBuster
         bool IsMenuOpen();
 
     private:
+        // PopUps
+        enum PopUpState
+        {
+            MENU,
+            OPTIONS,
+            VIDEO_SETTINGS,
+            WARNING,
+
+            MAX
+        };
+        void OpenMenu(PopUpState state);
 
         void DebugWindow();
         void RenderStatsWindow();
@@ -43,15 +54,6 @@ namespace BlockBuster
         GUI::Text text;
 
         // PopUps
-        enum PopUpState
-        {
-            MENU,
-            OPTIONS,
-            VIDEO_SETTINGS,
-            WARNING,
-
-            MAX
-        };
         GUI::PopUpMgr<PopUpState::MAX> puMgr;
 
         // Game options

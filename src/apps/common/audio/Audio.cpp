@@ -136,6 +136,8 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAV(ID id, std::filesyste
 
         // Import file
         staticFiles[id] = std::move(sfile);
+
+        return Ok(id);
     }
 
     return Err(res.unwrapErr());
@@ -176,6 +178,8 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAV(ID id, std::filesys
 
         // Import file
         streamedFiles[id] = std::move(sfile);
+
+        return Ok(id);
     }
 
     return Err(res.unwrapErr());
@@ -259,6 +263,8 @@ ID AudioMgr::CreateStreamSource()
     alGenSources(1, &source.handle);
     SetSourceParams(source);
 
+    alGenBuffers(BUFFERS_NUM, sSource.streamBuffers);
+
     alSourcef(source.handle, AL_REFERENCE_DISTANCE, refDistance);
     alSourcei(source.handle, AL_SOURCE_RELATIVE, AL_FALSE);
     
@@ -302,7 +308,6 @@ void AudioMgr::PlayStreamSource(ID streamSrcId)
         auto& sSource = streamSources[streamSrcId];
         if(auto audio = GetStreamFile(sSource.source.audioId))
         {
-
             for(auto i = 0; i < Audio::BUFFERS_NUM; ++i)
             {
                 auto offset = i * BUFFER_SIZE;

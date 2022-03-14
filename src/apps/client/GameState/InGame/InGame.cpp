@@ -100,8 +100,8 @@ void InGame::Start()
     // Map
     auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
     auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
-    LoadMap("./resources/maps/Alpha2.bbm");
-    //LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
+    //LoadMap("./resources/maps/Alpha2.bbm");
+    LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
 
     // UI
     inGameGui.Start();
@@ -115,12 +115,17 @@ void InGame::Start()
     if(err != Audio::AudioMgr::LoadWAVError::NO_ERROR)
         GetLogger()->LogError("Could not find audio file" + soundTrackPath.string() + ". Err: " + std::to_string(err));
 
-    auto srcId = audioMgr->CreateSource();
+    auto srcId = audioMgr->CreateStreamSource();
     Audio::AudioSource::Params audioParams;
-    audioParams.pos.x = -100;
-    audioMgr->SetSourceParams(srcId, audioParams);
-    audioMgr->SetSourceAudio(srcId, id);
-    audioMgr->PlaySource(srcId);
+    audioMgr->SetStreamSourceParams(srcId, audioParams);
+    audioMgr->SetStreamSourceAudio(srcId, id);
+    audioMgr->PlayStreamSource(srcId);
+
+    std::filesystem::path audioPath = "/home/defu/Projects/BlockBuster/resources/audio/tone.wav";
+    auto [staticId, error] = audioMgr->LoadStaticWAVOrNull(audioPath);
+
+    auto sSource = audioMgr->CreateSource();
+    audioMgr->SetSourceAudio(sSource, staticId);
 
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();

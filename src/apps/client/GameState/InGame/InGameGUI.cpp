@@ -33,13 +33,13 @@ void InGameGUI::Start()
             this->CloseMenu();
 
         if(ImGui::Button("Options", size))
-            this->puMgr.SetCur(PopUpState::OPTIONS);
+            this->puMgr.Open(PopUpState::OPTIONS);
 
         if(ImGui::Button("Video Settings", size))
-            this->puMgr.SetCur(PopUpState::VIDEO_SETTINGS);
+            this->puMgr.Open(PopUpState::VIDEO_SETTINGS);
 
         if(ImGui::Button("Exit Game", size))
-            this->puMgr.SetCur(PopUpState::WARNING);
+            this->puMgr.Open(PopUpState::WARNING);
     };
     menu.SetOnDraw(onDrawMenu);
     menu.SetFlags(flags);
@@ -73,14 +73,14 @@ void InGameGUI::Start()
         if(ImGui::Button("Apply and exit"))
         {
             this->inGame->ApplyGameOptions(this->gameOptions);
-            CloseMenu();
+            this->OpenMenu(PopUpState::MENU);
         }
     };
     options.SetOnOpen([this](){
         this->gameOptions = this->inGame->gameOptions;
     });
     options.SetOnClose([this](){
-        this->puMgr.SetCur(PopUpState::MENU);
+        this->OpenMenu(PopUpState::MENU);
     });
     options.SetTitle("Options");
     options.SetFlags(flags);
@@ -91,8 +91,7 @@ void InGameGUI::Start()
     // Video pop up
     auto videoSettings = std::make_unique<App::VideoSettingsPopUp>(*inGame->client_);
     videoSettings->SetOnClose([this](){
-        CloseMenu();
-        std::cout << "Closing menu\n";
+        this->OpenMenu(PopUpState::MENU);
     });
     puMgr.Set(VIDEO_SETTINGS, std::move(videoSettings));
 
@@ -145,7 +144,12 @@ void InGameGUI::DrawGUI(GL::Shader& textShader)
 
 void InGameGUI::OpenMenu()
 {
-    puMgr.SetCur(InGameGUI::MENU);
+    OpenMenu(InGameGUI::MENU);
+}
+
+void InGameGUI::OpenMenu(PopUpState state)
+{
+    puMgr.Open(state);
 
     SDL_SetWindowGrab(this->inGame->client_->window_, SDL_FALSE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -153,13 +157,13 @@ void InGameGUI::OpenMenu()
 
 void InGameGUI::CloseMenu()
 {
-    puMgr.SetCur(-1);
-
     if(this->inGame->camController_.GetMode() != App::Client::CameraMode::EDITOR)
     {
         SDL_SetWindowGrab(this->inGame->client_->window_, SDL_TRUE);
         SDL_SetRelativeMouseMode(SDL_TRUE);
     }
+
+    puMgr.Close();
 }
 
 bool InGameGUI::IsMenuOpen()

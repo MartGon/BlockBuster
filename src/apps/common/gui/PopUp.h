@@ -22,6 +22,24 @@ namespace GUI
             isVisible = visible;
         }
 
+        inline void Close()
+        {
+            if(isVisible)
+            {
+                SetVisible(false);
+                OnClose();
+            }
+        }
+
+        inline void Open()
+        {
+            if(!isVisible)
+            {
+                SetVisible(true);
+                OnOpen();
+            }
+        }
+
         inline bool IsCloseable() const
         {
             return isCloseable;
@@ -40,6 +58,11 @@ namespace GUI
         inline void SetTitle(std::string title)
         {
             this->title = title;
+        }
+
+        inline ImGuiWindowFlags GetFlags() const
+        {
+            return this->flags;
         }
 
         inline void SetFlags(ImGuiWindowFlags flags)

@@ -7,6 +7,7 @@ using namespace App;
 VideoSettingsPopUp::VideoSettingsPopUp(AppI& app) : app{&app}
 {
     SetTitle("Video Settings"); // Bug: This glitches everything, for some reason
+    SetFlags(ImGuiWindowFlags_NoResize);
 }
 
 static std::vector<SDL_DisplayMode> GetDisplayModes()
@@ -50,7 +51,7 @@ void VideoSettingsPopUp::OnDraw()
         auto displayModes = GetDisplayModes();
         for(auto& mode : displayModes)
         {
-            bool selected = winConfig.mode == mode.w && winConfig.mode == mode.h && winConfig.refreshRate == winConfig.refreshRate;
+            bool selected = winConfig.mode == mode.w && winConfig.mode == mode.h && winConfig.refreshRate == mode.refresh_rate;
             if(ImGui::Selectable(DisplayModeToString(mode).c_str(), selected))
             {
                 winConfig.resolutionW = mode.w;
@@ -80,9 +81,7 @@ void VideoSettingsPopUp::OnDraw()
     {
         app->ApplyVideoOptions(winConfig);
         app->config.window = winConfig;
-
-        // NOTE: USing this instead of ImGui::CloseCurrentPopUp because the later bypasses onClose
-        SetVisible(false);
+        Close();
     }
 
     ImGui::SameLine();
@@ -95,7 +94,7 @@ void VideoSettingsPopUp::OnDraw()
     if(ImGui::Button("Cancel"))
     {   
         app->ApplyVideoOptions(oldWinConfig);
-        SetVisible(false);
+        Close();
     }
 }
 
@@ -107,6 +106,7 @@ void VideoSettingsPopUp::OnOpen()
 
 void VideoSettingsPopUp::OnClose()
 {
+    app->ApplyVideoOptions(oldWinConfig);
     if(onClose)
         onClose();
 }
