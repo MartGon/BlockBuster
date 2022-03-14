@@ -145,6 +145,7 @@ endif()
 
 # When the library is built for static linking, apps should define
 # AL_LIBTYPE_STATIC when including the AL headers.
+# SET(LIBTYPE "STATIC")
 if(NOT LIBTYPE)
     set(LIBTYPE SHARED)
 endif()
