@@ -110,17 +110,13 @@ void InGame::Start()
     audioMgr = audioMgr->Get();
     audioMgr->Init();
     // TODO: Make this failproof. If it isn't found. Simpy return id, log, and play nothing. Maybe return -1 id, then check in Play. LoadWAVOrNull
-    auto res = audioMgr->LoadWAV("Sniper", "/home/defu/Projects/BlockBuster/resources/audio/Soundtrack.wav", true);
-
-    if(res.isOk())
-    {
-        auto srcId = audioMgr->CreateSource();
-        Audio::AudioSource::Params audioParams;
-        audioParams.pos.x = -100;
-        audioMgr->SetSourceParams(srcId, audioParams);
-        audioMgr->SetSourceAudio(srcId, res.unwrap());
-        audioMgr->PlaySource(srcId);
-    }
+    auto [id, err] = audioMgr->LoadStreamedWAVOrNull("/home/defu/Projects/BlockBuster/resources/audio/Soundtrack.wav");
+    auto srcId = audioMgr->CreateSource();
+    Audio::AudioSource::Params audioParams;
+    audioParams.pos.x = -100;
+    audioMgr->SetSourceParams(srcId, audioParams);
+    audioMgr->SetSourceAudio(srcId, id);
+    audioMgr->PlaySource(srcId);
 
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
