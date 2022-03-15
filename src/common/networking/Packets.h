@@ -32,6 +32,18 @@ namespace Networking
     template <PacketType type>
     std::unique_ptr<Packet> MakePacket(uint16_t opCode);
 
+    template <PacketType type>
+    std::unique_ptr<Packet> MakePacket(Util::Buffer&& buffer)
+    {
+        auto reader = buffer.GetReader();
+        auto opCode = reader.Read<uint16_t>();
+
+        auto packet = MakePacket<type>(opCode);
+        if(packet)
+            packet->SetBuffer(std::move(buffer));
+        return std::move(packet);
+    }
+
     template <PacketType Type>
     class Batch : public Packet
     {
@@ -43,11 +55,9 @@ namespace Networking
             while(!reader.IsOver())
             {
                 auto len = reader.Read<uint32_t>();
-                auto opCode = reader.Read<uint16_t>();
 
-                auto packetBuffer = reader.Read(len - sizeof(opCode));
-                std::unique_ptr<Packet> packet = MakePacket<Type>(opCode);
-                packet->SetBuffer(std::move(packetBuffer));
+                auto packetBuffer = reader.Read(len);
+                std::unique_ptr<Packet> packet = MakePacket<Type>(std::move(packetBuffer));
                 packet->Read();
 
                 packets.push_back(std::move(packet));
@@ -56,7 +66,7 @@ namespace Networking
 
         void OnWrite() override
         {
-            buffer.Clear();
+            //buffer.Clear();
 
             for(auto& packet : packets)
             {

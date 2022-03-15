@@ -6,6 +6,7 @@ void Packet::Read()
 {
     auto reader = buffer.GetReader();
 
+    auto opCode = reader.Read<uint16_t>();
     OnRead(reader);
 }
 

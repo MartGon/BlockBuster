@@ -79,6 +79,8 @@ namespace BlockBuster
         void InitMap();
 
         // Networking
+        void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket);
+        void OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet);
         void HandleClientInput(ENet::PeerId peerId, InputReq pm);
         void HandleClientsInput();
         void HandleShootCommand(ShotCommand sc);

@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <string>
 
+#include <debug/Debug.h>
+
 namespace Util
 {
     class Buffer

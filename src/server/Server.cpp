@@ -113,51 +113,9 @@ void Server::InitNetworking()
         Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
         Util::Buffer buffer = reader.ReadAll();
 
-        Networking::Batch<Networking::PacketType::Client> batch;
-        batch.SetBuffer(std::move(buffer));
-        batch.Read();
-        
-        for(auto i = 0; i < batch.GetPacketCount(); i++)
-        {
-            auto packet = batch.GetPacket(i);
-            if(packet->GetOpcode() == Networking::OpcodeClient::OPCODE_CLIENT_INPUT)
-            {
-                auto inputPacket = packet->To<Networking::Packets::Client::Input>();
-                auto inputReq = inputPacket->req;
-
-                auto cmdId = inputReq.reqId;
-                logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId));
-
-                // Check if we already have this input
-                auto found = client.inputBuffer.FindFirst([cmdId](auto input)
-                {
-                    return input.reqId == cmdId;
-                });
-
-                if(!found.has_value())
-                {
-                    auto moveDir = Entity::PlayerInputToMove(inputReq.playerInput);
-
-                    if(cmdId > client.lastAck)
-                        client.inputBuffer.PushBack(inputReq);
-                    // This packet is either duplicated or it arrived really late
-                    else
-                        logger.LogWarning("Command with cmdid " + std::to_string(cmdId) + " dropped. Last ack " + std::to_string(client.lastAck));
-
-                    // Sort to mitigate unordered packets
-                    client.inputBuffer.Sort([](auto a, auto b){
-                        return a.reqId < b.reqId;
-                    });
-
-                    auto bufferSize = client.inputBuffer.GetSize();
-                    if(bufferSize >= MAX_INPUT_BUFFER_SIZE)
-                        logger.LogInfo("Max Buffer size reached." + std::to_string(bufferSize));
-
-                    if(client.state == BufferingState::REFILLING && client.inputBuffer.GetSize() > MIN_INPUT_BUFFER_SIZE)
-                        client.state = BufferingState::CONSUMING;
-                }
-            }
-        }
+        auto packet = Networking::MakePacket<Networking::PacketType::Client>(std::move(buffer));
+        packet->Read();
+        OnRecvPacket(peerId, *packet);
     });
     host->SetOnDisconnectCallback([this](auto peerId)
     {
@@ -258,6 +216,71 @@ void Server::HandleClientsInput()
                 client.targetPos = GetRandomPos();
         }
         */
+    }
+}
+
+void Server::OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket)
+{
+    auto& client = clients[peerId];
+
+    Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
+    Util::Buffer buffer = reader.ReadAll();
+    
+}
+
+void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
+{    
+    auto& client = clients[peerId];
+
+    switch (packet.GetOpcode())
+    {
+        case Networking::OpcodeClient::OPCODE_CLIENT_BATCH:
+        {
+            auto batch = packet.To<Networking::Batch<Networking::PacketType::Client>>();
+            for(auto i = 0; i < batch->GetPacketCount(); i++)
+                OnRecvPacket(peerId, *batch->GetPacket(i));
+        }
+        break;
+        case Networking::OpcodeClient::OPCODE_CLIENT_INPUT:
+        {
+            auto inputPacket = packet.To<Networking::Packets::Client::Input>();
+            auto inputReq = inputPacket->req;
+
+            auto cmdId = inputReq.reqId;
+            logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId));
+
+            // Check if we already have this input
+            auto found = client.inputBuffer.FindFirst([cmdId](auto input)
+            {
+                return input.reqId == cmdId;
+            });
+
+            if(!found.has_value())
+            {
+                auto moveDir = Entity::PlayerInputToMove(inputReq.playerInput);
+
+                if(cmdId > client.lastAck)
+                    client.inputBuffer.PushBack(inputReq);
+                // This packet is either duplicated or it arrived really late
+                else
+                    logger.LogWarning("Command with cmdid " + std::to_string(cmdId) + " dropped. Last ack " + std::to_string(client.lastAck));
+
+                // Sort to mitigate unordered packets
+                client.inputBuffer.Sort([](auto a, auto b){
+                    return a.reqId < b.reqId;
+                });
+
+                auto bufferSize = client.inputBuffer.GetSize();
+                if(bufferSize >= MAX_INPUT_BUFFER_SIZE)
+                    logger.LogInfo("Max Buffer size reached." + std::to_string(bufferSize));
+
+                if(client.state == BufferingState::REFILLING && client.inputBuffer.GetSize() > MIN_INPUT_BUFFER_SIZE)
+                    client.state = BufferingState::CONSUMING;
+            }
+        }
+        break;
+    default:
+        break;
     }
 }
 

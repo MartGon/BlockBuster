@@ -12,6 +12,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
 
     switch (opCode)
     {
+    case OpcodeServer::OPCODE_SERVER_BATCH:
+        packet = std::make_unique<Networking::Batch<Networking::PacketType::Server>>();
+        break;
+
     case OpcodeServer::OPCODE_SERVER_WELCOME:
         packet = std::make_unique<Welcome>();
         break;
@@ -36,6 +40,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Client>(uint16_t opCo
 
     switch (opCode)
     {
+    case OpcodeClient::OPCODE_CLIENT_BATCH:
+        packet = std::make_unique<Networking::Batch<Networking::PacketType::Client>>();
+        break;
+
     case OpcodeClient::OPCODE_CLIENT_INPUT:
         packet = std::make_unique<Input>();
         break;

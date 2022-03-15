@@ -100,8 +100,8 @@ void InGame::Start()
     // Map
     auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
     auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
-    //LoadMap("./resources/maps/Alpha2.bbm");
-    LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
+    LoadMap("./resources/maps/Alpha2.bbm");
+    //LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
 
     // UI
     inGameGui.Start();
@@ -121,6 +121,7 @@ void InGame::Start()
     audioMgr->SetStreamSourceAudio(srcId, id);
     audioMgr->PlayStreamSource(srcId);
 
+    // Positional audio needs to be mono. Stereo is pre-computed.
     std::filesystem::path audioPath = "/home/defu/Projects/BlockBuster/resources/audio/tone.wav";
     auto [staticId, error] = audioMgr->LoadStaticWAVOrNull(audioPath);
 
@@ -170,7 +171,7 @@ void InGame::Start()
             }
 
             Util::Buffer::Reader reader{ePacket.GetData(), ePacket.GetSize()};
-            auto opCode = reader.Read<uint16_t>();
+            //auto opCode = reader.Read<uint16_t>();
             auto buffer = reader.ReadAll();
             auto snapShot = std::make_unique<Networking::Packets::Server::WorldUpdate>();
             snapShot->SetBuffer(std::move(buffer));
