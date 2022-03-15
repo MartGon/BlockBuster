@@ -23,6 +23,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_SNAPSHOT:
         packet = std::make_unique<Packets::Server::WorldUpdate>();
         break;
+
+    case OpcodeServer::OPCODE_SERVER_PLAYER_DISCONNECTED:
+        packet = std::make_unique<PlayerDisconnected>();
+        break;
     
     default:
         break;
@@ -79,6 +83,16 @@ void Welcome::OnWrite()
 {
     buffer.Write(playerId);
     buffer.Write(tickRate);
+}
+
+void PlayerDisconnected::OnRead(Util::Buffer::Reader reader)
+{
+    playerId = reader.Read<Entity::ID>();
+}
+
+void PlayerDisconnected::OnWrite()
+{
+    buffer.Write(playerId);
 }
 
 void WorldUpdate::OnRead(Util::Buffer::Reader reader)

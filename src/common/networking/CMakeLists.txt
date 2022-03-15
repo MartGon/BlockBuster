@@ -1,7 +1,6 @@
 add_subdirectory(enetw)
 
 SET(SOURCES
-    Command.cpp
     Snapshot.cpp
     Networking.cpp
     Packets.cpp

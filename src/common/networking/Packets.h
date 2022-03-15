@@ -133,10 +133,15 @@ namespace Networking
             class PlayerDisconnected final : public Packet
             {
             public:
+                PlayerDisconnected() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_DISCONNECTED}
+                {
+                    
+                }
+
                 void OnRead(Util::Buffer::Reader reader) override;
                 void OnWrite() override;
 
-            private:
+                Entity::ID playerId;
             };
         }
 

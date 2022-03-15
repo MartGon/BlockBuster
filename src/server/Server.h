@@ -5,7 +5,6 @@
 #include <mglogger/MGLogger.h>
 
 #include <networking/enetw/ENetW.h>
-#include <networking/Command.h>
 #include <networking/Snapshot.h>
 #include <networking/Networking.h>
 #include <networking/Packets.h>
@@ -79,6 +78,8 @@ namespace BlockBuster
         void InitMap();
 
         // Networking
+        void OnClientJoin(ENet::PeerId peerId);
+        void OnClientLeave(ENet::PeerId peerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket);
         void OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet);
         void HandleClientInput(ENet::PeerId peerId, InputReq pm);

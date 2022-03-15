@@ -137,76 +137,7 @@ void InGame::Start()
     });
     host.SetOnRecvCallback([this](auto id, auto channel, ENet::RecvPacket ePacket)
     {
-        auto* packet = (Networking::Command*) ePacket.GetData();
-
-        if(packet->header.type == Networking::Command::Type::CLIENT_CONFIG)
-        {
-            auto config = packet->data.config;
-            client_->logger->LogInfo("Server tick rate is " + std::to_string(config.sampleRate));
-            this->serverTickRate = Util::Time::Seconds(config.sampleRate);
-
-            this->offsetTime = serverTickRate * 0.5;
-            this->predOffset = serverTickRate;
-            this->playerId = config.playerId;
-            this->connected = true;
-
-            client_->logger->LogInfo("We play as player " + std::to_string(this->playerId));
-        }
-        else if(packet->header.type == Networking::Command::Type::PLAYER_DISCONNECTED)
-        {
-            Networking::Command::Server::PlayerDisconnected playerDisconnect = packet->data.playerDisconnect;
-            client_->logger->LogInfo("Player with id " + std::to_string(playerDisconnect.playerId) + " disconnected");
-
-            OnPlayerLeave(playerDisconnect.playerId);
-        }
-        else
-        {
-            // Entity Interpolation - Reset offset
-            auto mostRecent = snapshotHistory.Back();
-            if(mostRecent.has_value() && packet->header.tick > mostRecent->serverTick)
-            {
-                auto om = this->offsetTime - this->serverTickRate;
-                this->offsetTime = std::min(serverTickRate, std::max(om, -serverTickRate));
-                client_->logger->LogInfo("Offset millis " + std::to_string(this->offsetTime.count()));
-            }
-
-            Util::Buffer::Reader reader{ePacket.GetData(), ePacket.GetSize()};
-            //auto opCode = reader.Read<uint16_t>();
-            auto buffer = reader.ReadAll();
-            auto snapShot = std::make_unique<Networking::Packets::Server::WorldUpdate>();
-            snapShot->SetBuffer(std::move(buffer));
-            snapShot->Read();
-
-            client_->logger->LogInfo("Recv server snapshot for tick: " + std::to_string(snapShot->snapShot.serverTick));
-
-            // Update last ack
-            this->lastAck = snapShot->lastCmd;
-            client_->logger->LogInfo("Server ack command: " + std::to_string(this->lastAck));
-            
-            auto s = snapShot->snapShot;
-            for(auto& [playerId, player] : s.players)
-            {
-                // Create player entries
-                if(playerTable.find(playerId) == playerTable.end())
-                {
-                    OnPlayerJoin(playerId, player);
-                }
-
-                // Update dmg status
-                playerTable[playerId].onDmg = player.onDmg;
-                if(player.onDmg)
-                    client_->logger->LogInfo("Player is on dmg " + std::to_string(playerId));
-            }            
-
-            // Store snapshot
-            snapshotHistory.PushBack(s);
-
-            // Sort by tick. This is only needed if a packet arrives late.
-            snapshotHistory.Sort([](Networking::Snapshot a, Networking::Snapshot b)
-            {
-                return a.serverTick < b.serverTick;
-            });
-        }
+        this->OnRecvPacket(id, channel, std::move(ePacket));
     });
     host.Connect(serverAddress);
 
@@ -400,6 +331,106 @@ void InGame::OnPlayerLeave(Entity::ID playerId)
     playerTable.erase(playerId);
     prevPlayerTable.erase(playerId);
     playerModelStateTable.erase(playerId);
+}
+
+void InGame::OnRecvPacket(ENet::PeerId id, uint8_t channelId, ENet::RecvPacket recvPacket)
+{
+    Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
+    Util::Buffer buffer = reader.ReadAll();
+    
+    auto packet = Networking::MakePacket<Networking::PacketType::Server>(std::move(buffer));
+    if(packet)
+    {
+        packet->Read();
+        OnRecvPacket(*packet);
+    }
+    else
+        GetLogger()->LogError("Invalid packet recv from server");
+}
+
+void InGame::OnRecvPacket(Networking::Packet& packet)
+{
+    using namespace Networking::Packets::Server;
+
+    switch (packet.GetOpcode())
+    {
+        case Networking::OpcodeServer::OPCODE_SERVER_BATCH:
+        {
+            auto batch = packet.To<Networking::Batch<Networking::PacketType::Server>>();
+            for(auto i = 0; i < batch->GetPacketCount(); i++)
+                OnRecvPacket(*batch->GetPacket(i));
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_WELCOME:
+        {
+            auto welcome = packet.To<Welcome>();
+            client_->logger->LogInfo("Server tick rate is " + std::to_string(welcome->tickRate));
+            this->serverTickRate = Util::Time::Seconds(welcome->tickRate);
+
+            this->offsetTime = serverTickRate * 0.5;
+            this->predOffset = serverTickRate;
+            this->playerId = welcome->playerId;
+            this->connected = true;
+
+            client_->logger->LogInfo("We play as player " + std::to_string(this->playerId));
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_SNAPSHOT:
+        {
+            auto snapShot = packet.To<WorldUpdate>();
+            client_->logger->LogInfo("Recv server snapshot for tick: " + std::to_string(snapShot->snapShot.serverTick));
+
+            // Entity Interpolation - Reset offset
+            auto mostRecent = snapshotHistory.Back();
+            if(mostRecent.has_value() && snapShot->snapShot.serverTick > mostRecent->serverTick)
+            {
+                auto om = this->offsetTime - this->serverTickRate;
+                this->offsetTime = std::min(serverTickRate, std::max(om, -serverTickRate));
+                client_->logger->LogInfo("Offset millis " + std::to_string(this->offsetTime.count()));
+            }
+
+            // Update last ack
+            this->lastAck = snapShot->lastCmd;
+            client_->logger->LogInfo("Server ack command: " + std::to_string(this->lastAck));
+            
+            auto s = snapShot->snapShot;
+            for(auto& [playerId, player] : s.players)
+            {
+                // Create player entries
+                if(playerTable.find(playerId) == playerTable.end())
+                {
+                    OnPlayerJoin(playerId, player);
+                }
+
+                // Update dmg status
+                playerTable[playerId].onDmg = player.onDmg;
+                if(player.onDmg)
+                    client_->logger->LogInfo("Player is on dmg " + std::to_string(playerId));
+            }            
+
+            // Store snapshot
+            snapshotHistory.PushBack(s);
+
+            // Sort by tick. This is only needed if a packet arrives late.
+            snapshotHistory.Sort([](Networking::Snapshot a, Networking::Snapshot b)
+            {
+                return a.serverTick < b.serverTick;
+            });
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_DISCONNECTED:
+        {
+            auto pd = packet.To<PlayerDisconnected>();
+            OnPlayerLeave(pd->playerId);
+        }
+        break;
+
+        default:
+            break;
+    }
 }
 
 void InGame::RecvServerSnapshots()

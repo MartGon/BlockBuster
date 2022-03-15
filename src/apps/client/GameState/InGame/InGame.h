@@ -26,7 +26,6 @@
 #include <entity/PlayerController.h>
 
 #include <networking/enetw/ENetW.h>
-#include <networking/Command.h>
 #include <networking/Snapshot.h>
 #include <networking/Packets.h>
 
@@ -60,6 +59,8 @@ namespace BlockBuster
         // TODO: Preallocate players. This is useful to avoid resizing the vectors/maps
         void OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState);
         void OnPlayerLeave(Entity::ID playerId);
+        void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket packet);
+        void OnRecvPacket(Networking::Packet& packet);
         void RecvServerSnapshots();
         void UpdateNetworking();
         void SendPlayerInput();

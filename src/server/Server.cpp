@@ -73,71 +73,14 @@ void Server::InitNetworking()
     logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));
     host->SetOnConnectCallback([this](auto peerId)
     {
-        logger.LogInfo("Connected with peer " + std::to_string(peerId));
-
-        // Add player to table
-        Entity::Player player;
-        player.id = this->lastId++;
-        player.teamId = player.id;
-        auto sIndex = FindSpawnPoint(player);
-        auto spawn = map.GetRespawn(sIndex);
-        auto playerPos = ToSpawnPos(sIndex);
-        player.weapon = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
-        logger.LogInfo("SpawnPos " + glm::to_string(playerPos));
-        auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{1.0f}};
-        player.SetTransform(playerTransform);
-        clients[peerId].player = player;
-
-        // Inform client
-        // TODO: Change for new packet system
-        Networking::Command::Server::ClientConfig clientConfig;
-        clientConfig.playerId = player.id;
-        clientConfig.sampleRate = TICK_RATE.count();
-
-        Networking::Command::Header header;
-        header.tick = tickCount;
-        header.type = Networking::Command::Type::CLIENT_CONFIG;
-
-        Networking::Command::Payload data;
-        data.config = clientConfig;
-
-        Networking::Command packet{header, data};
-
-        ENet::SentPacket sentPacket{&packet, sizeof(packet), ENET_PACKET_FLAG_RELIABLE};
-        host->SendPacket(peerId, 0, sentPacket);
+        this->OnClientJoin(peerId);
     });
-    host->SetOnRecvCallback([this](auto peerId, auto channelId, ENet::RecvPacket recvPacket)
-    {   
-        auto& client = clients[peerId];
-
-        Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
-        Util::Buffer buffer = reader.ReadAll();
-
-        auto packet = Networking::MakePacket<Networking::PacketType::Client>(std::move(buffer));
-        packet->Read();
-        OnRecvPacket(peerId, *packet);
+    host->SetOnRecvCallback([this](ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket){
+        this->OnRecvPacket(peerId, channelId, std::move(recvPacket));
     });
     host->SetOnDisconnectCallback([this](auto peerId)
     {
-        logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
-        auto player = clients[peerId].player;
-        clients.erase(peerId);
-
-        // Informing players
-        Networking::Command::Server::PlayerDisconnected playerDisconnect;
-        playerDisconnect.playerId = player.id;
-
-        Networking::Command::Header header;
-        header.tick = tickCount;
-        header.type = Networking::Command::Type::PLAYER_DISCONNECTED;
-
-        Networking::Command::Payload payload;
-        payload.playerDisconnect = playerDisconnect;
-
-        Networking::Command command{header, payload};
-
-        ENet::SentPacket sentPacket{&command, sizeof(command), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
-        host->Broadcast(0, sentPacket);
+        this->OnClientLeave(peerId);
     });
 }
 
@@ -170,53 +113,49 @@ void Server::InitMap()
 
 // Networking
 
-void Server::HandleClientsInput()
+void Server::OnClientJoin(ENet::PeerId peerId)
 {
-    // Handle client inputs
-    for(auto& [peerId, client] : clients)
-    {
-        if(!client.isAI)
-        {
-            if(client.state == BufferingState::CONSUMING)
-            {
-                // Consume movement commands
-                if(auto command = client.inputBuffer.PopFront())
-                {
-                    auto cmdId = command->reqId;
-                    client.lastAck = cmdId;
+    logger.LogInfo("Connected with peer " + std::to_string(peerId));
 
-                    logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
-                    HandleClientInput(peerId, command.value());
+    // Create Player
+    Entity::Player player;
+    player.id = this->lastId++;
+    player.teamId = player.id;
+    player.weapon = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
 
-                    logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
-                }
-                else
-                {
-                    logger.LogWarning("No cmd handled for player " + std::to_string(peerId) + " waiting for buffer to refill ");
-                    client.state = BufferingState::REFILLING;
-                }
-            }
-        }
-        /*
-        else if(client.isAi)
-        {
-            auto origin = client.player.transform.position;
-            auto dest = client.targetPos;
-            auto move = dest - origin;
-            auto dist = glm::length(move);
+    // Player Respawn. TODO: Should convert this to a function
+    auto sIndex = FindSpawnPoint(player);
+    auto spawn = map.GetRespawn(sIndex);
+    auto playerPos = ToSpawnPos(sIndex);
+    auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{1.0f}};
+    player.SetTransform(playerTransform);
 
-            auto stepDist = PLAYER_SPEED * (float)TICK_RATE.count();
-            if(dist > stepDist)
-            {
-                auto dir = glm::normalize(move);
-                //InputReq pm{0, dir};
-                //HandleMoveCommand(peerId, pm);
-            }
-            else
-                client.targetPos = GetRandomPos();
-        }
-        */
-    }
+    // Add player to table
+    clients[peerId].player = player;
+
+    // Send welcome packet
+    Networking::Packets::Server::Welcome welcome;
+    welcome.playerId = player.id;
+    welcome.tickRate = TICK_RATE.count();
+    welcome.Write();
+
+    ENet::SentPacket sentPacket{welcome.GetBuffer()->GetData(), welcome.GetSize(), ENET_PACKET_FLAG_RELIABLE};
+    host->SendPacket(peerId, 0, sentPacket);
+}
+
+void Server::OnClientLeave(ENet::PeerId peerId)
+{
+    logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
+    auto player = clients[peerId].player;
+    clients.erase(peerId);
+
+    // Informing players
+    Networking::Packets::Server::PlayerDisconnected pd;
+    pd.playerId = player.id;
+    pd.Write();
+
+    ENet::SentPacket sentPacket{pd.GetBuffer()->GetData(), pd.GetSize(), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
+    host->Broadcast(0, sentPacket);
 }
 
 void Server::OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket)
@@ -226,6 +165,14 @@ void Server::OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPack
     Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
     Util::Buffer buffer = reader.ReadAll();
     
+    auto packet = Networking::MakePacket<Networking::PacketType::Client>(std::move(buffer));
+    if(packet)
+    {
+        packet->Read();
+        OnRecvPacket(peerId, *packet);
+    }
+    else
+        logger.LogError("Invalid packet recv from " + std::to_string(peerId));
 }
 
 void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
@@ -281,6 +228,55 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
         break;
     default:
         break;
+    }
+}
+
+void Server::HandleClientsInput()
+{
+    // Handle client inputs
+    for(auto& [peerId, client] : clients)
+    {
+        if(!client.isAI)
+        {
+            if(client.state == BufferingState::CONSUMING)
+            {
+                // Consume movement commands
+                if(auto command = client.inputBuffer.PopFront())
+                {
+                    auto cmdId = command->reqId;
+                    client.lastAck = cmdId;
+
+                    logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
+                    HandleClientInput(peerId, command.value());
+
+                    logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
+                }
+                else
+                {
+                    logger.LogWarning("No cmd handled for player " + std::to_string(peerId) + " waiting for buffer to refill ");
+                    client.state = BufferingState::REFILLING;
+                }
+            }
+        }
+        /*
+        else if(client.isAi)
+        {
+            auto origin = client.player.transform.position;
+            auto dest = client.targetPos;
+            auto move = dest - origin;
+            auto dist = glm::length(move);
+
+            auto stepDist = PLAYER_SPEED * (float)TICK_RATE.count();
+            if(dist > stepDist)
+            {
+                auto dir = glm::normalize(move);
+                //InputReq pm{0, dir};
+                //HandleMoveCommand(peerId, pm);
+            }
+            else
+                client.targetPos = GetRandomPos();
+        }
+        */
     }
 }
 

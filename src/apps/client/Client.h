@@ -22,7 +22,6 @@
 #include <entity/Player.h>
 
 #include <networking/enetw/ENetW.h>
-#include <networking/Command.h>
 #include <networking/Snapshot.h>
 
 #include <GameState/GameState.h>
