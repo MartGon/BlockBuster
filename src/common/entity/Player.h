@@ -43,6 +43,9 @@ namespace Entity
     PlayerInput operator&(const PlayerInput& a, const PlayerInput& b);
     glm::vec3 PlayerInputToMove(PlayerInput input);
 
+    // NOTE: Maybe this should hold the minimum information that one client should know about
+    // other players. A given client doesn't need to know other player's current ammo.
+    // That info could be sent in a different packet type, or in a different struct within the Snapshot packet
     class PlayerState
     {
     public:
