@@ -39,6 +39,8 @@ namespace Entity
         enum Type
         {
             RESPAWN,
+            WEAPON_CRATE, // NOTE: This could hold a weapon instance, this instance is cloned on pickup. Visibility flag
+            HEALTHPACK,
 
             COUNT
         };
