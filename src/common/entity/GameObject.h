@@ -41,6 +41,8 @@ namespace Entity
             RESPAWN,
             WEAPON_CRATE, // NOTE: This could hold a weapon instance, this instance is cloned on pickup. Visibility flag
             HEALTHPACK,
+            FLAG_SPAWN,
+            DOMINATION_ZONE_MARK // Draw area with lines only
 
             COUNT
         };
