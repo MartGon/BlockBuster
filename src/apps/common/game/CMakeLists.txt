@@ -12,6 +12,7 @@ SET(SOURCES
     models/Player.cpp
     models/FPS.cpp
     models/Respawn.cpp
+    models/ModelMgr.cpp
 )
 
 

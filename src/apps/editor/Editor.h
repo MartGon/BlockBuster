@@ -12,6 +12,7 @@
 #include <rendering/Rendering.h>
 #include <rendering/Model.h>
 #include <models/Respawn.h>
+#include <models/ModelMgr.h>
 #include <game/ChunkMeshMgr.h>
 
 #include <entity/PlayerController.h>
@@ -175,6 +176,7 @@ namespace BlockBuster::Editor
         ::App::Client::CameraController cameraController;
 
         // Models
+        Game::Models::ModelMgr modelMgr;
         Game::Models::Respawn respawnModel;
         
         // Editor

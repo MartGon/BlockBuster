@@ -1092,9 +1092,10 @@ void EditorGUI::SelectBlocksGUI()
 
 void EditorGUI::PlaceObjectGUI()
 {
-    if(ImGui::Combo("Object Type", &objectType, Entity::GameObject::objectTypesToString, Entity::GameObject::COUNT))
+    auto objectType = editor->placedGo.type;
+    if(ImGui::Combo("Object Type", (int*)&editor->placedGo.type, Entity::GameObject::objectTypesToString, Entity::GameObject::COUNT))
     {
-        editor->placedGo.type = static_cast<Entity::GameObject::Type>(objectType);
+        editor->placedGo = GameObject::Create(static_cast<Entity::GameObject::Type>(objectType));
     }
 
     ImGui::Dummy(ImVec2{10, 0}); ImGui::SameLine();

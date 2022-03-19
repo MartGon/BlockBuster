@@ -2,12 +2,30 @@
 
 using namespace Entity;
 
-const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {"Respawn"};
+const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {"Respawn", "Weapon Crate", "HealthPack", "Flag Spawn A", "Flag Spawn B", "Domination Point"};
 std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTemplate>> Entity::GameObject::propertiesTemplate_ = {
-    {GameObject::Type::RESPAWN, 
+    {
+        GameObject::Type::RESPAWN, 
         { 
-            {"Orientation", GameObject::Property::Type::FLOAT },
-            {"TeamId", GameObject::Property::Type::INT },
+            // NOTE: Keys must be in alphabetical order
+            {"Orientation", GameObject::Property::Type::FLOAT, 0.0f},
+            {"TeamId", GameObject::Property::Type::INT, 0},
+        }
+    },
+    {
+        GameObject::Type::FLAG_SPAWN_A, 
+        { 
+        }
+    },
+    {
+        GameObject::Type::FLAG_SPAWN_B, 
+        { 
+        }
+    },
+    {
+        GameObject::Type::DOMINATION_POINT, 
+        { 
+            {"Scale", GameObject::Property::Type::FLOAT, 3.0f}
         }
     }
 };
@@ -20,30 +38,103 @@ std::vector<Entity::GameObject::PropertyTemplate> Entity::GameObject::GetPropert
 GameObject GameObject::Create(GameObject::Type type)
 {
     GameObject go;
+    go.type = type;
 
     auto propertyTemplates = GetPropertyTemplate(type);
     for(auto p : propertyTemplates)
     {
-        switch (p.type)
-        {
-        case Property::Type::BOOL:
-            go.properties[p.name].value = false;
-            break;
-        case Property::Type::INT:
-            go.properties[p.name].value = 0;
-            break;
-        case Property::Type::FLOAT:
-            go.properties[p.name].value = 0.0f;
-            break;
-        case Property::Type::STRING:
-            go.properties[p.name].value = "";
-            std::get<std::string>(go.properties[p.name].value).reserve(16);
-            break;
-
-        default:
-            break;
-        }
+        go.properties[p.name].type = p.type;
+        go.properties[p.name].value = p.defaultValue;
     }
 
     return go;
+}
+
+static void WriteProperty(Util::Buffer& buf, GameObject::Property prop);
+static GameObject::Property ReadProperty(Util::Buffer::Reader& reader);
+
+Util::Buffer GameObject::ToBuffer()
+{
+    Util::Buffer buffer;
+
+    buffer.Write(pos);
+    buffer.Write(type);
+
+    for(auto& [key, prop] : properties)
+        WriteProperty(buffer, prop);
+
+    return buffer;
+}
+
+GameObject GameObject::FromBuffer(Util::Buffer::Reader& reader)
+{
+    GameObject go;
+
+    go.pos = reader.Read<glm::ivec3>();
+    go.type = reader.Read<GameObject::Type>();
+
+    auto propertyTemplates = propertiesTemplate_[go.type];
+    for(auto p : propertyTemplates)
+    {
+        go.properties[p.name] = ReadProperty(reader);
+    }
+
+    return go;
+}
+
+void WriteProperty(Util::Buffer& buf, GameObject::Property prop)
+{
+    buf.Write(prop.type);
+
+    switch (prop.type)
+    {
+    case GameObject::Property::Type::BOOL:
+        buf.Write(std::get<bool>(prop.value));
+        break;
+    
+    case GameObject::Property::Type::STRING:
+        buf.Write(std::get<std::string>(prop.value));
+        break;
+
+    case GameObject::Property::Type::FLOAT:
+        buf.Write(std::get<float>(prop.value));
+        break;
+
+    case GameObject::Property::Type::INT:
+        buf.Write(std::get<int>(prop.value));
+        break;
+    
+    default:
+        break;
+    }
+}
+
+GameObject::Property ReadProperty(Util::Buffer::Reader& reader)
+{
+    GameObject::Property prop;
+
+    prop.type = reader.Read<GameObject::Property::Type>();
+    switch (prop.type)
+    {
+    case GameObject::Property::Type::BOOL:
+        prop.value = reader.Read<bool>();
+        break;
+    
+    case GameObject::Property::Type::STRING:
+        prop.value = reader.Read<std::string>();
+        break;
+
+    case GameObject::Property::Type::FLOAT:
+        prop.value = reader.Read<float>();
+        break;
+
+    case GameObject::Property::Type::INT:
+        prop.value = reader.Read<int>();
+        break;
+    
+    default:
+        break;
+    }
+
+    return prop;
 }

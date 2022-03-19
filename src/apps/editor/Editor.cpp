@@ -40,6 +40,8 @@ void Editor::Start()
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
 
     // Models
+    modelMgr.Start(renderMgr, shader);
+
     respawnModel.SetMeshes(cylinder, slope);
     respawnModel.Start(renderMgr, shader);
     
@@ -357,18 +359,44 @@ void Editor::UpdateEditor()
         cameraController.Update();
     }
 
-    // Render respawn models
+    
     auto map = project.map.GetMap();
+    auto blockScale = project.map.GetBlockScale();
+
+    // Render respawn models
     auto rIndices = map->GetRespawnIndices();
     for(auto pos : rIndices)
     {
-        auto blockScale = project.map.GetBlockScale();
+        // Find real pos
         auto rPos = Game::Map::ToRealPos(pos, blockScale);
         rPos.y -= (blockScale / 2.0f);
+
         auto respawn = map->GetRespawn(pos);
         Math::Transform t{rPos, glm::vec3{0.0f, respawn->orientation, 0.0f}, glm::vec3{0.8f}};
         auto tMat = view * t.GetTransformMat();
         respawnModel.Draw(tMat);
+    }
+
+    // Render object models
+    auto goIndices = map->GetGameObjectIndices();
+    for(auto goPos : goIndices)
+    {
+        auto go = map->GetGameObject(goPos);
+        auto rPos = Game::Map::ToRealPos(goPos, blockScale);
+        rPos.y -= (blockScale / 2.0f);
+
+        Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
+        auto tMat = view * t.GetTransformMat();
+        modelMgr.Draw(go->type, tMat);
+        
+        // Special case
+        if(go->type == Entity::GameObject::DOMINATION_POINT && gui.selectedObj == goPos)
+        {
+            float scale = std::get<float>(go->properties["Scale"].value);
+            t.position.y += ((3.0f * blockScale) / 2.0f);
+            t.scale = glm::vec3{scale, 3.0f, scale} * blockScale;
+            DrawCursor(t);
+        }
     }
 
     // Draw Cursor

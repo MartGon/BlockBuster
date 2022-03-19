@@ -112,7 +112,6 @@ namespace BlockBuster::Editor
         Game::RotationAxis selectRotAxis = Game::RotationAxis::Y;
         MirrorPlane selectMirrorPlane = MirrorPlane::XY;
         Game::RotType selectRotType = Game::RotType::ROT_90;
-        int objectType = Entity::GameObject::RESPAWN;
         glm::ivec3 selectedObj{0};
 
         glm::vec4 colorPick;

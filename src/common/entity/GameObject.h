@@ -2,8 +2,11 @@
 
 #include <math/Transform.h>
 
+#include <util/Buffer.h>
+
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <vector>
 #include <variant>
 
@@ -34,6 +37,7 @@ namespace Entity
         {
             std::string name;
             Property::Type type;
+            Property::Value defaultValue;
         };
 
         enum Type
@@ -41,8 +45,9 @@ namespace Entity
             RESPAWN,
             WEAPON_CRATE, // NOTE: This could hold a weapon instance, this instance is cloned on pickup. Visibility flag
             HEALTHPACK,
-            FLAG_SPAWN,
-            DOMINATION_ZONE_MARK, // Draw area with lines only
+            FLAG_SPAWN_A,
+            FLAG_SPAWN_B,
+            DOMINATION_POINT, // Draw area with lines only
 
             COUNT
         };
@@ -50,10 +55,12 @@ namespace Entity
         static std::vector<Entity::GameObject::PropertyTemplate> GetPropertyTemplate(GameObject::Type type);
         static GameObject Create(GameObject::Type type);
 
+        Util::Buffer ToBuffer();
+        static GameObject FromBuffer(Util::Buffer::Reader& reader);
+
         glm::ivec3 pos{0};
         Type type = Type::RESPAWN;
-        std::unordered_map<std::string, Property> properties;
-
+        std::map<std::string, Property> properties;
     private:
         static std::unordered_map<GameObject::Type, std::vector<PropertyTemplate>> propertiesTemplate_;
     };

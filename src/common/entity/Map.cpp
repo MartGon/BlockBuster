@@ -228,6 +228,13 @@ Util::Buffer Game::Map::Map::ToBuffer()
     for(auto [id, respawn] : respawns_)
         buffer.Write(respawn);
 
+    // Write gos
+    buffer.Write(gameObjects_.size());
+    for(auto& [pos, go] : gameObjects_)
+    {
+        buffer.Append(go.ToBuffer());
+    }
+
     return buffer;
 }
 
@@ -265,6 +272,15 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
     {
         auto respawn = reader.Read<Respawn>();
         map.AddRespawn(respawn);
+    }
+
+    // Read Gameobjects
+    
+    auto goCount = reader.Read<std::size_t>();
+    for(auto i = 0; i < goCount; i++)
+    {
+        auto go = Entity::GameObject::FromBuffer(reader);
+        map.AddGameObject(go);
     }
 
     return std::move(map);
