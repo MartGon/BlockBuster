@@ -147,7 +147,12 @@ Util::Result<bool> Editor::LoadTexture()
         return Util::CreateError<bool>(res.err.info);
     }
     else
+    {
         gui.SyncGUITextures();
+
+        auto count = project.map.tPalette.GetCount();
+        gui.placeBlock.display.id = project.map.tPalette.GetMember(count - 1).data.id;
+    }
 
     return Util::CreateSuccess<bool>(true);
 }
@@ -160,6 +165,26 @@ bool Editor::IsTextureInPalette(std::filesystem::path folder, std::filesystem::p
             return true;
     
     return false;
+}
+
+void Editor::ResetTexturePalette()
+{
+    project.map.tPalette = Rendering::TexturePalette{16};
+
+    // Set to first color
+    auto it = this->project.map.GetMap()->CreateIterator();
+    for(auto [pos, block] = it.GetNextBlock(); !it.IsOver(); std::tie(pos, block) = it.GetNextBlock())
+    {
+        if(block && block->display.type == Game::DisplayType::TEXTURE)
+        {
+            auto replace = *block;
+            replace.display.type = Game::DisplayType::COLOR;
+            replace.display.id = 0;
+            this->project.map.SetBlock(pos, replace);
+        }
+    }
+
+    gui.SyncGUITextures();
 }
 
 // #### World #### \\
@@ -1562,6 +1587,9 @@ void Editor::ReplaceInSelection()
         auto block = this->project.map.GetBlock(pos);
         if(block == this->gui.findBlock)
         {
+            auto source = gui.placeBlock;
+            source.rot = block.rot;
+            
             auto placeAction = std::make_unique<UpdateBlockAction>(pos, gui.placeBlock, &project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
@@ -1598,6 +1626,8 @@ void Editor::ReplaceAll(Game::Block source, Game::Block target)
         {
             auto removeAction = std::make_unique<RemoveAction>(pos, *block, &this->project.map);
             batchPlace->AddAction(std::move(removeAction));
+
+            source.rot = block->rot;
             auto placeAction = std::make_unique<PlaceBlockAction>(pos, source, &this->project.map);
             batchPlace->AddAction(std::move(placeAction));
         }

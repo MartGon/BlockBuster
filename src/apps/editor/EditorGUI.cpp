@@ -155,6 +155,14 @@ void EditorGUI::InitPopUps()
             return false;
     });
     puMgr.Set(SET_TEXTURE_FOLDER, std::make_unique<GUI::EditTextPopUp>(setTextureFolder));
+
+    GUI::BasicPopUp basicPopUp;
+    basicPopUp.SetButtonVisible(true);
+    basicPopUp.SetTitle("Warning!");
+    basicPopUp.SetText("Are you sure?\nThis action cannot be undone");
+    basicPopUp.SetCloseable(true);
+
+    puMgr.Set(ARE_YOU_SURE, std::make_unique<GUI::BasicPopUp>(basicPopUp));
 }
 
 void EditorGUI::OpenPopUp(PopUpState state)
@@ -744,8 +752,26 @@ void EditorGUI::SelectBlockDisplayGUI(Game::Block& block)
         {
             OpenPopUp(PopUpState::LOAD_TEXTURE);
         }
+        GUI::AddToolTip("Warning!: Every texture must be a square and have the same size and format (RGB/RGBA)");
+
+        auto isEmpty = editor->project.map.tPalette.GetCount() == 0;
+        if(isEmpty)
+            ImGui::PushDisabled();
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{1, 0, 0, 1});
         ImGui::SameLine();
-        GUI::HelpMarker("Warning!: Every texture must be a square and have the same size and format (RGB/RGBA)");
+        if(ImGui::Button("Reset Textures"))
+        {
+            auto ays = puMgr.GetAs<GUI::BasicPopUp>(ARE_YOU_SURE);
+            ays->SetButtonCallback([this](){
+                editor->ResetTexturePalette();    
+            });
+            puMgr.Open(ARE_YOU_SURE);
+        }
+        ImGui::PopStyleColor();
+        GUI::AddToolTip("Warning!: This will remove all textures from all the blocks, so you can load a texture with new format or size");
+        if(isEmpty)
+            ImGui::PopDisabled();
 
         auto texA = editor->project.map.tPalette.GetTextureArray();
         ImGui::Text("Texture Data");

@@ -89,6 +89,7 @@ namespace BlockBuster::Editor
         glm::vec4 GetBorderColor(glm::vec4 basecolor, glm::vec4 darkColor = glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}, glm::vec4 lightColor = glm::vec4{1.0f});
         Util::Result<bool> LoadTexture();
         bool IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName);
+        void ResetTexturePalette();
 
         // World
         void NewProject();

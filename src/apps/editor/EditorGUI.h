@@ -25,6 +25,7 @@ namespace BlockBuster::Editor
             VIDEO_SETTINGS,
             GO_TO_BLOCK,
             SET_TEXTURE_FOLDER,
+            ARE_YOU_SURE,
             MAX
         };
 

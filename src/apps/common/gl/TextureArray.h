@@ -52,8 +52,8 @@ namespace GL
         GLsizei length_;
         GLsizei count_ = 0;
 
-        GLsizei channels_;
-        GLsizei texSize_;
+        GLsizei channels_ = 0;
+        GLsizei texSize_ = 0;
 
         GLuint handle_ = -1;
     };
