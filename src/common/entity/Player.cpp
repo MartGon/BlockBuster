@@ -133,9 +133,9 @@ Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerSta
     return res;
 }
 
-glm::vec3 Entity::GetLastMoveDir(Entity::PlayerState s1, Entity::PlayerState s2)
+glm::vec3 Entity::GetLastMoveDir(glm::vec3 posA, glm::vec3 posB)
 {
-    auto moveDir = s2.pos - s1.pos;
+    auto moveDir = posB - posA;
 
     auto len = glm::length(moveDir);
     moveDir = len > 0.005f ? moveDir / len : glm::vec3{0.0f};

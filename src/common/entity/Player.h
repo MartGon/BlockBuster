@@ -62,7 +62,7 @@ namespace Entity
     PlayerState operator*(const PlayerState& a, float b);
 
     PlayerState Interpolate(PlayerState a, PlayerState b, float alpha);
-    glm::vec3 GetLastMoveDir(PlayerState s1, PlayerState s2);
+    glm::vec3 GetLastMoveDir(glm::vec3 posA, glm::vec3 posB);
 
     using ID = uint8_t;
     class Player

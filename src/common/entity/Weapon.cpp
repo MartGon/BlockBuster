@@ -26,9 +26,9 @@ Weapon WeaponType::CreateInstance() const
 
 // Weapon
 
-bool Entity::HasShot(Weapon s1, Weapon s2)
+bool Entity::HasShot(Weapon::State s1, Weapon::State s2)
 {
-    return s1.state == Weapon::State::IDLE && s2.state == Weapon::State::SHOOTING;
+    return s1 == Weapon::State::IDLE && s2 == Weapon::State::SHOOTING;
 }
 
 // Ammo

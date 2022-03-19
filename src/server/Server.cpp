@@ -134,12 +134,17 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     clients[peerId].player = player;
 
     // Send welcome packet
-    Networking::Packets::Server::Welcome welcome;
-    welcome.playerId = player.id;
-    welcome.tickRate = TICK_RATE.count();
-    welcome.Write();
+    Networking::Batch<Networking::PacketType::Server> batch;
 
-    ENet::SentPacket sentPacket{welcome.GetBuffer()->GetData(), welcome.GetSize(), ENET_PACKET_FLAG_RELIABLE};
+    auto welcome = std::make_unique<Networking::Packets::Server::Welcome>();
+    welcome->playerId = player.id;
+    welcome->tickRate = TICK_RATE.count();
+    welcome->playerState = player.ExtractState();
+    batch.PushPacket(std::move(welcome));
+
+    batch.Write();
+
+    ENet::SentPacket sentPacket{batch.GetBuffer()->GetData(), batch.GetSize(), ENET_PACKET_FLAG_RELIABLE};
     host->SendPacket(peerId, 0, sentPacket);
 }
 
@@ -298,7 +303,7 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     player.weapon = pController.UpdateWeapon(player.weapon, cmd.playerInput, TICK_RATE);
     logger.LogInfo("Player Ammo " + std::to_string(player.weapon.ammoState.magazine));
 
-    if(Entity::HasShot(oldWepState, player.weapon))
+    if(Entity::HasShot(oldWepState.state, player.weapon.state))
     {
         ShotCommand sc{player.id, player.GetFPSCamPos(), glm::radians(playerTransform.rotation), cmd.fov, cmd.aspectRatio, cmd.renderTime};
         HandleShootCommand(sc);
@@ -368,9 +373,9 @@ void Server::HandleShootCommand(ShotCommand sc)
             // Calculate player pos that client views
             auto ps1 = s1.players.at(playerId);
             auto ps2 = s2.players.at(playerId);
-            auto smoothState = Entity::Interpolate(ps1, ps2, alpha);
+            auto smoothState = Networking::PlayerSnapshot::Interpolate(ps1, ps2, alpha);
 
-            auto lastMoveDir = Entity::GetLastMoveDir(ps1, ps2);
+            auto lastMoveDir = Entity::GetLastMoveDir(ps1.pos, ps2.pos);
             auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.pos, smoothState.rot.y, lastMoveDir);
             if(rpc.collides)
             {
@@ -400,23 +405,32 @@ void Server::SendWorldUpdate()
     for(auto& [id, client] : clients)
     {
         auto& player = client.player;
-        s.players[player.id] = player.ExtractState();
+        s.players[player.id] = Networking::PlayerSnapshot::FromPlayerState(player.ExtractState());
 
         client.player.onDmg = false;
     }
     history.PushBack(s);
-    worldUpdate->snapShot = s;
 
     // Send snapshot with acks
     for(auto& [id, client] : clients)
     {
         if(client.isAI)
             continue;
+
+        Networking::Batch<Networking::PacketType::Server> batch;
+
+        auto worldUpdate = std::make_unique<Networking::Packets::Server::WorldUpdate>();
+        worldUpdate->snapShot = s;
+        batch.PushPacket(std::move(worldUpdate));
+
+        auto playerInfo = std::make_unique<Networking::Packets::Server::PlayerInfo>();
+        playerInfo->playerState = client.player.ExtractState();
+        playerInfo->lastCmd = client.lastAck;
+        batch.PushPacket(std::move(playerInfo));
+
+        batch.Write();
         
-        worldUpdate->lastCmd = client.lastAck;
-        worldUpdate->Write();
-        
-        auto packetBuf = worldUpdate->GetBuffer();
+        auto packetBuf = batch.GetBuffer();
         ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
         
         host->SendPacket(id, 0, epacket);

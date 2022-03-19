@@ -20,7 +20,8 @@ namespace Networking
         OPCODE_SERVER_BATCH,
         OPCODE_SERVER_WELCOME,
         OPCODE_SERVER_SNAPSHOT,
-        OPCODE_SERVER_PLAYER_DISCONNECTED
+        OPCODE_SERVER_PLAYER_DISCONNECTED,
+        OPCODE_SERVER_PLAYER_INFO
     };
 
     enum class PacketType : uint8_t
@@ -114,6 +115,7 @@ namespace Networking
 
                 uint8_t playerId;
                 double tickRate;
+                Entity::PlayerState playerState;
             };
 
             class WorldUpdate final : public Packet
@@ -126,7 +128,6 @@ namespace Networking
                 void OnRead(Util::Buffer::Reader reader) override;
                 void OnWrite() override;
 
-                uint32_t lastCmd = 0;
                 Snapshot snapShot;
             };
             
@@ -142,6 +143,21 @@ namespace Networking
                 void OnWrite() override;
 
                 Entity::ID playerId;
+            };
+
+            class PlayerInfo final : public Packet
+            {
+            public:
+                PlayerInfo() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_INFO}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader reader) override;
+                void OnWrite() override;
+
+                Entity::PlayerState playerState;
+                uint32_t lastCmd = 0;
             };
         }
 

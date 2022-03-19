@@ -27,6 +27,9 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_PLAYER_DISCONNECTED:
         packet = std::make_unique<PlayerDisconnected>();
         break;
+
+    case OpcodeServer::OPCODE_SERVER_PLAYER_INFO:
+        packet = std::make_unique<PlayerInfo>();
     
     default:
         break;
@@ -77,13 +80,34 @@ void Welcome::OnRead(Util::Buffer::Reader reader)
 {
     playerId = reader.Read<uint8_t>();
     tickRate = reader.Read<double>();
+    playerState = reader.Read<Entity::PlayerState>();
 }
 
 void Welcome::OnWrite()
 {
     buffer.Write(playerId);
     buffer.Write(tickRate);
+    buffer.Write(playerState);
 }
+
+void WorldUpdate::OnRead(Util::Buffer::Reader reader)
+{
+    snapShot.serverTick = reader.Read<uint32_t>();
+
+    auto len = reader.Read<std::uint8_t>();
+    for(auto i = 0; i < len; i++)
+    {
+        auto id = reader.Read<Entity::ID>();
+        auto playerState = reader.Read<PlayerSnapshot>();
+        snapShot.players.insert({id, playerState});
+    }
+}
+
+void WorldUpdate::OnWrite()
+{
+    buffer.Append(this->snapShot.ToBuffer());
+}
+ 
 
 void PlayerDisconnected::OnRead(Util::Buffer::Reader reader)
 {
@@ -95,24 +119,16 @@ void PlayerDisconnected::OnWrite()
     buffer.Write(playerId);
 }
 
-void WorldUpdate::OnRead(Util::Buffer::Reader reader)
+void PlayerInfo::OnRead(Util::Buffer::Reader reader)
 {
     lastCmd = reader.Read<uint32_t>();
-    snapShot.serverTick = reader.Read<uint32_t>();
-
-    auto len = reader.Read<std::uint8_t>();
-    for(auto i = 0; i < len; i++)
-    {
-        auto id = reader.Read<Entity::ID>();
-        auto playerState = reader.Read<Entity::PlayerState>();
-        snapShot.players.insert({id, playerState});
-    }
+    playerState = reader.Read<Entity::PlayerState>();
 }
 
-void WorldUpdate::OnWrite()
+void PlayerInfo::OnWrite()
 {
     buffer.Write(lastCmd);
-    buffer.Append(this->snapShot.ToBuffer());
+    buffer.Write(playerState);
 }
 
 using namespace Networking::Packets::Client;

@@ -57,7 +57,7 @@ namespace BlockBuster
 
         // Networking
         // TODO: Preallocate players. This is useful to avoid resizing the vectors/maps
-        void OnPlayerJoin(Entity::ID playerId, Entity::PlayerState playerState);
+        void OnPlayerJoin(Entity::ID playerId, Networking::PlayerSnapshot playerState);
         void OnPlayerLeave(Entity::ID playerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket packet);
         void OnRecvPacket(Networking::Packet& packet);
@@ -127,6 +127,7 @@ namespace BlockBuster
         bool connected = false;
         const uint32_t redundantInputs = 3;
         Util::Ring<Networking::Snapshot> snapshotHistory{16};
+        Util::Ring<Entity::PlayerState> localPlayerStateHistory{16};
 
         // Networking - Prediction
         struct Prediction

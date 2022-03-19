@@ -86,7 +86,7 @@ namespace Entity
     };
 
     // Weapon
-    bool HasShot(Weapon s1, Weapon s2);
+    bool HasShot(Weapon::State s1, Weapon::State s2);
 
     // Ammo
     Weapon::AmmoState ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType);
