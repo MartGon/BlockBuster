@@ -5,6 +5,7 @@
 namespace GUI
 {
     void HelpMarker(const char* text);
+    void AddToolTip(const char* text);
 
     void CenterSection(float sWidth, float regionWidth);
 }

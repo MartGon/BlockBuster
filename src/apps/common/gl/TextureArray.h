@@ -29,6 +29,21 @@ namespace GL
 
         GLuint GetHandle() const;
 
+        inline GLsizei GetLength()
+        {
+            return length_;
+        }
+
+        inline GLsizei GetTextureSize()
+        {
+            return texSize_;
+        }
+
+        inline GLsizei GetChannels()
+        {
+            return channels_;
+        }
+
     private:
 
         void Init();

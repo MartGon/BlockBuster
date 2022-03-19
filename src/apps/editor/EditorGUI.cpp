@@ -4,6 +4,8 @@
 #include <iostream>
 #include <debug/Debug.h>
 
+#include <imgui_internal.h>
+
 #include <array>
 #include <cstring>
 
@@ -56,10 +58,16 @@ void EditorGUI::InitPopUps()
     GUI::EditTextPopUp loadTexture;
     loadTexture.SetTitle("Load Texture");
     loadTexture.SetPlaceHolder("texture.png");
+    loadTexture.SetErrorText("Could not load texture");
     loadTexture.SetStringSize(32);
     loadTexture.SetOnAccept([this](std::string path){
         std::strcpy(textureFilename, path.data());
         auto res = this->editor->LoadTexture();
+        if(!res.IsSuccess())
+        {
+            auto stf = puMgr.GetAs<GUI::EditTextPopUp>(LOAD_TEXTURE);
+            stf->SetErrorText("Could load texture: " + std::string(res.err.info));
+        }
         return res.IsSuccess();
     });
     puMgr.Set(LOAD_TEXTURE, std::make_unique<GUI::EditTextPopUp>(loadTexture));
@@ -543,10 +551,9 @@ void EditorGUI::ToolsTab()
     }
 }
 
-void EditorGUI::PlaceBlockGUI()
+void EditorGUI::PlaceBlockGUI(Game::Block& block, const char* tableId, ImVec2 tableSize)
 {
-    
-    if(ImGui::BeginTable("##Place Block Options Table", 2, 0, ImVec2{0, 0}))
+    if(ImGui::BeginTable(tableId, 2, 0, tableSize))
     {
         ImGui::TableSetupColumn("##Block Type", ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("##Painting Options", 0);
@@ -564,25 +571,46 @@ void EditorGUI::PlaceBlockGUI()
 
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-            SelectBlockTypeGUI();
+            SelectBlockTypeGUI(block);
         ImGui::TableNextColumn();
-            SelectBlockDisplayGUI();
+            SelectBlockDisplayGUI(block);
 
         ImGui::EndTable();
     }
 }
 
-void EditorGUI::SelectBlockTypeGUI()
+int FindIndex(Game::RotType target)
 {
-    ImGui::Text("Block Type");
-    ImGui::SameLine();
+    for(int i = Game::ROT_0 ; i < Game::RotType::ROT_MAX; i++)
+        if(i == target)
+            return i;
+
+    return 0;
+}
+
+void EditorGUI::SelectBlockTypeGUI(Game::Block& block)
+{
+    auto& blockType = block.type;
+
     ImGui::RadioButton("Block", &blockType, Game::BlockType::BLOCK);
     ImGui::SameLine();
     ImGui::RadioButton("Slope", &blockType, Game::BlockType::SLOPE);
+
+    const char* rotTypes[Game::RotType::ROT_MAX] = {"0", "90", "180", "270"};
+    auto index = FindIndex(placeBlock.rot.y);
+    if(ImGui::Combo("Y rot", &index, rotTypes, Game::RotType::ROT_MAX))
+        placeBlock.rot.y = static_cast<Game::RotType>(index);
+    index = FindIndex(placeBlock.rot.z);
+    if(ImGui::Combo("Z rot", &index, rotTypes, Game::RotType::ROT_MAX))
+        placeBlock.rot.z = static_cast<Game::RotType>(index);
 }
 
-void EditorGUI::SelectBlockDisplayGUI()
+void EditorGUI::SelectBlockDisplayGUI(Game::Block& block)
 {
+    auto& displayType = block.display.type;
+    auto& colorId = block.display.id;
+    auto& textureId = block.display.id;
+
     ImGui::Text("Display Type");
     ImGui::SameLine();
     ImGui::RadioButton("Texture", &displayType, Game::DisplayType::TEXTURE);
@@ -663,6 +691,9 @@ void EditorGUI::SelectBlockDisplayGUI()
         ImGui::EndTable();
     }
 
+    if(disablePaintButtons)
+        ImGui::PushDisabled();
+
     if(displayType == Game::DisplayType::COLOR)
     {
         auto pCol = editor->project.map.cPalette.GetMember(colorId).data.color;
@@ -715,7 +746,16 @@ void EditorGUI::SelectBlockDisplayGUI()
         }
         ImGui::SameLine();
         GUI::HelpMarker("Warning!: Every texture must be a square and have the same size and format (RGB/RGBA)");
+
+        auto texA = editor->project.map.tPalette.GetTextureArray();
+        ImGui::Text("Texture Data");
+        ImGui::Text("Texture Size: %ix%i px", texA->GetTextureSize(), texA->GetTextureSize());
+        ImGui::SameLine();
+        ImGui::Text("Color Channels: %i", texA->GetChannels());
     }
+
+    if(disablePaintButtons)
+        ImGui::PopDisabled();
 }
 
 void EditorGUI::RotateBlockGUI()
@@ -950,24 +990,69 @@ void EditorGUI::SelectBlocksGUI()
 
             case Editor::SelectSubTool::FILL_OR_PAINT:
             {
-                PlaceBlockGUI();
+                // Check table id
+                auto regionAvail = ImVec2{ImGui::GetContentRegionAvail().x / 2, 0};
+                
+                auto curX = ImGui::GetCursorPosX();
+                ImGui::Text("Source");
+                ImGui::SameLine();
+                ImGui::SetCursorPosX(curX + regionAvail.x);
+                ImGui::Text("Target");
+                
+                PlaceBlockGUI(placeBlock, "##Place Block Options Table", regionAvail);
+                ImGui::SameLine();
 
-                if(ImGui::Button("Fill"))
+                disablePaintButtons = true;
+                PlaceBlockGUI(findBlock, "##Find Block Options Table", regionAvail);
+                disablePaintButtons = false;
+
+                ImGui::Text("In selection:");
+                ImGui::SameLine();
+                if(ImGui::Button("Replace all"))
                 {
-                    editor->FillSelection();
+                    editor->ReplaceAllInSelection();
                 }
+                GUI::AddToolTip("Replaces every block (including empty ones) in selection with an instance of the source block");
 
                 ImGui::SameLine();
-                if(ImGui::Button("Replace"))
+                if(ImGui::Button("Replace any"))
                 {
-                    editor->ReplaceSelection();
+                    editor->ReplaceAnyInSelection();
                 }
+                GUI::AddToolTip("Replaces blocks in selection that are not empty, with an instance of the source block");
+
+                ImGui::SameLine();
+                if(ImGui::Button("Replace target"))
+                {
+                    editor->ReplaceInSelection();
+                }
+                GUI::AddToolTip("Replaces blocks in selection, which match with target, with an instance of the source block");
+                
+                ImGui::SameLine();
+                ImGui::Text("In map:");
+
+                ImGui::SameLine();
+                if(ImGui::Button("Map replace all"))
+                {
+                    editor->ReplaceAll(placeBlock, findBlock);
+                }
+                GUI::AddToolTip("Replaces blocks in map, which match with target, with an instance of the source block");
+
+                ImGui::Text("Misc.:");
+                
+                ImGui::SameLine();
+                if(ImGui::Button("Fill Empty"))
+                {
+                    editor->FillEmptyInSelection();
+                }
+                GUI::AddToolTip("Fills empty blocks in selection with an instance of the source block");
 
                 ImGui::SameLine();
                 if(ImGui::Button("Paint"))
                 {
                     editor->PaintSelection();
                 }
+                GUI::AddToolTip("Paints blocks in selection that are not empty, with the selected painting");
             }
 
             default:
@@ -1037,11 +1122,11 @@ void EditorGUI::ToolOptionsGUI()
     switch (editor->tool)
     {
     case Editor::PLACE_BLOCK:
-        PlaceBlockGUI();
+        PlaceBlockGUI(placeBlock, "##Place Block Options Table");
         break;
 
     case Editor::PAINT_BLOCK:
-        SelectBlockDisplayGUI();
+        SelectBlockDisplayGUI(placeBlock);
         break;
 
     case Editor::ROTATE_BLOCK:

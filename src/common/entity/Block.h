@@ -33,7 +33,9 @@ namespace Game
         DisplayType type = TEXTURE;
         unsigned int id = 0;
         //DisplayOptions options;
+        
     };
+    bool operator==(Display a, Display b);
 
     enum BlockType : uint8_t
     {
@@ -47,7 +49,8 @@ namespace Game
         ROT_0,
         ROT_90,
         ROT_180,
-        ROT_270
+        ROT_270,
+        ROT_MAX
     };
 
     enum class RotationAxis
@@ -75,6 +78,7 @@ namespace Game
         glm::vec3 GetRotation() const;
         glm::mat4 GetRotationMat() const;
     };
+    bool operator==(Block a, Block b);
 
     // TODO: 270 on z to 90 with Y rot
     Game::BlockRot GetNextValidRotation(Game::BlockRot baseRot, RotationAxis axis, bool positive);

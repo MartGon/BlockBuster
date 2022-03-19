@@ -65,9 +65,9 @@ namespace BlockBuster::Editor
 
         // Tools - GUI
         void ToolsTab();
-        void PlaceBlockGUI();
-        void SelectBlockTypeGUI();
-        void SelectBlockDisplayGUI();
+        void PlaceBlockGUI(Game::Block& block, const char* tableId, ImVec2 tableSize = ImVec2{0, 0});
+        void SelectBlockTypeGUI(Game::Block& block);
+        void SelectBlockDisplayGUI(Game::Block& block);
         void RotateBlockGUI();
         void SelectBlocksGUI();
         void PlaceObjectGUI();
@@ -90,6 +90,7 @@ namespace BlockBuster::Editor
         TabState tabState = TabState::TOOLS_TAB;
         bool pickingColor = false;
         bool newColor = false;
+        bool disablePaintButtons = false;
 
         bool onError = false;
         std::string errorText;
@@ -101,10 +102,11 @@ namespace BlockBuster::Editor
         char textureFilename[32] = "texture.png";
         char textureFolderPath[128] = "";
         glm::ivec3 goToPos{0};
-        Game::BlockType blockType = Game::BlockType::BLOCK;
-        Game::DisplayType displayType = Game::DisplayType::COLOR;
-        int textureId = 0;
-        int colorId = 0;
+        Game::Block placeBlock{Game::BlockType::BLOCK, Game::BlockRot{}, Game::Display{Game::DisplayType::COLOR, 0}};;
+
+        // Find tool
+        Game::Block findBlock{Game::BlockType::BLOCK, Game::BlockRot{}, Game::Display{Game::DisplayType::COLOR, 0}};
+
         Game::RotationAxis axis = Game::RotationAxis::Y;
         Game::RotationAxis selectRotAxis = Game::RotationAxis::Y;
         MirrorPlane selectMirrorPlane = MirrorPlane::XY;

@@ -145,9 +145,12 @@ namespace BlockBuster::Editor
         // TODO: Change this to use Util::Result / Oktal::Result
         Result RotateSelection(Game::RotationAxis axis, Game::RotType rotType);
         Result MirrorSelection(MirrorPlane plane);
-        void FillSelection();
-        void ReplaceSelection();
+        void ReplaceAllInSelection();
+        void FillEmptyInSelection();
+        void ReplaceAnyInSelection();
+        void ReplaceInSelection();
         void PaintSelection();
+        void ReplaceAll(Game::Block source, Game::Block target);
         
         // Object Tool
         void SelectGameObject(glm::ivec3 pos);

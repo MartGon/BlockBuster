@@ -4,6 +4,11 @@
 
 #include <math/BBMath.h>
 
+bool Game::operator==(Display a, Display b)
+{
+    return a.type == b.type && a.id == b.id;
+}
+
 bool Game::operator==(BlockRot a, BlockRot b)
 {
     return a.y == b.y && a.z == b.z;
@@ -18,6 +23,11 @@ glm::mat4 Game::Block::GetRotationMat() const
 {
     auto t = Game::GetBlockTransform(glm::vec3{0}, rot, 1);
     return t.GetRotationMat();    
+}
+
+bool Game::operator==(Block a, Block b)
+{
+    return a.display == b.display && a.type == b.type;
 }
 
 Game::BlockRot Game::GetNextValidRotation(Game::BlockRot rot, Game::RotationAxis axis, bool positive)

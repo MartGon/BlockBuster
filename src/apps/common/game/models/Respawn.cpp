@@ -29,8 +29,8 @@ void Respawn::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     auto cylinderT = Math::Transform{glm::vec3{0.0f, 0.125f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.250f, 1.0f}};
     Rendering::Painting painting;
     painting.type = Rendering::PaintingType::COLOR;
-    const auto blue = glm::vec4{0.065f, 0.072f, 0.8f, 1.0f};
-    const auto lightBlue = glm::vec4{0.130f, 0.142f, 0.8f, 1.0f};
+    const auto blue = glm::vec4{0.065f, 0.072f, 0.8f, 0.6f};
+    const auto lightBlue = glm::vec4{0.130f, 0.142f, 0.8f, 0.6f};
     painting.color = lightBlue;
     auto sm1 = Rendering::SubModel{cylinderT, painting, cylinderPtr, &shader};
     model->AddSubModel(std::move(sm1));

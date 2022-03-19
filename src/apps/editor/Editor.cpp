@@ -530,11 +530,11 @@ void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
         if(sym >= SDLK_1 && sym <= SDLK_2 && !io.KeyCtrl && !io.KeyAlt)
         {
             if(tool == Tool::PLACE_BLOCK)
-                gui.blockType = static_cast<Game::BlockType>(sym - SDLK_0);
+                gui.placeBlock.type = static_cast<Game::BlockType>(sym - SDLK_0);
             if(tool == Tool::ROTATE_BLOCK)
                 gui.axis = static_cast<Game::RotationAxis>(sym - SDLK_0);
             if(tool == Tool::PAINT_BLOCK)
-                gui.displayType = static_cast<Game::DisplayType>(sym - SDLK_1);
+                gui.placeBlock.display.type = static_cast<Game::DisplayType>(sym - SDLK_1);
         }
 
         if(sym >= SDLK_1 && sym <= SDLK_3 && !io.KeyCtrl && io.KeyAlt)
@@ -722,9 +722,6 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
             {
                 auto block = *intersect.block;
                 auto blockTransform = Game::GetBlockTransform(block, intersect.pos, blockScale);
-                Game::BlockRot rot{Game::RotType::ROT_0, Game::RotType::ROT_0};
-                if(gui.blockType == Game::BlockType::SLOPE)
-                    rot.y = static_cast<Game::RotType>(glm::round(camera.GetRotation().y / glm::half_pi<float>()) - 1);
 
                 if(actionType == ActionType::LEFT_BUTTON)
                 {
@@ -734,8 +731,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                         if(project.map.CanPlaceBlock(iNewPos))
                         {
                             auto display = GetBlockDisplay(); 
-                            auto block = Game::Block{gui.blockType, rot, display};
-                            auto action = std::make_unique<PlaceBlockAction>(iNewPos, block, &project.map);
+                            auto action = std::make_unique<PlaceBlockAction>(iNewPos, gui.placeBlock, &project.map);
 
                             DoToolAction(std::move(action));
                         }
@@ -753,7 +749,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                 {
                     auto cursorPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
                     if(project.map.CanPlaceBlock(cursorPos))
-                        SetCursorState(true, cursorPos, gui.blockType, rot);
+                        SetCursorState(true, cursorPos, gui.placeBlock.type, gui.placeBlock.rot);
                     else
                         cursor.enabled = false;
                 }
@@ -855,7 +851,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
                     auto cursorPos = intersect.pos + glm::ivec3{glm::round(intersection.normal)};
                     if(project.map.CanPlaceBlock(cursorPos))
                     {
-                        SetCursorState(true, cursorPos, gui.blockType, cursor.rot);
+                        SetCursorState(true, cursorPos, gui.placeBlock.type, cursor.rot);
                     }
                     else
                         cursor.enabled = false;
@@ -954,14 +950,7 @@ void Editor::ClearActionHistory()
 
 Game::Display Editor::GetBlockDisplay()
 {
-    Game::Display display;
-    display.type = gui.displayType;
-    if(gui.displayType == Game::DisplayType::COLOR)
-        display.id = gui.colorId;
-    else if(gui.displayType == Game::DisplayType::TEXTURE)
-        display.id = gui.textureId;
-
-    return display;
+    return gui.placeBlock.display;
 }
 
 bool Editor::IsDisplayValid()
@@ -975,11 +964,7 @@ bool Editor::IsDisplayValid()
 
 void Editor::SetBlockDisplay(Game::Display display)
 {
-    gui.displayType = display.type;
-    if(gui.displayType == Game::DisplayType::TEXTURE)
-        gui.textureId = display.id;
-    else if(gui.displayType == Game::DisplayType::COLOR)
-        gui.colorId = display.id;
+    gui.placeBlock.display = display;
 }
 
 // #### Selection Cursor #### \\
@@ -1520,15 +1505,32 @@ Editor::Result Editor::MirrorSelection(MirrorPlane plane)
     return res;
 }
 
-void Editor::FillSelection()
+void Editor::ReplaceAllInSelection()
+{
+    auto batchPlace = std::make_unique<BatchedAction>();
+    auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
+    {
+        if(!this->project.map.IsNullBlock(pos))
+        {
+            auto removeAction = std::make_unique<RemoveAction>(pos, this->project.map.GetBlock(pos), &this->project.map);
+            batchPlace->AddAction(std::move(removeAction));
+        }
+        auto placeAction = std::make_unique<PlaceBlockAction>(pos, gui.placeBlock, &this->project.map);
+        batchPlace->AddAction(std::move(placeAction));
+    };
+    EnumBlocksInSelection(onEach);
+    DoToolAction(std::move(batchPlace));
+}
+
+void Editor::FillEmptyInSelection()
 {
     auto batchPlace = std::make_unique<BatchedAction>();
     auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
     {
         if(this->project.map.IsNullBlock(pos))
         {
-            Game::Block block{this->gui.blockType, Game::BlockRot{}, this->GetBlockDisplay()};
-            auto placeAction = std::make_unique<PlaceBlockAction>(pos, block, &this->project.map);
+    
+            auto placeAction = std::make_unique<PlaceBlockAction>(pos, gui.placeBlock, &this->project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
     };
@@ -1536,15 +1538,31 @@ void Editor::FillSelection()
     DoToolAction(std::move(batchPlace));
 }
 
-void Editor::ReplaceSelection()
+void Editor::ReplaceAnyInSelection()
 {
     auto batchPlace = std::make_unique<BatchedAction>();
     auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
     {
         if(!this->project.map.IsNullBlock(pos))
         {
-            Game::Block block{this->gui.blockType, Game::BlockRot{}, this->GetBlockDisplay()};
-            auto placeAction = std::make_unique<UpdateBlockAction>(pos, block, &project.map);
+           
+            auto placeAction = std::make_unique<UpdateBlockAction>(pos, gui.placeBlock, &project.map);
+            batchPlace->AddAction(std::move(placeAction));
+        }
+    };
+    EnumBlocksInSelection(onEach);
+    DoToolAction(std::move(batchPlace));
+}
+
+void Editor::ReplaceInSelection()
+{
+    auto batchPlace = std::make_unique<BatchedAction>();
+    auto onEach = [this, &batchPlace](glm::ivec3 pos, glm::ivec3 offset)
+    {
+        auto block = this->project.map.GetBlock(pos);
+        if(block == this->gui.findBlock)
+        {
+            auto placeAction = std::make_unique<UpdateBlockAction>(pos, gui.placeBlock, &project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
     };
@@ -1566,6 +1584,24 @@ void Editor::PaintSelection()
         }
     };
     EnumBlocksInSelection(onEach);
+    DoToolAction(std::move(batchPlace));
+}
+
+void Editor::ReplaceAll(Game::Block source, Game::Block target)
+{
+    auto batchPlace = std::make_unique<BatchedAction>();
+
+    auto it = this->project.map.GetMap()->CreateIterator();
+    for(auto [pos, block] = it.GetNextBlock(); !it.IsOver(); std::tie(pos, block) = it.GetNextBlock())
+    {
+        if(block && *block == target)
+        {
+            auto removeAction = std::make_unique<RemoveAction>(pos, *block, &this->project.map);
+            batchPlace->AddAction(std::move(removeAction));
+            auto placeAction = std::make_unique<PlaceBlockAction>(pos, source, &this->project.map);
+            batchPlace->AddAction(std::move(placeAction));
+        }
+    }
     DoToolAction(std::move(batchPlace));
 }
 

@@ -23,6 +23,7 @@ GL::TextureArray& GL::TextureArray::operator=(TextureArray&& other)
     this->handle_ = other.handle_;
     this->length_ = other.length_;
     this->count_ = other.count_;
+    this->channels_ = other.channels_;
     this->texSize_ = other.texSize_;
     other.handle_ = 0;
 

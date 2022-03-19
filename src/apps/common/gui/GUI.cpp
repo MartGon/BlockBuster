@@ -3,6 +3,11 @@
 void GUI::HelpMarker(const char* text)
 {
     ImGui::TextDisabled("(?)");
+    GUI::AddToolTip(text);
+}
+
+void GUI::AddToolTip(const char* text)
+{
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
