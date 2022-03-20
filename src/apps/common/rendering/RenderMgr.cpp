@@ -6,9 +6,18 @@ using namespace Rendering;
 
 Model* RenderMgr::CreateModel()
 {
-    Model* model = &models[inUse++];
+    Model* model = new Model();
     model->mgr = this;
+
+    models.push_back(model);
+
     return model;
+}
+
+RenderMgr::~RenderMgr()
+{
+    for(auto model : models)
+        delete model;
 }
 
 void RenderMgr::Render(const Rendering::Camera& camera)

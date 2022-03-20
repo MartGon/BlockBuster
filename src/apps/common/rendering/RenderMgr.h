@@ -9,6 +9,7 @@ namespace Rendering
     {
     friend class Model;
     public:
+        ~RenderMgr();
         enum RenderFlags : uint8_t
         {
             NONE = 0,
@@ -37,8 +38,7 @@ namespace Rendering
         void DrawList(std::vector<DrawReq>* list);
 
         // TODO: Should do something about this hardcoded value
-        Model models[16];
-        uint8_t inUse = 0;
+        std::vector<Model*> models;
         std::vector<DrawReq> opaqueReq;
         std::vector<DrawReq> transparentReq;
         std::vector<DrawReq> ignoreDepthReqs;
