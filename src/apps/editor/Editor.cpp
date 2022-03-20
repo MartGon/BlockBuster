@@ -1598,7 +1598,6 @@ void Editor::ReplaceAnyInSelection()
     {
         if(!this->project.map.IsNullBlock(pos))
         {
-           
             auto placeAction = std::make_unique<UpdateBlockAction>(pos, gui.placeBlock, &project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
@@ -1618,7 +1617,7 @@ void Editor::ReplaceInSelection()
             auto source = gui.placeBlock;
             source.rot = block.rot;
             
-            auto placeAction = std::make_unique<UpdateBlockAction>(pos, gui.placeBlock, &project.map);
+            auto placeAction = std::make_unique<UpdateBlockAction>(pos, source, &project.map);
             batchPlace->AddAction(std::move(placeAction));
         }
     };

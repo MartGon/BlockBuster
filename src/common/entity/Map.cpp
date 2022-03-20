@@ -227,7 +227,8 @@ Util::Buffer Game::Map::Map::ToBuffer()
     buffer.Write(respawns_.size());
     for(auto [id, respawn] : respawns_)
         buffer.Write(respawn);
-
+    
+    // TODO: Don't save respawns/player decoys
     // Write gos
     buffer.Write(gameObjects_.size());
     for(auto& [pos, go] : gameObjects_)

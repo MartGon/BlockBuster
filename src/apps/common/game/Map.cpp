@@ -43,10 +43,12 @@ Game::Map::Map* Map::GetMap()
     return &map_;
 }
 
-
 Game::Block Map::GetBlock(glm::ivec3 pos) const
 {
-    return *map_.GetBlock(pos);
+    Game::Block block{Game::BlockType::NONE};
+    if(auto found = map_.GetBlock(pos))
+        block = *found;
+    return block;
 }
 
 void Map::SetBlock(glm::ivec3 pos, Game::Block block)
