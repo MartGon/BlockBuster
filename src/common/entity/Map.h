@@ -237,6 +237,7 @@ namespace Game
             void AddGameObject(Entity::GameObject go);
             Entity::GameObject* GetGameObject(glm::ivec3 pos);
             std::vector<glm::ivec3> GetGameObjectIndices() const;
+            std::vector<glm::ivec3> FindGameObjectByType(Entity::GameObject::Type type) const;
             void RemoveGameObject(glm::ivec3 pos);
 
         private:

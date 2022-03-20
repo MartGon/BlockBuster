@@ -179,6 +179,18 @@ std::vector<glm::ivec3> Map::GetGameObjectIndices() const
     return vec;
 }
 
+std::vector<glm::ivec3> Map::FindGameObjectByType(Entity::GameObject::Type type) const
+{
+    std::vector<glm::ivec3> vec;
+    for(const auto& [pos, go] : gameObjects_)
+    {
+        if(go.type == type)
+            vec.push_back(pos);
+    } 
+
+    return vec;
+}
+
 void Map::RemoveGameObject(glm::ivec3 pos)
 {
     if(auto go = GetGameObject(pos); go->type == Entity::GameObject::Type::RESPAWN)
@@ -228,12 +240,16 @@ Util::Buffer Game::Map::Map::ToBuffer()
     for(auto [id, respawn] : respawns_)
         buffer.Write(respawn);
     
-    // TODO: Don't save respawns/player decoys
     // Write gos
-    buffer.Write(gameObjects_.size());
+    auto respawnCount = FindGameObjectByType(Entity::GameObject::RESPAWN).size();
+    auto decoyCount = FindGameObjectByType(Entity::GameObject::PLAYER_DECOY).size();
+    auto gosToSave = gameObjects_.size() - (respawnCount + decoyCount);
+    buffer.Write(gosToSave);
     for(auto& [pos, go] : gameObjects_)
     {
-        buffer.Append(go.ToBuffer());
+        bool save = go.type != Entity::GameObject::Type::RESPAWN && go.type != Entity::GameObject::Type::PLAYER_DECOY;
+        if(save)
+            buffer.Append(go.ToBuffer());
     }
 
     return buffer;
@@ -276,7 +292,6 @@ Game::Map::Map Game::Map::Map::FromBuffer(Util::Buffer::Reader& reader)
     }
 
     // Read Gameobjects
-    
     auto goCount = reader.Read<std::size_t>();
     for(auto i = 0; i < goCount; i++)
     {
