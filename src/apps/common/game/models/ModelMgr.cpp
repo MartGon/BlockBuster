@@ -29,6 +29,8 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     // Colors
     Rendering::Painting painting;
     const auto red = glm::vec4{0.8f, 0.1f, 0.1f, 1.f};
+    const auto green = glm::vec4{0.1f, 0.8f, 0.1f, 1.f};
+    const auto darkGreen = glm::vec4{0.2f, 0.65f, 0.2f, 1.f};
     const auto blue = glm::vec4{0.1f, 0.1f, 0.8f, 1.f};
     const auto gray = glm::vec4{0.2f, 0.2f, 0.2f, 1.f};
 
@@ -41,6 +43,26 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     domPoint->AddSubModel(std::move(sm1));
 
     models[GameObject::Type::DOMINATION_POINT] = domPoint;
+
+    // Weapon Crate
+    auto weaponCrate = renderMgr.CreateModel();
+    auto weaponCrateT = Math::Transform{glm::vec3{0.0f, 0.3725f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.3f, 0.75f, 1.3f}};
+    painting.type = Rendering::PaintingType::COLOR;
+    painting.color = darkGreen;
+    sm1 = Rendering::SubModel{weaponCrateT, painting, &cube, &shader};
+    weaponCrate->AddSubModel(std::move(sm1));
+
+    models[GameObject::Type::WEAPON_CRATE] = weaponCrate;
+
+    // Health pack
+    auto healthPack = renderMgr.CreateModel();
+    auto healthPackT = Math::Transform{glm::vec3{0.0f, 0.25f, 0.0f}, glm::vec3{0.0f, 0.f, 0.0f}, glm::vec3{0.9f, 0.5f, 0.9f}};
+    painting.type = Rendering::PaintingType::COLOR;
+    painting.color = red;
+    sm1 = Rendering::SubModel{healthPackT, painting, &cube, &shader};
+    healthPack->AddSubModel(std::move(sm1));
+
+    models[GameObject::Type::HEALTHPACK] = healthPack;
 
     // Flag A
     auto flagA = renderMgr.CreateModel();

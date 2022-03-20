@@ -48,6 +48,7 @@ namespace Entity
             FLAG_SPAWN_A,
             FLAG_SPAWN_B,
             DOMINATION_POINT, // Draw area with lines only
+            PLAYER_DECOY,
 
             COUNT
         };

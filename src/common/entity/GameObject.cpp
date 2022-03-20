@@ -2,7 +2,7 @@
 
 using namespace Entity;
 
-const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {"Respawn", "Weapon Crate", "HealthPack", "Flag Spawn A", "Flag Spawn B", "Domination Point"};
+const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {"Respawn", "Weapon Crate", "HealthPack", "Flag Spawn A", "Flag Spawn B", "Domination Point", "Player Decoy"};
 std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTemplate>> Entity::GameObject::propertiesTemplate_ = {
     {
         GameObject::Type::RESPAWN, 
@@ -10,6 +10,17 @@ std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTem
             // NOTE: Keys must be in alphabetical order
             {"Orientation", GameObject::Property::Type::FLOAT, 0.0f},
             {"TeamId", GameObject::Property::Type::INT, 0},
+        }
+    },
+    {
+        GameObject::Type::WEAPON_CRATE, 
+        { 
+            {"Weapon ID", GameObject::Property::Type::INT, 0}
+        }
+    },
+    {
+        GameObject::Type::HEALTHPACK, 
+        { 
         }
     },
     {
