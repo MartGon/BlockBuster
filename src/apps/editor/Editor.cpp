@@ -26,12 +26,23 @@ void Editor::Start()
         shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "circleVertex.glsl", "circleFrag.glsl");
         paintShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
         chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
+        quadShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
         this->logger->LogCritical(e.what());
         quit = true;
         return;
+    }
+
+    // Textures
+    try{
+        flashTexture = GL::Texture::FromFolder(TEXTURES_DIR, "flash.png");
+        flashTexture.Load();
+    }
+    catch(const std::runtime_error& e)
+    {
+        this->logger->LogError(e.what());
     }
 
     // Meshes
@@ -44,6 +55,10 @@ void Editor::Start()
 
     respawnModel.SetMeshes(cylinder, slope);
     respawnModel.Start(renderMgr, shader);
+
+    playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
+    playerAvatar.Start(renderMgr, shader, quadShader, flashTexture);
+    modelMgr.SetModel(Entity::GameObject::Type::PLAYER_DECOY, &playerAvatar);
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
@@ -232,11 +247,11 @@ void Editor::SaveProject()
     project.cursorScale = cursor.scale;
     ::WriteProjectToFile(project, mapPath);
 
-    RenameMainWindow();
-
     // Update flag
     newMap = false;
     unsaved = false;
+
+    RenameMainWindow();
 }
 
 Util::Result<bool> Editor::OpenProject()
@@ -386,10 +401,21 @@ void Editor::UpdateEditor()
         rPos.y -= (blockScale / 2.0f);
 
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
-        auto tMat = view * t.GetTransformMat();
-        modelMgr.Draw(go->type, tMat);
+        if(go->type !=  Entity::GameObject::Type::PLAYER_DECOY)
+        {
+            auto tMat = view * t.GetTransformMat();
+            modelMgr.Draw(go->type, tMat);
+        }
+        else
+        {
+            auto ecb = player.GetECB();
+            t.position.y = t.position.y + ecb.scale.y / 2.0f;
+            t.scale = glm::vec3{Entity::Player::scale};
+            auto tMat = view * t.GetTransformMat();
+            modelMgr.Draw(go->type, tMat);
+        }
         
-        // Special case
+        // Special cases
         if(go->type == Entity::GameObject::DOMINATION_POINT && gui.selectedObj == goPos)
         {
             float scale = std::get<float>(go->properties["Scale"].value);

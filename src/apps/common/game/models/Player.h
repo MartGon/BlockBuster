@@ -6,12 +6,12 @@
 
 namespace Game::Models
 {
-    class Player
+    class Player : public Rendering::ModelI
     {
     public:
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
         void SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder, Rendering::Mesh& slope); // NOTE: This should be called before Start
-        void Draw(const glm::mat4& tMat);
+        void Draw(const glm::mat4& tMat, uint8_t flags = 0);
         
         void SteerWheels(glm::vec3 moveDir, float facingAngle);
         void SetArmsPivot(Math::Transform armsPivot);

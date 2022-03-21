@@ -12,6 +12,7 @@
 #include <rendering/Rendering.h>
 #include <rendering/Model.h>
 #include <models/Respawn.h>
+#include <models/Player.h>
 #include <models/ModelMgr.h>
 #include <game/ChunkMeshMgr.h>
 
@@ -169,14 +170,19 @@ namespace BlockBuster::Editor
         GL::Shader shader;
         GL::Shader paintShader;
         GL::Shader chunkShader;
+        GL::Shader quadShader;
         Rendering::Mesh cube;
         Rendering::Mesh slope;
         Rendering::Mesh cylinder;
         Rendering::Camera camera;
         ::App::Client::CameraController cameraController;
 
+        // Textures
+        GL::Texture flashTexture;
+
         // Models
         Game::Models::ModelMgr modelMgr;
+        Game::Models::Player playerAvatar;
         Game::Models::Respawn respawnModel;
         
         // Editor

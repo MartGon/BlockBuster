@@ -22,7 +22,7 @@ void Player::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::
     slopePtr = &slope;
 }
 
-void Player::Draw(const glm::mat4& tMat)
+void Player::Draw(const glm::mat4& tMat, uint8_t flags)
 {
     auto bodyT = bTransform.GetTransformMat();
     auto btMat = tMat * bodyT;

@@ -1,12 +1,16 @@
 #include <models/ModelMgr.h>
 
+#include <models/Player.h>
+
 #include <rendering/Primitive.h>
+
 
 using namespace Game::Models;
 using namespace Entity;
 
 void ModelMgr::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 {
+    quad = Rendering::Primitive::GenerateQuad();
     sphere = Rendering::Primitive::GenerateSphere(1.0f);
     cylinder = Rendering::Primitive::GenerateCylinder(1.0f, 1.0f);
     cube = Rendering::Primitive::GenerateCube();
@@ -19,6 +23,11 @@ void ModelMgr::Draw(GameObject::Type goType, const glm::mat4& tMat)
 {
     if(auto model = models[goType])
         model->Draw(tMat);
+}
+
+void ModelMgr::SetModel(Entity::GameObject::Type type, Rendering::ModelI* model)
+{
+    models[type] = model;
 }
 
 void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)

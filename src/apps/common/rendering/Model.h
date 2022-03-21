@@ -34,7 +34,16 @@ namespace Rendering
 
     class RenderMgr;
 
-    class Model
+    class ModelI
+    {
+    public:
+        ModelI() = default;
+        virtual ~ModelI() = default;
+
+        virtual void Draw(const glm::mat4& tMat, uint8_t flags = 0) = 0;
+    };
+
+    class Model : public ModelI
     {
     friend class RenderMgr;
     public:
@@ -61,7 +70,7 @@ namespace Rendering
             return sm;
         }
 
-        void Draw(const glm::mat4& tMat, uint8_t flags = 0);
+        void Draw(const glm::mat4& tMat, uint8_t flags = 0) override;
 
     private:
         Model() = default;

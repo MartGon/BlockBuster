@@ -13,17 +13,18 @@ namespace Game::Models
     public:
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
         void Draw(Entity::GameObject::Type goType, const glm::mat4& tMat);
+        void SetModel(Entity::GameObject::Type type, Rendering::ModelI* model);
 
         // Base Meshes
+        Rendering::Mesh quad;
         Rendering::Mesh sphere;
         Rendering::Mesh cylinder;
         Rendering::Mesh slope;
         Rendering::Mesh cube;
 
     private:
-
-        Rendering::Model* models[Entity::GameObject::Type::COUNT];
-
         void InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
+
+        Rendering::ModelI* models[Entity::GameObject::Type::COUNT];
     };
 }
