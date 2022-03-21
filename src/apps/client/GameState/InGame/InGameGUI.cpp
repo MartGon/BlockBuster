@@ -16,11 +16,18 @@ InGameGUI::InGameGUI(InGame& inGame) : inGame{&inGame}
 
 void InGameGUI::Start()
 {   
-    // Init fonts
+    // Init text
     std::filesystem::path fontPath = std::filesystem::path{RESOURCES_DIR} / "fonts/Pixel.ttf";
     pixelFont = GUI::TextFactory::Get()->LoadFont(fontPath);
-    text = pixelFont->CreateText();
-    text.SetText("See ya");
+    healthText = pixelFont->CreateText();
+    healthIcon = pixelFont->CreateText();
+
+    armorText = pixelFont->CreateText();
+    shieldIcon = pixelFont->CreateText();
+
+    ammoText = pixelFont->CreateText();
+    ammoIcon = pixelFont->CreateText();
+    
 
     // Menu PopUp
     GUI::GenericPopUp menu;
@@ -129,17 +136,14 @@ void InGameGUI::DrawGUI(GL::Shader& textShader)
         RenderStatsWindow();
         puMgr.Update();
     }
+
+    HUD();
     
-    // Draw GUI
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), guiVao.GetHandle());
     auto windowSize = inGame->client_->GetWindowSize();
     int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
     ImGui_ImplOpenGL3_RestoreState(scissor_box);
-
-    text.SetColor(glm::vec4{0.0f, 1.0f, 0.0f, 1.0f});
-    text.SetScale(2.0f);
-    //text.Draw(textShader, glm::vec2{0.0f, 0.0f}, glm::vec2{(float)windowSize.x, (float)windowSize.y});
 }
 
 void InGameGUI::OpenMenu()
@@ -153,6 +157,47 @@ void InGameGUI::OpenMenu(PopUpState state)
 
     SDL_SetWindowGrab(this->inGame->client_->window_, SDL_FALSE);
     SDL_SetRelativeMouseMode(SDL_FALSE);
+}
+
+void InGameGUI::HUD()
+{
+    auto green = glm::vec4{0.1f, 0.9f, 0.1f, 1.0f};
+    auto blue = glm::vec4{0.1f, 0.1f, 0.8f, 1.0f};
+    auto golden = glm::vec4{0.7f, 0.7f, 0.1f, 1.0f};
+    auto white = glm::vec4{1.0f};
+
+    // TODO: Consider using a reference resolution, then change scale according to winSize;
+
+    auto winSize = inGame->client_->GetWindowSize();
+    healthIcon.SetText("+        ");
+    healthIcon.SetScale(3.0f);
+    healthIcon.SetColor(green);
+    healthIcon.DrawResponsive(inGame->textShader, glm::vec2{1.0f, 0.95f}, winSize);
+
+    healthText.SetText("030/100");
+    healthText.SetScale(2.0f);
+    healthText.SetColor(green);
+    healthText.DrawResponsive(inGame->textShader, glm::vec2{0.905f, 0.955f}, winSize);
+
+    armorText.SetText("   300/300");
+    armorText.SetScale(2.0f);
+    armorText.SetColor(blue);
+    armorText.DrawResponsive(inGame->textShader, glm::vec2{0.0f, 0.955f}, winSize);
+
+    shieldIcon.SetText("U");
+    shieldIcon.SetScale(2.0f);
+    shieldIcon.SetColor(blue);
+    shieldIcon.DrawResponsive(inGame->textShader, glm::vec2{0.005f, 0.955f}, winSize);
+
+    ammoText.SetText("llll   ");
+    ammoText.SetScale(2.0f);
+    ammoText.SetColor(golden);
+    ammoText.DrawResponsive(inGame->textShader, glm::vec2{0.975f, 0.88f}, winSize);
+
+    ammoIcon.SetText("4");
+    ammoIcon.SetScale(2.0f);
+    ammoIcon.SetColor(golden);
+    ammoIcon.DrawResponsive(inGame->textShader, glm::vec2{0.980f, 0.88f}, winSize);
 }
 
 void InGameGUI::CloseMenu()
@@ -173,66 +218,85 @@ bool InGameGUI::IsMenuOpen()
 
 void InGameGUI::DebugWindow()
 {
-    if(ImGui::Begin("Transform"))
+    if(ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        auto t = inGame->playerTable[inGame->playerId].GetTransform();
-        inGame->GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
-        modelOffset = t.position;
-        modelScale =  t.scale;
-        modelRot =  t.rotation;
+        if(ImGui::CollapsingHeader("Transform"))
+        {
+            auto t = inGame->playerTable[inGame->playerId].GetTransform();
+            inGame->GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
+            modelOffset = t.position;
+            modelScale =  t.scale;
+            modelRot =  t.rotation;
 
-        /*
-        if(ImGui::InputInt("ID", (int*)&playerId))
-        {
-            if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
+            /*
+            if(ImGui::InputInt("ID", (int*)&playerId))
             {
-                auto t = playerTable[playerId].GetTransform();
-                GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
-                modelOffset = t.position;
-                modelScale =  t.scale;
-                modelRot =  t.rotation;
-            }
-        }*/
-        ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
-        ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
-        ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
-        ImGui::InputFloat("Precision", &sliderPrecision);
-        if(ImGui::Button("Apply"))
-        {
-            // Edit player model
-            if(auto sm = inGame->playerAvatar.armsModel->GetSubModel(modelId))
+                if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
+                {
+                    auto t = playerTable[playerId].GetTransform();
+                    GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
+                    modelOffset = t.position;
+                    modelScale =  t.scale;
+                    modelRot =  t.rotation;
+                }
+            }*/
+            ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
+            ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
+            ImGui::InputFloat("Precision", &sliderPrecision);
+            if(ImGui::Button("Apply"))
             {
-                inGame->playerAvatar.aTransform.position = modelOffset;
-                inGame->playerAvatar.aTransform.scale = modelScale;
-                inGame->playerAvatar.aTransform.rotation = modelRot;
-            }
-        }
-        if(ImGui::Button("Shoot"))
-        {
-            inGame->fpsAvatar.PlayShootAnimation();
-            for(auto& [playerId, playerState] : inGame->playerModelStateTable)
-            {
-                playerState.shootPlayer.SetClip(inGame->playerAvatar.GetReloadAnim());
-                playerState.shootPlayer.Reset();
-                playerState.shootPlayer.Play();
-                break;
+                // Edit player model
+                if(auto sm = inGame->playerAvatar.armsModel->GetSubModel(modelId))
+                {
+                    inGame->playerAvatar.aTransform.position = modelOffset;
+                    inGame->playerAvatar.aTransform.scale = modelScale;
+                    inGame->playerAvatar.aTransform.rotation = modelRot;
+                }
             }
         }
 
-        ImGui::Text("Audio");
-        ImGui::Separator();
-
-        auto params = inGame->audioMgr->GetSourceParams(0);
-        if(ImGui::SliderFloat("Gain", &params->gain, 0.0f, 1.0f))
-            inGame->audioMgr->SetSourceParams(0, *params);
-        if(ImGui::SliderFloat3("Pos", &params->pos.x, 0.0f, 1000.0f))
-            inGame->audioMgr->SetSourceParams(0, *params);
-
-        if(ImGui::Button("Play audio"))
+        if(ImGui::CollapsingHeader("Animations"))
         {
-            inGame->audioMgr->PlaySource(0);
+            if(ImGui::Button("Shoot"))
+            {
+                inGame->fpsAvatar.PlayShootAnimation();
+                for(auto& [playerId, playerState] : inGame->playerModelStateTable)
+                {
+                    playerState.shootPlayer.SetClip(inGame->playerAvatar.GetReloadAnim());
+                    playerState.shootPlayer.Reset();
+                    playerState.shootPlayer.Play();
+                    break;
+                }
+            }
         }
 
+        if(ImGui::CollapsingHeader("Audio"))
+        {
+            ImGui::Text("Audio");
+            ImGui::Separator();
+
+            auto params = inGame->audioMgr->GetSourceParams(0);
+            if(ImGui::SliderFloat("Gain", &params->gain, 0.0f, 1.0f))
+                inGame->audioMgr->SetSourceParams(0, *params);
+            if(ImGui::SliderFloat3("Pos", &params->pos.x, 0.0f, 1000.0f))
+                inGame->audioMgr->SetSourceParams(0, *params);
+
+            if(ImGui::Button("Play audio"))
+            {
+                inGame->audioMgr->PlaySource(0);
+            }
+        }
+
+        if(ImGui::CollapsingHeader("HUD"))
+        {
+            auto winSize = inGame->client_->GetWindowSize();
+
+            auto size = healthText.CalcSize();
+            ImGui::SliderFloat2("Health Text pos", &wtPos.x, 0, 1.0f);
+            ImGui::SliderFloat("Health Scale", &tScale, 0.1f, 5.0f);
+            ImGui::SliderFloat2("Text Size", &size.x, 0, winSize.x);
+        }
     }
     ImGui::End();
 }

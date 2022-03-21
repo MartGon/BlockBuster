@@ -36,7 +36,9 @@ namespace GUI
             this->color = color;
         }
 
+        void DrawResponsive(GL::Shader& shader, glm::vec2 wPos, glm::vec2 screenRes);
         void Draw(GL::Shader& shader, glm::vec2 pos, glm::vec2 screenRes);
+        glm::vec2 CalcSize();
 
     private:
 

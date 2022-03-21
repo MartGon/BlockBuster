@@ -27,6 +27,9 @@ namespace BlockBuster
         void CloseMenu();
         bool IsMenuOpen();
 
+        void HUDSetShield(int shield);
+        void HUDSetHealth(int health);
+
     private:
         // PopUps
         enum PopUpState
@@ -39,6 +42,7 @@ namespace BlockBuster
             MAX
         };
         void OpenMenu(PopUpState state);
+        void HUD();
 
         void DebugWindow();
         void RenderStatsWindow();
@@ -51,10 +55,19 @@ namespace BlockBuster
 
         // Fonts
         GUI::FontFamily* pixelFont = nullptr;
-        GUI::Text text;
 
         // PopUps
         GUI::PopUpMgr<PopUpState::MAX> puMgr;
+
+        // HUD
+        GUI::Text healthIcon;
+        GUI::Text healthText;
+        glm::vec2 wtPos{0};
+        float tScale = 1.0f;
+        GUI::Text armorText;
+        GUI::Text shieldIcon;
+        GUI::Text ammoText;
+        GUI::Text ammoIcon;
 
         // Game options
         GameOptions gameOptions;
