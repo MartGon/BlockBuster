@@ -3,7 +3,8 @@ SET(SOURCES
     PopUpMgr.h
     Text.cpp
     TextFactory.cpp
-    GUI.cpp    
+    GUI.cpp
+    Widget.cpp    
 )
 
 

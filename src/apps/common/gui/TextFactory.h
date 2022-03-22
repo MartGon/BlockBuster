@@ -8,6 +8,8 @@
 #include <gl/VertexArray.h>
 #include <gl/Shader.h>
 
+#include <gui/Widget.h>
+
 #include <memory>
 #include <unordered_map>
 #include <filesystem>
@@ -16,7 +18,7 @@ namespace GUI
 {
     class FontFamily;
 
-    class Text
+    class Text : public Widget
     {
     friend class FontFamily;
     public:
@@ -36,11 +38,12 @@ namespace GUI
             this->color = color;
         }
 
-        void DrawResponsive(GL::Shader& shader, glm::vec2 wPos, glm::vec2 screenRes);
-        void Draw(GL::Shader& shader, glm::vec2 pos, glm::vec2 screenRes);
-        glm::vec2 CalcSize();
+        glm::ivec2 GetSize() override;
+        void DebugDraw(GL::Shader& shader, glm::ivec2 pos, glm::ivec2 screenRes);
 
     private:
+
+        void DoDraw(GL::Shader& shader, glm::ivec2 pos, glm::ivec2 screenRes) override;
 
         std::string text;
         float textScale = 1.0f;

@@ -42,8 +42,10 @@ namespace BlockBuster
             MAX
         };
         void OpenMenu(PopUpState state);
-        void HUD();
+        
+        void InitTexts();
 
+        void HUD();
         void DebugWindow();
         void RenderStatsWindow();
         void NetworkStatsWindow();
@@ -62,7 +64,7 @@ namespace BlockBuster
         // HUD
         GUI::Text healthIcon;
         GUI::Text healthText;
-        glm::vec2 wtPos{0};
+        glm::ivec2 wtPos{0};
         float tScale = 1.0f;
         GUI::Text armorText;
         GUI::Text shieldIcon;

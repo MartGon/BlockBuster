@@ -7,33 +7,23 @@
 
 using namespace GUI;
 
-void Text::DrawResponsive(GL::Shader& shader, glm::vec2 wPos, glm::vec2 screenRes)
+void Text::DebugDraw(GL::Shader& shader, glm::ivec2 screenPos, glm::ivec2 screenRes)
 {
-    wPos = wPos * 2.f - 1.0f;
-    wPos = glm::clamp(wPos, glm::vec2{-1.0f}, glm::vec2{1.0f});
-    auto size = CalcSize();
-    auto renderPos = screenRes * wPos;
-    auto diff = screenRes - renderPos;
-    if(diff.x < size.x)
-        renderPos.x -= (size.x - diff.x);
-    if(diff.y < size.y)
-        renderPos.y -= (size.y - diff.y);
-
-    Draw(shader, renderPos, screenRes);
+    DoDraw(shader, screenPos, screenRes);
 }
 
-void Text::Draw(GL::Shader& shader, glm::vec2 screenPos, glm::vec2 screenRes)
+void Text::DoDraw(GL::Shader& shader, glm::ivec2 screenPos, glm::ivec2 screenRes)
 {
     assertm(family != nullptr, "This text has not been initialized");
 
-    const glm::vec2 scale = (1.0f / screenRes) * textScale;
-    glm::vec2 offset{0.0f};
+    const glm::vec2 scale = (1.0f / glm::vec2{screenRes}) * textScale;
+    glm::ivec2 offset{0};
     for(auto c : text)
     {
         Glyph* glyph = &family->chars.at(c);
 
         offset.y = -(glyph->size.y - glyph->bearing.y);
-        glm::vec2 renderPos = (screenPos + offset) / textScale;
+        auto renderPos = glm::vec2{(screenPos * 2 + offset)} / textScale;
 
         shader.Use();
         shader.SetUniformInt("text", 0);
@@ -52,7 +42,7 @@ void Text::Draw(GL::Shader& shader, glm::vec2 screenPos, glm::vec2 screenRes)
     }
 }
 
-glm::vec2 Text::CalcSize()
+glm::ivec2 Text::GetSize()
 {
     assertm(family != nullptr, "This text has not been initialized");
 
@@ -66,7 +56,7 @@ glm::vec2 Text::CalcSize()
         size.x += advance;
     }
 
-    return size * textScale;
+    return (size * textScale) / 2.0f;
 }
 
 FontFamily::FontFamily(FT_Face font) : face{font}

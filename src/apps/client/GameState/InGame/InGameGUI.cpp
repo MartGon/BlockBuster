@@ -19,14 +19,7 @@ void InGameGUI::Start()
     // Init text
     std::filesystem::path fontPath = std::filesystem::path{RESOURCES_DIR} / "fonts/Pixel.ttf";
     pixelFont = GUI::TextFactory::Get()->LoadFont(fontPath);
-    healthText = pixelFont->CreateText();
-    healthIcon = pixelFont->CreateText();
-
-    armorText = pixelFont->CreateText();
-    shieldIcon = pixelFont->CreateText();
-
-    ammoText = pixelFont->CreateText();
-    ammoIcon = pixelFont->CreateText();
+    InitTexts();
     
 
     // Menu PopUp
@@ -159,45 +152,77 @@ void InGameGUI::OpenMenu(PopUpState state)
     SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
-void InGameGUI::HUD()
+void InGameGUI::InitTexts()
 {
     auto green = glm::vec4{0.1f, 0.9f, 0.1f, 1.0f};
     auto blue = glm::vec4{0.1f, 0.1f, 0.8f, 1.0f};
     auto golden = glm::vec4{0.7f, 0.7f, 0.1f, 1.0f};
     auto white = glm::vec4{1.0f};
 
-    // TODO: Consider using a reference resolution, then change scale according to winSize;
+    healthText = pixelFont->CreateText();
+    healthIcon = pixelFont->CreateText();
 
-    auto winSize = inGame->client_->GetWindowSize();
-    healthIcon.SetText("+        ");
-    healthIcon.SetScale(3.0f);
-    healthIcon.SetColor(green);
-    healthIcon.DrawResponsive(inGame->textShader, glm::vec2{1.0f, 0.95f}, winSize);
+    armorText = pixelFont->CreateText();
+    shieldIcon = pixelFont->CreateText();
 
-    healthText.SetText("030/100");
-    healthText.SetScale(2.0f);
-    healthText.SetColor(green);
-    healthText.DrawResponsive(inGame->textShader, glm::vec2{0.905f, 0.955f}, winSize);
+    ammoText = pixelFont->CreateText();
+    ammoIcon = pixelFont->CreateText();
 
-    armorText.SetText("   300/300");
-    armorText.SetScale(2.0f);
-    armorText.SetColor(blue);
-    armorText.DrawResponsive(inGame->textShader, glm::vec2{0.0f, 0.955f}, winSize);
+    auto leftBorder = glm::ivec2{5, -5};
+
+    // Health/Shield
 
     shieldIcon.SetText("U");
     shieldIcon.SetScale(2.0f);
     shieldIcon.SetColor(blue);
-    shieldIcon.DrawResponsive(inGame->textShader, glm::vec2{0.005f, 0.955f}, winSize);
+    shieldIcon.SetAnchorPoint(GUI::AnchorPoint::UP_LEFT_CORNER);
+    shieldIcon.SetOffset(glm::ivec2{0, -shieldIcon.GetSize().y} + leftBorder);
 
-    ammoText.SetText("llll   ");
-    ammoText.SetScale(2.0f);
-    ammoText.SetColor(golden);
-    ammoText.DrawResponsive(inGame->textShader, glm::vec2{0.975f, 0.88f}, winSize);
+    armorText.SetText("300/300");
+    armorText.SetScale(2.0f);
+    armorText.SetColor(blue);
+    armorText.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
+    armorText.SetParent(&shieldIcon);
+    
+    healthText.SetText("030/100");
+    healthText.SetScale(2);
+    healthText.SetColor(green);
+    healthText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+    healthText.SetParent(&armorText);
+    healthText.SetOffset(glm::ivec2{0, -healthText.GetSize().y} + leftBorder);
+    
+    healthIcon.SetText("+");
+    healthIcon.SetScale(3);
+    healthIcon.SetColor(green);
+    healthIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+    healthIcon.SetParent(&healthText);
+    healthIcon.SetOffset(glm::ivec2{-healthIcon.GetSize().x, -4});
 
+    // Ammo
     ammoIcon.SetText("4");
     ammoIcon.SetScale(2.0f);
     ammoIcon.SetColor(golden);
-    ammoIcon.DrawResponsive(inGame->textShader, glm::vec2{0.980f, 0.88f}, winSize);
+    ammoIcon.SetAnchorPoint(GUI::AnchorPoint::UP_RIGHT_CORNER);
+    ammoIcon.SetOffset(-ammoIcon.GetSize() + glm::ivec2{-5, -5});
+
+    ammoText.SetText("llll");
+    ammoText.SetScale(2.0f);
+    ammoText.SetColor(golden);
+    ammoText.SetParent(&ammoIcon);
+    ammoText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+    ammoText.SetOffset(glm::ivec2{-ammoText.GetSize().x, 0} + glm::ivec2{-5, 0});
+}
+
+void InGameGUI::HUD()
+{
+    auto winSize = inGame->client_->GetWindowSize();
+
+    armorText.Draw(inGame->textShader, winSize);
+    shieldIcon.Draw(inGame->textShader, winSize);
+    healthText.Draw(inGame->textShader, winSize);
+    healthIcon.Draw(inGame->textShader, winSize);
+    ammoIcon.Draw(inGame->textShader, winSize);
+    ammoText.Draw(inGame->textShader, winSize);
 }
 
 void InGameGUI::CloseMenu()
@@ -292,10 +317,12 @@ void InGameGUI::DebugWindow()
         {
             auto winSize = inGame->client_->GetWindowSize();
 
-            auto size = healthText.CalcSize();
-            ImGui::SliderFloat2("Health Text pos", &wtPos.x, 0, 1.0f);
+            auto size = healthText.GetSize();
+            auto tPos = healthText.GetPos(winSize);
+            ImGui::SliderInt2("Health Text pos", &wtPos.x, -winSize.x / 2, winSize.x / 2);
             ImGui::SliderFloat("Health Scale", &tScale, 0.1f, 5.0f);
-            ImGui::SliderFloat2("Text Size", &size.x, 0, winSize.x);
+            ImGui::SliderInt2("Text Size", &size.x, 0, winSize.x);
+            ImGui::SliderInt2("Text Pos", &tPos.x, -winSize.x / 2, winSize.x / 2);
         }
     }
     ImGui::End();
