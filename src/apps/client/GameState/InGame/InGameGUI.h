@@ -27,9 +27,6 @@ namespace BlockBuster
         void CloseMenu();
         bool IsMenuOpen();
 
-        void HUDSetShield(int shield);
-        void HUDSetHealth(int health);
-
     private:
         // PopUps
         enum PopUpState
@@ -46,6 +43,11 @@ namespace BlockBuster
         void InitTexts();
 
         void HUD();
+        void UpdateHealth();
+        void UpdateArmor();
+        std::string GetBoundedValue(int val, int max);
+        void UpdateAmmo();
+
         void DebugWindow();
         void RenderStatsWindow();
         void NetworkStatsWindow();
@@ -69,7 +71,7 @@ namespace BlockBuster
         GUI::Text armorText;
         GUI::Text shieldIcon;
         GUI::Text ammoText;
-        GUI::Text ammoIcon;
+        GUI::Text ammoNumIcon;
 
         // Game options
         GameOptions gameOptions;

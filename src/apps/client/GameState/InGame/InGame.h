@@ -55,6 +55,9 @@ namespace BlockBuster
         // Input
         void HandleSDLEvents();
 
+        // Handy
+        Entity::Player& GetLocalPlayer();
+
         // Networking
         // TODO: Preallocate players. This is useful to avoid resizing the vectors/maps
         void OnPlayerJoin(Entity::ID playerId, Networking::PlayerSnapshot playerState);

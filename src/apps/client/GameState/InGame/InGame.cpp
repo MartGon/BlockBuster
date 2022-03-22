@@ -289,6 +289,13 @@ void InGame::HandleSDLEvents()
     }
 }
 
+// Handy
+
+Entity::Player& InGame::GetLocalPlayer()
+{
+    return playerTable[playerId];
+}
+
 // Networking
 
 void InGame::OnPlayerJoin(Entity::ID playerId, Networking::PlayerSnapshot playerState)

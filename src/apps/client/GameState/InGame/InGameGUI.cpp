@@ -166,7 +166,7 @@ void InGameGUI::InitTexts()
     shieldIcon = pixelFont->CreateText();
 
     ammoText = pixelFont->CreateText();
-    ammoIcon = pixelFont->CreateText();
+    ammoNumIcon = pixelFont->CreateText();
 
     auto leftBorder = glm::ivec2{5, -5};
 
@@ -199,16 +199,16 @@ void InGameGUI::InitTexts()
     healthIcon.SetOffset(glm::ivec2{-healthIcon.GetSize().x, -4});
 
     // Ammo
-    ammoIcon.SetText("4");
-    ammoIcon.SetScale(2.0f);
-    ammoIcon.SetColor(golden);
-    ammoIcon.SetAnchorPoint(GUI::AnchorPoint::UP_RIGHT_CORNER);
-    ammoIcon.SetOffset(-ammoIcon.GetSize() + glm::ivec2{-5, -5});
+    ammoNumIcon.SetText("4");
+    ammoNumIcon.SetScale(2.0f);
+    ammoNumIcon.SetColor(golden);
+    ammoNumIcon.SetAnchorPoint(GUI::AnchorPoint::UP_RIGHT_CORNER);
+    ammoNumIcon.SetOffset(-ammoNumIcon.GetSize() + glm::ivec2{-5, -5});
 
     ammoText.SetText("llll");
     ammoText.SetScale(2.0f);
     ammoText.SetColor(golden);
-    ammoText.SetParent(&ammoIcon);
+    ammoText.SetParent(&ammoNumIcon);
     ammoText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
     ammoText.SetOffset(glm::ivec2{-ammoText.GetSize().x, 0} + glm::ivec2{-5, 0});
 }
@@ -217,12 +217,63 @@ void InGameGUI::HUD()
 {
     auto winSize = inGame->client_->GetWindowSize();
 
+    UpdateHealth();
+    UpdateArmor();
+    UpdateAmmo();
+
     armorText.Draw(inGame->textShader, winSize);
     shieldIcon.Draw(inGame->textShader, winSize);
     healthText.Draw(inGame->textShader, winSize);
     healthIcon.Draw(inGame->textShader, winSize);
-    ammoIcon.Draw(inGame->textShader, winSize);
+    ammoNumIcon.Draw(inGame->textShader, winSize);
     ammoText.Draw(inGame->textShader, winSize);
+}
+
+void InGameGUI::UpdateHealth()
+{
+    auto& player = inGame->GetLocalPlayer();
+    auto health = player.health;
+
+    auto healthStr = GetBoundedValue(glm::ceil(health), player.MAX_HEALTH);
+    healthText.SetText(healthStr);
+}
+
+void InGameGUI::UpdateArmor()
+{
+    auto& player = inGame->GetLocalPlayer();
+    auto armor = player.shield;
+
+    auto armorStr = GetBoundedValue(glm::ceil(armor), player.MAX_SHIELD);
+    armorText.SetText(armorStr);
+    ammoText.SetOffset(glm::ivec2{-ammoText.GetSize().x, 0} + glm::ivec2{-5, 0});
+}
+
+std::string InGameGUI::GetBoundedValue(int val, int max)
+{
+    auto str = std::to_string(val);
+    auto targetSize = glm::floor(std::log10(max)) + 1;
+
+    auto diff = targetSize - str.size();
+    std::string prefix;
+    prefix.resize(diff, '0');
+
+    str = prefix + str + "/" + std::to_string(max);
+
+    return str;
+}
+
+void InGameGUI::UpdateAmmo()
+{
+    auto& player = inGame->GetLocalPlayer();
+
+    // TODO: Update for overheat weapon
+    auto ammo = player.weapon.ammoState.magazine;
+    
+    ammoNumIcon.SetText(std::to_string(ammo));
+
+    std::string ammoStr;
+    ammoStr.resize(ammo, 'l');
+    ammoText.SetText(ammoStr);
 }
 
 void InGameGUI::CloseMenu()
