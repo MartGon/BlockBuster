@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <filesystem>
+#include <vector>
 
 namespace BlockBuster
 {
@@ -20,7 +21,8 @@ namespace BlockBuster
         }
 
         bool HasMap(std::string map);
-        std::optional<std::filesystem::path> GetMapPath(std::string mapName);
+        std::filesystem::path GetMapPath(std::string mapName);
+        std::vector<std::filesystem::path> GetLocalMaps();
 
     private:
         std::filesystem::path mapsFolder;

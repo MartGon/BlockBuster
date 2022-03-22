@@ -481,12 +481,19 @@ void MainMenu::DownloadMap(std::string mapName)
             auto mapB64 = body["map"].get<std::string>();
             auto mapBuff = base64_decode(mapB64);
 
-            auto mapFolder = client_->mapMgr.GetMapsFolder() / mapName;
+            auto mapFolder = client_->mapMgr.GetMapPath(mapName);
             std::filesystem::create_directory(mapFolder);
             GetLogger()->LogInfo("Creating dir " + mapFolder.string());
             zip_stream_extract(mapBuff.data(), mapBuff.size(), mapFolder.c_str(), nullptr, nullptr);
 
-            popUp.SetVisible(false);
+            popUp.SetVisible(true);
+            popUp.SetCloseable(false);
+            popUp.SetTitle("Success");
+            popUp.SetText(mapName + " was downloaded succesfully!");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
         }
         else
         {
