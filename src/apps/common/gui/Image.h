@@ -19,12 +19,12 @@ namespace GUI
 
         inline void SetScale(glm::vec2 scale)
         {
-            this->scale = scale;
+            this->imgScale = scale;
         }
 
         inline glm::vec2 GetScale()
         {
-            return scale;
+            return imgScale;
         }
 
         void SetColor(glm::vec4 color)
@@ -45,7 +45,7 @@ namespace GUI
         static std::unique_ptr<Rendering::Mesh> quadMesh;
 
         glm::vec4 color{1.0f};
-        glm::vec2 scale{1.0f};
+        glm::vec2 imgScale{1.0f};
         GL::Texture* texture;
     };
 }

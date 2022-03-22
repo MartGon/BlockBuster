@@ -101,8 +101,8 @@ void InGame::Start()
     // Map
     auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
     auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
-    LoadMap("/home/seix/Other/Repos/BlockBuster/resources/maps/Alpha2.bbm");
-    //LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
+    //LoadMap("/home/seix/Other/Repos/BlockBuster/resources/maps/Alpha2.bbm");
+    LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
 
     // UI
     inGameGui.Start();

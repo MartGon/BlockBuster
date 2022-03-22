@@ -26,7 +26,7 @@ void InGameGUI::Start()
     
     // Textures
     try{
-        crosshair = GL::Texture::FromFolder(TEXTURES_DIR, "crosshair.png");
+        crosshair = GL::Texture::FromFolder(TEXTURES_DIR, "crosshairW.png");
         crosshair.Load();
     }
     catch(const std::runtime_error& e)
@@ -35,7 +35,9 @@ void InGameGUI::Start()
     }
     crosshairImg.SetTexture(&crosshair);
     crosshairImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
-    crosshairImg.SetOffset(crosshairImg.GetSize() / 2);
+    crosshairImg.SetScale(glm::vec2{0.33f});
+    crosshairImg.SetOffset(- crosshairImg.GetSize() / 2);
+    crosshairImg.SetColor(glm::vec4{1.0f, 1.0f, 0.0f, 0.75f});
 }
 
 void InGameGUI::DrawGUI(GL::Shader& textShader)

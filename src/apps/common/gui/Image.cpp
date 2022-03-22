@@ -15,7 +15,7 @@ glm::ivec2 Image::GetSize()
     glm::ivec2 size{0};
 
     if(texture)
-        size = glm::vec2{texture->GetSize()} * scale;
+        size = glm::vec2{texture->GetSize()} * imgScale;
     
     return size;
 }
@@ -24,13 +24,14 @@ void Image::DoDraw(GL::Shader& shader, glm::ivec2 pos, glm::ivec2 screenSize)
 {
     if(!texture)
         return;
-
-    const glm::vec2 scale = (1.0f / glm::vec2{screenSize}) * this->scale;
+    glm::vec2 size = GetSize();
+    auto scale = imgScale * (size / glm::vec2{screenSize});
+    auto renderPos = (glm::vec2{pos} / size) + 0.5f;
 
     shader.Use();
     shader.SetUniformInt("uTexture", 0);
     shader.SetUniformVec4("uColor", color);
-    shader.SetUniformVec2("offset", pos);
+    shader.SetUniformVec2("offset", renderPos);
     shader.SetUniformVec2("scale", scale);
 
     texture->Bind(GL_TEXTURE0);

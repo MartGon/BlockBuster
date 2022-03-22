@@ -7,6 +7,5 @@ uniform vec4 uColor;
 
 void main()
 {    
-    color = texture(uTexture, TexCoords);
-    color = vec4(1.0);
+    color = texture(uTexture, TexCoords) * uColor;
 }  
