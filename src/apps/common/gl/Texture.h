@@ -42,6 +42,11 @@ namespace GL
             return path_;
         }
 
+        inline glm::ivec2 GetSize()
+        {
+            return dimensions_;
+        }
+
         // Exceptions
         class LoadError : public std::runtime_error
         {

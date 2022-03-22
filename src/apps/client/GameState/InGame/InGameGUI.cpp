@@ -16,13 +16,68 @@ InGameGUI::InGameGUI(InGame& inGame) : inGame{&inGame}
 
 void InGameGUI::Start()
 {   
+    // Load menu
+    InitPopUps();
+
     // Init text
     std::filesystem::path fontPath = std::filesystem::path{RESOURCES_DIR} / "fonts/Pixel.ttf";
     pixelFont = GUI::TextFactory::Get()->LoadFont(fontPath);
     InitTexts();
     
+    // Textures
+    try{
+        crosshair = GL::Texture::FromFolder(TEXTURES_DIR, "crosshair.png");
+        crosshair.Load();
+    }
+    catch(const std::runtime_error& e)
+    {
+        this->inGame->GetLogger()->LogError(e.what());
+    }
+    crosshairImg.SetTexture(&crosshair);
+    crosshairImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
+    crosshairImg.SetOffset(crosshairImg.GetSize() / 2);
+}
 
-    // Menu PopUp
+void InGameGUI::DrawGUI(GL::Shader& textShader)
+{
+    // Clear GUI buffer
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(inGame->client_->window_);
+    ImGui::NewFrame();
+
+    bool isOpen = true;
+    if(inGame->connected)
+    {
+        DebugWindow();
+        NetworkStatsWindow();
+        RenderStatsWindow();
+        puMgr.Update();
+    }
+
+    HUD();
+    
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), guiVao.GetHandle());
+    auto windowSize = inGame->client_->GetWindowSize();
+    int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
+    ImGui_ImplOpenGL3_RestoreState(scissor_box);
+}
+
+void InGameGUI::OpenMenu()
+{
+    OpenMenu(InGameGUI::MENU);
+}
+
+void InGameGUI::OpenMenu(PopUpState state)
+{
+    puMgr.Open(state);
+
+    SDL_SetWindowGrab(this->inGame->client_->window_, SDL_FALSE);
+    SDL_SetRelativeMouseMode(SDL_FALSE);
+}
+
+void InGameGUI::InitPopUps()
+{
     GUI::GenericPopUp menu;
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse 
         | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize;
@@ -114,44 +169,6 @@ void InGameGUI::Start()
     puMgr.Set(WARNING, std::make_unique<GUI::GenericPopUp>(warning));
 }
 
-void InGameGUI::DrawGUI(GL::Shader& textShader)
-{
-    // Clear GUI buffer
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(inGame->client_->window_);
-    ImGui::NewFrame();
-
-    bool isOpen = true;
-    if(inGame->connected)
-    {
-        DebugWindow();
-        NetworkStatsWindow();
-        RenderStatsWindow();
-        puMgr.Update();
-    }
-
-    HUD();
-    
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), guiVao.GetHandle());
-    auto windowSize = inGame->client_->GetWindowSize();
-    int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
-    ImGui_ImplOpenGL3_RestoreState(scissor_box);
-}
-
-void InGameGUI::OpenMenu()
-{
-    OpenMenu(InGameGUI::MENU);
-}
-
-void InGameGUI::OpenMenu(PopUpState state)
-{
-    puMgr.Open(state);
-
-    SDL_SetWindowGrab(this->inGame->client_->window_, SDL_FALSE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
-}
-
 void InGameGUI::InitTexts()
 {
     auto green = glm::vec4{0.1f, 0.9f, 0.1f, 1.0f};
@@ -227,6 +244,7 @@ void InGameGUI::HUD()
     healthIcon.Draw(inGame->textShader, winSize);
     ammoNumIcon.Draw(inGame->textShader, winSize);
     ammoText.Draw(inGame->textShader, winSize);
+    crosshairImg.Draw(inGame->imgShader, winSize);
 }
 
 void InGameGUI::UpdateHealth()

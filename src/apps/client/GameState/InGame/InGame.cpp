@@ -51,6 +51,7 @@ void InGame::Start()
         chunkShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
         quadShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
         textShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "textVertex.glsl", "textFrag.glsl");
+        imgShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "imgVertex.glsl", "imgFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {

@@ -163,6 +163,7 @@ namespace BlockBuster
         GL::Shader chunkShader;
         GL::Shader quadShader;
         GL::Shader textShader;
+        GL::Shader imgShader;
 
             // Textures
         GL::Texture flashTexture;

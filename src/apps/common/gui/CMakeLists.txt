@@ -1,4 +1,5 @@
 SET(SOURCES
+    Image.cpp
     PopUp.cpp
     PopUpMgr.h
     Text.cpp
@@ -15,6 +16,7 @@ target_link_libraries(GUI
     Util
     imgui
     freetype
+    Rendering
     ${X11_LIBRARIES} 
     ${OPENGL_LIBRARIES} 
     ${CMAKE_DL_LIBS} 

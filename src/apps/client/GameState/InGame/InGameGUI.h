@@ -1,11 +1,13 @@
 #pragma once
 
 #include <gui/TextFactory.h>
+#include <gui/Image.h>
+#include <gui/PopUp.h>
+#include <gui/PopUpMgr.h>
 
 #include <util/BBTime.h>
 
-#include <gui/PopUp.h>
-#include <gui/PopUpMgr.h>
+#include <gl/Texture.h>
 
 #include <GameState/InGame/InGameFwd.h>
 
@@ -40,7 +42,8 @@ namespace BlockBuster
         };
         void OpenMenu(PopUpState state);
         
-        void InitTexts();
+        void InitPopUps();
+        void InitTexts();        
 
         void HUD();
         void UpdateHealth();
@@ -63,15 +66,17 @@ namespace BlockBuster
         // PopUps
         GUI::PopUpMgr<PopUpState::MAX> puMgr;
 
+        // Textures
+        GL::Texture crosshair;
+
         // HUD
         GUI::Text healthIcon;
         GUI::Text healthText;
-        glm::ivec2 wtPos{0};
-        float tScale = 1.0f;
         GUI::Text armorText;
         GUI::Text shieldIcon;
         GUI::Text ammoText;
         GUI::Text ammoNumIcon;
+        GUI::Image crosshairImg;
 
         // Game options
         GameOptions gameOptions;
@@ -86,5 +91,7 @@ namespace BlockBuster
         glm::vec3 modelOffset{0.0f};
         glm::vec3 modelScale{1.0f};
         glm::vec3 modelRot{0.0f};
+        glm::ivec2 wtPos{0};
+        float tScale = 1.0f;
     };
 }
