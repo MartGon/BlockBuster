@@ -35,7 +35,10 @@ Host::Host(Host&& other) : address_{other.address_}
 Host& Host::operator=(Host&& other)
 {
     std::swap(socket_, other.socket_);
+    peers_ = std::move(peers_);
+    
     address_ = other.address_;
+    connections_ = other.connections_;
     channels_ = other.channels_;
     inBandwidth_ = other.inBandwidth_;
     outBandwidth_ = other.outBandwidth_;
