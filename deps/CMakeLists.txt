@@ -3,6 +3,7 @@ add_subdirectory(imgui)
 add_subdirectory(mglogger)
 add_subdirectory(enet)
 add_subdirectory(freetype)
+add_subdirectory(zip)
 
 set(LIBTYPE "STATIC")
 add_subdirectory(openal-soft)
