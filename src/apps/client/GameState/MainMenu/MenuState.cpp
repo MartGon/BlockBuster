@@ -115,7 +115,7 @@ void ServerBrowser::Update()
 
         if(ImGui::Button("Create Game"))
         {
-            mainMenu_->SetState(std::make_unique<MenuState::CreateGame>(mainMenu_));
+            mainMenu_->GetAvailableMaps();
         }
         ImGui::SameLine();
         ImGui::Button("Connect");
@@ -142,7 +142,8 @@ void CreateGame::OnEnter()
 {
     std::string placeholderName = mainMenu_->user + "'s game";
     strcpy(gameName, placeholderName.c_str());
-    strcpy(map, "Kobra");
+    if(!mainMenu_->availableMaps.empty())
+        map = mainMenu_->availableMaps[0];
     strcpy(mode, "DeathMatch");
 }
 
@@ -164,12 +165,15 @@ void CreateGame::Update()
         ImGui::InputText("Name", gameName, 32, textFlags);
 
         auto comboFlags = ImGuiComboFlags_None;
-        if(ImGui::BeginCombo("Map", map, comboFlags))
+        if(ImGui::BeginCombo("Map", map.c_str(), comboFlags))
         {   
-            bool selected = std::strcmp("Kobra", map) == 0;
-            if(ImGui::Selectable("Kobra", true))
+            for(auto availMap : mainMenu_->availableMaps)
             {
-                std::strcpy(map, "Kobra");
+                bool selected = availMap == map;
+                if(ImGui::Selectable(availMap.c_str(), true))
+                {
+                    map = availMap;
+                }
             }
             ImGui::EndCombo();
         }
@@ -189,8 +193,8 @@ void CreateGame::Update()
 
         if(ImGui::Button("Create Game"))
         {
-            // TODO: Change map and mode
-            mainMenu_->CreateGame(gameName, "Kobra", "DeathMatch", maxPlayers);
+            // TODO: Change mode
+            mainMenu_->CreateGame(gameName, map, "DeathMatch", maxPlayers);
         }
     }
     // User clicked on the X button. Go back
@@ -205,6 +209,15 @@ void CreateGame::Update()
 void Lobby::OnEnter()
 {
     mainMenu_->lobby = this;
+
+    auto& mapMgr = mainMenu_->GetMapMgr();
+    auto mapName = mainMenu_->currentGame->game.map;
+    if(!mapMgr.HasMap(mapName))
+    {
+        mainMenu_->GetLogger()->LogError("Need to download map " + mapName);
+        mainMenu_->DownloadMap(mapName);
+    }
+
     OnGameInfoUpdate();
     mainMenu_->UpdateGame();
 }
@@ -308,7 +321,7 @@ void Lobby::Update()
             // Map Picture
             auto gameInfo = gameDetails.game;
             ImGui::TableNextColumn();
-            ImGui::Text("Map: Kobra");
+            ImGui::Text("Map: %s", gameInfo.map.c_str());
 
             ImVec2 imgSize{0, layoutSize.y * 0.5f};
             //ImGui::Image()

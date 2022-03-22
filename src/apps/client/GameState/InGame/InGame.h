@@ -40,7 +40,7 @@ namespace BlockBuster
     friend class InGameGUI;
 
     public:
-        InGame(Client* client, std::string serverDomain, uint16_t serverPort);
+        InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map);
         
         void Start() override;
         void Update() override;
@@ -191,6 +191,7 @@ namespace BlockBuster
         Audio::AudioMgr* audioMgr = nullptr;
 
         // Scene
+        std::string mapName;
         ::App::Client::Map map_;
 
         // Config

@@ -4,6 +4,9 @@
 
 #include <imgui/imgui_internal.h>
 
+#include <base64/base64.h>
+#include <zip/zip.h>
+
 using namespace BlockBuster;
 
 MainMenu::MainMenu(Client* client)  : GameState{client}, httpClient{"localhost", 3030}
@@ -221,6 +224,51 @@ void MainMenu::CreateGame(std::string name, std::string map, std::string mode, u
     httpClient.Request("/create_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
+void MainMenu::GetAvailableMaps()
+{
+    GetLogger()->LogInfo("Getting available maps ");
+    
+    // Show connecting pop up
+    popUp.SetVisible(true);
+    popUp.SetCloseable(false);
+    popUp.SetTitle("Connecting");
+    popUp.SetText("Retrieving data from server...");
+    popUp.SetButtonVisible(false);
+
+    auto onSuccess = [this](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfully retrieved available maps");
+
+        auto bodyStr = res.body;        
+        auto body = nlohmann::json::parse(bodyStr);
+
+        auto maps = body.at("maps");
+        this->availableMaps.clear();
+        for(auto& map : maps)
+        {
+            auto mapName = map.get<std::string>();
+            this->availableMaps.push_back(mapName);
+        }
+
+        SetState(std::make_unique<MenuState::CreateGame>(this));
+
+        popUp.SetVisible(false);
+    };
+
+    auto onError = [this](httplib::Error error){
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+    nlohmann::json body;
+    httpClient.Request("/get_available_maps", nlohmann::to_string(body), onSuccess, onError);
+}
+
 void MainMenu::LeaveGame()
 {
     // Show connecting pop up
@@ -332,15 +380,17 @@ void MainMenu::UpdateGame()
             // Check if we are still in lobby. Keep updating in that case
             if(lobby)
             {
+                auto oldState = currentGame->game.state;
+
                 // Set current game
                 currentGame = gameDetails;
 
-                if(currentGame->game.state == "InGame")
+                if(currentGame->game.state == "InGame" && oldState == "InLobby")
                 {
                     GetLogger()->LogInfo("Game Started!");
                     auto address = currentGame->game.address.value();
                     auto port = currentGame->game.serverPort.value();
-                    client_->LaunchGame(address, port);
+                    client_->LaunchGame(address, port, gameDetails.game.map);
 
                     httpClient.Disable();
                     enteringGame = true;
@@ -406,6 +456,67 @@ void MainMenu::StartGame()
     httpClient.Disable();
 }
 
+void MainMenu::DownloadMap(std::string mapName)
+{
+    GetLogger()->LogInfo("Downloading map: " + mapName);
+
+    // Show connecting pop up
+    popUp.SetVisible(true);
+    popUp.SetCloseable(false);
+    popUp.SetTitle("Connecting");
+    popUp.SetText("Downloading game map...");
+    popUp.SetButtonVisible(false);
+
+    nlohmann::json body;
+    body["map_name"] = mapName;
+
+    auto onSuccess = [this, mapName](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfullly downloaded map " + mapName);
+        GetLogger()->LogInfo("Result " + res.body);
+
+        if(res.status == 200)
+        {
+            auto body = nlohmann::json::parse(res.body);
+            auto mapB64 = body["map"].get<std::string>();
+            auto mapBuff = base64_decode(mapB64);
+
+            auto mapFolder = client_->mapMgr.GetMapsFolder() / mapName;
+            std::filesystem::create_directory(mapFolder);
+            GetLogger()->LogInfo("Creating dir " + mapFolder.string());
+            zip_stream_extract(mapBuff.data(), mapBuff.size(), mapFolder.c_str(), nullptr, nullptr);
+
+            popUp.SetVisible(false);
+        }
+        else
+        {
+            // Handle game full errors, game doesn't exist, etc.
+            std::string msg = res.body;
+
+            popUp.SetVisible(true);
+            popUp.SetText(msg);
+            popUp.SetTitle("Error");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
+        }
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+     httpClient.Request("/download_map", nlohmann::to_string(body), onSuccess, onError);
+}
+
 void MainMenu::HandleSDLEvents()
 {
     SDL_Event e;
@@ -462,4 +573,9 @@ void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)
     this->menuState_ = std::move(menuState);
 
     this->menuState_->OnEnter();
+}
+
+MapMgr& MainMenu::GetMapMgr()
+{
+    return client_->mapMgr;
 }

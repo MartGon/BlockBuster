@@ -24,6 +24,8 @@
 #include <networking/enetw/ENetW.h>
 #include <networking/Snapshot.h>
 
+#include <game/MapMgr.h>
+
 #include <GameState/GameState.h>
 
 namespace BlockBuster
@@ -45,12 +47,14 @@ namespace BlockBuster
         
     private:
 
-        void LaunchGame(std::string address, uint16_t port);
+        void LaunchGame(std::string address, uint16_t port, std::string map);
 
         void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) override;
 
         std::unique_ptr<GameState> state;
         std::unique_ptr<GameState> nextState;
+
+        MapMgr mapMgr;
 
         // App
         bool quit = false;

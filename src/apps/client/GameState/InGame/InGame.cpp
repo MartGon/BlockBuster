@@ -23,8 +23,8 @@
 using namespace BlockBuster;
 using namespace ::App::Client;
 
-InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort) : 
-    GameState{client}, serverDomain{serverDomain}, serverPort{serverPort}, host{ENet::HostFactory::Get()->CreateHost(1, 2)}
+InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map) : 
+    GameState{client}, serverDomain{serverDomain}, serverPort{serverPort}, mapName{map}, host{ENet::HostFactory::Get()->CreateHost(1, 2)}
 {
 }
 
@@ -99,10 +99,11 @@ void InGame::Start()
     //camController_.SetMode(::App::Client::CameraMode::FPS);
 
     // Map
-    auto black = map_.cPalette.AddColor(glm::u8vec4{0, 0, 0, 255});
-    auto white = map_.cPalette.AddColor(glm::u8vec4{255, 255, 255, 255});
+    std::filesystem::path mapsFolder = client_->GetConfigOption("mapsFolder", "./maps");
+    auto mapFolder = mapsFolder / mapName;
+    auto mapPath = mapFolder / (mapName + ".bbm");
     //LoadMap("/home/seix/Other/Repos/BlockBuster/resources/maps/Alpha2.bbm");
-    LoadMap("/home/defu/Projects/BlockBuster/resources/maps/Alpha2.bbm");
+    LoadMap(mapPath);
 
     // UI
     inGameGui.Start();
@@ -963,5 +964,5 @@ void InGame::ApplyGameOptions(GameOptions options)
 
     // Apply changes
     camController_.rotMod = gameOptions.sensitivity;
-    // TODO: 
+    // TODO: Apply sound
 }

@@ -31,6 +31,8 @@ target_link_libraries(Client
     GUI
     Audio
     OpenAL
+    base64
+    zip
 
     EnetW
     enet

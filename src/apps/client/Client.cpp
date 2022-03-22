@@ -23,16 +23,21 @@ Client::Client(::App::Configuration config) : AppI{config}
 
 void Client::Start()
 {
+    auto mapsFolder = GetConfigOption("mapsFolder", "./maps");
+    mapMgr.SetMapsFolder(mapsFolder);
+
     state = std::make_unique<MainMenu>(this);
-    //state = std::make_unique<InGame>(this, "localhost", 8081);
+    //state = std::make_unique<InGame>(this, "localhost", 8081, "Alpha2");
     state->Start();
     
-    LaunchGame("localhost", 8081);
+    //LaunchGame("localhost", 8081, "Alpha2");
 }
 
 void Client::Shutdown()
 {
     state->Shutdown();
+
+    config.options["mapsFolder"] = mapMgr.GetMapsFolder();
 }
 
 void Client::Update()
@@ -54,9 +59,9 @@ bool Client::Quit()
     return quit;
 }
 
-void Client::LaunchGame(std::string address, uint16_t port)
+void Client::LaunchGame(std::string address, uint16_t port, std::string map)
 {
-    nextState = std::make_unique<InGame>(this, address, port);
+    nextState = std::make_unique<InGame>(this, address, port, map);
 }
 
 void Client::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)

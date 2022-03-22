@@ -8,6 +8,7 @@ SET(SOURCES
     ChunkMeshBuilder.cpp
     ChunkMeshMgr.cpp
     Input.cpp
+    MapMgr.cpp
 
     models/Player.cpp
     models/FPS.cpp

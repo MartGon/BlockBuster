@@ -10,6 +10,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <game/MapMgr.h>
+
 #include <thread>
 #include <mutex>
 #include <atomic>
@@ -42,11 +44,13 @@ namespace BlockBuster
         void ListGames();
         void JoinGame(std::string gameId);
         void CreateGame(std::string name, std::string map, std::string mode, uint8_t max_players);
+        void GetAvailableMaps();
         void LeaveGame();
         void ToggleReady();
         void SendChatMsg(std::string msg);
         void UpdateGame();
         void StartGame();
+        void DownloadMap(std::string mapName);
 
         // Inputs
         void HandleSDLEvents();
@@ -57,6 +61,9 @@ namespace BlockBuster
 
         // GUI
         void SetState(std::unique_ptr<MenuState::Base> menuState_);
+
+        // Handy 
+        MapMgr& GetMapMgr();
 
         //#### Data Members ####\\
         // Rest Service
@@ -120,6 +127,9 @@ namespace BlockBuster
         };
         std::vector<GameInfo> gamesList;
 
+        // Create Game
+        std::vector<std::string> availableMaps;
+
         // Lobby
         struct PlayerInfo
         {
@@ -136,6 +146,7 @@ namespace BlockBuster
                 return playerInfo;
             }
         };
+        
         struct GameDetails
         {
             GameInfo game;

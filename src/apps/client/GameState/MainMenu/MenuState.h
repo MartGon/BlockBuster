@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace BlockBuster
 {
     class MainMenu;
@@ -48,7 +50,7 @@ namespace BlockBuster
             void Update() override;
         private:
             char gameName[32] = "\0";
-            char map[64] = "\0";
+            std::string map;
             char mode[64] = "\0";
             int maxPlayers = 2;
         };

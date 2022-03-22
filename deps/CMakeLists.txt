@@ -4,6 +4,7 @@ add_subdirectory(mglogger)
 add_subdirectory(enet)
 add_subdirectory(freetype)
 add_subdirectory(zip)
+add_subdirectory(base64)
 
 set(LIBTYPE "STATIC")
 add_subdirectory(openal-soft)
