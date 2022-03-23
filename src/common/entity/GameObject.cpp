@@ -15,12 +15,14 @@ std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTem
     {
         GameObject::Type::WEAPON_CRATE, 
         { 
-            {"Weapon ID", GameObject::Property::Type::INT, 0}
+            {"Weapon ID", GameObject::Property::Type::INT, 0},
+            {"Respawn Time (s)", GameObject::Property::Type::INT, 180}
         }
     },
     {
         GameObject::Type::HEALTHPACK, 
-        { 
+        {
+            {"Respawn Time (s)", GameObject::Property::Type::INT, 180} 
         }
     },
     {

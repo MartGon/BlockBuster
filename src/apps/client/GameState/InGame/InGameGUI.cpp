@@ -325,6 +325,11 @@ void InGameGUI::UpdateAmmo()
     ammoText.SetText(ammoStr);
 }
 
+void InGameGUI::UpdateScore()
+{
+    
+}
+
 void InGameGUI::CloseMenu()
 {
     if(this->inGame->camController_.GetMode() != App::Client::CameraMode::EDITOR)
