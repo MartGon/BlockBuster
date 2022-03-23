@@ -267,7 +267,12 @@ void InGame::HandleSDLEvents()
                 else 
                     inGameGui.CloseMenu();
             }
+            if(e.key.keysym.sym == SDLK_TAB)
+                inGameGui.showScoreboard = true;
             break;
+        case SDL_KEYUP:
+            if(e.key.keysym.sym == SDLK_TAB)
+                inGameGui.showScoreboard = false;
         case SDL_MOUSEBUTTONDOWN:
             {
                 for(auto [playerId, player] : playerTable)

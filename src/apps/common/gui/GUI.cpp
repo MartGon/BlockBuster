@@ -22,3 +22,11 @@ void GUI::CenterSection(float sWidth, float regionWidth)
 {
     ImGui::SetCursorPosX(regionWidth/ 2.0f - sWidth / 2.0f);
 }
+
+void GUI::TableCenterEntry(float width)
+{
+    auto regionSize = ImGui::GetContentRegionAvail();
+    auto cursorPos = ImGui::GetCursorPos();
+    auto x = cursorPos.x + regionSize.x / 2 - width /2;
+    ImGui::SetCursorPosX(x);
+}

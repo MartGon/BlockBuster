@@ -8,4 +8,5 @@ namespace GUI
     void AddToolTip(const char* text);
 
     void CenterSection(float sWidth, float regionWidth);
+    void TableCenterEntry(float width);
 }

@@ -52,6 +52,8 @@ namespace BlockBuster
         void UpdateAmmo();
         void UpdateScore();
 
+        void ScoreboardWindow();
+        void ScoreTable(const char* name);
         void DebugWindow();
         void RenderStatsWindow();
         void NetworkStatsWindow();
@@ -81,6 +83,9 @@ namespace BlockBuster
         GUI::Text midScoreText;
         GUI::Text rightScoreText;
         GUI::Image crosshairImg;
+
+        // ScoreBoard
+        bool showScoreboard = false;
 
         // Game options
         GameOptions gameOptions;

@@ -54,9 +54,12 @@ void InGameGUI::DrawGUI(GL::Shader& textShader)
         NetworkStatsWindow();
         RenderStatsWindow();
         puMgr.Update();
-    }
 
-    HUD();
+        if(showScoreboard && !IsMenuOpen())
+            ScoreboardWindow();
+
+        HUD();
+    }
     
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData(), guiVao.GetHandle());
@@ -344,6 +347,97 @@ void InGameGUI::CloseMenu()
 bool InGameGUI::IsMenuOpen()
 {
     return puMgr.IsOpen();
+}
+
+void InGameGUI::ScoreboardWindow()
+{
+    auto displaySize = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+    ImGui::SetNextWindowSize(ImVec2{0, 0}, ImGuiCond_Always);
+
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBackground;
+    if(ImGui::Begin("Score board", nullptr, flags))
+    {   
+        ImVec4 red{0.8f, 0.05f, 0.05f, 0.75f};
+        ImVec4 blue{0.05f, 0.05f, 0.7f, 0.75f};
+
+        ImGui::PushStyleColor(ImGuiCol_TableRowBg, red);
+        ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, red);
+            ScoreTable("Red Team");
+        ImGui::PopStyleColor(2);
+        
+        ImGui::Dummy(ImVec2(0, 10));
+
+        ImGui::PushStyleColor(ImGuiCol_TableRowBg, blue);
+        ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, blue);
+            ScoreTable("Blue Team");
+        ImGui::PopStyleColor(2);
+    }
+    ImGui::End();
+}
+
+void InGameGUI::ScoreTable(const char* name)
+{
+    ImGui::Text("%s", name);
+    auto winSize = ImGui::GetWindowSize();
+    
+    auto tFlags = ImGuiTableFlags_None | ImGuiTableFlags_RowBg;
+    if(ImGui::BeginTable("#Score board", 5, tFlags))
+    {
+        auto columnFlags = ImGuiTableColumnFlags_WidthFixed;
+        auto nameSize = winSize.x * 0.65f;
+        ImGui::TableSetupColumn("Rank", columnFlags);
+        ImGui::TableSetupColumn("Name", columnFlags, nameSize);
+        ImGui::TableSetupColumn("Points", columnFlags);
+        ImGui::TableSetupColumn("Deaths", columnFlags);
+        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+        ImGui::TableHeadersRow();
+
+        // Total Row
+        ImGui::TableNextRow();
+
+        ImGui::TableNextColumn();
+        // Rank
+
+        ImGui::TableNextColumn();
+        ImGui::Text("%s", name);
+
+        ImGui::TableNextColumn();
+        std::string points = std::to_string(35);
+        auto width = ImGui::CalcTextSize(points.c_str()).x;
+        GUI::TableCenterEntry(width);
+        ImGui::Text("%s", points.c_str());
+        
+        // Players
+        for(auto i = 0; i < 8; i++)
+        {
+            ImGui::TableNextRow();
+            
+            ImGui::TableNextColumn();
+            std::string rank = std::to_string(i + 1);
+            auto width = ImGui::CalcTextSize(rank.c_str()).x;
+            GUI::TableCenterEntry(width);
+            ImGui::Text("%s", rank.c_str());
+
+            ImGui::TableNextColumn();
+            std::string playerName = "Defuminador, God Slayer";
+            ImGui::Text("%s", playerName.c_str());
+
+            ImGui::TableNextColumn();
+            std::string points = std::to_string(10 - i);
+            width = ImGui::CalcTextSize(points.c_str()).x;
+            GUI::TableCenterEntry(width);
+            ImGui::Text("%s", points.c_str());
+
+            ImGui::TableNextColumn();
+            std::string deaths = std::to_string(3);
+            width = ImGui::CalcTextSize(deaths.c_str()).x;
+            GUI::TableCenterEntry(width);
+            ImGui::Text("%s", deaths.c_str());
+        }
+
+        ImGui::EndTable();
+    }
 }
 
 void InGameGUI::DebugWindow()

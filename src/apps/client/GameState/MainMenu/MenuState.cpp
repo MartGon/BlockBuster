@@ -85,10 +85,11 @@ void ServerBrowser::Update()
             for(auto game : mainMenu_->gamesList)
             {
                 ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+
                 auto gameId = game.id;
                 auto name = game.name;
 
-                ImGui::TableNextColumn();
                 auto selectFlags = ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowDoubleClick;
                 if(ImGui::Selectable(name.c_str(), false, selectFlags))
                 {
