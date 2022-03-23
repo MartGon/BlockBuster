@@ -17,7 +17,9 @@ namespace BlockBuster
         {
             LEFT_BUTTON,
             RIGHT_BUTTON,
-            HOVER
+            HOVER,
+            HOLD_LEFT_BUTTON,
+            HOLD_RIGHT_BUTTON
         };
 
         class ToolAction

@@ -9,6 +9,11 @@ bool Game::operator==(Display a, Display b)
     return a.type == b.type && a.id == b.id;
 }
 
+bool Game::operator!=(Display a, Display b)
+{
+    return !(a == b);
+}
+
 bool Game::operator==(BlockRot a, BlockRot b)
 {
     return a.y == b.y && a.z == b.z;

@@ -36,6 +36,7 @@ namespace Game
         
     };
     bool operator==(Display a, Display b);
+    bool operator!=(Display a, Display b);
 
     enum BlockType : uint8_t
     {

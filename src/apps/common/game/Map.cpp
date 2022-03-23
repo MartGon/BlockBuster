@@ -150,7 +150,6 @@ Map Map::FromBuffer(Util::Buffer::Reader reader, std::filesystem::path mapFolder
     Map map;
 
     map.map_ = Game::Map::Map::FromBuffer(reader);
-    //reader.Read<std::string>(); // TODO: Remove
     auto textureFolder = mapFolder / "textures";
     map.tPalette = Rendering::TexturePalette::FromBuffer(reader, textureFolder);
     map.cPalette = Rendering::ColorPalette::FromBuffer(reader);

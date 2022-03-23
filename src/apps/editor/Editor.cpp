@@ -370,11 +370,18 @@ void Editor::UpdateEditor()
         }
     }
 
-    // Hover
+    // Hover or Hold
     if(!io.WantCaptureMouse)
     {
         auto mousePos = GetMousePos();
-        UseTool(mousePos, ActionType::HOVER);
+        auto mouseState = SDL_GetMouseState(nullptr, nullptr);
+        auto actionType = ActionType::HOVER;
+        if(mouseState & SDL_BUTTON_LEFT)
+            actionType = ActionType::HOLD_LEFT_BUTTON;
+        else if(mouseState & SDL_BUTTON_RIGHT)
+            actionType = ActionType::HOLD_RIGHT_BUTTON;
+
+        UseTool(mousePos, actionType);
     }
     
     // Camera
@@ -884,10 +891,11 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
             {
                 auto block = *intersect.block;
                 auto iPos = intersect.pos;
-                if(actionType == ActionType::LEFT_BUTTON)
+                if(actionType == ActionType::LEFT_BUTTON || actionType == ActionType::HOLD_LEFT_BUTTON)
                 {
                     auto display = GetBlockDisplay();
-                    if(IsDisplayValid())
+                    auto block = project.map.GetBlock(iPos);
+                    if(IsDisplayValid() && display != block.display)
                         DoToolAction(std::make_unique<PaintAction>(iPos, display, &project.map));
                 }
                 if(actionType == ActionType::RIGHT_BUTTON)

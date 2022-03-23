@@ -757,7 +757,9 @@ void EditorGUI::SelectBlockDisplayGUI(Game::Block& block)
         {
             OpenPopUp(PopUpState::LOAD_TEXTURE);
         }
-        GUI::AddToolTip("Warning!: Every texture must be a square and have the same size and format (RGB/RGBA)");
+        std::string tip = "Info: You must place the texture file in: "+ editor->mapMgr.GetMapPath(fileName).string() + 
+        "/textures/ \n\nWarning!: Every texture must be a square and have the same size and format (RGB/RGBA)";
+        GUI::AddToolTip(tip.c_str());
 
         if(editor->newMap)
             ImGui::PopDisabled();
