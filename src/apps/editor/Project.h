@@ -35,6 +35,6 @@ namespace BlockBuster::Editor
         bool isOk = true;
     };
 
-    void WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath);
-    Project ReadProjectFromFile(std::filesystem::path filepath);
+    void WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path folder, std::string fileName);
+    Project ReadProjectFromFile(std::filesystem::path folder, std::string fileName);
 }

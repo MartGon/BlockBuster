@@ -63,7 +63,7 @@ Util::Buffer Rendering::TexturePalette::ToBuffer() const
     buffer.Write(texCount);
     for(auto i = 0; i < texCount; i++)
     {
-        auto texturePath =  members_[i].filepath;
+        auto texturePath = members_[i].filepath;
         auto textureName = texturePath.filename().string();
         buffer.Write(textureName);
     }
@@ -88,7 +88,6 @@ Rendering::TexturePalette Rendering::TexturePalette::FromBuffer(Util::Buffer::Re
             palette.AddNullTexture(texturePath);
         }
     }
-
 
     return std::move(palette);
 }

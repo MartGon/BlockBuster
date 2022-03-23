@@ -36,7 +36,7 @@ void EditorGUI::InitPopUps()
         sa->SetPlaceHolder(this->fileName);
     });
     saveAs.SetOnAccept([this](std::string map){
-        std::strcpy(fileName, map.data());
+        this->fileName = map;
         this->editor->SaveProject(); return true;
     });
     puMgr.Set(SAVE_AS, std::make_unique<GUI::EditTextPopUp>(saveAs));
@@ -50,7 +50,7 @@ void EditorGUI::InitPopUps()
         om->SetPlaceHolder(this->fileName);
     });
     openMap.SetOnAccept([this](std::string map){
-        std::strcpy(fileName, map.data());
+         this->fileName = map;
         auto res = this->editor->OpenProject(); return res.IsSuccess();
     });
     puMgr.Set(OPEN_MAP, std::make_unique<GUI::EditTextPopUp>(openMap));
@@ -81,7 +81,7 @@ void EditorGUI::InitPopUps()
         {
             this->puMgr.Close();
 
-            if(std::strlen(fileName) > 0)
+            if(fileName.size() > 0)
             {
                 editor->SaveProject();
                 onWarningExit();
@@ -139,7 +139,7 @@ void EditorGUI::InitPopUps()
     setTextureFolder.SetLabel("Texture Folder");
     setTextureFolder.SetErrorText("Could not set texture folder");
     setTextureFolder.SetOnOpen([this](){
-        std::strcpy(this->textureFolderPath, editor->project.map.textureFolder.string().c_str());
+        //std::strcpy(this->textureFolderPath, editor->project.map.textureFolder.string().c_str());
         auto stf = this->puMgr.GetAs<GUI::EditTextPopUp>(SET_TEXTURE_FOLDER);
         stf->SetPlaceHolder(this->textureFolderPath);
     });
@@ -147,7 +147,7 @@ void EditorGUI::InitPopUps()
         std::strcpy(this->textureFolderPath, path.data());
         if(std::filesystem::is_directory(this->textureFolderPath))
         {
-            editor->project.map.textureFolder = this->textureFolderPath;
+            //editor->project.map.textureFolder = this->textureFolderPath;
             
             return true;
         }
@@ -260,6 +260,7 @@ void EditorGUI::MenuBar()
             ImGui::EndMenu();
         }
 
+        /*
         if(ImGui::BeginMenu("Project", true))
         {
             
@@ -270,6 +271,7 @@ void EditorGUI::MenuBar()
 
             ImGui::EndMenu();
         }
+        */
 
         if(ImGui::BeginMenu("Settings", true))
         {
@@ -748,11 +750,23 @@ void EditorGUI::SelectBlockDisplayGUI(Game::Block& block)
     }
     else if(displayType == Game::DisplayType::TEXTURE)
     {
+        if(editor->newMap)
+            ImGui::PushDisabled();
+
         if(ImGui::Button("Add Texture"))
         {
             OpenPopUp(PopUpState::LOAD_TEXTURE);
         }
         GUI::AddToolTip("Warning!: Every texture must be a square and have the same size and format (RGB/RGBA)");
+
+        if(editor->newMap)
+            ImGui::PopDisabled();
+        
+        if(editor->newMap)
+        {
+            ImGui::SameLine();
+            GUI::HelpMarker("You need to save the project first before adding a Texture");
+        }
 
         auto isEmpty = editor->project.map.tPalette.GetCount() == 0;
         if(isEmpty)

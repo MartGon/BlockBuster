@@ -28,10 +28,11 @@ void BlockBuster::Editor::Project::Init()
     });
 }
 
-void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path filepath)
+void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, std::filesystem::path folder, std::string fileName)
 {
     using namespace Util::File;
 
+    auto filepath = folder / fileName;
     std::fstream file{filepath, file.binary | file.out};
     if(!file.is_open())
     {
@@ -57,11 +58,19 @@ void BlockBuster::Editor::WriteProjectToFile(BlockBuster::Editor::Project& p, st
     WriteToFile(file, p.cursorScale);
 }
 
-BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::filesystem::path filepath)
+BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::filesystem::path folder, std::string fileName)
 {
     using namespace Util::File;
-
     Project p;
+
+    auto filepath = folder / fileName;
+    if(!std::filesystem::is_regular_file(filepath))
+    {
+        if(auto logger = App::ServiceLocator::GetLogger())
+            logger->LogError("Invalid path " + filepath.string() + ". It's not a file");
+        p.isOk = false;
+        return p;
+    }
 
     std::fstream file{filepath, file.binary | file.in};
     if(!file.is_open())
@@ -84,7 +93,7 @@ BlockBuster::Editor::Project BlockBuster::Editor::ReadProjectFromFile(std::files
     // Load map
     auto bufferSize = ReadFromFile<uint32_t>(file);
     Util::Buffer buffer = ReadFromFile(file, bufferSize);
-    p.map = App::Client::Map::FromBuffer(buffer.GetReader());
+    p.map = App::Client::Map::FromBuffer(buffer.GetReader(), folder);
 
     // Camera Pos/Rot
     p.cameraPos = ReadFromFile<glm::vec3>(file);

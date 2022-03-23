@@ -20,7 +20,9 @@
 #include <entity/Block.h>
 #include <entity/Map.h>
 #include <entity/GameObject.h>
+
 #include <game/CameraController.h>
+#include <game/MapMgr.h>
 
 #include <imgui/backends/imgui_impl_opengl3.h>
 
@@ -163,6 +165,7 @@ namespace BlockBuster::Editor
         void ApplyVideoOptions(::App::Configuration::WindowConfig& config) override;
 
         // Project
+        MapMgr mapMgr;
         Project project;
 
         // Rendering

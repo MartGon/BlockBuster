@@ -99,11 +99,10 @@ void InGame::Start()
     //camController_.SetMode(::App::Client::CameraMode::FPS);
 
     // Map
-    std::filesystem::path mapsFolder = client_->GetConfigOption("mapsFolder", "./maps");
-    auto mapFolder = mapsFolder / mapName;
-    auto mapPath = mapFolder / (mapName + ".bbm");
+    auto mapFolder = client_->mapMgr.GetMapPath(mapName);
+    auto mapFileName = mapName + ".bbm";
     //LoadMap("/home/seix/Other/Repos/BlockBuster/resources/maps/Alpha2.bbm");
-    LoadMap(mapPath);
+    LoadMap(mapFolder, mapFileName);
 
     // UI
     inGameGui.Start();
@@ -916,14 +915,14 @@ void InGame::UpdateAudio()
 }
 
 // TODO: Redundancy with Project::Load
-void InGame::LoadMap(std::filesystem::path filePath)
+void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
 {
     using namespace Util::File;
-
-    std::fstream file{filePath, file.binary | file.in};
+    auto filepath = mapFolder / fileName;
+    std::fstream file{filepath, file.binary | file.in};
     if(!file.is_open())
     {
-        client_->logger->LogError("Could not open file " + filePath.string());
+        client_->logger->LogError("Could not open file " + filepath.string());
         std::exit(-1);
         return;
     }
@@ -931,14 +930,14 @@ void InGame::LoadMap(std::filesystem::path filePath)
     auto magic = ReadFromFile<int>(file);
     if(magic != Game::Map::Map::magicNumber)
     {
-        client_->logger->LogError("Wrong format for file " + filePath.string());
+        client_->logger->LogError("Wrong format for file " + filepath.string());
         return;
     }
 
     // Load map
     auto bufferSize = ReadFromFile<uint32_t>(file);
     Util::Buffer buffer = ReadFromFile(file, bufferSize);
-    map_ = App::Client::Map::FromBuffer(buffer.GetReader());
+    map_ = App::Client::Map::FromBuffer(buffer.GetReader(), mapFolder);
 }
 
 // Game Config

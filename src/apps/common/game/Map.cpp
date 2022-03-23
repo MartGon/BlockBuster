@@ -14,7 +14,6 @@ Map::Map(Map&& other)
 Map& Map::operator=(Map&& other) 
 {
     std::swap(this->map_, other.map_);
-    std::swap(this->textureFolder, other.textureFolder);
     std::swap(tPalette, other.tPalette);
     std::swap(cPalette, other.cPalette);
 
@@ -140,20 +139,20 @@ Util::Buffer Map::ToBuffer()
 
     // Concat inner buffers
     buffer.Append(map_.ToBuffer());
-    buffer.Write<std::string>(textureFolder.string());
     buffer.Append(tPalette.ToBuffer());
     buffer.Append(cPalette.ToBuffer());
 
     return buffer;
 }
 
-Map Map::FromBuffer(Util::Buffer::Reader reader)
+Map Map::FromBuffer(Util::Buffer::Reader reader, std::filesystem::path mapFolder)
 {
     Map map;
 
     map.map_ = Game::Map::Map::FromBuffer(reader);
-    map.textureFolder = reader.Read<std::string>();
-    map.tPalette = Rendering::TexturePalette::FromBuffer(reader, map.textureFolder);
+    //reader.Read<std::string>(); // TODO: Remove
+    auto textureFolder = mapFolder / "textures";
+    map.tPalette = Rendering::TexturePalette::FromBuffer(reader, textureFolder);
     map.cPalette = Rendering::ColorPalette::FromBuffer(reader);
 
     return std::move(map);

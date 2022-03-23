@@ -93,7 +93,7 @@ namespace BlockBuster
         void UpdateAudio();
 
         // Map
-        void LoadMap(std::filesystem::path filePath);
+        void LoadMap(std::filesystem::path mapFolder, std::string fileName);
 
         // Game Config 
         void LoadGameOptions();

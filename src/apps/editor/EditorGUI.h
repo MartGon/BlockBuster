@@ -24,7 +24,7 @@ namespace BlockBuster::Editor
             UNSAVED_WARNING,
             VIDEO_SETTINGS,
             GO_TO_BLOCK,
-            SET_TEXTURE_FOLDER,
+            SET_TEXTURE_FOLDER, // TODO: Remove. No longer needed
             ARE_YOU_SURE,
             MAX
         };
@@ -99,7 +99,7 @@ namespace BlockBuster::Editor
         std::function<void()> onWarningExit;
 
         // PopUp Inputs
-        char fileName[16] = "";
+        std::string fileName;
         char textureFilename[32] = "texture.png";
         char textureFolderPath[128] = "";
         glm::ivec3 goToPos{0};

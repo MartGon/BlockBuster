@@ -35,12 +35,11 @@ namespace App::Client
         uint32_t GetBlockCount() const;
 
         Util::Buffer ToBuffer();
-        static Map FromBuffer(Util::Buffer::Reader reader);
+        static Map FromBuffer(Util::Buffer::Reader reader, std::filesystem::path mapFolder);
 
         void Draw(GL::Shader& shader, const glm::mat4& view);
         void DrawChunkBorders(GL::Shader& shader, Rendering::Mesh& cubeMesh, const glm::mat4& view, glm::vec4 color = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f});
 
-        std::filesystem::path textureFolder;
         Rendering::TexturePalette tPalette{16};
         Rendering::ColorPalette cPalette{32};
 

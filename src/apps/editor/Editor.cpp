@@ -79,11 +79,13 @@ void Editor::Start()
     
     // World
     mapsFolder = GetConfigOption("MapsFolder", "./maps/");
-    auto mapName = GetConfigOption("Map", "");
+    mapMgr.SetMapsFolder(mapsFolder);
+
+    gui.fileName = GetConfigOption("Map", "");
+
     bool mapLoaded = false;
-    if(!mapName.empty() && mapName.size() < 16)
+    if(!gui.fileName.empty())
     {
-        std::strcpy(gui.fileName, mapName.c_str());
         mapLoaded = OpenProject().type == Util::ResultType::SUCCESS;
     }
     
@@ -128,7 +130,7 @@ bool Editor::Quit()
 
 void Editor::Shutdown()
 {
-    config.options["Map"] = std::string(gui.fileName);
+    config.options["Map"] = gui.fileName;
     config.options["MapsFolder"] = mapsFolder.string();
     config.options["showCursor"] = std::to_string(cursor.show);
     config.options["camMoveSpeed"] = std::to_string(cameraController.moveSpeed);
@@ -155,10 +157,11 @@ Util::Result<bool> Editor::LoadTexture()
     if(project.map.tPalette.GetCount() >= gui.MAX_TEXTURES)
         return Util::CreateError<bool>("Maximum of textures reached");
 
-    if(IsTextureInPalette(project.map.textureFolder, gui.textureFilename))
+    auto textureFolder = mapMgr.GetMapPath(gui.fileName) / "textures";
+    if(IsTextureInPalette(textureFolder, gui.textureFilename))
         return Util::CreateError<bool>("Texture is already in palette");
 
-    auto res = project.map.tPalette.AddTexture(project.map.textureFolder, gui.textureFilename, false);
+    auto res = project.map.tPalette.AddTexture(textureFolder, gui.textureFilename, false);
     if(res.type == Util::ResultType::ERROR)
     {
         return Util::CreateError<bool>(res.err.info);
@@ -218,7 +221,7 @@ void Editor::NewProject()
     camera.SetTarget(glm::vec3{0.0f});
 
     // Filename
-    gui.fileName[0] = '\0';
+    gui.fileName = "NewMap";
 
     // Window
     RenameMainWindow();
@@ -227,15 +230,20 @@ void Editor::NewProject()
     newMap = true;
     unsaved = false;
 
-    // Texturefolder
-    project.map.textureFolder = "./";
-
     ClearActionHistory();
 }
 
 void Editor::SaveProject()
 {
-    std::filesystem::path mapPath = mapsFolder / gui.fileName; 
+    std::filesystem::path mapFolder = mapsFolder / gui.fileName;
+
+    if(!std::filesystem::is_directory(mapFolder))
+    {
+        std::filesystem::create_directory(mapFolder);
+        auto texturesFolder = mapFolder / "textures";
+        std::filesystem::create_directory(texturesFolder);
+    }
+    std::string fileName = gui.fileName + ".bbm";
 
     // Write project file
     // Camera
@@ -245,7 +253,7 @@ void Editor::SaveProject()
     // Cursor Pos
     project.cursorPos = cursor.pos;
     project.cursorScale = cursor.scale;
-    ::WriteProjectToFile(project, mapPath);
+    ::WriteProjectToFile(project, mapFolder, fileName);
 
     // Update flag
     newMap = false;
@@ -256,11 +264,12 @@ void Editor::SaveProject()
 
 Util::Result<bool> Editor::OpenProject()
 {
-    std::filesystem::path mapPath = mapsFolder / gui.fileName;
-    Project temp = ::ReadProjectFromFile(mapPath);
+    auto mapFolder = mapMgr.GetMapPath(gui.fileName);
+    std::string fileName = gui.fileName + ".bbm";
 
     auto res = Util::CreateError<bool>("Could not open project");
 
+    Project temp = ::ReadProjectFromFile(mapFolder, fileName);
     bool isOk = temp.isOk;
     if(isOk)
     {
@@ -295,6 +304,7 @@ Util::Result<bool> Editor::OpenProject()
 
         res = Util::CreateSuccess<bool>(true);
     }
+    
     
     return res;
 }
@@ -635,8 +645,7 @@ void Editor::HandleWindowEvent(SDL_WindowEvent winEvent)
 
 void Editor::RenameMainWindow()
 {
-    
-    std::string mapName = std::strlen(gui.fileName) > 0 ? gui.fileName : "New Map";
+    std::string mapName = !gui.fileName.empty() > 0 ? gui.fileName : "New Map";
     std::string title = "Editor - " + mapName;
     if(unsaved)
         title = title + "*";
