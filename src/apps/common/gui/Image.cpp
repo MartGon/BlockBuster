@@ -36,9 +36,5 @@ void Image::DoDraw(GL::Shader& shader, glm::ivec2 pos, glm::ivec2 screenSize)
 
     texture->Bind(GL_TEXTURE0);
 
-    // TODO: Remove
-    glDisable(GL_CULL_FACE);
-    glDisable(GL_DEPTH);
-
     quadMesh->Draw(shader);
 }
