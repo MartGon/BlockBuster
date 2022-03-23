@@ -12,7 +12,11 @@ namespace GUI
         DOWN_RIGHT_CORNER,
         UP_LEFT_CORNER,
         UP_RIGHT_CORNER,
-        CENTER
+        CENTER,
+        CENTER_DOWN,
+        CENTER_UP,
+        CENTER_LEFT,
+        CENTER_RIGHT,
     };
 
     class Widget

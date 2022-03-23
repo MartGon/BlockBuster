@@ -50,6 +50,7 @@ namespace BlockBuster
         void UpdateArmor();
         std::string GetBoundedValue(int val, int max);
         void UpdateAmmo();
+        void UpdateScore();
 
         void DebugWindow();
         void RenderStatsWindow();
@@ -76,6 +77,9 @@ namespace BlockBuster
         GUI::Text shieldIcon;
         GUI::Text ammoText;
         GUI::Text ammoNumIcon;
+        GUI::Text leftScoreText;
+        GUI::Text midScoreText;
+        GUI::Text rightScoreText;
         GUI::Image crosshairImg;
 
         // Game options

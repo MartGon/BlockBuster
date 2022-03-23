@@ -173,43 +173,40 @@ void InGameGUI::InitPopUps()
 
 void InGameGUI::InitTexts()
 {
+    // Colors
     auto green = glm::vec4{0.1f, 0.9f, 0.1f, 1.0f};
     auto blue = glm::vec4{0.1f, 0.1f, 0.8f, 1.0f};
+    auto lightBlue = glm::vec4{0.14f, 0.7f, 0.941f, 1.0f};
+    auto red = glm::vec4{0.8f, 0.1f, 0.1f, 1.0f};
     auto golden = glm::vec4{0.7f, 0.7f, 0.1f, 1.0f};
     auto white = glm::vec4{1.0f};
-
-    healthText = pixelFont->CreateText();
-    healthIcon = pixelFont->CreateText();
-
-    armorText = pixelFont->CreateText();
-    shieldIcon = pixelFont->CreateText();
-
-    ammoText = pixelFont->CreateText();
-    ammoNumIcon = pixelFont->CreateText();
 
     auto leftBorder = glm::ivec2{5, -5};
 
     // Health/Shield
-
+    shieldIcon = pixelFont->CreateText();
     shieldIcon.SetText("U");
     shieldIcon.SetScale(2.0f);
-    shieldIcon.SetColor(blue);
+    shieldIcon.SetColor(lightBlue);
     shieldIcon.SetAnchorPoint(GUI::AnchorPoint::UP_LEFT_CORNER);
     shieldIcon.SetOffset(glm::ivec2{0, -shieldIcon.GetSize().y} + leftBorder);
 
+    armorText = pixelFont->CreateText();
     armorText.SetText("300/300");
     armorText.SetScale(2.0f);
-    armorText.SetColor(blue);
+    armorText.SetColor(lightBlue);
     armorText.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
     armorText.SetParent(&shieldIcon);
-    
+
+    healthText = pixelFont->CreateText();
     healthText.SetText("030/100");
     healthText.SetScale(2);
     healthText.SetColor(green);
     healthText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
     healthText.SetParent(&armorText);
     healthText.SetOffset(glm::ivec2{0, -healthText.GetSize().y} + leftBorder);
-    
+
+    healthIcon = pixelFont->CreateText();
     healthIcon.SetText("+");
     healthIcon.SetScale(3);
     healthIcon.SetColor(green);
@@ -218,18 +215,45 @@ void InGameGUI::InitTexts()
     healthIcon.SetOffset(glm::ivec2{-healthIcon.GetSize().x, -4});
 
     // Ammo
+    ammoNumIcon = pixelFont->CreateText();
     ammoNumIcon.SetText("4");
     ammoNumIcon.SetScale(2.0f);
     ammoNumIcon.SetColor(golden);
     ammoNumIcon.SetAnchorPoint(GUI::AnchorPoint::UP_RIGHT_CORNER);
     ammoNumIcon.SetOffset(-ammoNumIcon.GetSize() + glm::ivec2{-5, -5});
 
+    ammoText = pixelFont->CreateText();
     ammoText.SetText("llll");
     ammoText.SetScale(2.0f);
     ammoText.SetColor(golden);
     ammoText.SetParent(&ammoNumIcon);
     ammoText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
     ammoText.SetOffset(glm::ivec2{-ammoText.GetSize().x, 0} + glm::ivec2{-5, 0});
+
+    // Score
+    midScoreText = pixelFont->CreateText();
+    midScoreText.SetText(" - ");
+    midScoreText.SetScale(2.f);
+    midScoreText.SetColor(white);
+    midScoreText.SetAnchorPoint(GUI::AnchorPoint::CENTER_UP);
+    auto size = midScoreText.GetSize();
+    midScoreText.SetOffset(glm::ivec2{-size.x / 2, -size.y * 8} + glm::ivec2{0, 0});
+
+    leftScoreText = pixelFont->CreateText();
+    leftScoreText.SetText("3");
+    leftScoreText.SetScale(2.f);
+    leftScoreText.SetColor(blue);
+    leftScoreText.SetParent(&midScoreText);
+    leftScoreText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+    leftScoreText.SetOffset(glm::ivec2{-leftScoreText.GetSize().x, -5});
+
+    rightScoreText = pixelFont->CreateText();
+    rightScoreText.SetText("6");
+    rightScoreText.SetScale(2.f);
+    rightScoreText.SetColor(red);
+    rightScoreText.SetParent(&midScoreText);
+    rightScoreText.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
+    rightScoreText.SetOffset(glm::ivec2{0, -5});
 }
 
 void InGameGUI::HUD()
@@ -246,6 +270,11 @@ void InGameGUI::HUD()
     healthIcon.Draw(inGame->textShader, winSize);
     ammoNumIcon.Draw(inGame->textShader, winSize);
     ammoText.Draw(inGame->textShader, winSize);
+
+    midScoreText.Draw(inGame->textShader, winSize);
+    leftScoreText.Draw(inGame->textShader, winSize);
+    rightScoreText.Draw(inGame->textShader, winSize);
+
     crosshairImg.Draw(inGame->imgShader, winSize);
 }
 
