@@ -86,7 +86,7 @@ void AudioMgr::Update()
 
     for(auto& [id, source] : streamSources)
     {
-        UpdateStreamedAudio(source)    ;
+        UpdateStreamedAudio(source);
     }
 }
 
@@ -106,13 +106,13 @@ std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAVOrNull(ID id, std::
 
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAVOrNull(std::filesystem::path path)
 {
-    auto id = lastStaticId++;
+    auto id = GetFreeId(staticFiles);
     return LoadStaticWAVOrNull(id++, path);
 }
 
 Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAV(std::filesystem::path path)
 {
-    auto id = lastStaticId++;
+    auto id = GetFreeId(staticFiles);
     return LoadStaticWAV(id, path);
 }
 
@@ -157,13 +157,13 @@ std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAVOrNull(ID id, std
 
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAVOrNull(std::filesystem::path path)
 {
-    auto id = lastSreamedId++;
+    auto id = GetFreeId(streamedFiles);
     return LoadStreamedWAVOrNull(id++, path);
 }
 
 Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAV(std::filesystem::path path)
 {
-    auto id = lastSreamedId++;
+    auto id = GetFreeId(streamedFiles);
     return LoadStreamedWAV(id, path);
 }
 
@@ -198,7 +198,7 @@ ID AudioMgr::CreateSource()
     alSourcef(source.handle, AL_REFERENCE_DISTANCE, refDistance);
     alSourcei(source.handle, AL_SOURCE_RELATIVE, AL_FALSE);
     
-    auto id = lastSourceId++;
+    auto id = GetFreeId(sources);
     sources[id] = std::move(source);
 
     return id;
@@ -268,7 +268,7 @@ ID AudioMgr::CreateStreamSource()
     alSourcef(source.handle, AL_REFERENCE_DISTANCE, refDistance);
     alSourcei(source.handle, AL_SOURCE_RELATIVE, AL_FALSE);
     
-    auto id = lastStreamSourceId++;
+    auto id = GetFreeId(streamSources);
     streamSources[id] = std::move(sSource);
 
     return id;

@@ -132,23 +132,29 @@ namespace Audio
         void SetSourceAudio(AudioSource source, ID srcId);
         void UpdateStreamedAudio(StreamAudioSource& source);
 
+        // ID
+        template <typename T>
+        ID GetFreeId(const std::unordered_map<ID, T>& map)
+        {
+            for(ID id = 0; id < std::numeric_limits<ID>::max(); id++)
+                if(map.find(id) == map.end())
+                    return id;
+
+            return 0;
+        }
+
+        // Singleton
         static std::unique_ptr<AudioMgr> audioMgr_;
         ALCdevice* device_ = nullptr;
         ALCcontext* context_ = nullptr;
 
         // Sources
         std::unordered_map<ID, AudioSource> sources;
-        ID lastSourceId = 0;
-
         std::unordered_map<ID, StreamAudioSource> streamSources;
-        ID lastStreamSourceId = 0;
 
         // Files
         std::unordered_map<ID, StaticFile> staticFiles;
-        ID lastStaticId = 1;
-
         std::unordered_map<ID, File> streamedFiles;
-        ID lastSreamedId = 1;
 
         // General params
         bool enabled = true;
