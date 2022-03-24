@@ -171,7 +171,7 @@ void CreateGame::Update()
             for(auto availMap : mainMenu_->availableMaps)
             {
                 bool selected = availMap == map;
-                if(ImGui::Selectable(availMap.c_str(), true))
+                if(ImGui::Selectable(availMap.c_str(), selected))
                 {
                     map = availMap;
                 }
@@ -182,7 +182,7 @@ void CreateGame::Update()
         if(ImGui::BeginCombo("Mode", mode, comboFlags))
         {
             bool selected = std::strcmp("DeathMatch", mode) == 0;
-            if(ImGui::Selectable("DeathMatch", true))
+            if(ImGui::Selectable("DeathMatch", selected))
             {
                 std::strcpy(mode, "DeathMatch");
             }
@@ -436,4 +436,55 @@ bool Lobby::IsEveryoneReady()
     }
 
     return true;
+}
+
+void UploadMap::OnEnter()
+{
+    auto& mapMgr = mainMenu_->GetMapMgr();
+    auto localMaps = mapMgr.GetLocalMaps();
+    for(auto& mapPath : localMaps)
+        maps.push_back(mapPath.filename().string());
+
+    password.resize(PASSWORD_MAX_SIZE, '\0');
+}
+
+void UploadMap::Update()
+{
+    auto displaySize = ImGui::GetIO().DisplaySize;
+
+    // Centered
+    ImGui::SetNextWindowPos(ImVec2{displaySize.x * 0.5f, displaySize.y * 0.5f}, ImGuiCond_Always, ImVec2{0.5f, 0.5f});
+
+    auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
+    bool show = true;
+    if(ImGui::Begin("Upload Map", &show, flags))
+    {
+        auto comboFlags = ImGuiComboFlags_None;
+        if(ImGui::BeginCombo("Map", selectedMap.c_str(), comboFlags))
+        {   
+            for(auto map : maps)
+            {
+                bool selected = map == selectedMap;
+                if(ImGui::Selectable(map.c_str(), selected))
+                {
+                    selectedMap = map;
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        auto textFlags = ImGuiInputTextFlags_Password;
+        ImGui::InputText("Password", password.data(), textFlags);
+        GUI::AddToolTip("This password will be necessary later, in case you want to update your map");
+
+        if(ImGui::Button("Upload Map"))
+        {
+            mainMenu_->UploadMap(selectedMap, password);
+        }
+    }
+    // User clicked on the X button. Go back
+    if(!show)
+        mainMenu_->SetState(std::make_unique<MenuState::ServerBrowser>(mainMenu_));
+
+    ImGui::End();
 }

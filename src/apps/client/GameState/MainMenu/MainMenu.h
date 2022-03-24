@@ -27,6 +27,7 @@ namespace BlockBuster
     friend class MenuState::ServerBrowser;
     friend class MenuState::CreateGame;
     friend class MenuState::Lobby;
+    friend class MenuState::UploadMap;
 
     public:
         MainMenu(Client* client);
@@ -51,6 +52,7 @@ namespace BlockBuster
         void UpdateGame();
         void StartGame();
         void DownloadMap(std::string mapName);
+        void UploadMap(std::string mapName, std::string password);
 
         // Inputs
         void HandleSDLEvents();

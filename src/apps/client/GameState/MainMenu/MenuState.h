@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace BlockBuster
 {
@@ -74,6 +75,22 @@ namespace BlockBuster
             
             char chat[4096] = "\0";
             char chatLine[128] = "\0";
+        };
+
+        class UploadMap : public Base
+        {
+        public:
+            UploadMap(MainMenu* mainMenu) : Base(mainMenu){}
+
+            void OnEnter() override;
+            void Update() override;
+
+        private:
+            std::vector<std::string> maps;
+            std::string selectedMap;
+
+            const int PASSWORD_MAX_SIZE = 16;
+            std::string password;
         };
     }
 }

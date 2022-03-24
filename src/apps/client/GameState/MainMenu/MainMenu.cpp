@@ -524,6 +524,62 @@ void MainMenu::DownloadMap(std::string mapName)
      httpClient.Request("/download_map", nlohmann::to_string(body), onSuccess, onError);
 }
 
+void MainMenu::UploadMap(std::string mapName, std::string password)
+{
+    // Show connecting pop up
+    popUp.SetVisible(true);
+    popUp.SetCloseable(false);
+    popUp.SetTitle("Connecting");
+    popUp.SetText("Uploading game map...");
+    popUp.SetButtonVisible(false);
+
+    nlohmann::json body;
+    body["map_name"] = mapName;
+
+    auto onSuccess = [this, mapName](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfullly uploaded map " + mapName);
+        GetLogger()->LogInfo("Result " + res.body);
+
+        if(res.status == 200)
+        {
+            popUp.SetVisible(true);
+            popUp.SetCloseable(false);
+            popUp.SetTitle("Success");
+            popUp.SetText(mapName + " was uploaded succesfully!");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
+        }
+        else
+        {
+            std::string msg = res.body;
+
+            popUp.SetVisible(true);
+            popUp.SetText(msg);
+            popUp.SetTitle("Error");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
+        }
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+     httpClient.Request("/upload_map", nlohmann::to_string(body), onSuccess, onError);
+}
+
 void MainMenu::HandleSDLEvents()
 {
     SDL_Event e;
