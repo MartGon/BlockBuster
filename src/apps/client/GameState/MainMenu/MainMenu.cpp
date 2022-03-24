@@ -1,11 +1,11 @@
 #include <GameState/MainMenu/MainMenu.h>
 
 #include <Client.h>
+#include <util/Zip.h>
+#include <Match.h>
 
 #include <imgui/imgui_internal.h>
-
 #include <base64/base64.h>
-#include <zip/zip.h>
 
 using namespace BlockBuster;
 
@@ -481,7 +481,7 @@ void MainMenu::DownloadMap(std::string mapName)
             auto mapB64 = body["map"].get<std::string>();
             auto mapBuff = base64_decode(mapB64);
 
-            auto mapFolder = client_->mapMgr.GetMapPath(mapName);
+            auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
             std::filesystem::create_directory(mapFolder);
             GetLogger()->LogInfo("Creating dir " + mapFolder.string());
             zip_stream_extract(mapBuff.data(), mapBuff.size(), mapFolder.c_str(), nullptr, nullptr);
@@ -526,58 +526,89 @@ void MainMenu::DownloadMap(std::string mapName)
 
 void MainMenu::UploadMap(std::string mapName, std::string password)
 {
-    // Show connecting pop up
-    popUp.SetVisible(true);
-    popUp.SetCloseable(false);
-    popUp.SetTitle("Connecting");
-    popUp.SetText("Uploading game map...");
-    popUp.SetButtonVisible(false);
-
+    // Payload
     nlohmann::json body;
     body["map_name"] = mapName;
+    body["password"] = password;
+        
+    auto mapFile = client_->mapMgr.GetMapFile(mapName);
+    auto res = Game::Map::Map::LoadFromFile(mapFile);
+    if(res.isOk())
+    {  
+        // Supported gamemodes
+        auto mapPtr = std::move(res.unwrap());
+        auto map = std::move(*mapPtr.get());
+        body["supported_gamemodes"] = BlockBuster::GetSupportedGameModesAsString(map);
 
-    auto onSuccess = [this, mapName](httplib::Response& res)
-    {
-        GetLogger()->LogInfo("Succesfullly uploaded map " + mapName);
-        GetLogger()->LogInfo("Result " + res.body);
+            // Create map payload
+        Util::ZipStream zipStream{'w'};
+        auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
+        zipStream.ZipFolder(mapFolder);
+        auto buffer = zipStream.GetBuffer();
+        body["map_zip"] = base64_encode(buffer);
 
-        if(res.status == 200)
+        auto onSuccess = [this, mapName](httplib::Response& res)
+        {
+            GetLogger()->LogInfo("Succesfullly uploaded map " + mapName);
+            GetLogger()->LogInfo("Result " + res.body);
+
+            if(res.status == 200)
+            {
+                popUp.SetVisible(true);
+                popUp.SetCloseable(false);
+                popUp.SetTitle("Success");
+                popUp.SetText(mapName + " was uploaded succesfully!");
+                popUp.SetButtonVisible(true);
+                popUp.SetButtonCallback([this](){
+                    popUp.SetVisible(false);
+                });
+            }
+            else
+            {
+                std::string msg = res.body;
+
+                popUp.SetVisible(true);
+                popUp.SetText(msg);
+                popUp.SetTitle("Error");
+                popUp.SetButtonVisible(true);
+                popUp.SetButtonCallback([this](){
+                    popUp.SetVisible(false);
+                });
+            }
+        };
+
+        auto onError = [this](httplib::Error err)
         {
             popUp.SetVisible(true);
-            popUp.SetCloseable(false);
-            popUp.SetTitle("Success");
-            popUp.SetText(mapName + " was uploaded succesfully!");
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);
-            });
-        }
-        else
-        {
-            std::string msg = res.body;
-
-            popUp.SetVisible(true);
-            popUp.SetText(msg);
+            popUp.SetText("Connection error");
             popUp.SetTitle("Error");
             popUp.SetButtonVisible(true);
             popUp.SetButtonCallback([this](){
                 popUp.SetVisible(false);
             });
-        }
-    };
+        };
 
-    auto onError = [this](httplib::Error err)
-    {
+            // Show connecting pop up
         popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
-    };
+        popUp.SetCloseable(false);
+        popUp.SetTitle("Connecting");
+        popUp.SetText("Uploading map...");
+        popUp.SetButtonVisible(false);
 
-     httpClient.Request("/upload_map", nlohmann::to_string(body), onSuccess, onError);
+        httpClient.Request("/upload_map", nlohmann::to_string(body), onSuccess, onError);
+    }
+    else
+    {
+        // Show connecting pop up
+        popUp.SetVisible(true);
+        popUp.SetCloseable(false);
+        popUp.SetTitle("Error");
+        popUp.SetText("Could not load map");
+        popUp.SetButtonVisible(false);
+
+        GetLogger()->LogError("Could not load map " + mapName);
+    }
+    return;
 }
 
 void MainMenu::HandleSDLEvents()

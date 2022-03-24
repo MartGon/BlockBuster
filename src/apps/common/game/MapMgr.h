@@ -20,8 +20,9 @@ namespace BlockBuster
             return this->mapsFolder;
         }
 
-        bool HasMap(std::string map);
-        std::filesystem::path GetMapPath(std::string mapName);
+        bool HasMap(const std::string& map);
+        std::filesystem::path GetMapFolder(const std::string& mapName);
+        std::filesystem::path GetMapFile(const std::string& mapName);
         std::vector<std::filesystem::path> GetLocalMaps();
 
     private:

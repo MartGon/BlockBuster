@@ -157,7 +157,7 @@ Util::Result<bool> Editor::LoadTexture()
     if(project.map.tPalette.GetCount() >= gui.MAX_TEXTURES)
         return Util::CreateError<bool>("Maximum of textures reached");
 
-    auto textureFolder = mapMgr.GetMapPath(gui.fileName) / "textures";
+    auto textureFolder = mapMgr.GetMapFolder(gui.fileName) / "textures";
     if(IsTextureInPalette(textureFolder, gui.textureFilename))
         return Util::CreateError<bool>("Texture is already in palette");
 
@@ -264,7 +264,7 @@ void Editor::SaveProject()
 
 Util::Result<bool> Editor::OpenProject()
 {
-    auto mapFolder = mapMgr.GetMapPath(gui.fileName);
+    auto mapFolder = mapMgr.GetMapFolder(gui.fileName);
     std::string fileName = gui.fileName + ".bbm";
 
     auto res = Util::CreateError<bool>("Could not open project");

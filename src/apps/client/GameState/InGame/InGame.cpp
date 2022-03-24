@@ -99,7 +99,7 @@ void InGame::Start()
     //camController_.SetMode(::App::Client::CameraMode::FPS);
 
     // Map
-    auto mapFolder = client_->mapMgr.GetMapPath(mapName);
+    auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
     auto mapFileName = mapName + ".bbm";
     //LoadMap("/home/seix/Other/Repos/BlockBuster/resources/maps/Alpha2.bbm");
     LoadMap(mapFolder, mapFileName);

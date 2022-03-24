@@ -30,7 +30,7 @@ void Client::Start()
     //state = std::make_unique<InGame>(this, "localhost", 8081, "Alpha2");
     state->Start();
     
-    LaunchGame("localhost", 8081, "Alpha2");
+    //LaunchGame("localhost", 8081, "Alpha2");
 }
 
 void Client::Shutdown()

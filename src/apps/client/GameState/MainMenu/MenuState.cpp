@@ -118,16 +118,22 @@ void ServerBrowser::Update()
         {
             mainMenu_->GetAvailableMaps();
         }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Update"))
+        {
+            mainMenu_->ListGames();
+        }
+
         ImGui::SameLine();
         ImGui::Button("Connect");
         ImGui::SameLine();
         ImGui::Button("Filters");
+
         ImGui::SameLine();
-
-
-        if(ImGui::Button("Update"))
+        if(ImGui::Button("Upload Map"))
         {
-            mainMenu_->ListGames();
+            mainMenu_->SetState(std::make_unique<UploadMap>(mainMenu_));
         }
     }
     // User clicked on the X button. Go back to login page
@@ -394,7 +400,7 @@ void Lobby::Update()
                 ImGui::PushDisabled();
 
             ImGui::BeginChild("Start Game Button", ImVec2(0, 0), false, 0);
-            auto size = ImGui::GetContentRegionAvail();
+                auto size = ImGui::GetContentRegionAvail();
                 if(ImGui::Button("Start Game", size))
                 {
                     mainMenu_->StartGame();
@@ -438,6 +444,8 @@ bool Lobby::IsEveryoneReady()
     return true;
 }
 
+// #### UPLOAD MAP #### \\
+
 void UploadMap::OnEnter()
 {
     auto& mapMgr = mainMenu_->GetMapMgr();
@@ -445,7 +453,7 @@ void UploadMap::OnEnter()
     for(auto& mapPath : localMaps)
         maps.push_back(mapPath.filename().string());
 
-    password.resize(PASSWORD_MAX_SIZE, '\0');
+    password.resize(PASSWORD_MAX_SIZE);
 }
 
 void UploadMap::Update()
@@ -473,14 +481,26 @@ void UploadMap::Update()
             ImGui::EndCombo();
         }
 
-        auto textFlags = ImGuiInputTextFlags_Password;
-        ImGui::InputText("Password", password.data(), textFlags);
+        int textFlags = ImGuiInputTextFlags_CharsNoBlank;
+        if(!showPass)
+            textFlags |= ImGuiInputTextFlags_Password;
+        ImGui::InputText("Password", password.data(), password.capacity(), textFlags);
         GUI::AddToolTip("This password will be necessary later, in case you want to update your map");
 
-        if(ImGui::Button("Upload Map"))
+        ImGui::SameLine();
+        if(ImGui::Button("Show"))
+            showPass = !showPass;
+
+        if(selectedMap.empty())
+            ImGui::PushDisabled();
+
+        if(ImGui::Button("Upload"))
         {
-            mainMenu_->UploadMap(selectedMap, password);
+            mainMenu_->UploadMap(selectedMap, password.data());
         }
+
+        if(selectedMap.empty())
+            ImGui::PopDisabled();
     }
     // User clicked on the X button. Go back
     if(!show)

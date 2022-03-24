@@ -91,6 +91,7 @@ namespace BlockBuster
 
             const int PASSWORD_MAX_SIZE = 16;
             std::string password;
+            bool showPass = false;
         };
     }
 }
