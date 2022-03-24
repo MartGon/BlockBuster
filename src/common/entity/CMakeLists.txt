@@ -6,6 +6,7 @@ SET(SOURCES
     PlayerController.cpp
     Weapon.cpp
     GameObject.cpp
+    Match.cpp
 )
 
 

@@ -50,8 +50,11 @@ namespace BlockBuster
     using InputReq = Networking::Packets::Client::Input::Req;
     struct Client
     {
+        // Move this to a game class or something
         Entity::Player player;
         Entity::PlayerController pController;
+
+
         Util::Ring<InputReq, MAX_INPUT_BUFFER_SIZE> inputBuffer;
         Util::Ring<ShotCommand, MAX_INPUT_BUFFER_SIZE> shotBuffer;
         uint32_t lastAck = 0;
