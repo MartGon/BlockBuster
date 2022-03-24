@@ -4,6 +4,7 @@ SET(SOURCES
     Texture.cpp
     VertexArray.cpp
     TextureArray.cpp
+    Cubemap.cpp
 )
 
 
