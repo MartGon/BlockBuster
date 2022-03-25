@@ -291,6 +291,7 @@ void MainMenu::LeaveGame()
 
         // Remove current game;
         this->currentGame.reset();
+        this->lobby = nullptr;
 
         popUp.SetVisible(false);
     };
@@ -407,9 +408,22 @@ void MainMenu::UpdateGame()
             }
         }
         // Handle game doesn't exist, etc.
-        else
+        else if(lobby)
         {
             GetLogger()->LogError("[Update Game]: Game didn't exist");
+
+            // Show error popUp
+            popUp.SetVisible(true);
+            popUp.SetCloseable(false);
+            popUp.SetTitle("Error");
+            popUp.SetText(res.body);
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);                   
+            });
+
+            // Back to lobby
+            SetState(std::make_unique<MenuState::ServerBrowser>(this));
         }
     };
 
@@ -562,6 +576,7 @@ void MainMenu::UploadMap(std::string mapName, std::string password)
                 popUp.SetButtonVisible(true);
                 popUp.SetButtonCallback([this](){
                     popUp.SetVisible(false);
+                    SetState(std::make_unique<MenuState::ServerBrowser>(this));
                 });
             }
             else
@@ -589,7 +604,7 @@ void MainMenu::UploadMap(std::string mapName, std::string password)
             });
         };
 
-            // Show connecting pop up
+        // Show connecting pop up
         popUp.SetVisible(true);
         popUp.SetCloseable(false);
         popUp.SetTitle("Connecting");
