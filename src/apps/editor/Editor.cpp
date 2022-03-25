@@ -54,8 +54,7 @@ void Editor::Start()
     };
     TRY_LOAD(skybox.Load(map, false));
 
-    flashTexture = GL::Texture::FromFolder(TEXTURES_DIR, "flash.png");
-    TRY_LOAD(flashTexture.Load());
+    TRY_LOAD(flashTexture.LoadFromFolder(TEXTURES_DIR, "flash.png"));
 
     // Meshes
     cube = Rendering::Primitive::GenerateCube();

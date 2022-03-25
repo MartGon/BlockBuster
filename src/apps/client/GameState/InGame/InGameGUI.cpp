@@ -26,8 +26,7 @@ void InGameGUI::Start()
     
     // Textures
     try{
-        crosshair = GL::Texture::FromFolder(TEXTURES_DIR, "crosshairW.png");
-        crosshair.Load();
+        crosshair.LoadFromFolder(TEXTURES_DIR, "crosshairW.png");
     }
     catch(const std::runtime_error& e)
     {

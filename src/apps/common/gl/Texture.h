@@ -12,11 +12,7 @@ namespace GL
     class Texture
     {
     public:
-
-        static Texture FromFolder(const std::filesystem::path& folderPath, const std::string& textureName);
-
-        Texture() = default;
-        Texture(const std::filesystem::path& imagePath);
+        Texture();
         ~Texture();
 
         Texture(Texture& other) = delete;
@@ -25,7 +21,9 @@ namespace GL
         Texture(Texture&& other);
         Texture& operator=(Texture&& other);
 
-        void Load(bool flipVertically = false);
+        void LoadFromFolder(std::filesystem::path folder, std::filesystem::path textureName, bool flipVertically = false);
+        void Load(std::filesystem::path texturePath, bool flipVertically = false);
+        void Load(uint8_t* data, glm::ivec2 size, int format);
         void Bind(unsigned int activeTexture = GL_TEXTURE0) const;
 
         bool IsLoaded() const
@@ -37,11 +35,6 @@ namespace GL
         {
             return handle_;
         }
-        
-        std::filesystem::path GetPath() const
-        {
-            return path_;
-        }
 
         inline glm::ivec2 GetSize()
         {
@@ -50,7 +43,6 @@ namespace GL
         
     private:
 
-        std::filesystem::path path_;
         unsigned int handle_ = 0;
         glm::ivec2 dimensions_{0, 0};
         int format_ = 0;

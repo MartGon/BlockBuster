@@ -62,8 +62,7 @@ void InGame::Start()
 
     // Textures
     try{
-        flashTexture = GL::Texture::FromFolder(TEXTURES_DIR, "flash.png");
-        flashTexture.Load();
+        flashTexture.LoadFromFolder(TEXTURES_DIR, "flash.png");
     }
     catch(const std::runtime_error& e)
     {

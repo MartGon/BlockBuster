@@ -4,48 +4,55 @@
 
 #include <iostream>
 
-GL::Texture GL::Texture::FromFolder(const std::filesystem::path& folderPath, const std::string& textureName)
-{
-    auto texturePath = folderPath / textureName;
-    return GL::Texture{texturePath};
-}
 
-GL::Texture::Texture(const std::filesystem::path& imagePath) : path_{imagePath}
+GL::Texture::Texture()
 {
     glGenTextures(1, &handle_);
     glBindTexture(GL_TEXTURE_2D, handle_);
 }
 
-void GL::Texture::Load(bool flipVertically)
+void GL::Texture::LoadFromFolder(std::filesystem::path folder, std::filesystem::path textureName, bool flipVertically)
 {
-    if(!loaded)
+    Load(folder / textureName, flipVertically);
+}
+
+void GL::Texture::Load(std::filesystem::path texturePath, bool flipVertically)
+{
+    if(loaded)
+        throw LoadTextureError{texturePath, "Texture already loaded"};
+
+    int channels;
+    stbi_set_flip_vertically_on_load(flipVertically);
+    auto data = stbi_load(texturePath.string().c_str(), &dimensions_.x, &dimensions_.y, &channels, 0);
+    if(data)
     {
-        int channels;
-        stbi_set_flip_vertically_on_load(flipVertically);
-        auto data = stbi_load(path_.string().c_str(), &dimensions_.x, &dimensions_.y, &channels, 0);
-        if(data)
-        {
-            format_ = channels == 3 ? GL_RGB : GL_RGBA;
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dimensions_.x, dimensions_.y, 0, format_, GL_UNSIGNED_BYTE, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
+        format_ = channels == 3 ? GL_RGB : GL_RGBA;
+        Load(data, dimensions_, format_);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        stbi_image_free(data);
+        stbi_set_flip_vertically_on_load(false);
 
-            glBindTexture(GL_TEXTURE_2D, 0);
-
-            stbi_image_free(data);
-            stbi_set_flip_vertically_on_load(false);
-
-            loaded = true;
-        }
-        else
-            throw LoadTextureError{path_, stbi_failure_reason()};
+        loaded = true;
     }
     else
-        throw LoadTextureError{path_, "Texture already loaded"};
+        throw LoadTextureError{texturePath, stbi_failure_reason()};   
+}
+
+void GL::Texture::Load(uint8_t* data, glm::ivec2 size, int format)
+{
+    Bind();
+    dimensions_ = size;
+    format_ = format;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 GL::Texture::~Texture()
@@ -64,7 +71,6 @@ GL::Texture& GL::Texture::operator=(Texture&& other)
     this->handle_ = other.handle_;
     this->dimensions_ = other.dimensions_;
     this->format_ = other.format_;
-    this->path_ = other.path_;
     other.handle_ = 0;
 
     return *this;
