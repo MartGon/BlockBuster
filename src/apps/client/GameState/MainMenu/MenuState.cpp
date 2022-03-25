@@ -200,10 +200,17 @@ void CreateGame::Update()
         auto sliderFlags = ImGuiSliderFlags_::ImGuiSliderFlags_None;
         ImGui::SliderInt("Max players", &maxPlayers, 2, 16, "%i", sliderFlags);
 
+        bool disabled = mapInfo.mapName.empty() || mode.empty() || strlen(gameName) == 0;
+        if(disabled)
+            ImGui::PushDisabled();
+
         if(ImGui::Button("Create Game"))
         {
             mainMenu_->CreateGame(gameName, mapInfo.mapName, this->mode, maxPlayers);
         }
+
+        if(disabled)
+            ImGui::PopDisabled();
     }
     // User clicked on the X button. Go back
     if(!show)
@@ -367,10 +374,11 @@ void Lobby::Update()
             // Map Info
             ImGui::TableNextColumn();
             ImGui::Text("Game Info");
-            auto gitFlags = 0;
+            auto gitFlags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV;
             ImVec2 gitSize{layoutSize.x - leftColSize, 0};
             if(ImGui::BeginTable("Game Info", 2, gitFlags, gitSize))
             {
+
                 ImGui::TableNextColumn();
                 ImGui::Text("%s", "Name");
 
@@ -396,11 +404,12 @@ void Lobby::Update()
                 ImGui::Text("%i", gameInfo.maxPlayers);
 
                 ImGui::TableNextColumn();
-                if(ImGui::Button("Ready"))
-                {
-                    mainMenu_->ToggleReady();
-                }
                 ImGui::EndTable();
+            }
+
+            if(ImGui::Button("Ready"))
+            {
+                mainMenu_->ToggleReady();
             }
 
             // Start Game Button

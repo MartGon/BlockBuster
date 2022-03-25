@@ -28,7 +28,7 @@ void MainMenu::Start()
 
     SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
     SDL_SetWindowFullscreen(this->client_->window_, 0);
-    client_->SetWindowSize(glm::ivec2{800, 600});
+    client_->SetWindowSize(glm::ivec2{1024, 720});
 }
 
 void MainMenu::Shutdown()
