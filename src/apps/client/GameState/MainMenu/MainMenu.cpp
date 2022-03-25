@@ -27,6 +27,7 @@ void MainMenu::Start()
     popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 
     SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
+    SDL_SetWindowFullscreen(this->client_->window_, 0);
     client_->SetWindowSize(glm::ivec2{800, 600});
 }
 

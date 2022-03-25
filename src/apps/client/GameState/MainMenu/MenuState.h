@@ -51,6 +51,9 @@ namespace BlockBuster
 
             void OnEnter() override;
             void Update() override;
+
+            void SelectMap(MapInfo a);
+
         private:
             char gameName[32] = "\0";
             MapInfo mapInfo;

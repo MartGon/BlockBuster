@@ -150,7 +150,7 @@ void CreateGame::OnEnter()
     std::string placeholderName = mainMenu_->user + "'s game";
     strcpy(gameName, placeholderName.c_str());
     if(!mainMenu_->availableMaps.empty())
-        mapInfo = mainMenu_->availableMaps[0];
+        SelectMap(mainMenu_->availableMaps[0]);
 }
 
 void CreateGame::Update()
@@ -178,8 +178,7 @@ void CreateGame::Update()
                 bool selected = availMap.mapName == this->mapInfo.mapName;
                 if(ImGui::Selectable(availMap.mapName.c_str(), selected))
                 {
-                    this->mapInfo = availMap;
-                    this->mode = "";
+                    SelectMap(availMap);
                 }
             }
             ImGui::EndCombo();
@@ -211,6 +210,13 @@ void CreateGame::Update()
         mainMenu_->SetState(std::make_unique<MenuState::ServerBrowser>(mainMenu_));
 
     ImGui::End();
+}
+
+void CreateGame::SelectMap(MapInfo a)
+{
+    this->mapInfo = a;
+    if(!a.supportedGamemodes.empty())
+        this->mode = a.supportedGamemodes[0];
 }
 
 // #### LOBBY #### \\

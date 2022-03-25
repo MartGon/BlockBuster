@@ -34,7 +34,7 @@ void InGame::Start()
 {
     // Window
     SDL_SetWindowResizable(this->client_->window_, SDL_TRUE);
-    client_->SetWindowSize(glm::ivec2{client_->config.window.resolutionW, client_->config.window.resolutionH});
+    client_->ApplyVideoOptions(client_->config.window);
 
     // GL features
     glEnable(GL_MULTISAMPLE);
@@ -182,13 +182,13 @@ void InGame::Update()
     {
         preSimulationTime = Util::Time::GetTime();
 
-        //HandleSDLEvents();
+        HandleSDLEvents();
         if(connected)
             RecvServerSnapshots();
 
         while(simulationLag >= serverTickRate)
         {
-            HandleSDLEvents();
+            //HandleSDLEvents();
             DoUpdate(serverTickRate);
 
             if(connected)
@@ -219,7 +219,7 @@ void InGame::Shutdown()
 void InGame::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)
 {
     auto winSize = client_->GetWindowSize();
-    camera_.SetParam(camera_.ASPECT_RATIO, (float) winSize.x/ (float) winSize.y);
+    camera_.SetParam(camera_.ASPECT_RATIO, (float) winSize.x / (float) winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, winConfig.fov);
 }
 
