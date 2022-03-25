@@ -15,6 +15,12 @@
 #include <exception>
 #include <stdexcept>
 
+#define TRY_LOAD(X) \
+  try{ \
+    (X); \
+  } \
+  catch(const std::runtime_error& e){ GetLogger()->LogError(e.what());} 
+
 namespace App
 {
     class AppI
@@ -36,6 +42,7 @@ namespace App
         void SetWindowSize(glm::ivec2 size);
         glm::ivec2 GetMousePos();
         void RenameMainWindow(const std::string& name);
+        Log::Logger* GetLogger();
         
         virtual void ApplyVideoOptions(Configuration::WindowConfig& winConfig);
 

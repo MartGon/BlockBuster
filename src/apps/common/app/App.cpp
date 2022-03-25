@@ -155,6 +155,11 @@ void AppI::RenameMainWindow(const std::string& name)
     SDL_SetWindowTitle(window_, name.c_str());
 }
 
+Log::Logger* AppI::GetLogger()
+{
+    return logger;
+}
+
 void AppI::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
 {
     auto width = winConfig.resolutionW;

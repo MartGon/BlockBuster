@@ -52,6 +52,7 @@ void InGame::Start()
         quadShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
         textShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "textVertex.glsl", "textFrag.glsl");
         imgShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "imgVertex.glsl", "imgFrag.glsl");
+        skyboxShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "skyboxVertex.glsl", "skyboxFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -61,6 +62,17 @@ void InGame::Start()
     }
 
     // Textures
+    std::filesystem::path texturesDir = TEXTURES_DIR;
+    GL::Cubemap::TextureMap map = {
+        {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
+        {GL::Cubemap::LEFT, texturesDir / "left.jpg"},
+        {GL::Cubemap::TOP, texturesDir / "top.jpg"},
+        {GL::Cubemap::BOTTOM, texturesDir / "bottom.jpg"},
+        {GL::Cubemap::FRONT, texturesDir / "front.jpg"},
+        {GL::Cubemap::BACK, texturesDir / "back.jpg"},
+    };
+    TRY_LOAD(skybox.Load(map, false));
+
     try{
         flashTexture.LoadFromFolder(TEXTURES_DIR, "flash.png");
     }
@@ -895,6 +907,10 @@ void InGame::DrawScene()
     }
     prevPlayerTable = playerTable;
 
+    // Draw skybox
+    skybox.Draw(skyboxShader, camera_.GetViewMat(), camera_.GetProjMat());
+
+    // Draw models
     renderMgr.Render(camera_);
 
     // Draw fpsModel, always rendered last

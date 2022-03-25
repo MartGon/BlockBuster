@@ -12,6 +12,7 @@
 #include <rendering/Model.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
+#include <rendering/Skybox.h>
 
 #include <game/Map.h>
 #include <game/CameraController.h>
@@ -164,6 +165,7 @@ namespace BlockBuster
         GL::Shader quadShader;
         GL::Shader textShader;
         GL::Shader imgShader;
+        GL::Shader skyboxShader;
 
             // Textures
         GL::Texture flashTexture;
@@ -174,6 +176,7 @@ namespace BlockBuster
         Rendering::Mesh sphere;
         Rendering::Mesh cube;
         Rendering::Mesh slope;
+        Rendering::Skybox skybox;
 
             // Models
         Game::Models::Player playerAvatar;

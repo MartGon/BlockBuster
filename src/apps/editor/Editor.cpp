@@ -15,12 +15,6 @@
 
 #include <imgui/backends/imgui_impl_opengl3.h>
 
-#define TRY_LOAD(X) \
-  try{ \
-    (X); \
-  } \
-  catch(const std::runtime_error& e){ this->logger->LogError(e.what());} 
-
 using namespace BlockBuster::Editor;
 
 // #### Public Interface #### \\
