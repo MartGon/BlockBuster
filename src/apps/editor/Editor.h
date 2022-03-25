@@ -11,16 +11,18 @@
 #include <rendering/RenderMgr.h>
 #include <rendering/Rendering.h>
 #include <rendering/Model.h>
+#include <rendering/Skybox.h>
+
 #include <models/Respawn.h>
 #include <models/Player.h>
 #include <models/ModelMgr.h>
-#include <game/ChunkMeshMgr.h>
 
 #include <entity/PlayerController.h>
 #include <entity/Block.h>
 #include <entity/Map.h>
 #include <entity/GameObject.h>
 
+#include <game/ChunkMeshMgr.h>
 #include <game/CameraController.h>
 #include <game/MapMgr.h>
 
@@ -174,9 +176,12 @@ namespace BlockBuster::Editor
         GL::Shader paintShader;
         GL::Shader chunkShader;
         GL::Shader quadShader;
+        GL::Shader skyboxShader;
+
         Rendering::Mesh cube;
         Rendering::Mesh slope;
         Rendering::Mesh cylinder;
+        Rendering::Skybox skybox;
         Rendering::Camera camera;
         ::App::Client::CameraController cameraController;
 

@@ -15,6 +15,12 @@
 
 #include <imgui/backends/imgui_impl_opengl3.h>
 
+#define TRY_LOAD(X) \
+  try{ \
+    (X); \
+  } \
+  catch(const std::runtime_error& e){ this->logger->LogError(e.what());} 
+
 using namespace BlockBuster::Editor;
 
 // #### Public Interface #### \\
@@ -23,10 +29,11 @@ void Editor::Start()
 {
     // Load shaders
     try{
-        shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "circleVertex.glsl", "circleFrag.glsl");
-        paintShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "vertex.glsl", "fragment.glsl");
+        shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "simpleVertex.glsl", "simpleFrag.glsl");
+        paintShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "paintVertex.glsl", "paintFrag.glsl");
         chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
         quadShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
+        skyboxShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "skyboxVertex.glsl", "skyboxFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -36,14 +43,19 @@ void Editor::Start()
     }
 
     // Textures
-    try{
-        flashTexture = GL::Texture::FromFolder(TEXTURES_DIR, "flash.png");
-        flashTexture.Load();
-    }
-    catch(const std::runtime_error& e)
-    {
-        this->logger->LogError(e.what());
-    }
+    std::filesystem::path texturesDir = TEXTURES_DIR;
+    GL::Cubemap::TextureMap map = {
+        {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
+        {GL::Cubemap::LEFT, texturesDir / "left.jpg"},
+        {GL::Cubemap::TOP, texturesDir / "top.jpg"},
+        {GL::Cubemap::BOTTOM, texturesDir / "bottom.jpg"},
+        {GL::Cubemap::FRONT, texturesDir / "front.jpg"},
+        {GL::Cubemap::BACK, texturesDir / "back.jpg"},
+    };
+    TRY_LOAD(skybox.Load(map, false));
+
+    flashTexture = GL::Texture::FromFolder(TEXTURES_DIR, "flash.png");
+    TRY_LOAD(flashTexture.Load());
 
     // Meshes
     cube = Rendering::Primitive::GenerateCube();
@@ -114,6 +126,11 @@ void Editor::Update()
 
     // Draw new Map System Cubes
     project.map.Draw(chunkShader, camera.GetProjViewMat());
+
+        // Draw skybox
+    auto view = camera.GetViewMat();
+    auto proj = camera.GetProjMat();
+    skybox.Draw(skyboxShader, view, proj, true);
     
     if(playerMode)
         UpdatePlayerMode();
@@ -390,7 +407,6 @@ void Editor::UpdateEditor()
     {
         cameraController.Update();
     }
-
     
     auto map = project.map.GetMap();
     auto blockScale = project.map.GetBlockScale();

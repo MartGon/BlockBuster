@@ -47,7 +47,7 @@ void InGame::Start()
     // Shaders
     // Load shaders
     try{
-        shader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "circleVertex.glsl", "circleFrag.glsl");
+        shader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "simpleVertex.glsl", "simpleFrag.glsl");
         chunkShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
         quadShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
         textShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "textVertex.glsl", "textFrag.glsl");

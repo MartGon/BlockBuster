@@ -42,10 +42,10 @@ void GL::Texture::Load(bool flipVertically)
             loaded = true;
         }
         else
-            throw LoadError{path_, stbi_failure_reason()};
+            throw LoadTextureError{path_, stbi_failure_reason()};
     }
     else
-        throw LoadError{path_, "Texture already loaded"};
+        throw LoadTextureError{path_, "Texture already loaded"};
 }
 
 GL::Texture::~Texture()

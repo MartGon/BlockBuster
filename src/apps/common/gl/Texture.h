@@ -8,6 +8,7 @@
 
 namespace GL
 {
+
     class Texture
     {
     public:
@@ -46,15 +47,6 @@ namespace GL
         {
             return dimensions_;
         }
-
-        // Exceptions
-        class LoadError : public std::runtime_error
-        {
-        public:
-            LoadError(std::filesystem::path path, const char* msg) : path_{path}, runtime_error(msg) {}
-        
-            const std::filesystem::path path_;
-        };
         
     private:
 
@@ -64,5 +56,20 @@ namespace GL
         int format_ = 0;
 
         bool loaded = false;
+    };
+
+    // Exceptions
+    class LoadError : public std::runtime_error
+    {
+    public:
+        LoadError(const char* msg) : runtime_error(msg) {}
+    };
+
+    class LoadTextureError : public std::runtime_error
+    {
+    public:
+        LoadTextureError(std::filesystem::path path, const char* msg) : path_{path}, runtime_error(msg) {}
+    
+        const std::filesystem::path path_;
     };
 }
