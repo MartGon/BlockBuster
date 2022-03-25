@@ -150,8 +150,7 @@ void CreateGame::OnEnter()
     std::string placeholderName = mainMenu_->user + "'s game";
     strcpy(gameName, placeholderName.c_str());
     if(!mainMenu_->availableMaps.empty())
-        map = mainMenu_->availableMaps[0];
-    strcpy(mode, "DeathMatch");
+        mapInfo = mainMenu_->availableMaps[0];
 }
 
 void CreateGame::Update()
@@ -172,25 +171,29 @@ void CreateGame::Update()
         ImGui::InputText("Name", gameName, 32, textFlags);
 
         auto comboFlags = ImGuiComboFlags_None;
-        if(ImGui::BeginCombo("Map", map.c_str(), comboFlags))
+        if(ImGui::BeginCombo("Map", mapInfo.mapName.c_str(), comboFlags))
         {   
             for(auto availMap : mainMenu_->availableMaps)
             {
-                bool selected = availMap == map;
-                if(ImGui::Selectable(availMap.c_str(), selected))
+                bool selected = availMap.mapName == this->mapInfo.mapName;
+                if(ImGui::Selectable(availMap.mapName.c_str(), selected))
                 {
-                    map = availMap;
+                    this->mapInfo = availMap;
+                    this->mode = "";
                 }
             }
             ImGui::EndCombo();
         }
 
-        if(ImGui::BeginCombo("Mode", mode, comboFlags))
+        if(ImGui::BeginCombo("Mode", mode.c_str(), comboFlags))
         {
-            bool selected = std::strcmp("DeathMatch", mode) == 0;
-            if(ImGui::Selectable("DeathMatch", selected))
+            for(auto gameMode : mapInfo.supportedGamemodes)
             {
-                std::strcpy(mode, "DeathMatch");
+                bool selected = gameMode == this->mode;
+                if(ImGui::Selectable(gameMode.c_str(), selected))
+                {
+                    this->mode = gameMode;
+                }
             }
             ImGui::EndCombo();
         }
@@ -200,8 +203,7 @@ void CreateGame::Update()
 
         if(ImGui::Button("Create Game"))
         {
-            // TODO: Change mode
-            mainMenu_->CreateGame(gameName, map, "DeathMatch", maxPlayers);
+            mainMenu_->CreateGame(gameName, mapInfo.mapName, this->mode, maxPlayers);
         }
     }
     // User clicked on the X button. Go back
@@ -269,7 +271,7 @@ void Lobby::Update()
         show = false;
     }
 
-    MainMenu::GameDetails gameDetails = mainMenu_->currentGame.value();
+    GameDetails gameDetails = mainMenu_->currentGame.value();
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar;
     if(ImGui::Begin(gameDetails.game.name.c_str(), &show, flags))
     {

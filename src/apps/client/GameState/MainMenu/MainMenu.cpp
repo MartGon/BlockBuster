@@ -246,8 +246,8 @@ void MainMenu::GetAvailableMaps()
         this->availableMaps.clear();
         for(auto& map : maps)
         {
-            auto mapName = map.get<std::string>();
-            this->availableMaps.push_back(mapName);
+            auto mapInfo = MapInfo::FromJson(map);
+            this->availableMaps.push_back(mapInfo);
         }
 
         SetState(std::make_unique<MenuState::CreateGame>(this));

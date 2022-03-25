@@ -97,7 +97,7 @@ void CameraController::UpdateFPSCameraRotation(const SDL_MouseMotionEvent& motio
     // Update rotation
     glm::ivec2 size;
     SDL_GetWindowSize(context_.window, &size.x, &size.y);
-    SDL_WarpMouseInWindow(context_.window, size.x / 2, size.y / 2);
+    //SDL_WarpMouseInWindow(context_.window, size.x / 2, size.y / 2);
 
     auto cameraRot = camera_->GetRotation();
     auto pitch = cameraRot.x;
