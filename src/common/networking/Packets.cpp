@@ -51,6 +51,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Client>(uint16_t opCo
         packet = std::make_unique<Networking::Batch<Networking::PacketType::Client>>();
         break;
 
+    case OpcodeClient::OPCODE_CLIENT_LOGIN:
+        packet = std::make_unique<Login>();
+        break;
+
     case OpcodeClient::OPCODE_CLIENT_INPUT:
         packet = std::make_unique<Input>();
         break;
@@ -132,6 +136,16 @@ void PlayerInfo::OnWrite()
 }
 
 using namespace Networking::Packets::Client;
+
+void Login::OnRead(Util::Buffer::Reader reader)
+{
+    playerUuid = reader.Read<std::string>();
+}
+
+void Login::OnWrite()
+{
+    buffer.Write(playerUuid);
+}
 
 void Input::OnRead(Util::Buffer::Reader reader)
 {

@@ -21,8 +21,12 @@
 #include <entity/PlayerController.h>
 #include <entity/Map.h>
 
+#include <http/AsyncClient.h>
+
 #include <vector>
 #include <map>
+
+#include <ServerEvent.h>
 
 #include <glm/gtx/string_cast.hpp>
 
@@ -50,6 +54,8 @@ namespace BlockBuster
     using InputReq = Networking::Packets::Client::Input::Req;
     struct Client
     {
+        std::string playerUuuid;
+
         // Move this to a game class or something
         Entity::Player player;
         Entity::PlayerController pController;
@@ -67,7 +73,30 @@ namespace BlockBuster
     class Server
     {
     public:
-        Server(std::string address, uint16_t port, std::filesystem::path mapPath, uint8_t maxPlayers, uint8_t startingPlayers, std::string mode);
+
+        struct Params
+        {
+            std::string address;
+            uint16_t port;
+            uint8_t maxPlayers;
+            uint8_t startingPlayers;
+
+            std::filesystem::path mapPath;
+            std::string mode;
+
+            Log::Verbosity verbosity;
+        };
+
+        struct MMServer
+        {
+            std::string address;
+            uint16_t port;
+
+            std::string gameId;
+            std::string serverKey;
+        };
+
+        Server(Params params, MMServer mserver);
 
         void Start();
         void Run();
@@ -93,6 +122,9 @@ namespace BlockBuster
         // Simulation
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
 
+        // MMServer
+        void SendServerNotification(ServerEvent::Notification event);
+
         // Spawns 
         // TODO: Should move these to their class/module
         static const float MIN_SPAWN_ENEMY_DISTANCE;
@@ -102,12 +134,8 @@ namespace BlockBuster
         bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const;
 
         // Server params
-        std::string address;
-        uint16_t port;
-        std::filesystem::path mapPath;
-        uint8_t maxPlayers;
-        uint8_t startingPlayers;
-        std::string mode;
+        Params params;
+        MMServer mmServer;
 
         // Networking
         std::optional<ENet::Host> host;
@@ -122,12 +150,13 @@ namespace BlockBuster
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
 
-        // Spawns
-
         // World
         Game::Map::Map map;
 
         // Logs        
         Log::ComposedLogger logger;
+
+        // MM Server
+        HTTP::AsyncClient asyncClient;
     };
 }

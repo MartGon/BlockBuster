@@ -2,6 +2,8 @@
 
 #include <argparse/argparse.hpp>
 
+#include <Logger.h>
+
 int main(int argc, char** argv)
 {   
     argparse::ArgumentParser ap{"BlockBusterServer", "0.1a"};
@@ -11,6 +13,13 @@ int main(int argc, char** argv)
     ap.add_argument("-mp", "--max-players").default_value<uint8_t>(8).scan<'u', uint8_t>();
     ap.add_argument("-sp", "--starting-players").required().scan<'u', uint8_t>();
     ap.add_argument("-gm", "--gamemode").required();
+    
+    ap.add_argument("-mma", "--match-making-address").default_value<std::string>("127.0.0.1");
+    ap.add_argument("-mmp", "--match-making-port").default_value<uint16_t>(3030).scan<'u', uint16_t>();
+    ap.add_argument("-mmid", "--match-making-id");
+    ap.add_argument("-mmk", "--match-making-key");
+
+    ap.add_argument("-v", "--verbosity").default_value<Log::Verbosity>(Log::Verbosity::ERROR).scan<'u', uint8_t>();
 
     try {
         ap.parse_args(argc, argv);
@@ -27,6 +36,17 @@ int main(int argc, char** argv)
     auto maxPlayers = ap.get<uint8_t>("--max-players");
     auto startingPlayers = ap.get<uint8_t>("--starting-players");
     auto gameMode = ap.get<std::string>("--gamemode");
+    auto verbosity = ap.get<Log::Verbosity>("--verbosity");
+
+    auto mmAddress = ap.get<std::string>("--match-making-address");
+    auto mmPort = ap.get<uint16_t>("--match-making-port");
+
+    std::string mmGameId;
+    if(ap.is_used("--match-making-id"))
+        mmGameId = ap.get<std::string>("--match-making-id");
+    std::string mmKey;
+    if(ap.is_used("--match-making-key"))
+        mmKey = ap.get<std::string>("--match-making-key");
 
     std::cout << "Server starting\n";
     std::cout << "Address: " << address << '\n';
@@ -36,7 +56,17 @@ int main(int argc, char** argv)
     std::cout << "Starting Players: " << std::to_string(startingPlayers) << '\n';
     std::cout << "Game mode: " << gameMode << '\n';
 
-    BlockBuster::Server server{address, port, map, maxPlayers, startingPlayers, gameMode};
+    std::cout << "Match Making address: " << mmAddress << '\n';
+    std::cout << "Match Making port: " << mmPort << '\n';
+    std::cout << "Match Making game id: " << mmGameId << '\n';
+    std::cout << "Match Making game key: " << mmKey << '\n';
+
+    using namespace BlockBuster;
+
+    Server::Params params{address, port, maxPlayers, startingPlayers, map, gameMode, verbosity};
+    Server::MMServer mmServer{mmAddress, mmPort, mmGameId, mmKey};
+
+    Server server{params, mmServer};
     server.Start();
     server.Run();
 

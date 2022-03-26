@@ -23,8 +23,9 @@
 using namespace BlockBuster;
 using namespace ::App::Client;
 
-InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map) : 
-    GameState{client}, serverDomain{serverDomain}, serverPort{serverPort}, mapName{map}, host{ENet::HostFactory::Get()->CreateHost(1, 2)}
+InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid) : 
+    GameState{client}, serverDomain{serverDomain}, serverPort{serverPort}, mapName{map}, playerUuid{playerUuid},
+    host{ENet::HostFactory::Get()->CreateHost(1, 2)}
 {
 }
 
@@ -144,8 +145,7 @@ void InGame::Start()
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
     host.SetOnConnectCallback([this](auto id)
     {
-        this->serverId = id;
-        this->client_->logger->LogInfo("Succes on connection to server");
+        this->OnConnectToServer(id);
     });
     host.SetOnRecvCallback([this](auto id, auto channel, ENet::RecvPacket ePacket)
     {
@@ -347,6 +347,20 @@ void InGame::OnPlayerLeave(Entity::ID playerId)
     playerTable.erase(playerId);
     prevPlayerTable.erase(playerId);
     playerModelStateTable.erase(playerId);
+}
+
+void InGame::OnConnectToServer(ENet::PeerId id)
+{
+    this->serverId = id;
+    this->client_->logger->LogInfo("Succes on connection to server");
+
+    // Send login packet
+    auto packet = std::make_unique<Networking::Packets::Client::Login>();
+    packet->playerUuid = this->playerUuid;
+    packet->Write();
+    auto buffer = packet->GetBuffer();
+    ENet::SentPacket sentPacket{buffer->GetData(), buffer->GetSize(), 0};
+    host.SendPacket(serverId, 0, sentPacket);
 }
 
 void InGame::OnRecvPacket(ENet::PeerId id, uint8_t channelId, ENet::RecvPacket recvPacket)

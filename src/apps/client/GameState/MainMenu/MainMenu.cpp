@@ -392,7 +392,7 @@ void MainMenu::UpdateGame()
                     GetLogger()->LogInfo("Game Started!");
                     auto address = currentGame->game.address.value();
                     auto port = currentGame->game.serverPort.value();
-                    client_->LaunchGame(address, port, gameDetails.game.map);
+                    client_->LaunchGame(address, port, gameDetails.game.map, userId);
 
                     httpClient.Disable();
                     enteringGame = true;

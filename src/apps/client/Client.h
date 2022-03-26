@@ -47,7 +47,7 @@ namespace BlockBuster
         
     private:
 
-        void LaunchGame(std::string address, uint16_t port, std::string map);
+        void LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid);
 
         void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) override;
 

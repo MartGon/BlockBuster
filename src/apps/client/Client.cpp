@@ -30,7 +30,7 @@ void Client::Start()
     //state = std::make_unique<InGame>(this, "localhost", 8081, "Alpha2");
     state->Start();
     
-    //LaunchGame("localhost", 8081, "Alpha2");
+    LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID");
 }
 
 void Client::Shutdown()
@@ -59,9 +59,9 @@ bool Client::Quit()
     return quit;
 }
 
-void Client::LaunchGame(std::string address, uint16_t port, std::string map)
+void Client::LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid)
 {
-    nextState = std::make_unique<InGame>(this, address, port, map);
+    nextState = std::make_unique<InGame>(this, address, port, map, playerUuid);
 }
 
 void Client::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)

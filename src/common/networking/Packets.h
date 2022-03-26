@@ -9,11 +9,11 @@
 
 namespace Networking
 {
-    enum OpcodeClient : uint16_t
-    {
-        OPCODE_CLIENT_BATCH,
-        OPCODE_CLIENT_INPUT
-    };
+    // NOTES: How to properly add a new packet type
+    //  1. Define its type in one of the enums
+    //  2. Define its class in the proper namespace. Implement OnRead and OnWrite
+    //  3. Create proper case in the MakePacket function
+    //  4. Handle its case in Server::OnRecv or Cleint::OnRecv
 
     enum OpcodeServer : uint16_t
     {
@@ -22,6 +22,13 @@ namespace Networking
         OPCODE_SERVER_SNAPSHOT,
         OPCODE_SERVER_PLAYER_DISCONNECTED,
         OPCODE_SERVER_PLAYER_INFO
+    };
+
+    enum OpcodeClient : uint16_t
+    {
+        OPCODE_CLIENT_BATCH,
+        OPCODE_CLIENT_LOGIN,
+        OPCODE_CLIENT_INPUT,
     };
 
     enum class PacketType : uint8_t
@@ -163,6 +170,19 @@ namespace Networking
 
         namespace Client
         {
+            class Login final : public Packet
+            {   
+            public:
+                Login() : Packet{OpcodeClient::OPCODE_CLIENT_LOGIN}
+                {
+
+                }
+                void OnRead(Util::Buffer::Reader reader) override;
+                void OnWrite() override;
+
+                std::string playerUuid;
+            };
+
             class Input final : public Packet
             {   
             public:

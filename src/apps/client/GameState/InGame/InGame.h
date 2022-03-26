@@ -41,7 +41,7 @@ namespace BlockBuster
     friend class InGameGUI;
 
     public:
-        InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map);
+        InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid);
         
         void Start() override;
         void Update() override;
@@ -63,6 +63,7 @@ namespace BlockBuster
         // TODO: Preallocate players. This is useful to avoid resizing the vectors/maps
         void OnPlayerJoin(Entity::ID playerId, Networking::PlayerSnapshot playerState);
         void OnPlayerLeave(Entity::ID playerId);
+        void OnConnectToServer(ENet::PeerId peerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket packet);
         void OnRecvPacket(Networking::Packet& packet);
         void RecvServerSnapshots();
@@ -126,6 +127,7 @@ namespace BlockBuster
         uint16_t serverPort = 0;
         ENet::Host host;
         ENet::PeerId serverId = 0;
+        std::string playerUuid;
         uint8_t playerId = 0;
         Util::Time::Seconds serverTickRate{0.0};
         bool connected = false;

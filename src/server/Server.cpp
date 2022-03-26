@@ -8,8 +8,7 @@
 using namespace BlockBuster;
 using namespace Networking::Packets::Client;
 
-Server::Server(std::string address, uint16_t port, std::filesystem::path mapPath, uint8_t maxPlayers, uint8_t startingPlayers, std::string mode) :
-    address{address}, port{port}, mapPath{mapPath}, maxPlayers{maxPlayers}, startingPlayers{startingPlayers}, mode{mode}
+Server::Server(Params params, MMServer mmServer) : params{params}, mmServer{mmServer}, asyncClient{mmServer.address, mmServer.port}
 {
 
 }
@@ -61,15 +60,15 @@ void Server::InitLogger()
 
     logger.AddLogger(std::move(clogger));
     logger.AddLogger(std::move(flogger));
-    logger.SetVerbosity(Log::Verbosity::DEBUG);
+    logger.SetVerbosity(params.verbosity);
 }
 
 void Server::InitNetworking()
 {
     // Networking setup
     auto hostFactory = ENet::HostFactory::Get();
-    auto localhost = ENet::Address::CreateByDomain(address, port).value();
-    host = hostFactory->CreateHost(localhost, maxPlayers, 2);
+    auto localhost = ENet::Address::CreateByDomain(params.address, params.port).value();
+    host = hostFactory->CreateHost(localhost, params.maxPlayers, 2);
     logger.LogInfo("Server initialized. Listening on address " + localhost.GetHostName() + ":" + std::to_string(localhost.GetPort()));
     host->SetOnConnectCallback([this](auto peerId)
     {
@@ -98,7 +97,7 @@ void Server::InitAI()
 
 void Server::InitMap()
 {
-    auto res = Game::Map::Map::LoadFromFile(mapPath);
+    auto res = Game::Map::Map::LoadFromFile(params.mapPath);
     if(res.isOk())
     {
         auto mapPtr = std::move(res.unwrap());
@@ -106,7 +105,7 @@ void Server::InitMap()
     }
     else
     {
-        logger.LogError("Could not load map " + mapPath.string());
+        logger.LogError("Could not load map " + params.mapPath.string());
         std::exit(-1);
     }
 }
@@ -151,8 +150,9 @@ void Server::OnClientJoin(ENet::PeerId peerId)
 void Server::OnClientLeave(ENet::PeerId peerId)
 {
     logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
-    auto player = clients[peerId].player;
-    clients.erase(peerId);
+    auto client = clients[peerId];
+    auto player = client.player;
+    
 
     // Informing players
     Networking::Packets::Server::PlayerDisconnected pd;
@@ -161,6 +161,15 @@ void Server::OnClientLeave(ENet::PeerId peerId)
 
     ENet::SentPacket sentPacket{pd.GetBuffer()->GetData(), pd.GetSize(), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
     host->Broadcast(0, sentPacket);
+
+    // Inform MM Server
+    ServerEvent::Notification notification;
+    notification.eventType = ServerEvent::PLAYER_LEFT;
+    notification.event = ServerEvent::PlayerLeft{client.playerUuuid};
+    SendServerNotification(notification);
+
+    // Finally remove peerId
+    clients.erase(peerId);
 }
 
 void Server::OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket)
@@ -191,6 +200,12 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
             auto batch = packet.To<Networking::Batch<Networking::PacketType::Client>>();
             for(auto i = 0; i < batch->GetPacketCount(); i++)
                 OnRecvPacket(peerId, *batch->GetPacket(i));
+        }
+        break;
+        case Networking::OpcodeClient::OPCODE_CLIENT_LOGIN:
+        {
+            auto login = packet.To<Networking::Packets::Client::Login>();
+            client.playerUuuid = login->playerUuid;
         }
         break;
         case Networking::OpcodeClient::OPCODE_CLIENT_INPUT:
@@ -460,8 +475,30 @@ void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
     nextTickDate = nextTickDate + TICK_RATE;
 }
 
-// Match
+// MMServer
 
+void Server::SendServerNotification(ServerEvent::Notification notification)
+{
+    nlohmann::json body;
+    body["game_id"] = mmServer.gameId;
+    body["server_key"] = mmServer.serverKey;
+    body["event"] = notification.ToJson();
+    auto bodyStr = nlohmann::to_string(body);
+
+    this->logger.LogInfo("Sending notification to mm server: " + bodyStr);
+
+    auto onSuccess = [this](httplib::Response& res){
+        this->logger.LogInfo("Notification sent succesfully!");
+    };
+
+    auto onError = [this, notification](httplib::Error err){
+        this->logger.LogError("Erro while sending notification of type " + std::to_string(notification.eventType));
+    };
+
+    asyncClient.Request("/notify_server_event", bodyStr, onSuccess, onError);
+}
+
+// Match
 const float Server::MIN_SPAWN_ENEMY_DISTANCE = 5.0f;
 
 // This should get a random spawn point from a list of valid ones
