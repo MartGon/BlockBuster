@@ -485,7 +485,6 @@ void MainMenu::DownloadMap(std::string mapName)
     auto onSuccess = [this, mapName](httplib::Response& res)
     {
         GetLogger()->LogInfo("Succesfullly downloaded map " + mapName);
-        GetLogger()->LogInfo("Result " + res.body);
 
         if(res.status == 200)
         {
@@ -552,7 +551,6 @@ void MainMenu::GetMapPicture(std::string mapName)
     auto onSuccess = [this, mapName](httplib::Response& res)
     {
         GetLogger()->LogInfo("Succesfullly downloaded map picture: " + mapName);
-        GetLogger()->LogInfo("Result " + res.body);
 
         if(res.status == 200)
         {

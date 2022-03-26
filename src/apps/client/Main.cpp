@@ -106,6 +106,7 @@ int main(int argc, char** args)
     }
 
     // Set logger
+    // TODO: Uncomment and review
     //cLogger->SetVerbosity(config.log.verbosity);
     App::ServiceLocator::SetLogger(std::move(cLogger));
     
