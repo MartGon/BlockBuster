@@ -49,6 +49,8 @@ namespace Entity
             FLAG_SPAWN_B,
             DOMINATION_POINT, // Draw area with lines only
             PLAYER_DECOY,
+            GRENADES,
+            KILLBOX,
 
             COUNT
         };

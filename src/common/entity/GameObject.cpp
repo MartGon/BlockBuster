@@ -2,7 +2,11 @@
 
 using namespace Entity;
 
-const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {"Respawn", "Weapon Crate", "HealthPack", "Flag Spawn A", "Flag Spawn B", "Domination Point", "Player Decoy"};
+const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {
+    "Respawn", "Weapon Crate", "HealthPack", 
+    "Flag Spawn A", "Flag Spawn B", "Domination Point", 
+    "Player Decoy", "Grenades", "Killbox"
+    };
 std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTemplate>> Entity::GameObject::propertiesTemplate_ = {
     {
         GameObject::Type::RESPAWN, 
@@ -40,7 +44,26 @@ std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTem
         { 
             {"Scale", GameObject::Property::Type::FLOAT, 3.0f}
         }
-    }
+    },
+    {
+        GameObject::Type::PLAYER_DECOY, 
+        { 
+        }
+    },
+    {
+        GameObject::Type::GRENADES, 
+        { 
+            {"Respawn Time (s)", GameObject::Property::Type::INT, 180} 
+        }
+    },
+    {
+        GameObject::Type::KILLBOX, 
+        {
+            {"Scale X", GameObject::Property::Type::FLOAT, 3.0f},
+            {"Scale Y", GameObject::Property::Type::FLOAT, 3.0f},
+            {"Scale Z", GameObject::Property::Type::FLOAT, 3.0f},
+        }
+    },
 };
 
 std::vector<Entity::GameObject::PropertyTemplate> Entity::GameObject::GetPropertyTemplate(GameObject::Type type)

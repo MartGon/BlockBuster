@@ -3,7 +3,13 @@
 #include <models/Player.h>
 
 #include <rendering/Primitive.h>
+#include <rendering/Rendering.h>
 
+#define TRY_LOAD(X) \
+  try{ \
+    (X); \
+  } \
+  catch(const std::runtime_error& e){ GetLogger()->LogError(e.what());} 
 
 using namespace Game::Models;
 using namespace Entity;
@@ -42,6 +48,7 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     const auto darkGreen = glm::vec4{0.2f, 0.65f, 0.2f, 1.f};
     const auto blue = glm::vec4{0.1f, 0.1f, 0.8f, 1.f};
     const auto gray = glm::vec4{0.2f, 0.2f, 0.2f, 1.f};
+    const auto black = glm::vec4{glm::vec3{0.0f}, 1.0f};
 
     // Domination point
     auto domPoint = renderMgr.CreateModel();
@@ -57,7 +64,9 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     auto weaponCrate = renderMgr.CreateModel();
     auto weaponCrateT = Math::Transform{glm::vec3{0.0f, 0.3725f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.3f, 0.75f, 1.3f}};
     painting.type = Rendering::PaintingType::COLOR;
-    painting.color = darkGreen;
+    //TRY_LOAD(crateTexture.LoadFromFolder(TEXTURES_DIR, "Crate.png"));
+    //painting.texture = &crateTexture;
+    painting.color = Rendering::ColorU8ToFloat(59, 71, 49, 255);
     sm1 = Rendering::SubModel{weaponCrateT, painting, &cube, &shader};
     weaponCrate->AddSubModel(std::move(sm1));
 
@@ -91,4 +100,43 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     flagB->AddSubModel(std::move(sm1));
 
     models[GameObject::Type::FLAG_SPAWN_B] = flagB;
+
+    // Grenades
+    auto grenades = renderMgr.CreateModel();
+    float scale = 0.3f;
+    painting.color = Rendering::ColorU8ToFloat(78, 79, 71);
+
+    auto leftT = Math::Transform{glm::vec3{-0.35f, scale / 2.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.95f, 1.0f} * scale};
+    auto rightT = Math::Transform{glm::vec3{0.35f, scale / 2.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.95f, 1.0f} * scale};
+
+    auto leftFrag = Rendering::SubModel{leftT, painting, &sphere, &shader};
+    auto rigthFrag = Rendering::SubModel{rightT, painting, &sphere, &shader};
+
+    grenades->AddSubModel(std::move(leftFrag));
+    grenades->AddSubModel(std::move(rigthFrag));
+
+    painting.color = Rendering::ColorU8ToFloat(46, 40, 40, 255);
+    auto topScale = 0.15f;
+    auto leftTop = Math::Transform{leftT.position + glm::vec3{0.0f, scale, 0.0f}, glm::vec3{0.0f}, glm::vec3{0.85f, 2.0f, 0.85f} * topScale};
+    auto rightTop = Math::Transform{rightT.position + glm::vec3{0.0f, scale, 0.0f}, glm::vec3{0.0f}, glm::vec3{0.85f, 2.0f, 0.85f} * topScale};
+    auto leftFragTop = Rendering::SubModel{leftTop, painting, &cylinder, &shader};
+    auto rigthFragTop = Rendering::SubModel{rightTop, painting, &cylinder, &shader};
+    grenades->AddSubModel(std::move(leftFragTop));
+    grenades->AddSubModel(std::move(rigthFragTop));
+
+    models[GameObject::Type::GRENADES] = grenades;
+
+    // Killbox
+    auto killBox = renderMgr.CreateModel();
+    painting.type = Rendering::PaintingType::COLOR;
+    painting.color = red;
+    sm1 = Rendering::SubModel{cubeT, painting, &cube, &shader};
+    killBox->AddSubModel(std::move(sm1));
+
+    models[GameObject::Type::KILLBOX] = killBox;
+}
+
+Log::Logger* ModelMgr::GetLogger()
+{
+    return App::ServiceLocator::GetLogger();
 }

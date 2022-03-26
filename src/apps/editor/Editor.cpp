@@ -23,11 +23,13 @@ void Editor::Start()
 {
     // Load shaders
     try{
-        shader = GL::Shader::FromFolder(config.openGL.shadersFolder, "simpleVertex.glsl", "simpleFrag.glsl");
-        paintShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "paintVertex.glsl", "paintFrag.glsl");
-        chunkShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
-        quadShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
-        skyboxShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "skyboxVertex.glsl", "skyboxFrag.glsl");
+        auto sf = config.openGL.shadersFolder;
+        renderShader = GL::Shader::FromFolder(sf, "renderVertex.glsl", "renderFrag.glsl");
+        colorShader = GL::Shader::FromFolder(sf, "simpleVertex.glsl", "simpleFrag.glsl");
+        paintShader = GL::Shader::FromFolder(sf, "paintVertex.glsl", "paintFrag.glsl");
+        chunkShader = GL::Shader::FromFolder(sf, "chunkVertex.glsl", "chunkFrag.glsl");
+        quadShader = GL::Shader::FromFolder(sf, "quadVertex.glsl", "quadFrag.glsl");
+        skyboxShader = GL::Shader::FromFolder(sf, "skyboxVertex.glsl", "skyboxFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -56,13 +58,13 @@ void Editor::Start()
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
 
     // Models
-    modelMgr.Start(renderMgr, shader);
+    modelMgr.Start(renderMgr, renderShader);
 
     respawnModel.SetMeshes(cylinder, slope);
-    respawnModel.Start(renderMgr, shader);
+    respawnModel.Start(renderMgr, colorShader);
 
     playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
-    playerAvatar.Start(renderMgr, shader, quadShader, flashTexture);
+    playerAvatar.Start(renderMgr, colorShader, quadShader, flashTexture);
     modelMgr.SetModel(Entity::GameObject::Type::PLAYER_DECOY, &playerAvatar);
     
     // OpenGL features
@@ -427,12 +429,14 @@ void Editor::UpdateEditor()
         rPos.y -= (blockScale / 2.0f);
 
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
-        if(go->type !=  Entity::GameObject::Type::PLAYER_DECOY)
+        if(go->type != Entity::GameObject::Type::PLAYER_DECOY)
         {
             auto tMat = view * t.GetTransformMat();
             modelMgr.Draw(go->type, tMat);
         }
-        else
+                
+        // Special cases
+        if(go->type == Entity::GameObject::Type::PLAYER_DECOY)
         {
             auto ecb = player.GetECB();
             t.position.y = t.position.y + ecb.scale.y / 2.0f;
@@ -440,13 +444,23 @@ void Editor::UpdateEditor()
             auto tMat = view * t.GetTransformMat();
             modelMgr.Draw(go->type, tMat);
         }
-        
-        // Special cases
-        if(go->type == Entity::GameObject::DOMINATION_POINT && gui.selectedObj == goPos)
+
+        if(gui.selectedObj == goPos)
         {
-            float scale = std::get<float>(go->properties["Scale"].value);
-            t.position.y += ((3.0f * blockScale) / 2.0f);
-            t.scale = glm::vec3{scale, 3.0f, scale} * blockScale;
+            if(go->type == Entity::GameObject::DOMINATION_POINT)
+            {
+                float scale = std::get<float>(go->properties["Scale"].value);
+                t.scale = glm::vec3{scale, 3.0f, scale} * blockScale;
+            }
+            else if(go->type == Entity::GameObject::KILLBOX)
+            {
+                float scaleX = std::get<float>(go->properties["Scale X"].value);
+                float scaleY = std::get<float>(go->properties["Scale Y"].value);
+                float scaleZ = std::get<float>(go->properties["Scale Z"].value);
+                t.scale = glm::vec3{scaleX, scaleY, scaleZ} * blockScale;    
+            }
+            t.position.y += ((t.scale.y) / 2.0f);
+            
             DrawCursor(t);
         }
     }
@@ -509,7 +523,7 @@ void Editor::UpdateEditor()
     // Draw chunk borders
     const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
     if(gui.drawChunkBorders)
-        project.map.DrawChunkBorders(shader, cube, view, yellow);
+        project.map.DrawChunkBorders(colorShader, cube, view, yellow);
 
     renderMgr.Render(camera);
 
@@ -1079,15 +1093,15 @@ void Editor::DrawCursor(Math::Transform t)
     // Draw cursor
     auto model = t.GetTransformMat();
     auto transform = camera.GetProjViewMat() * model;
-    shader.SetUniformMat4("transform", transform);
-    shader.SetUniformInt("hasBorder", false);
-    shader.SetUniformInt("overrideColor", true);
-    shader.SetUniformInt("textureType", 1);
-    shader.SetUniformVec4("color", cursor.color);
+    colorShader.SetUniformMat4("transform", transform);
+    colorShader.SetUniformInt("hasBorder", false);
+    colorShader.SetUniformInt("overrideColor", true);
+    colorShader.SetUniformInt("textureType", 1);
+    colorShader.SetUniformVec4("color", cursor.color);
     auto& mesh = GetMesh(cursor.type);
     //mesh.Draw(shader, cursor.color, GL_LINE);
     glDisable(GL_CULL_FACE);
-    mesh.Draw(shader, GL_LINE);
+    mesh.Draw(colorShader, GL_LINE);
     glEnable(GL_CULL_FACE);
 }
 

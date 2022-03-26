@@ -6,6 +6,8 @@
 
 #include <entity/GameObject.h>
 
+#include <game/ServiceLocator.h>
+
 namespace Game::Models
 {
     class ModelMgr
@@ -24,6 +26,9 @@ namespace Game::Models
 
     private:
         void InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
+        Log::Logger* GetLogger();
+
+        GL::Texture crateTexture;
 
         Rendering::ModelI* models[Entity::GameObject::Type::COUNT];
     };
