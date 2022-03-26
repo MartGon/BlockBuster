@@ -8,7 +8,7 @@ void Rendering::Camera::SetParam(Param param, float value)
 {
     params_[param] = value;
 
-    projMat_ = Math::GetPerspectiveMat(params_[FOV], params_[ASPECT_RATIO], params_[NEAR], params_[FAR]);
+    projMat_ = Math::GetPerspectiveMat(params_[FOV], params_[ASPECT_RATIO], params_[NEAR_PLANE], params_[FAR_PLANE]);
 }
 
 void Rendering::Camera::SetPos(glm::vec3 pos)

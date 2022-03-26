@@ -9,6 +9,7 @@
 #include <util/Timer.h>
 
 #include <vector>
+#include <optional>
 
 namespace Entity
 {

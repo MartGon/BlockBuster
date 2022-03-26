@@ -17,6 +17,7 @@
 
 #include <math/Interpolation.h>
 
+#include <entity/Weapon.h>
 #include <entity/Player.h>
 #include <entity/PlayerController.h>
 #include <entity/Map.h>

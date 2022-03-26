@@ -6,7 +6,7 @@ namespace Util
 {
     enum ResultType
     {
-        ERROR,
+        ERR,
         SUCCESS
     };
 
@@ -24,7 +24,7 @@ namespace Util
 
         inline bool IsError() const
         {
-            return type == ResultType::ERROR;
+            return type == ResultType::ERR;
         }
 
         inline bool IsSuccess() const
@@ -42,12 +42,12 @@ namespace Util
     template<typename T>
     Result<T> CreateError(std::string msg)
     {
-        return Result<T>{ResultType::ERROR, T{}, Error{msg.c_str()}};
+        return Result<T>{ResultType::ERR, T{}, Error{msg.c_str()}};
     }
 
     template<typename T>
     Result<T> CreateError(const char * msg)
     {
-        return Result<T>{ResultType::ERROR, T{}, Error{ msg }};
+        return Result<T>{ResultType::ERR, T{}, Error{ msg }};
     }
 }

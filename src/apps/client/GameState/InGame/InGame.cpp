@@ -125,7 +125,7 @@ void InGame::Start()
 
     std::filesystem::path soundTrackPath = "/home/defu/Projects/BlockBuster/resources/audio/Soundtrack.wav";
     auto [id, err] = audioMgr->LoadStreamedWAVOrNull(soundTrackPath);
-    if(err != Audio::AudioMgr::LoadWAVError::NO_ERROR)
+    if(err != Audio::AudioMgr::LoadWAVError::NO_ERR)
         GetLogger()->LogError("Could not find audio file" + soundTrackPath.string() + ". Err: " + std::to_string(err));
 
     auto srcId = audioMgr->CreateStreamSource();

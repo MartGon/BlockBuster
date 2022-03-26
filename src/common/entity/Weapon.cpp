@@ -58,7 +58,7 @@ Weapon::AmmoState Entity::UseAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammo
             ammoState.overheat += ammoData.overheatRate;
         break;
 
-    case AmmoType::INFINITE:
+    case AmmoType::INFINITE_AMMO:
     default:
         break;
     }
@@ -81,7 +81,7 @@ bool Entity::HasAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoTyp
             hasAmmo = false;
         break;
 
-    case AmmoType::INFINITE:
+    case AmmoType::INFINITE_AMMO:
     default:
         break;
     }

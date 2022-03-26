@@ -54,7 +54,7 @@ int main(int argc, char* args[])
             3, 0, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, "./shaders/"
         },
         App::Configuration::LogConfig{
-            "./editor.log", Log::Verbosity::ERROR
+            "./editor.log", Log::Verbosity::VERBOSITY_ERROR
         }
     };
 

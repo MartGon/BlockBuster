@@ -20,8 +20,8 @@ namespace Audio
     static const ID NULL_ID = 0;
 
     // Streamed data params
-    static const uint BUFFERS_NUM = 4;
-    static const uint BUFFER_SIZE = 65536; // 32kb
+    static const unsigned int BUFFERS_NUM = 4;
+    static const unsigned int BUFFER_SIZE = 65536; // 32kb
 
     struct AudioSource
     {
@@ -60,7 +60,7 @@ namespace Audio
         // Audio Files
         enum LoadWAVError
         {
-            NO_ERROR,
+            NO_ERR,
             INVALID_PATH,
             INVALID_FORMAT
         };

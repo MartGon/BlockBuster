@@ -23,8 +23,8 @@ namespace Rendering
     private:
         enum class AlphaType
         {
-            OPAQUE,
-            TRANSPARENT,
+            ALPHA_OPAQUE,
+            ALPHA_TRANSPARENT,
         };
 
         struct DrawReq

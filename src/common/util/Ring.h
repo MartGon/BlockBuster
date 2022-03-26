@@ -4,6 +4,7 @@
 #include <optional>
 #include <functional>
 #include <cstdint>
+#include <algorithm>
 
 namespace Util
 {

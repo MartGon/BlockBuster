@@ -1,0 +1,5 @@
+commit 6fdca976db188848e4fcc366785da0ea10a93c3d (HEAD -> main, origin/main, origin/HEAD)
+Author: MartGon <gudo35@gmail.com>
+Date:   Wed Dec 15 17:13:19 2021 +0100
+
+    Camera move and rot speed is save in config file

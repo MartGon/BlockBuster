@@ -174,7 +174,7 @@ Util::Result<bool> Editor::LoadTexture()
         return Util::CreateError<bool>("Texture is already in palette");
 
     auto res = project.map.tPalette.AddTexture(textureFolder, gui.textureFilename, false);
-    if(res.type == Util::ResultType::ERROR)
+    if(res.type == Util::ResultType::ERR)
     {
         return Util::CreateError<bool>(res.err.info);
     }

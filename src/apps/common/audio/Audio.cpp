@@ -9,7 +9,7 @@
 
 using namespace Audio;
 
-std::unique_ptr<AudioMgr> AudioMgr::audioMgr_;
+std::unique_ptr<Audio::AudioMgr> AudioMgr::audioMgr_;
 
 AudioMgr* AudioMgr::Get()
 {
@@ -94,7 +94,7 @@ void AudioMgr::Update()
 
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAVOrNull(ID id, std::filesystem::path path)
 {
-    std::pair<ID, LoadWAVError> ret = {0, LoadWAVError::NO_ERROR};
+    std::pair<ID, LoadWAVError> ret = {0, LoadWAVError::NO_ERR};
     auto res = LoadStaticWAV(id, path);
     if(res.isOk())
         ret.first = res.unwrap();
@@ -145,7 +145,7 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAV(ID id, std::filesyste
 
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAVOrNull(ID id, std::filesystem::path path)
 {
-    std::pair<ID, LoadWAVError> ret = {0, LoadWAVError::NO_ERROR};
+    std::pair<ID, LoadWAVError> ret = {0, LoadWAVError::NO_ERR};
     auto res = LoadStreamedWAV(id, path);
     if(res.isOk())
         ret.first = res.unwrap();
@@ -382,7 +382,7 @@ void AudioMgr::SetListenerParams(glm::vec3 pos, float orientation, float gain, g
 Result<AudioMgr::File, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::filesystem::path path)
 {
     File file;
-    auto res = SDL_LoadWAV(path.c_str(), &file.audioSpec, &file.wavBuffer, &file.wavLength);
+    auto res = SDL_LoadWAV(path.string().c_str(), &file.audioSpec, &file.wavBuffer, &file.wavLength);
 
     if(res)
     {

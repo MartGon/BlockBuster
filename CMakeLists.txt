@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.1...3.16)
 project(BlockBuster VERSION 1.0 LANGUAGES C CXX)
 
 # Set C++ version
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 
 set(DEPS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/deps)
 set(SHADERS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/shaders)

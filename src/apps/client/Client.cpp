@@ -37,7 +37,7 @@ void Client::Shutdown()
 {
     state->Shutdown();
 
-    config.options["mapsFolder"] = mapMgr.GetMapsFolder();
+    config.options["mapsFolder"] = mapMgr.GetMapsFolder().string();
 }
 
 void Client::Update()

@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     ap.add_argument("-mmid", "--match-making-id");
     ap.add_argument("-mmk", "--match-making-key");
 
-    ap.add_argument("-v", "--verbosity").default_value<Log::Verbosity>(Log::Verbosity::ERROR).scan<'u', uint8_t>();
+    ap.add_argument("-v", "--verbosity").default_value<Log::Verbosity>(Log::Verbosity::VERBOSITY_ERROR).scan<'u', uint8_t>();
 
     try {
         ap.parse_args(argc, argv);

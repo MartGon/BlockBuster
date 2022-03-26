@@ -40,14 +40,14 @@ void Zip::ZipFolder(std::filesystem::path dir, std::filesystem::path rootFolder)
 
 void Zip::ZipFile(std::filesystem::path zipPath, std::filesystem::path filePath)
 {
-    zip_entry_open(zip, zipPath.c_str());
-    zip_entry_fwrite(zip, filePath.c_str());
+    zip_entry_open(zip, zipPath.string().c_str());
+    zip_entry_fwrite(zip, filePath.string().c_str());
     zip_entry_close(zip);
 }
 
 ZipFile::ZipFile(std::filesystem::path zipName, char mode, int compressionLevel)
 {
-    zip = zip_open(zipName.c_str(), compressionLevel, mode);
+    zip = zip_open(zipName.string().c_str(), compressionLevel, mode);
 }
 
 ZipFile::~ZipFile()

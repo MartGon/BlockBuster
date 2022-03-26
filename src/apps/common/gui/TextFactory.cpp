@@ -185,7 +185,7 @@ TextFactory::~TextFactory()
 FontFamily* TextFactory::LoadFont(std::filesystem::path file)
 {
     FT_Face face;
-    if(FT_New_Face(ft, file.c_str(), 0, &face))
+    if(FT_New_Face(ft, file.string().c_str(), 0, &face))
     {
         std::cout  << "ERROR::FREETYPE: Failed to laod font\n";
         return nullptr;

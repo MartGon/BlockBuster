@@ -69,7 +69,7 @@ int main(int argc, char** args)
     auto cLogger = std::make_unique<Log::ComposedLogger>();
     auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
     //consoleLogger->Disable();
-    //consoleLogger->SetVerbosity(Log::Verbosity::ERROR);
+    //consoleLogger->SetVerbosity(Log::Verbosity::VERBOSITY_ERROR);
     cLogger->AddLogger(std::move(consoleLogger));
     
     auto filelogger = std::make_unique<Log::FileLogger>();

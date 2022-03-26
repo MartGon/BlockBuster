@@ -4,7 +4,7 @@ Util::Result<Rendering::ColorPalette::Member> Rendering::ColorPalette::AddColor(
 {
     auto ptr = reinterpret_cast<void*>(&color);
     auto res = tArray_.AddTexture(ptr);
-    if(res.type == Util::ResultType::ERROR)
+    if(res.type == Util::ResultType::ERR)
         return Util::CreateError<Rendering::ColorPalette::Member>(res.err.info);
     
     return Util::CreateSuccess(AddMember(res.data, color));

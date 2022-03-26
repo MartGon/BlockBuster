@@ -23,11 +23,11 @@ namespace Entity
         static const std::unordered_map<WeaponTypeID, WeaponType> weaponTypes;
     };
 
-    enum class AmmoType
+    enum class AmmoType : uint8_t
     {
         AMMO,
         OVERHEAT,
-        INFINITE
+        INFINITE_AMMO
     };
     union AmmoTypeData
     {
@@ -38,7 +38,7 @@ namespace Entity
     class WeaponType
     {
     public:
-        enum class FiringMode
+        enum class FiringMode : uint8_t
         {
             SEMI_AUTO,
             BURST,

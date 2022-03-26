@@ -60,9 +60,9 @@ void RenderMgr::AddDrawReq(AlphaType alphaType, DrawReq dr)
         ignoreDepthReqs.push_back(dr);
     else
     {
-        if(alphaType == AlphaType::OPAQUE)
+        if(alphaType == AlphaType::ALPHA_OPAQUE)
             opaqueReq.push_back(dr);
-        else if(alphaType == AlphaType::TRANSPARENT)
+        else if(alphaType == AlphaType::ALPHA_TRANSPARENT)
             transparentReq.push_back(dr);
     }
 }

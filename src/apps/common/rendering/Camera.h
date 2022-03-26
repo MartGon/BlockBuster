@@ -12,8 +12,8 @@ namespace Rendering
         {
             FOV,
             ASPECT_RATIO,
-            NEAR,
-            FAR,
+            NEAR_PLANE,
+            FAR_PLANE,
 
             MAX
         };

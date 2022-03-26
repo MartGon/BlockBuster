@@ -81,7 +81,7 @@ Rendering::TexturePalette Rendering::TexturePalette::FromBuffer(Util::Buffer::Re
         auto filename = reader.Read<std::string>();
         auto texturePath = textureFolder / filename;
         auto res = palette.AddTexture(textureFolder, filename);
-        if(res.type == Util::ResultType::ERROR)
+        if(res.type == Util::ResultType::ERR)
         {
             if(auto logger = App::ServiceLocator::GetLogger())
                 logger->LogError("Could not load texture " + texturePath.string() + ". Loading dummy texture instead");
