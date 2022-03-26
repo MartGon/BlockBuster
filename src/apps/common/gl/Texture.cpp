@@ -16,6 +16,23 @@ void GL::Texture::LoadFromFolder(std::filesystem::path folder, std::filesystem::
     Load(folder / textureName, flipVertically);
 }
 
+void GL::Texture::LoadFromMemory(void* buffer, size_t bufferSize, bool flipVertically)
+{
+    stbi_set_flip_vertically_on_load(flipVertically);
+    int channels;
+    auto data = stbi_load_from_memory((const stbi_uc*)buffer, bufferSize, &dimensions_.x, &dimensions_.y, &channels, 4);
+    if(data)
+    {
+        format_ = GL_RGBA;
+        Load(data, dimensions_, format_);
+
+        stbi_image_free(data);
+        stbi_set_flip_vertically_on_load(false);
+
+        loaded = true;
+    }
+}
+
 void GL::Texture::Load(std::filesystem::path texturePath, bool flipVertically)
 {
     if(loaded)
@@ -71,6 +88,7 @@ GL::Texture& GL::Texture::operator=(Texture&& other)
     this->handle_ = other.handle_;
     this->dimensions_ = other.dimensions_;
     this->format_ = other.format_;
+    this->loaded = other.loaded;
     other.handle_ = 0;
 
     return *this;

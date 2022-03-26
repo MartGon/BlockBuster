@@ -5,6 +5,9 @@
 #include <GameState/MainMenu/MainMenuFwd.h>
 
 #include <gl/VertexArray.h>
+#include <gl/Texture.h>
+#include <gl/Shader.h>
+
 #include <gui/PopUp.h>
 #include <util/Ring.h>
 #include <http/AsyncClient.h>
@@ -53,6 +56,7 @@ namespace BlockBuster
         void UpdateGame();
         void StartGame();
         void DownloadMap(std::string mapName);
+        void GetMapPicture(std::string mapName);
         void UploadMap(std::string mapName, std::string password);
 
         // Inputs
@@ -75,6 +79,8 @@ namespace BlockBuster
 
         // GUI
         GL::VertexArray guiVao;
+        GL::Texture mapPic;
+        ImGui::Impl::Texture mapPicImpl;
         GUI::BasicPopUp popUp;
         std::unique_ptr<MenuState::Base> menuState_;
 

@@ -171,6 +171,11 @@ void CreateGame::Update()
     bool show = true;
     if(ImGui::Begin("Create Game", &show, flags))
     {
+        if(mainMenu_->mapPic.IsLoaded())
+        {   
+            ImGui::Image(&mainMenu_->mapPicImpl, ImVec2{270, 180});
+        }
+
         auto textFlags = ImGuiInputTextFlags_None;
         ImGui::InputText("Name", gameName, 32, textFlags);
 
@@ -228,6 +233,8 @@ void CreateGame::SelectMap(MapInfo a)
     this->mapInfo = a;
     if(!a.supportedGamemodes.empty())
         this->mode = a.supportedGamemodes[0];
+    
+    mainMenu_->GetMapPicture(a.mapName);
 }
 
 // #### LOBBY #### \\
@@ -245,6 +252,7 @@ void Lobby::OnEnter()
     }
 
     OnGameInfoUpdate();
+    mainMenu_->GetMapPicture(mapName);
     mainMenu_->UpdateGame();
 }
 
@@ -349,9 +357,13 @@ void Lobby::Update()
             ImGui::TableNextColumn();
             ImGui::Text("Map: %s", gameInfo.map.c_str());
 
-            ImVec2 imgSize{0, layoutSize.y * 0.5f};
-            //ImGui::Image()
-            ImGui::Dummy(imgSize);
+            auto width = ImGui::GetContentRegionAvail().x;
+            ImVec2 imgSize{width, layoutSize.y * 0.5f};
+            if(mainMenu_->mapPic.IsLoaded())
+            {   
+                ImGui::Image(&mainMenu_->mapPicImpl, imgSize);
+            }
+            //ImGui::Dummy(imgSize);
 
             // Chat window
             ImGui::TableNextColumn();

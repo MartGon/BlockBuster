@@ -26,6 +26,7 @@ void MainMenu::Start()
     popUp.SetTitle("Connecting");
     popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 
+    // Set window properties
     SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
     SDL_SetWindowFullscreen(this->client_->window_, 0);
     client_->SetWindowSize(glm::ivec2{1024, 720});
@@ -531,6 +532,60 @@ void MainMenu::DownloadMap(std::string mapName)
     };
 
      httpClient.Request("/download_map", nlohmann::to_string(body), onSuccess, onError);
+}
+
+void MainMenu::GetMapPicture(std::string mapName)
+{
+    GetLogger()->LogInfo("Downloading map picture: " + mapName);
+
+    nlohmann::json body;
+    body["map_name"] = mapName;
+
+    auto onSuccess = [this, mapName](httplib::Response& res)
+    {
+        GetLogger()->LogInfo("Succesfullly downloaded map picture: " + mapName);
+        GetLogger()->LogInfo("Result " + res.body);
+
+        if(res.status == 200)
+        {
+            auto body = nlohmann::json::parse(res.body);
+            auto mapPictureB64 = body["map_picture"].get<std::string>();
+            auto mapPictureBuff = base64_decode(mapPictureB64);
+
+            GL::Texture texture;
+            texture.LoadFromMemory(mapPictureBuff.data(), mapPictureBuff.size());
+            this->mapPic = std::move(texture);
+
+            mapPicImpl.handle = mapPic.GetGLId();
+            mapPicImpl.type = ImGui::Impl::TextureType::SINGLE_TEXTURE;
+        }
+        else
+        {
+            // Handle game full errors, game doesn't exist, etc.
+            std::string msg = res.body;
+
+            popUp.SetVisible(true);
+            popUp.SetText(msg);
+            popUp.SetTitle("Error");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
+        }
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+    httpClient.Request("/get_map_picture", nlohmann::to_string(body), onSuccess, onError);
 }
 
 void MainMenu::UploadMap(std::string mapName, std::string password)

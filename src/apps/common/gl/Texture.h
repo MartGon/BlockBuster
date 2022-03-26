@@ -22,6 +22,7 @@ namespace GL
         Texture& operator=(Texture&& other);
 
         void LoadFromFolder(std::filesystem::path folder, std::filesystem::path textureName, bool flipVertically = false);
+        void LoadFromMemory(void* data, size_t bufferSize, bool flipVertically = false);
         void Load(std::filesystem::path texturePath, bool flipVertically = false);
         void Load(uint8_t* data, glm::ivec2 size, int format);
         void Bind(unsigned int activeTexture = GL_TEXTURE0) const;
