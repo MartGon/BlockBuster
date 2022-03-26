@@ -23,8 +23,8 @@
 using namespace BlockBuster;
 using namespace ::App::Client;
 
-InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid) : 
-    GameState{client}, serverDomain{serverDomain}, serverPort{serverPort}, mapName{map}, playerUuid{playerUuid},
+InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid, std::string playerName) : 
+    GameState{client}, serverDomain{serverDomain}, serverPort{serverPort}, mapName{map}, playerUuid{playerUuid}, playerName{playerName},
     host{ENet::HostFactory::Get()->CreateHost(1, 2)}
 {
 }
@@ -357,6 +357,7 @@ void InGame::OnConnectToServer(ENet::PeerId id)
     // Send login packet
     auto packet = std::make_unique<Networking::Packets::Client::Login>();
     packet->playerUuid = this->playerUuid;
+    packet->playerName = this->playerName;
     packet->Write();
     auto buffer = packet->GetBuffer();
     ENet::SentPacket sentPacket{buffer->GetData(), buffer->GetSize(), ENET_PACKET_FLAG_RELIABLE};

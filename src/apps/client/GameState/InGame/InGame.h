@@ -41,7 +41,7 @@ namespace BlockBuster
     friend class InGameGUI;
 
     public:
-        InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid);
+        InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid, std::string playerName);
         
         void Start() override;
         void Update() override;
@@ -127,7 +127,6 @@ namespace BlockBuster
         uint16_t serverPort = 0;
         ENet::Host host;
         ENet::PeerId serverId = 0;
-        std::string playerUuid;
         uint8_t playerId = 0;
         Util::Time::Seconds serverTickRate{0.0};
         bool connected = false;
@@ -156,6 +155,10 @@ namespace BlockBuster
         const Util::Time::Seconds EXTRAPOLATION_DURATION{0.25};
         Networking::Snapshot extrapolatedSnapshot;
         Util::Time::Seconds offsetTime{0};
+
+        // Match Making data
+        std::string playerUuid;
+        std::string playerName;
 
         // Rendering
             // Mgr

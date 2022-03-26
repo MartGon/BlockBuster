@@ -140,11 +140,13 @@ using namespace Networking::Packets::Client;
 void Login::OnRead(Util::Buffer::Reader reader)
 {
     playerUuid = reader.Read<std::string>();
+    playerName = reader.Read<std::string>();
 }
 
 void Login::OnWrite()
 {
     buffer.Write(playerUuid);
+    buffer.Write(playerName);
 }
 
 void Input::OnRead(Util::Buffer::Reader reader)

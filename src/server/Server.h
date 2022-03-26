@@ -55,11 +55,11 @@ namespace BlockBuster
     struct Client
     {
         std::string playerUuuid;
+        std::string playerName;
 
         // Move this to a game class or something
         Entity::Player player;
         Entity::PlayerController pController;
-
 
         Util::Ring<InputReq, MAX_INPUT_BUFFER_SIZE> inputBuffer;
         Util::Ring<ShotCommand, MAX_INPUT_BUFFER_SIZE> shotBuffer;

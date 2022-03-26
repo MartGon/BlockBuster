@@ -181,6 +181,7 @@ namespace Networking
                 void OnWrite() override;
 
                 std::string playerUuid;
+                std::string playerName;
             };
 
             class Input final : public Packet

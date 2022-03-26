@@ -206,6 +206,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
         {
             auto login = packet.To<Networking::Packets::Client::Login>();
             client.playerUuuid = login->playerUuid;
+            client.playerName = login->playerName;
         }
         break;
         case Networking::OpcodeClient::OPCODE_CLIENT_INPUT:
