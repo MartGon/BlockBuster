@@ -30,3 +30,10 @@ void GUI::TableCenterEntry(float width)
     auto x = cursorPos.x + regionSize.x / 2 - width /2;
     ImGui::SetCursorPosX(x);
 }
+
+void GUI::ImGuiImage(ImTextureID textureId, glm::ivec2 size)
+{
+    auto aspect = (float)size.y / (float)size.x;
+    auto regionWidth = ImGui::GetContentRegionAvail().x;
+    ImGui::Image(textureId, ImVec2{regionWidth, regionWidth * aspect});
+}

@@ -170,10 +170,12 @@ void CreateGame::Update()
     auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
     bool show = true;
     if(ImGui::Begin("Create Game", &show, flags))
-    {
-        if(mainMenu_->mapPic.IsLoaded())
+    {  
+        auto& mapPic = mainMenu_->mapPics[mapInfo.mapName];
+        if(mapPic.texture.IsLoaded())
         {   
-            ImGui::Image(&mainMenu_->mapPicImpl, ImVec2{270, 180});
+            auto size = mapPic.texture.GetSize();
+            GUI::ImGuiImage(&mapPic.imGuiImpl, size);
         }
 
         auto textFlags = ImGuiInputTextFlags_None;
@@ -359,9 +361,11 @@ void Lobby::Update()
 
             auto width = ImGui::GetContentRegionAvail().x;
             ImVec2 imgSize{width, layoutSize.y * 0.5f};
-            if(mainMenu_->mapPic.IsLoaded())
+            auto& mapPic = mainMenu_->mapPics[gameInfo.map];
+            if(mapPic.texture.IsLoaded())
             {   
-                ImGui::Image(&mainMenu_->mapPicImpl, imgSize);
+                auto size = mapPic.texture.GetSize();
+                GUI::ImGuiImage(&mapPic.imGuiImpl, size);
             }
             //ImGui::Dummy(imgSize);
 

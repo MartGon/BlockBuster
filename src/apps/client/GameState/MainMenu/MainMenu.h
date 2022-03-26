@@ -79,8 +79,12 @@ namespace BlockBuster
 
         // GUI
         GL::VertexArray guiVao;
-        GL::Texture mapPic;
-        ImGui::Impl::Texture mapPicImpl;
+        struct MapPic
+        {
+            GL::Texture texture;
+            ImGui::Impl::Texture imGuiImpl;
+        };
+        std::unordered_map<std::string, MapPic> mapPics;
         GUI::BasicPopUp popUp;
         std::unique_ptr<MenuState::Base> menuState_;
 

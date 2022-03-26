@@ -7,6 +7,8 @@
 #include <imgui/imgui_internal.h>
 #include <base64/base64.h>
 
+#include <util/Container.h>
+
 using namespace BlockBuster;
 
 MainMenu::MainMenu(Client* client)  : GameState{client}, httpClient{"localhost", 3030}
@@ -536,6 +538,12 @@ void MainMenu::DownloadMap(std::string mapName)
 
 void MainMenu::GetMapPicture(std::string mapName)
 {
+    if(Util::Map::Contains(mapPics, mapName))
+    {
+        GetLogger()->LogInfo("Did not download map picture: " + mapName + " because it was already cached");    
+        return;
+    }
+
     GetLogger()->LogInfo("Downloading map picture: " + mapName);
 
     nlohmann::json body;
@@ -552,12 +560,19 @@ void MainMenu::GetMapPicture(std::string mapName)
             auto mapPictureB64 = body["map_picture"].get<std::string>();
             auto mapPictureBuff = base64_decode(mapPictureB64);
 
+            // Load and cache texture
             GL::Texture texture;
             texture.LoadFromMemory(mapPictureBuff.data(), mapPictureBuff.size());
-            this->mapPic = std::move(texture);
 
-            mapPicImpl.handle = mapPic.GetGLId();
+            ImGui::Impl::Texture mapPicImpl;
+            mapPicImpl.handle = texture.GetGLId();
             mapPicImpl.type = ImGui::Impl::TextureType::SINGLE_TEXTURE;
+
+            MapPic mapPic;
+            mapPic.texture = std::move(texture);
+            mapPic.imGuiImpl = mapPicImpl;
+
+            mapPics[mapName] = std::move(mapPic);
         }
         else
         {

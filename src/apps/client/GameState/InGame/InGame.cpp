@@ -359,7 +359,7 @@ void InGame::OnConnectToServer(ENet::PeerId id)
     packet->playerUuid = this->playerUuid;
     packet->Write();
     auto buffer = packet->GetBuffer();
-    ENet::SentPacket sentPacket{buffer->GetData(), buffer->GetSize(), 0};
+    ENet::SentPacket sentPacket{buffer->GetData(), buffer->GetSize(), ENET_PACKET_FLAG_RELIABLE};
     host.SendPacket(serverId, 0, sentPacket);
 }
 

@@ -15,7 +15,7 @@ namespace GL
         Texture();
         ~Texture();
 
-        Texture(Texture& other) = delete;
+        Texture(const Texture& other) = delete;
         Texture& operator=(const Texture& other) = delete;
 
         Texture(Texture&& other);

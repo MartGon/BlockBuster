@@ -9,4 +9,6 @@ namespace GUI
 
     void CenterSection(float sWidth, float regionWidth);
     void TableCenterEntry(float width);
+
+    void ImGuiImage(ImTextureID texure_id, glm::ivec2 imgSize);
 }
