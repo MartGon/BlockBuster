@@ -66,6 +66,7 @@ namespace BlockBuster
         void SetState(std::unique_ptr<MenuState::Base> menuState_);
 
         // Handy 
+        void LaunchGame();
         MapMgr& GetMapMgr();
 
         //#### Data Members ####\\

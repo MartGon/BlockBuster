@@ -24,10 +24,9 @@ namespace HTTP
         }
         ~AsyncClient()
         {
-            /*
-            if(reqThread.joinable())
-                reqThread.join(); // NOTE: After detach, this is never executed
-            */
+            for(auto& [id, thread] : reqThreads)
+                if(thread.joinable())
+                    thread.join();
         }
 
         inline void SetReadTimeout(Util::Time::Seconds seconds)
@@ -69,7 +68,10 @@ namespace HTTP
         Util::Time::Seconds timeout{5};
 
         std::mutex reqMutex;
-        std::thread reqThread;
+        using ThreadID = uint8_t;
+        std::unordered_map<ThreadID, std::thread> reqThreads;
+        std::vector<ThreadID> joinThreads;
+        ThreadID lastId = 0;
         std::atomic_bool connecting = false;
         Util::Ring<Response, 16> responses;
         bool enabled = true;

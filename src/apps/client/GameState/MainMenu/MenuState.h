@@ -77,6 +77,8 @@ namespace BlockBuster
 
             bool IsPlayerHost();
             bool IsEveryoneReady();
+            bool IsGameOnGoing();
+            bool IsGameInLobby();
             
             char chat[4096] = "\0";
             char chatLine[128] = "\0";

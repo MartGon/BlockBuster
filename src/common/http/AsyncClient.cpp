@@ -11,8 +11,9 @@ void AsyncClient::Request(const std::string& path, const std::string& body, Resp
 
     connecting = true;
 
-    reqThread = std::thread{
-        [this, body, path, respHandler, errHandler](){
+    auto threadId = lastId++;
+    auto reqThread = std::thread{
+        [this, threadId, body, path, respHandler, errHandler](){
 
             httplib::Client client{address, port};
             client.set_read_timeout(timeout);
@@ -22,13 +23,14 @@ void AsyncClient::Request(const std::string& path, const std::string& body, Resp
             Util::Time::Sleep(Util::Time::Seconds{0.25});  
 
             this->reqMutex.lock();
-            this->responses.PushBack(std::move(response));
+                this->responses.PushBack(std::move(response));
+                this->joinThreads.push_back(threadId);
             this->reqMutex.unlock();
 
             this->connecting = false;
         }
     };
-    reqThread.detach();
+    reqThreads[threadId++] = std::move(reqThread);
 }
 
 void AsyncClient::HandleResponses()
@@ -41,6 +43,18 @@ void AsyncClient::HandleResponses()
             res.onSuccess(httpRes.value());
         else
             res.onError(httpRes.error());
+    }
+
+    while(!joinThreads.empty())
+    {
+        auto threaId = joinThreads.back();
+        joinThreads.pop_back();
+
+        auto& thread = reqThreads[threaId];
+        if(thread.joinable())
+            thread.join();
+
+        reqThreads.erase(threaId);
     }
 }
 

@@ -69,14 +69,15 @@ void ServerBrowser::Update()
         auto winSize = ImGui::GetWindowSize();
 
         auto tableSize = ImVec2{winSize.x * 0.975f, winSize.y * 0.8f};
-        auto tFlags = ImGuiTableFlags_None | ImGuiTableFlags_ScrollY;
+        auto tFlags = ImGuiTableFlags_None | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg;
         ImGui::SetCursorPosX((winSize.x - tableSize.x) / 2.f);
-        if(ImGui::BeginTable("#Server Table", 5, tFlags, tableSize))
+        if(ImGui::BeginTable("#Server Table", 6, tFlags, tableSize))
         {
-            ImGui::TableSetupColumn("Name");
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Map");
             ImGui::TableSetupColumn("Mode");
             ImGui::TableSetupColumn("Players");
+            ImGui::TableSetupColumn("State");
             ImGui::TableSetupColumn("Ping");
             ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
 
@@ -106,6 +107,9 @@ void ServerBrowser::Update()
                 ImGui::TableNextColumn();
                 auto players = std::to_string(game.players) + "/" + std::to_string(game.maxPlayers);
                 ImGui::Text("%s", players.c_str());
+
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", game.state.c_str());
 
                 ImGui::TableNextColumn();
                 ImGui::Text("%i", game.ping);
@@ -303,7 +307,7 @@ void Lobby::Update()
 
             // Player Table
             ImGui::TableNextColumn();
-            auto playerTableFlags = ImGuiTableFlags_None | ImGuiTableFlags_ScrollY;
+            auto playerTableFlags = ImGuiTableFlags_None | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg;
             auto playerTableSize = ImVec2{leftColSize * 0.975f, layoutSize.y * 0.5f};
             if(ImGui::BeginTable("Player List", 3, playerTableFlags, playerTableSize))
             {   
@@ -407,24 +411,33 @@ void Lobby::Update()
                 ImGui::EndTable();
             }
 
+            // Ready button
+            if(IsGameOnGoing())
+                ImGui::PushDisabled();
+
             if(ImGui::Button("Ready"))
-            {
                 mainMenu_->ToggleReady();
-            }
+
+            if(IsGameOnGoing())
+                ImGui::PopDisabled();
 
             // Start Game Button
-            if(!IsPlayerHost() || !IsEveryoneReady())
+            bool disabled = IsGameInLobby() && (!IsPlayerHost() || !IsEveryoneReady());
+            if(disabled)
                 ImGui::PushDisabled();
 
             ImGui::BeginChild("Start Game Button", ImVec2(0, 0), false, 0);
                 auto size = ImGui::GetContentRegionAvail();
                 if(ImGui::Button("Start Game", size))
                 {
-                    mainMenu_->StartGame();
+                    if(IsGameInLobby())
+                        mainMenu_->StartGame();
+                    else if(IsGameOnGoing())
+                        mainMenu_->LaunchGame();
                 }
             ImGui::EndChild();
 
-            if(!IsPlayerHost() || !IsEveryoneReady())
+            if(disabled)
                 ImGui::PopDisabled();
 
             ImGui::EndTable();
@@ -459,6 +472,16 @@ bool Lobby::IsEveryoneReady()
     }
 
     return true;
+}
+
+bool Lobby::IsGameOnGoing()
+{
+    return mainMenu_->currentGame->game.state == "InGame";
+}
+
+bool Lobby::IsGameInLobby()
+{
+    return mainMenu_->currentGame->game.state == "InLobby";
 }
 
 // #### UPLOAD MAP #### \\

@@ -389,13 +389,7 @@ void MainMenu::UpdateGame()
 
                 if(currentGame->game.state == "InGame" && oldState == "InLobby")
                 {
-                    GetLogger()->LogInfo("Game Started!");
-                    auto address = currentGame->game.address.value();
-                    auto port = currentGame->game.serverPort.value();
-                    client_->LaunchGame(address, port, gameDetails.game.map, userId);
-
-                    httpClient.Disable();
-                    enteringGame = true;
+                    LaunchGame();
                 }
                 else if(currentGame->game.state == "InLobby")
                 {
@@ -683,6 +677,19 @@ void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)
     this->menuState_ = std::move(menuState);
 
     this->menuState_->OnEnter();
+}
+
+// Handy
+
+void MainMenu::LaunchGame()
+{
+    GetLogger()->LogInfo("Game Started!");
+    auto address = currentGame->game.address.value();
+    auto port = currentGame->game.serverPort.value();
+    client_->LaunchGame(address, port, currentGame->game.map, userId);
+
+    httpClient.Disable();
+    enteringGame = true;
 }
 
 MapMgr& MainMenu::GetMapMgr()
