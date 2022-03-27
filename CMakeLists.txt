@@ -22,6 +22,11 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     add_compile_definitions(_LOG=1)
 endif()
 
+if (MSVC)
+else()
+    add_compile_options(-Wno-deprecated-volatile)
+endif()
+
 find_package(OpenGL REQUIRED)
 find_package(X11 REQUIRED)
 find_package(Threads REQUIRED)
