@@ -34,6 +34,7 @@ namespace Entity
         float overheatRate;
         uint32_t magazineSize;
     };
+    const float MAX_OVERHEAT = 100.0f;
 
     class WeaponType
     {
@@ -48,6 +49,7 @@ namespace Entity
         WeaponTypeID id;
         FiringMode firingMode;
         Util::Time::Seconds cooldown; // Shots per sec
+        Util::Time::Seconds reloadTime;
         float baseDmg;
         float maxRange; // Damage will be reduced across range. if distance > maxRange => dmg = baseDmg * max(0, (1 - (distance - maxRange) / maxRange));
         float baseSpread; // Size of the crosshair
@@ -87,10 +89,11 @@ namespace Entity
 
     // Weapon
     bool HasShot(Weapon::State s1, Weapon::State s2);
+    bool HasReloaded(Weapon::State s1, Weapon::State s2);
 
     // Ammo
     Weapon::AmmoState ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType);
     Weapon::AmmoState UseAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType);
     bool HasAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType);
-
+    bool IsMagFull(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType);
 }

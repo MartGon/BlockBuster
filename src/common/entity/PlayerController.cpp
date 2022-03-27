@@ -74,6 +74,11 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
                 weapon.cooldown = weaponType.cooldown;
                 weapon.ammoState = Entity::UseAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType);
             }
+            else if(input[Entity::RELOAD] && !Entity::IsMagFull(weapon.ammoState, weaponType.ammoData, weaponType.ammoType))
+            {
+                weapon.state = Weapon::State::RELOADING;
+                weapon.cooldown = weaponType.reloadTime;
+            }
         }
         break;
         case Weapon::State::SHOOTING:
@@ -85,7 +90,12 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
         break;
         case Weapon::State::RELOADING:
         {
-
+            weapon.cooldown -= deltaTime;
+            if(weapon.cooldown.count() <= 0.0)
+            {
+                weapon.ammoState = Entity::ResetAmmo(weaponType.ammoData, weaponType.ammoType);
+                weapon.state = Weapon::State::IDLE;
+            }
         }
         break;
     }

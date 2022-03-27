@@ -262,8 +262,6 @@ void InGame::HandleSDLEvents()
         case SDL_KEYDOWN:
             if(e.key.keysym.sym == SDLK_f)
                 drawMode = drawMode == GL_FILL ? GL_LINE : GL_FILL;
-            if(e.key.keysym.sym == SDLK_r)
-                fpsAvatar.PlayReloadAnimation();
             if(e.key.keysym.sym == SDLK_p)
             {
                 using namespace ::App::Client;
@@ -666,6 +664,8 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     nextState.weaponState = pController.UpdateWeapon(a.weaponState, playerInput, deltaTime);
     if(Entity::HasShot(a.weaponState.state, nextState.weaponState.state))
         fpsAvatar.PlayShootAnimation();
+    else if(Entity::HasReloaded(a.weaponState.state, nextState.weaponState.state))
+        fpsAvatar.PlayReloadAnimation();
 
     return nextState;
 }

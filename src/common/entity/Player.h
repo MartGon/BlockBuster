@@ -14,6 +14,13 @@ namespace Entity
         MOVE_LEFT,
         MOVE_RIGHT,
         SHOOT,
+        ALT_SHOOT, // Aim
+        RELOAD,
+        GRENADE,
+        WEAPON_SWAP_0,
+        WEAPON_SWAP_1,
+        WEAPON_SWAP_2,
+        WEAPON_SWAP_3,
 
         MAX
     };
@@ -23,12 +30,11 @@ namespace Entity
         PlayerInput();
         PlayerInput(bool defult);
 
-        bool inputs[Inputs::MAX] = {false, false, false,
-                                    false, false};
+        bool inputs[Inputs::MAX];
 
         // NOTE: This is needed to suppress Valgrind error
         // Hint: https://stackoverflow.com/questions/19364942/points-to-uninitialised-bytes-valgrind-errors
-        bool padding[8 - Inputs::MAX] = {false, false, false};
+        //bool padding[Inputs::MAX] = {false, false, false};
 
         bool operator[](uint32_t index) const
         {
@@ -43,9 +49,6 @@ namespace Entity
     PlayerInput operator&(const PlayerInput& a, const PlayerInput& b);
     glm::vec3 PlayerInputToMove(PlayerInput input);
 
-    // NOTE: Maybe this should hold the minimum information that one client should know about
-    // other players. A given client doesn't need to know other player's current ammo.
-    // That info could be sent in a different packet type, or in a different struct within the Snapshot packet
     class PlayerState
     {
     public:

@@ -6,7 +6,7 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
     {
         WeaponTypeID::SNIPER, 
         {
-            WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, 100.0f, 
+            WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.0f}, 100.0f, 
             300.0f, 0.0f, 0.0f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
         }
     }
@@ -29,6 +29,11 @@ Weapon WeaponType::CreateInstance() const
 bool Entity::HasShot(Weapon::State s1, Weapon::State s2)
 {
     return s1 == Weapon::State::IDLE && s2 == Weapon::State::SHOOTING;
+}
+
+bool Entity::HasReloaded(Weapon::State s1, Weapon::State s2)
+{
+    return s1 == Weapon::State::IDLE && s2 == Weapon::State::RELOADING;
 }
 
 // Ammo
@@ -77,7 +82,7 @@ bool Entity::HasAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoTyp
         break;
     
     case AmmoType::OVERHEAT:
-        if(ammoState.overheat >= 100.0f)
+        if(ammoState.overheat >= MAX_OVERHEAT)
             hasAmmo = false;
         break;
 
@@ -87,4 +92,25 @@ bool Entity::HasAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoTyp
     }
 
     return hasAmmo;
+}
+
+bool Entity::IsMagFull(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType)
+{
+    bool isFull = false;
+    switch(ammoType)
+    {
+    case AmmoType::AMMO:
+        isFull = ammoState.magazine == ammoData.magazineSize;
+    break;
+    
+    case AmmoType::OVERHEAT:
+        isFull = ammoState.overheat == MAX_OVERHEAT;
+
+    case AmmoType::INFINITE_AMMO:
+        isFull = true;
+    default:
+        break;
+    }
+
+    return isFull;
 }
