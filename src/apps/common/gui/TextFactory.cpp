@@ -136,7 +136,7 @@ void FontFamily::InitASCII()
             3, 1, 2
         });
 
-        Glyph character = {
+        Glyph character{
             textureId, 
             size,
             bearing,

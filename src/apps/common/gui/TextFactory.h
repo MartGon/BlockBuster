@@ -54,6 +54,12 @@ namespace GUI
 
     struct Glyph
     {
+        Glyph(uint32_t textureId, glm::ivec2 size, glm::ivec2 bearing, uint32_t advance, GL::VertexArray vao) :
+            textureId{textureId}, size{size}, bearing{bearing}, advance{advance}, vao{std::move(vao)}
+            {
+                
+            }
+
         Glyph(const Glyph&) = delete;
         Glyph& operator=(Glyph&) = delete;
 
