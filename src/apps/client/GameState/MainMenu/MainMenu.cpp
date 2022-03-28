@@ -682,7 +682,7 @@ void MainMenu::UploadMap(std::string mapName, std::string password)
         popUp.SetCloseable(false);
         popUp.SetTitle("Error");
         popUp.SetText("Could not load map");
-        popUp.SetButtonVisible(false);
+        popUp.SetButtonVisible(true);
 
         GetLogger()->LogError("Could not load map " + mapName);
     }
