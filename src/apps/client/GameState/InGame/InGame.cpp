@@ -244,6 +244,26 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
         playerState.idlePlayer.Update(deltaTime);
         playerState.shootPlayer.Update(deltaTime);
     }
+
+    // Debug
+    /* TODO: Remove
+    for(auto [playerId, player] : playerTable)
+    {
+        if(playerId == this->playerId)
+            continue;
+
+        auto mousePos = client_->GetMousePos();
+        auto winSize = client_->GetWindowSize();
+        auto ray = Rendering::ScreenToWorldRay(camera_, glm::vec2{0.5f, 0.5f}, glm::vec2{winSize.x, winSize.y});
+        auto playerTransform = playerTable[playerId].GetRenderTransform();
+        auto lastMoveDir = GetLastMoveDir(playerId);
+        auto collision = Game::RayCollidesWithPlayer(ray, playerTransform.position, playerTransform.rotation.y, lastMoveDir);
+        if(collision.collides)
+        {
+            std::cout << "Collision with " << std::to_string(collision.hitboxType) << "\n";
+        }
+    }
+    */
 }
 
 void InGame::HandleSDLEvents()
@@ -284,17 +304,6 @@ void InGame::HandleSDLEvents()
                 inGameGui.showScoreboard = false;
         case SDL_MOUSEBUTTONDOWN:
             {
-                for(auto [playerId, player] : playerTable)
-                {
-                    auto mousePos = client_->GetMousePos();
-                    auto winSize = client_->GetWindowSize();
-                    auto ray = Rendering::ScreenToWorldRay(camera_, mousePos, glm::vec2{winSize.x, winSize.y});
-                    auto playerTransform = playerTable[playerId].GetRenderTransform();
-                    auto lastMoveDir = GetLastMoveDir(playerId);
-                    auto collision = Game::RayCollidesWithPlayer(ray, playerTransform.position, playerTransform.rotation.y, lastMoveDir);
-                    if(collision.collides)
-                        std::cout << "Collision with " << std::to_string(collision.hitboxType) << "\n";
-                }
             }
             break;
         }

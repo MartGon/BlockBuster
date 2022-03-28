@@ -15,7 +15,8 @@ namespace Entity
         NONE,
         SNIPER,
         RIFLE,
-        SMG
+        SMG,
+        CHEAT_SMG
     };
     class WeaponMgr
     {

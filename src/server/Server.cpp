@@ -120,7 +120,7 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     Entity::Player player;
     player.id = this->lastId++;
     player.teamId = player.id;
-    player.weapon = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
+    player.weapon = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::CHEAT_SMG).CreateInstance();
 
     // Player Respawn. TODO: Should convert this to a function
     auto sIndex = FindSpawnPoint(player);

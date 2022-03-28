@@ -115,7 +115,7 @@ namespace BlockBuster
         glm::vec3 modelScale{1.0f};
         glm::vec3 modelRot{0.0f};
         glm::ivec2 wtPos{0};
-        float tScale = 1.0f;
+        float tScale = 0.45f;
         bool tShow = false;
     };
 }

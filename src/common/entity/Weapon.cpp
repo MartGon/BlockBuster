@@ -8,6 +8,13 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
         {
             WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.0f}, 100.0f, 
             300.0f, 0.0f, 0.0f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
+        },
+    },
+    {
+        WeaponTypeID::CHEAT_SMG, 
+        {
+            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.1f}, Util::Time::Seconds{2.0f}, 100.0f, 
+            300.0f, 0.0f, 0.0f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 20}
         }
     }
 };

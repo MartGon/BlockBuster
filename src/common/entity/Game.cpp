@@ -119,7 +119,7 @@ Game::RayPlayerCollision Game::RayCollidesWithPlayer(Collisions::Ray ray, glm::v
     Game::RayPlayerCollision ret;
     for(uint8_t i = HitBoxType::HEAD; i < HitBoxType::MAX; i++)
     {
-        auto rot = i == HitBoxType::WHEELS ? Entity::Player::GetWheelsRotation(lastMoveDir, playerYaw + 90.0f) : playerYaw;
+        auto rot = i == HitBoxType::WHEELS ? Entity::Player::GetWheelsRotation(lastMoveDir, playerYaw ) : playerYaw;
         auto hbt = static_cast<HitBoxType>(i);
         auto rpc = RayCollidesWithPlayerHitbox(ray, playerPos, rot, hbt);
         if(!ret.collides)
