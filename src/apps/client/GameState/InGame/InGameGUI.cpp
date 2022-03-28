@@ -285,14 +285,14 @@ void InGameGUI::UpdateHealth()
     auto& player = inGame->GetLocalPlayer();
     auto health = player.health;
 
-    auto healthStr = GetBoundedValue(glm::ceil(health), player.MAX_HEALTH);
+    auto healthStr = GetBoundedValue(glm::ceil(health.hp), player.MAX_HEALTH);
     healthText.SetText(healthStr);
 }
 
 void InGameGUI::UpdateArmor()
 {
     auto& player = inGame->GetLocalPlayer();
-    auto armor = player.shield;
+    auto armor = player.health.shield;
 
     auto armorStr = GetBoundedValue(glm::ceil(armor), player.MAX_SHIELD);
     armorText.SetText(armorStr);

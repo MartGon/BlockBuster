@@ -127,20 +127,23 @@ namespace Entity
         Math::Transform GetTransform() const;
         // Ignores pitch, and adapts rotation to player model
         Math::Transform GetRenderTransform() const;
-
         void SetTransform(Math::Transform transform);
-
         glm::vec3 GetFPSCamPos() const;
+
+        // Weapons / Health
+        void TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance);
+        bool IsDead();
 
         // Data
         ID id = 0;
-        
-        // State
-        bool onDmg = false;
 
         // Health
-        float shield = MAX_SHIELD;
-        float health = MAX_HEALTH;
+        struct HealthState
+        {
+            float shield = MAX_SHIELD;
+            float hp = MAX_HEALTH;
+        };
+        HealthState health;
 
         ID teamId = 0;
 

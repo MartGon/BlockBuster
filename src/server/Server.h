@@ -41,7 +41,7 @@ namespace BlockBuster
 
     struct ShotCommand
     {
-        Entity::ID playerId;
+        ENet::PeerId clientId;
         glm::vec3 origin;
         glm::vec2 playerOrientation; // In radians
         float fov; // In radians
@@ -119,6 +119,7 @@ namespace BlockBuster
         void HandleClientsInput();
         void HandleShootCommand(ShotCommand sc);
         void SendWorldUpdate();
+        void SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin);
 
         // Simulation
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);

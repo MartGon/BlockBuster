@@ -96,4 +96,7 @@ namespace Entity
     Weapon::AmmoState UseAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType);
     bool HasAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType);
     bool IsMagFull(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoType ammoType);
+
+    // Dmg
+    float GetDistanceDmgMod(WeaponType weaponType, float distance);
 }

@@ -21,7 +21,8 @@ namespace Networking
         OPCODE_SERVER_WELCOME,
         OPCODE_SERVER_SNAPSHOT,
         OPCODE_SERVER_PLAYER_DISCONNECTED,
-        OPCODE_SERVER_PLAYER_INFO
+        OPCODE_SERVER_PLAYER_INPUT_ACK,
+        OPCODE_SERVER_PLAYER_TAKE_DMG,
     };
 
     enum OpcodeClient : uint16_t
@@ -152,10 +153,10 @@ namespace Networking
                 Entity::ID playerId;
             };
 
-            class PlayerInfo final : public Packet
+            class PlayerInputACK final : public Packet
             {
             public:
-                PlayerInfo() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_INFO}
+                PlayerInputACK() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_INPUT_ACK}
                 {
                     
                 }
@@ -165,6 +166,21 @@ namespace Networking
 
                 Entity::PlayerState playerState;
                 uint32_t lastCmd = 0;
+            };
+
+            class PlayerTakeDmg final : public Packet
+            {
+            public:
+                PlayerTakeDmg() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_TAKE_DMG}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader reader) override;
+                void OnWrite() override;
+
+                glm::vec3 origin;
+                Entity::Player::HealthState healthState;
             };
         }
 

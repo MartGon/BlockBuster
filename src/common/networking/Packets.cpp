@@ -28,8 +28,13 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
         packet = std::make_unique<PlayerDisconnected>();
         break;
 
-    case OpcodeServer::OPCODE_SERVER_PLAYER_INFO:
-        packet = std::make_unique<PlayerInfo>();
+    case OpcodeServer::OPCODE_SERVER_PLAYER_INPUT_ACK:
+        packet = std::make_unique<PlayerInputACK>();
+        break;
+
+    case OpcodeServer::OPCODE_SERVER_PLAYER_TAKE_DMG:
+        packet = std::make_unique<PlayerTakeDmg>();
+        break;
     
     default:
         break;
@@ -123,16 +128,28 @@ void PlayerDisconnected::OnWrite()
     buffer.Write(playerId);
 }
 
-void PlayerInfo::OnRead(Util::Buffer::Reader reader)
+void PlayerInputACK::OnRead(Util::Buffer::Reader reader)
 {
     lastCmd = reader.Read<uint32_t>();
     playerState = reader.Read<Entity::PlayerState>();
 }
 
-void PlayerInfo::OnWrite()
+void PlayerInputACK::OnWrite()
 {
     buffer.Write(lastCmd);
     buffer.Write(playerState);
+}
+
+void PlayerTakeDmg::OnRead(Util::Buffer::Reader reader)
+{
+    origin = reader.Read<glm::vec3>();
+    healthState = reader.Read<Entity::Player::HealthState>();
+}
+
+void PlayerTakeDmg::OnWrite()
+{
+    buffer.Write(origin);
+    buffer.Write(healthState);
 }
 
 using namespace Networking::Packets::Client;

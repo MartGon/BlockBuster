@@ -114,3 +114,13 @@ bool Entity::IsMagFull(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoT
 
     return isFull;
 }
+
+// Dmg
+
+float Entity::GetDistanceDmgMod(Entity::WeaponType wepType, float distance)
+{
+    auto range = wepType.maxRange;
+    float mod = distance <= range ? 1.0f : range / distance;
+
+    return mod;
+}

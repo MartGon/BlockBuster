@@ -36,7 +36,7 @@ int main(int argc, char** argv)
     auto maxPlayers = ap.get<uint8_t>("--max-players");
     auto startingPlayers = ap.get<uint8_t>("--starting-players");
     auto gameMode = ap.get<std::string>("--gamemode");
-    auto verbosity = ap.get<Log::Verbosity>("--verbosity");
+    auto verbosity = static_cast<Log::Verbosity>(ap.get<uint8_t>("--verbosity"));
 
     auto mmAddress = ap.get<std::string>("--match-making-address");
     auto mmPort = ap.get<uint16_t>("--match-making-port");

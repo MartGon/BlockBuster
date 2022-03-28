@@ -204,6 +204,7 @@ Entity::PlayerState Player::ExtractState() const
 
     s.transform.pos = this->transform.position;
     s.transform.rot = glm::vec2{transform.rotation};
+    
     s.weaponState = weapon;
 
     return s;
@@ -213,8 +214,11 @@ void Player::ApplyState(Entity::PlayerState s)
 {
     this->transform.position = s.transform.pos;
     this->transform.rotation = glm::vec3{s.transform.rot, 0.0f};
+
     this->weapon = s.weaponState;
 }
+
+// Transforms
 
 Math::Transform Player::GetTransform() const
 {
@@ -239,3 +243,34 @@ glm::vec3 Player::GetFPSCamPos() const
     auto heightOffset = camHeight * scale;
     return transform.position + glm::vec3{0.0f, heightOffset, 0.0f};
 }
+
+// Weapons
+
+void Player::TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance)
+{
+    auto weaponType = Entity::WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
+    auto dmgMod = GetDmgMod(hitboxType) * GetDistanceDmgMod(weaponType, distance);
+    auto dmg = weaponType.baseDmg * dmgMod;
+
+    auto& shield = health.shield;
+    auto& health = this->health.hp;
+
+    if(shield > dmg)
+        shield -= dmg;
+    else
+    {
+        auto overDmg = dmg - shield;
+        shield = 0.0f;
+        if(health > overDmg)
+            health -= overDmg;
+        else
+            health = 0.0f;
+    }
+}
+
+bool Player::IsDead()
+{
+    return health.hp <= 0.0f;
+}
+
+

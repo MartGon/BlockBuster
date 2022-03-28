@@ -152,7 +152,6 @@ void Server::OnClientLeave(ENet::PeerId peerId)
     logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
     auto client = clients[peerId];
     auto player = client.player;
-    
 
     // Informing players
     Networking::Packets::Server::PlayerDisconnected pd;
@@ -215,7 +214,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
             auto inputReq = inputPacket->req;
 
             auto cmdId = inputReq.reqId;
-            logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId));
+            logger.LogDebug("Command arrived with cmdid " + std::to_string(cmdId));
 
             // Check if we already have this input
             auto found = client.inputBuffer.FindFirst([cmdId](auto input)
@@ -240,7 +239,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
 
                 auto bufferSize = client.inputBuffer.GetSize();
                 if(bufferSize >= MAX_INPUT_BUFFER_SIZE)
-                    logger.LogInfo("Max Buffer size reached." + std::to_string(bufferSize));
+                    logger.LogDebug("Max Buffer size reached." + std::to_string(bufferSize));
 
                 if(client.state == BufferingState::REFILLING && client.inputBuffer.GetSize() > MIN_INPUT_BUFFER_SIZE)
                     client.state = BufferingState::CONSUMING;
@@ -267,10 +266,10 @@ void Server::HandleClientsInput()
                     auto cmdId = command->reqId;
                     client.lastAck = cmdId;
 
-                    logger.LogInfo("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
+                    logger.LogDebug("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
                     HandleClientInput(peerId, command.value());
 
-                    logger.LogInfo("Ring size " + std::to_string(client.inputBuffer.GetSize()));
+                    logger.LogDebug("Ring size " + std::to_string(client.inputBuffer.GetSize()));
                 }
                 else
                 {
@@ -317,21 +316,21 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 
     auto oldWepState = player.weapon;
     player.weapon = pController.UpdateWeapon(player.weapon, cmd.playerInput, TICK_RATE);
-    logger.LogInfo("Player Ammo " + std::to_string(player.weapon.ammoState.magazine));
+    logger.LogDebug("Player Ammo " + std::to_string(player.weapon.ammoState.magazine));
 
     if(Entity::HasShot(oldWepState.state, player.weapon.state))
     {
-        ShotCommand sc{player.id, player.GetFPSCamPos(), glm::radians(playerTransform.rotation), cmd.fov, cmd.aspectRatio, cmd.renderTime};
+        ShotCommand sc{peerId, player.GetFPSCamPos(), glm::radians(playerTransform.rotation), cmd.fov, cmd.aspectRatio, cmd.renderTime};
         HandleShootCommand(sc);
     }
 
-    logger.LogInfo("MovePos " + glm::to_string(playerTransform.position));
+    logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
 }
 
 void Server::HandleShootCommand(ShotCommand sc)
 {
     auto commandTime = sc.commandTime;
-    logger.LogInfo("Command time is " + std::to_string(commandTime.count()));
+    logger.LogDebug("Command time is " + std::to_string(commandTime.count()));
 
     // Find first snapshot before commandTime
     auto s1p = history.FindRevFirstPair([commandTime, this](auto i, Networking::Snapshot s)
@@ -340,74 +339,78 @@ void Server::HandleShootCommand(ShotCommand sc)
         return sT < commandTime;
     });
 
-    if(s1p.has_value())
+    if(!s1p.has_value())
+        return;
+
+    auto s2o = history.At(s1p->first + 1);
+    if(!s2o.has_value())
+        return;
+
+    // Samples to use for interpolation
+    // S1 last sample before commandTime
+    // S2 first sample after commandTime
+    auto s1 = s1p->second;
+    auto s2 = s2o.value();
+
+    // Find weights
+    Util::Time::Seconds t1 = s1.serverTick * TICK_RATE;
+    Util::Time::Seconds t2 = s2.serverTick * TICK_RATE;
+    auto ws = Math::GetWeights(t1.count(), t2.count(), commandTime.count());
+    auto alpha = ws.x;
+
+    // Calculate client projViewMat
+    auto projMat = Math::GetPerspectiveMat(sc.fov, sc.aspectRatio);
+    auto viewMat = Math::GetViewMat(sc.origin, sc.playerOrientation);
+    auto projViewMat = projMat * viewMat;
+
+    // Get Ray
+    Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
+    logger.LogDebug("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
+
+    // Check collision with block
+    auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
+    auto bColDist = std::numeric_limits<float>::max();
+    if(bCol.intersection.intersects)
+        bColDist = bCol.intersection.GetRayLength(ray);
+
+    // Check collision with players. This allows collaterals
+    auto& author = clients[sc.clientId].player;
+    for(auto& [peerId, client] : clients)
     {
-        auto s2o = history.At(s1p->first + 1);
-        if(!s2o.has_value())
-            return;
+        if(peerId == sc.clientId)
+            continue;
 
-        // Samples to use for interpolation
-        // S1 last sample before commandTime
-        // S2 first sample after commandTime
-        auto s1 = s1p->second;
-        auto s2 = s2o.value();
+        auto& victim = client.player;
+        auto playerId = victim.id;
+        bool s1HasData = s1.players.find(playerId) != s1.players.end();
+        bool s2HasData = s2.players.find(playerId) != s2.players.end();
 
-        // Find weights
-        Util::Time::Seconds t1 = s1.serverTick * TICK_RATE;
-        Util::Time::Seconds t2 = s2.serverTick * TICK_RATE;
-        auto ws = Math::GetWeights(t1.count(), t2.count(), commandTime.count());
-        auto alpha = ws.x;
+        if(!s1HasData || !s2HasData)
+            continue;
 
-        // Calculate client projViewMat
-        auto projMat = Math::GetPerspectiveMat(sc.fov, sc.aspectRatio);
-        auto viewMat = Math::GetViewMat(sc.origin, sc.playerOrientation);
-        auto projViewMat = projMat * viewMat;
+        // Calculate player pos that client views
+        auto ps1 = s1.players.at(playerId);
+        auto ps2 = s2.players.at(playerId);
+        auto smoothState = Networking::PlayerSnapshot::Interpolate(ps1, ps2, alpha);
 
-        // Get Ray
-        Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
-        logger.LogInfo("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
-
-        // Check collision with block
-        auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
-        auto bColDist = std::numeric_limits<float>::max();
-        if(bCol.intersection.intersects)
-            bColDist = bCol.intersection.GetRayLength(ray);
-
-        // Check collision with players. This allows collaterals
-        for(auto& [id, client] : clients)
+        auto lastMoveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
+        auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.transform.pos, smoothState.transform.rot.y, lastMoveDir);
+        if(rpc.collides)
         {
-            if(id == sc.playerId)
-                continue;
-
-            auto playerId = client.player.id;
-            bool s1HasData = s1.players.find(playerId) != s1.players.end();
-            bool s2HasData = s2.players.find(playerId) != s2.players.end();
-
-            if(!s1HasData || s2HasData)
-                continue;
-
-            // Calculate player pos that client views
-            auto ps1 = s1.players.at(playerId);
-            auto ps2 = s2.players.at(playerId);
-            auto smoothState = Networking::PlayerSnapshot::Interpolate(ps1, ps2, alpha);
-
-            auto lastMoveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
-            auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.transform.pos, smoothState.transform.rot.y, lastMoveDir);
-            if(rpc.collides)
+            auto colDist = rpc.intersection.GetRayLength(ray);
+            if(colDist < bColDist)
             {
-                auto colDist = rpc.intersection.GetRayLength(ray);
-                if(colDist < bColDist)
-                {
-                    logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has hit player " + std::to_string(id));
-                    client.player.onDmg = true;
-                }
-                else
-                    logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has hit block " + glm::to_string(bCol.pos));
+                victim.TakeWeaponDmg(author.weapon, rpc.hitboxType, colDist);
+                SendPlayerTakeDmg(peerId, victim.health, author.GetTransform().position);
+                logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
+                logger.LogDebug("Victim's shield " + std::to_string(victim.health.shield) + " Victim health " + std::to_string(victim.health.hp));
             }
             else
-                logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has NOT hit player " + std::to_string(id));
-            logger.LogInfo("Player was at " + glm::to_string(smoothState.transform.pos));
+                logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit block " + glm::to_string(bCol.pos));
         }
+        else
+            logger.LogDebug("Shot from player " + std::to_string(author.id) + " has NOT hit player " + std::to_string(peerId));
+        //logger.LogInfo("Player was at " + glm::to_string(smoothState.transform.pos));
     }
 }
 
@@ -422,8 +425,6 @@ void Server::SendWorldUpdate()
     {
         auto& player = client.player;
         s.players[player.id] = Networking::PlayerSnapshot::FromPlayerState(player.ExtractState());
-
-        client.player.onDmg = false;
     }
     history.PushBack(s);
 
@@ -439,7 +440,7 @@ void Server::SendWorldUpdate()
         worldUpdate->snapShot = s;
         batch.PushPacket(std::move(worldUpdate));
 
-        auto playerInfo = std::make_unique<Networking::Packets::Server::PlayerInfo>();
+        auto playerInfo = std::make_unique<Networking::Packets::Server::PlayerInputACK>();
         playerInfo->playerState = client.player.ExtractState();
         playerInfo->lastCmd = client.lastAck;
         batch.PushPacket(std::move(playerInfo));
@@ -451,6 +452,19 @@ void Server::SendWorldUpdate()
         
         host->SendPacket(id, 0, epacket);
     }
+}
+
+void Server::SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin)
+{
+    Networking::Packets::Server::PlayerTakeDmg ptd;
+    ptd.healthState = health;
+    ptd.origin = dmgOrigin;
+    ptd.Write();
+
+    auto packetBuf = ptd.GetBuffer();
+    ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
+
+    host->SendPacket(peerId, 0, epacket);
 }
 
 // Misc

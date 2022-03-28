@@ -465,14 +465,26 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         }
         break;
 
-        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_INFO:
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_INPUT_ACK:
         {
-            auto pi = packet.To<PlayerInfo>();
+            auto pi = packet.To<PlayerInputACK>();
 
             // Update last ack
             this->lastAck = pi->lastCmd;
             localPlayerStateHistory.PushBack(pi->playerState);
             client_->logger->LogInfo("Server ack command: " + std::to_string(this->lastAck));
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_TAKE_DMG:
+        {
+            auto ptd = packet.To<PlayerTakeDmg>();
+            client_->logger->LogInfo("Player took dmg!");
+
+            auto& player = playerTable[playerId];
+            player.health = ptd->healthState;
+
+            // TODO: Start take dmg animation effect
         }
         break;
 
@@ -800,6 +812,15 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
     if(Entity::HasShot(oldState.weaponState.state, interpolation.wepState))
     {
         auto& modelState = playerModelStateTable.at(playerId);
+        modelState.shootPlayer.SetClip(playerAvatar.GetShootAnim());
+        modelState.shootPlayer.Reset();
+        modelState.shootPlayer.Play();
+    }
+
+    if(Entity::HasReloaded(oldState.weaponState.state, interpolation.wepState))
+    {
+        auto& modelState = playerModelStateTable.at(playerId);
+        modelState.shootPlayer.SetClip(playerAvatar.GetReloadAnim());
         modelState.shootPlayer.Reset();
         modelState.shootPlayer.Play();
     }
@@ -898,7 +919,7 @@ void InGame::DrawScene()
         playerT = player.GetRenderTransform();
         auto t = playerT.GetTransformMat();
         auto transform = view * t;
-        shader.SetUniformInt("dmg", player.onDmg); // TODO: Comment this or change color when player is dmg
+        // shader.SetUniformInt("dmg", player.onDmg); // TODO: Comment this or change color when player is dmg
         playerAvatar.Draw(transform);
 
         // Draw player move collision box
