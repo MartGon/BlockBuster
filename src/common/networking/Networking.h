@@ -13,12 +13,12 @@ namespace Networking
     class Packet
     {
     public:
-        Packet(uint16_t opCode) : opCode{opCode}
+        Packet(uint16_t opCode, uint8_t flags = 0) : opCode{opCode}, flags_{flags}
         {
 
         }
 
-        Packet(uint16_t opCode, Util::Buffer&& buffer) : buffer{std::move(buffer)}, opCode{opCode}
+        Packet(uint16_t opCode, Util::Buffer&& buffer, uint8_t flags = 0) : buffer{std::move(buffer)}, opCode{opCode}, flags_{flags}
         {
 
         }
@@ -54,6 +54,11 @@ namespace Networking
             return static_cast<T*>(this);
         }
 
+        virtual uint8_t GetFlags() const
+        {
+            return flags_;
+        }
+
         void Read();
         void Write();
 
@@ -63,5 +68,8 @@ namespace Networking
     protected:
         uint16_t opCode;
         Util::Buffer buffer;
+
+    private:
+        uint8_t flags_;
     };
 }

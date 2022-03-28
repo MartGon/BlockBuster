@@ -47,5 +47,6 @@ namespace GUI
         glm::vec4 color{1.0f};
         glm::vec2 imgScale{1.0f};
         GL::Texture* texture;
+
     };
 }

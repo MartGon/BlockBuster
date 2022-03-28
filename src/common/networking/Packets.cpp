@@ -35,6 +35,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_PLAYER_TAKE_DMG:
         packet = std::make_unique<PlayerTakeDmg>();
         break;
+
+    case OpcodeServer::OPCODE_SERVER_PLAYER_HIT_CONFIRM:
+        packet = std::make_unique<PlayerHitConfirm>();
+        break;
     
     default:
         break;
@@ -150,6 +154,16 @@ void PlayerTakeDmg::OnWrite()
 {
     buffer.Write(origin);
     buffer.Write(healthState);
+}
+
+void PlayerHitConfirm::OnRead(Util::Buffer::Reader reader)
+{
+    victimId = reader.Read<Entity::ID>();
+}
+
+void PlayerHitConfirm::OnWrite()
+{
+    buffer.Write(victimId);
 }
 
 using namespace Networking::Packets::Client;

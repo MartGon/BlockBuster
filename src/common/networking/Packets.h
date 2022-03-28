@@ -7,6 +7,8 @@
 #include <entity/Player.h>
 #include <Snapshot.h>
 
+#include <enetw/ENetW.h>
+
 namespace Networking
 {
     // NOTES: How to properly add a new packet type
@@ -23,6 +25,7 @@ namespace Networking
         OPCODE_SERVER_PLAYER_DISCONNECTED,
         OPCODE_SERVER_PLAYER_INPUT_ACK,
         OPCODE_SERVER_PLAYER_TAKE_DMG,
+        OPCODE_SERVER_PLAYER_HIT_CONFIRM
     };
 
     enum OpcodeClient : uint16_t
@@ -103,6 +106,15 @@ namespace Networking
             packets.push_back(std::move(packet));
         }
 
+        uint8_t GetFlags() const override
+        {
+            uint8_t flags = 0;
+            for(auto& packet : packets)
+                flags |= packet->GetFlags();
+
+            return flags;
+        }
+
     private:
         std::vector<std::unique_ptr<Packet>> packets;
     };
@@ -114,7 +126,7 @@ namespace Networking
             class Welcome final : public Packet
             {
             public:
-                Welcome() : Packet{OpcodeServer::OPCODE_SERVER_WELCOME}
+                Welcome() : Packet{OpcodeServer::OPCODE_SERVER_WELCOME, ENET_PACKET_FLAG_RELIABLE}
                 {
 
                 }
@@ -142,7 +154,7 @@ namespace Networking
             class PlayerDisconnected final : public Packet
             {
             public:
-                PlayerDisconnected() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_DISCONNECTED}
+                PlayerDisconnected() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_DISCONNECTED, ENET_PACKET_FLAG_RELIABLE}
                 {
                     
                 }
@@ -171,7 +183,7 @@ namespace Networking
             class PlayerTakeDmg final : public Packet
             {
             public:
-                PlayerTakeDmg() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_TAKE_DMG}
+                PlayerTakeDmg() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_TAKE_DMG, ENET_PACKET_FLAG_RELIABLE}
                 {
                     
                 }
@@ -182,6 +194,20 @@ namespace Networking
                 glm::vec3 origin;
                 Entity::Player::HealthState healthState;
             };
+
+            class PlayerHitConfirm final : public Packet
+            {
+            public:
+                PlayerHitConfirm() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_HIT_CONFIRM, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader reader) override;
+                void OnWrite() override;
+
+                Entity::ID victimId;
+            };
         }
 
         namespace Client
@@ -189,7 +215,7 @@ namespace Networking
             class Login final : public Packet
             {   
             public:
-                Login() : Packet{OpcodeClient::OPCODE_CLIENT_LOGIN}
+                Login() : Packet{OpcodeClient::OPCODE_CLIENT_LOGIN, ENET_PACKET_FLAG_RELIABLE}
                 {
 
                 }

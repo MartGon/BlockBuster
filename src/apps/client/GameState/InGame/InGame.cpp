@@ -488,6 +488,15 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         }
         break;
 
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_HIT_CONFIRM:
+        {
+            auto ptd = packet.To<PlayerHitConfirm>();
+            client_->logger->LogInfo("Enemy player was hit!");
+
+            inGameGui.PlayerHitMarkerAnim();
+        }
+        break;
+
         default:
             break;
     }

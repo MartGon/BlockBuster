@@ -50,6 +50,16 @@ namespace GUI
             this->parent = parent;
         }
 
+        inline bool IsVisible()
+        {
+            return isVisible;
+        }
+
+        inline void SetIsVisible(bool isVisible)
+        {
+            this->isVisible = isVisible;
+        }
+
         void Draw(GL::Shader& shader, glm::ivec2 screenSize);
         
         glm::ivec2 GetPos(glm::ivec2 screenSize);        
@@ -65,5 +75,6 @@ namespace GUI
         Widget* parent = nullptr;
         AnchorPoint anchor = AnchorPoint::DOWN_LEFT_CORNER;
         glm::ivec2 offset{0};
+        bool isVisible = true;
     };
 }

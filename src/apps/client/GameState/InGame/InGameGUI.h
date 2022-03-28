@@ -5,11 +5,15 @@
 #include <gui/PopUp.h>
 #include <gui/PopUpMgr.h>
 
+#include <animation/Animation.h>
+
 #include <util/BBTime.h>
 
 #include <gl/Texture.h>
 
 #include <GameState/InGame/InGameFwd.h>
+
+#include <mglogger/Logger.h>
 
 namespace BlockBuster
 {
@@ -28,6 +32,8 @@ namespace BlockBuster
         void OpenMenu();
         void CloseMenu();
         bool IsMenuOpen();
+
+        void PlayerHitMarkerAnim();
 
     private:
         // PopUps
@@ -58,6 +64,9 @@ namespace BlockBuster
         void RenderStatsWindow();
         void NetworkStatsWindow();
 
+        // Handy
+        Log::Logger* GetLogger();
+
         InGame* inGame;
 
         // GUI
@@ -71,6 +80,7 @@ namespace BlockBuster
 
         // Textures
         GL::Texture crosshair;
+        GL::Texture hitmarker;
 
         // HUD
         GUI::Text healthIcon;
@@ -83,6 +93,10 @@ namespace BlockBuster
         GUI::Text midScoreText;
         GUI::Text rightScoreText;
         GUI::Image crosshairImg;
+        GUI::Image hitmarkerImg;
+        Animation::Clip hitmarkerAnim;
+        bool showHitmarker = false;
+        Animation::Player hitMarkerPlayer;
 
         // ScoreBoard
         bool showScoreboard = false;
@@ -102,5 +116,6 @@ namespace BlockBuster
         glm::vec3 modelRot{0.0f};
         glm::ivec2 wtPos{0};
         float tScale = 1.0f;
+        bool tShow = false;
     };
 }

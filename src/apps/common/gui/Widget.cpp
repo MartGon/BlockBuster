@@ -4,7 +4,8 @@ using namespace GUI;
 
 void Widget::Draw(GL::Shader& shader, glm::ivec2 screenSize)
 {
-    DoDraw(shader, GetPos(screenSize), screenSize);
+    if(isVisible)
+        DoDraw(shader, GetPos(screenSize), screenSize);
 }
 
 void Widget::DrawResponsive(GL::Shader& shader, glm::vec2 wPos, glm::ivec2 screenRes)

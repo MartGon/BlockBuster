@@ -120,6 +120,9 @@ namespace BlockBuster
         void HandleShootCommand(ShotCommand sc);
         void SendWorldUpdate();
         void SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin);
+        void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId);
+        void SendPacket(ENet::PeerId peerId, Networking::Packet& packet);
+        void Broadcast(Networking::Packet& packet);
 
         // Simulation
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);

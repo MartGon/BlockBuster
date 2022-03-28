@@ -133,18 +133,12 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     clients[peerId].player = player;
 
     // Send welcome packet
-    Networking::Batch<Networking::PacketType::Server> batch;
+    Networking::Packets::Server::Welcome welcome;
+    welcome.playerId = player.id;
+    welcome.tickRate = TICK_RATE.count();
+    welcome.playerState = player.ExtractState();
 
-    auto welcome = std::make_unique<Networking::Packets::Server::Welcome>();
-    welcome->playerId = player.id;
-    welcome->tickRate = TICK_RATE.count();
-    welcome->playerState = player.ExtractState();
-    batch.PushPacket(std::move(welcome));
-
-    batch.Write();
-
-    ENet::SentPacket sentPacket{batch.GetBuffer()->GetData(), batch.GetSize(), ENET_PACKET_FLAG_RELIABLE};
-    host->SendPacket(peerId, 0, sentPacket);
+    SendPacket(peerId, welcome);
 }
 
 void Server::OnClientLeave(ENet::PeerId peerId)
@@ -156,10 +150,8 @@ void Server::OnClientLeave(ENet::PeerId peerId)
     // Informing players
     Networking::Packets::Server::PlayerDisconnected pd;
     pd.playerId = player.id;
-    pd.Write();
 
-    ENet::SentPacket sentPacket{pd.GetBuffer()->GetData(), pd.GetSize(), ENetPacketFlag::ENET_PACKET_FLAG_RELIABLE};
-    host->Broadcast(0, sentPacket);
+    Broadcast(pd);
 
     // Inform MM Server
     ServerEvent::Notification notification;
@@ -402,6 +394,8 @@ void Server::HandleShootCommand(ShotCommand sc)
             {
                 victim.TakeWeaponDmg(author.weapon, rpc.hitboxType, colDist);
                 SendPlayerTakeDmg(peerId, victim.health, author.GetTransform().position);
+                SendPlayerHitConfirm(sc.clientId, victim.id);
+
                 logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
                 logger.LogDebug("Victim's shield " + std::to_string(victim.health.shield) + " Victim health " + std::to_string(victim.health.hp));
             }
@@ -447,10 +441,7 @@ void Server::SendWorldUpdate()
 
         batch.Write();
         
-        auto packetBuf = batch.GetBuffer();
-        ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
-        
-        host->SendPacket(id, 0, epacket);
+        SendPacket(id, batch);
     }
 }
 
@@ -459,12 +450,36 @@ void Server::SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState 
     Networking::Packets::Server::PlayerTakeDmg ptd;
     ptd.healthState = health;
     ptd.origin = dmgOrigin;
-    ptd.Write();
 
-    auto packetBuf = ptd.GetBuffer();
-    ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), 0};
+    SendPacket(peerId, ptd);
+}
+
+void Server::SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId)
+{
+    Networking::Packets::Server::PlayerHitConfirm phc;
+    phc.victimId = victimId;
+
+    SendPacket(peerId, phc);
+}
+
+void Server::SendPacket(ENet::PeerId peerId, Networking::Packet& packet)
+{
+    packet.Write();
+
+    auto packetBuf = packet.GetBuffer();
+    ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), packet.GetFlags()};
 
     host->SendPacket(peerId, 0, epacket);
+}
+
+void Server::Broadcast(Networking::Packet& packet)
+{
+    packet.Write();
+
+    auto packetBuf = packet.GetBuffer();
+    ENet::SentPacket epacket{packetBuf->GetData(), packetBuf->GetSize(), packet.GetFlags()};
+
+    host->Broadcast(0, epacket);
 }
 
 // Misc

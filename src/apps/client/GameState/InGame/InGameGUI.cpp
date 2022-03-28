@@ -25,18 +25,36 @@ void InGameGUI::Start()
     InitTexts();
     
     // Textures
-    try{
-        crosshair.LoadFromFolder(TEXTURES_DIR, "crosshairW.png");
-    }
-    catch(const std::runtime_error& e)
-    {
-        this->inGame->GetLogger()->LogError(e.what());
-    }
+    TRY_LOAD(crosshair.LoadFromFolder(TEXTURES_DIR, "crosshairW.png"));
+    TRY_LOAD(hitmarker.LoadFromFolder(TEXTURES_DIR, "hitmarker.png"));
+
+    // Images
     crosshairImg.SetTexture(&crosshair);
     crosshairImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
     crosshairImg.SetScale(glm::vec2{0.33f});
     crosshairImg.SetOffset(- crosshairImg.GetSize() / 2);
     crosshairImg.SetColor(glm::vec4{1.0f, 1.0f, 0.0f, 0.75f});
+
+    hitmarkerImg.SetTexture(&hitmarker);
+    hitmarkerImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
+    hitmarkerImg.SetScale(glm::vec2{0.45f});
+    hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
+    hitmarkerImg.SetColor(glm::vec4{1.0f, 1.0f, 1.0f, 0.5f});
+
+    // Hit marker anim
+    Animation::Sample s1{
+        {},
+        {{"show", true}}
+    };
+    Animation::KeyFrame f1{s1, 0};    
+    Animation::Sample s2{
+        {},
+        {{"show", false}}
+    };
+    Animation::KeyFrame f2{s2, 30};
+    hitmarkerAnim.keyFrames = {f1, f2};
+    hitMarkerPlayer.SetClip(&hitmarkerAnim);
+    hitMarkerPlayer.SetTargetBool("show", &showHitmarker);
 }
 
 void InGameGUI::DrawGUI(GL::Shader& textShader)
@@ -260,6 +278,7 @@ void InGameGUI::InitTexts()
 
 void InGameGUI::HUD()
 {
+    glDisable(GL_DEPTH_TEST);
     auto winSize = inGame->client_->GetWindowSize();
 
     UpdateHealth();
@@ -277,7 +296,14 @@ void InGameGUI::HUD()
     leftScoreText.Draw(inGame->textShader, winSize);
     rightScoreText.Draw(inGame->textShader, winSize);
 
+    hitmarkerImg.SetScale(glm::vec2{tScale});
+    hitmarkerImg.SetIsVisible(showHitmarker);
+    hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
+    hitmarkerImg.Draw(inGame->imgShader, winSize);
+    hitMarkerPlayer.Update(inGame->deltaTime);
+
     crosshairImg.Draw(inGame->imgShader, winSize);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void InGameGUI::UpdateHealth()
@@ -347,6 +373,14 @@ bool InGameGUI::IsMenuOpen()
 {
     return puMgr.IsOpen();
 }
+
+void InGameGUI::PlayerHitMarkerAnim()
+{
+    hitMarkerPlayer.Reset();
+    hitMarkerPlayer.Play();
+}
+
+// Private
 
 void InGameGUI::ScoreboardWindow()
 {
@@ -521,6 +555,7 @@ void InGameGUI::DebugWindow()
             ImGui::SliderFloat("Health Scale", &tScale, 0.1f, 5.0f);
             ImGui::SliderInt2("Text Size", &size.x, 0, winSize.x);
             ImGui::SliderInt2("Text Pos", &tPos.x, -winSize.x / 2, winSize.x / 2);
+            ImGui::Checkbox("Show", &showHitmarker);
         }
     }
     ImGui::End();
@@ -570,4 +605,12 @@ void InGameGUI::RenderStatsWindow()
         ImGui::InputDouble("Max FPS", &maxFPS, 1.0, 5.0, "%.0f");
     }
     ImGui::End();
+}
+
+
+// Handy 
+
+Log::Logger* InGameGUI::GetLogger()
+{
+    return inGame->GetLogger();
 }
