@@ -414,7 +414,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             prevPlayerTable[playerId] = player;
 
             auto camRot = camera_.GetRotationDeg();
-            camera_.SetRotationDeg(camRot.x, welcome->playerState.rot.y + 90.0f);
+            camera_.SetRotationDeg(camRot.x, welcome->playerState.transform.rot.y + 90.0f);
         }
         break;
 
@@ -571,9 +571,10 @@ void InGame::Predict(Entity::PlayerInput playerInput)
             {
                 client_->logger->LogError("Prediction: Error on prediction");
                 client_->logger->LogError("Prediction: Prediction Id " + std::to_string(prediction->inputReq.reqId) + " ACK " + std::to_string(this->lastAck));
-                auto diff = glm::length(pState.pos - newState.pos);
+                auto diff = glm::length(pState.transform.pos - newState.transform.pos);
                 if(diff > 0.005f)
-                    client_->logger->LogError("Prediction: D " + std::to_string(diff) + " P " + glm::to_string(pState.pos) + " S " + glm::to_string(newState.pos));
+                    client_->logger->LogError("Prediction: D " + std::to_string(diff) + 
+                        " P " + glm::to_string(pState.transform.pos) + " S " + glm::to_string(newState.transform.pos));
 
                 // Accept player pos
                 auto realState = newState;
@@ -587,7 +588,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
                     // Re-calculate prediction
                     auto origin = realState;
                     realState = PredPlayerState(origin, predict->inputReq.playerInput, predict->inputReq.camYaw, serverTickRate);
-                    GetLogger()->LogDebug("Prediction: Predicted pos is " + glm::to_string(predict->dest.pos));
+                    GetLogger()->LogDebug("Prediction: Predicted pos is " + glm::to_string(predict->dest.transform.pos));
 
                     // Update history
                     predict->origin = origin;
@@ -597,7 +598,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
 
                 // Update error correction values
                 auto renderState = playerTable[playerId].ExtractState();
-                errorCorrectionDiff = renderState - realState;
+                errorCorrectionDiff = renderState.transform - realState.transform;
                 errorCorrectionStart = Util::Time::GetTime();
             }
         }
@@ -614,7 +615,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     // Run predicted command for this simulation
     auto camRot = camera_.GetRotationDeg();
     auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
-    predState.rot.x = camRot.x;
+    predState.transform.rot.x = camRot.x;
     auto fov = camera_.GetParam(Rendering::Camera::FOV);
     auto aspectRatio = camera_.GetParam(Rendering::Camera::ASPECT_RATIO);
     InputReq inputReq{cmdId, playerInput, camRot.y, camRot.x, fov, aspectRatio, GetRenderTime()};
@@ -630,25 +631,24 @@ void InGame::SmoothPlayerMovement()
         return;
 
     auto lastPred = predictionHistory_.Back();
-    auto renderPos = playerTable[playerId].ExtractState();
     if(lastPred)
     {
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
         predOffset += deltaTime;
-        auto predPos = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, predOffset);
+        auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, predOffset);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
         float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
         auto errorCorrection = errorCorrectionDiff * weight;
-        renderPos = predPos + errorCorrection;
-        playerTable[playerId].ApplyState(renderPos);
+        predState.transform = predState.transform + errorCorrection;
+        playerTable[playerId].ApplyState(predState);
 
         #ifdef _DEBUG
-                auto dist = glm::length(errorCorrection.pos);
-                if(dist > 0.005)
-                    client_->logger->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
+            auto dist = glm::length(errorCorrection.pos);
+            if(dist > 0.005)
+                client_->logger->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
         #endif
     }
 }
@@ -658,10 +658,12 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     auto& player = playerTable[playerId];
     
     Entity::PlayerState nextState = a;
-    nextState.pos = pController.UpdatePosition(a.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
-    nextState.rot.y = playerYaw;
+    nextState.transform.pos = pController.UpdatePosition(a.transform.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
+    nextState.transform.rot.y = playerYaw;
 
     nextState.weaponState = pController.UpdateWeapon(a.weaponState, playerInput, deltaTime);
+
+    // Animation
     if(Entity::HasShot(a.weaponState.state, nextState.weaponState.state))
         fpsAvatar.PlayShootAnimation();
     else if(Entity::HasReloaded(a.weaponState.state, nextState.weaponState.state))
@@ -810,7 +812,7 @@ glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const
 {
     auto ps1 = prevPlayerTable.at(playerId).ExtractState();
     auto ps2 = playerTable.at(playerId).ExtractState();
-    auto moveDir = Entity::GetLastMoveDir(ps1.pos, ps2.pos);
+    auto moveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
 
     return moveDir;
 }

@@ -69,10 +69,8 @@ PlayerState::PlayerState()
 
 bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState& b)
 {
-    // Pos
-    auto distance = glm::length(a.pos - b.pos);
-    bool posError = distance > 0.005f;
-    bool same = !posError;
+    // Transform
+    bool same = a.transform == b.transform;
 
     // Weapon state
     auto wsA = a.weaponState; auto wsB = b.weaponState;
@@ -86,37 +84,48 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
     return same;
 }
 
-// Note/TODO: Commented code in operators are in place due to wierd behaviour with prediction error correction
-Entity::PlayerState Entity::operator+(const Entity::PlayerState& a, const Entity::PlayerState& b)
+bool Entity::operator==(const PlayerState::Transform& a, const PlayerState::Transform& b)
 {
-    Entity::PlayerState res = a;
+    // Pos
+    auto distance = glm::length(a.pos - b.pos);
+    bool posError = distance > 0.005f;
+    bool same = !posError;
+
+    return same;
+}
+
+
+// Note/TODO: Commented code in operators are in place due to wierd behaviour with prediction error correction
+PlayerState::Transform Entity::operator+(const PlayerState::Transform& a, const PlayerState::Transform& b)
+{
+    PlayerState::Transform res = a;
     res.pos = a.pos + b.pos;
     //res.rot = a.rot + b.rot;
 
     return res;
 }
 
-Entity::PlayerState Entity::operator-(const Entity::PlayerState& a, const Entity::PlayerState& b)
+PlayerState::Transform Entity::operator-(const PlayerState::Transform& a, const PlayerState::Transform& b)
 {
-    Entity::PlayerState res = a;
+    PlayerState::Transform res = a;
     res.pos = a.pos - b.pos;
     //res.rot = a.rot - b.rot;
 
     return res;
 }
 
-Entity::PlayerState Entity::operator*(const Entity::PlayerState& a, float b)
+PlayerState::Transform Entity::operator*(const PlayerState::Transform& a, float b)
 {
-    Entity::PlayerState res = a;
+    PlayerState::Transform res = a;
     res.pos = a.pos * b;
     //res.rot = a.rot * b;
 
     return res;
 }
 
-Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerState b, float alpha)
+PlayerState::Transform Entity::Interpolate(const PlayerState::Transform& a, const PlayerState::Transform& b, float alpha)
 {
-    Entity::PlayerState res = a;
+    PlayerState::Transform res = a;
 
     auto pos1 = a.pos;
     auto pos2 = b.pos;
@@ -129,6 +138,14 @@ Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerSta
     auto yaw1 = a.rot.y;
     auto yaw2 = b.rot.y;
     res.rot.y = Math::InterpolateDeg(yaw1, yaw2, alpha);
+
+    return res;
+}
+
+Entity::PlayerState Entity::Interpolate(Entity::PlayerState a, Entity::PlayerState b, float alpha)
+{
+    auto res = a;
+    res.transform = Interpolate(a.transform, b.transform, alpha);
 
     return res;
 }
@@ -185,24 +202,19 @@ Entity::PlayerState Player::ExtractState() const
 {
     Entity::PlayerState s;
 
-    s.pos = this->transform.position;
-    s.rot = glm::vec2{transform.rotation};
+    s.transform.pos = this->transform.position;
+    s.transform.rot = glm::vec2{transform.rotation};
     s.weaponState = weapon;
-
-    s.onDmg = this->onDmg;
 
     return s;
 }
 
 void Player::ApplyState(Entity::PlayerState s)
 {
-    this->transform.position = s.pos;
-    this->transform.rotation = glm::vec3{s.rot, 0.0f};
+    this->transform.position = s.transform.pos;
+    this->transform.rotation = glm::vec3{s.transform.rot, 0.0f};
     this->weapon = s.weaponState;
-    
-    this->onDmg = s.onDmg;
 }
-
 
 Math::Transform Player::GetTransform() const
 {

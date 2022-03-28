@@ -147,7 +147,7 @@ namespace BlockBuster
         Util::Time::Seconds predOffset{0};
 
         const Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0};
-        Entity::PlayerState errorCorrectionDiff;
+        Entity::PlayerState::Transform errorCorrectionDiff;
         Util::Time::SteadyPoint errorCorrectionStart;
 
         // Networking - Entity Interpolation

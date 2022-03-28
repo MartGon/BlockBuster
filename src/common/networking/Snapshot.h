@@ -11,8 +11,7 @@ namespace Networking
 {
     struct PlayerSnapshot
     {
-        glm::vec3 pos;
-        glm::vec2 rot;
+        Entity::PlayerState::Transform transform;
         Entity::Weapon::State wepState;
 
         static PlayerSnapshot FromPlayerState(Entity::PlayerState playerState);

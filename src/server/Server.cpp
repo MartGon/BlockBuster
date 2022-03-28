@@ -391,8 +391,8 @@ void Server::HandleShootCommand(ShotCommand sc)
             auto ps2 = s2.players.at(playerId);
             auto smoothState = Networking::PlayerSnapshot::Interpolate(ps1, ps2, alpha);
 
-            auto lastMoveDir = Entity::GetLastMoveDir(ps1.pos, ps2.pos);
-            auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.pos, smoothState.rot.y, lastMoveDir);
+            auto lastMoveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
+            auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.transform.pos, smoothState.transform.rot.y, lastMoveDir);
             if(rpc.collides)
             {
                 auto colDist = rpc.intersection.GetRayLength(ray);
@@ -406,7 +406,7 @@ void Server::HandleShootCommand(ShotCommand sc)
             }
             else
                 logger.LogInfo("Shot from player " + std::to_string(sc.playerId) + " has NOT hit player " + std::to_string(id));
-            logger.LogInfo("Player was at " + glm::to_string(smoothState.pos));
+            logger.LogInfo("Player was at " + glm::to_string(smoothState.transform.pos));
         }
     }
 }

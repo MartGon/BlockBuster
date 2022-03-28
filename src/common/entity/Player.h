@@ -52,17 +52,24 @@ namespace Entity
     class PlayerState
     {
     public:
-        PlayerState();
-        glm::vec3 pos{0.0f};
-        glm::vec2 rot{0.0f};
-        bool onDmg = false;
+        struct Transform
+        {
+            glm::vec3 pos{0.0f};
+            glm::vec2 rot{0.0f};
+        };
 
+        PlayerState();
+
+        Transform transform;
         Weapon weaponState;
     };
     bool operator==(const PlayerState& a, const PlayerState& b);
-    PlayerState operator+(const PlayerState& a, const PlayerState& b);
-    PlayerState operator-(const PlayerState& a, const PlayerState& b);
-    PlayerState operator*(const PlayerState& a, float b);
+
+    bool operator==(const PlayerState::Transform& a, const PlayerState::Transform& b);
+    PlayerState::Transform operator+(const PlayerState::Transform& a, const PlayerState::Transform& b);
+    PlayerState::Transform operator-(const PlayerState::Transform& a, const PlayerState::Transform& b);
+    PlayerState::Transform operator*(const PlayerState::Transform& a, float b);
+    PlayerState::Transform Interpolate(const PlayerState::Transform& a, const PlayerState::Transform& b, float alpha);
 
     PlayerState Interpolate(PlayerState a, PlayerState b, float alpha);
     glm::vec3 GetLastMoveDir(glm::vec3 posA, glm::vec3 posB);

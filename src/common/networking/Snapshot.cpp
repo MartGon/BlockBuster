@@ -7,16 +7,14 @@ using namespace Networking;
 PlayerSnapshot PlayerSnapshot::FromPlayerState(Entity::PlayerState playerState)
 {
     PlayerSnapshot ps;
-    ps.pos = playerState.pos;
-    ps.rot = playerState.rot;
+    ps.transform = playerState.transform;
     ps.wepState = playerState.weaponState.state;
     return ps;
 }
 
 Entity::PlayerState PlayerSnapshot::ToPlayerState(Entity::PlayerState ps)
 {
-    ps.pos = pos;
-    ps.rot = rot;
+    ps.transform = transform;
     ps.weaponState.state = wepState;
 
     return ps;
@@ -26,19 +24,8 @@ PlayerSnapshot PlayerSnapshot::Interpolate(PlayerSnapshot a, PlayerSnapshot b, f
 {
     auto res = a;
 
-    auto pos1 = a.pos;
-    auto pos2 = b.pos;
-    res.pos = pos1 * alpha + pos2 * (1 - alpha);
-
-    auto pitch1 = a.rot.x;
-    auto pitch2 = b.rot.x;
-    res.rot.x = Math::InterpolateDeg(pitch1, pitch2, alpha);
-
-    auto yaw1 = a.rot.y;
-    auto yaw2 = b.rot.y;
-    res.rot.y = Math::InterpolateDeg(yaw1, yaw2, alpha);
-
-    a.wepState = b.wepState;
+    res.transform = Entity::Interpolate(a.transform, b.transform, alpha);
+    res.wepState = a.wepState;
 
     return res;
 }
