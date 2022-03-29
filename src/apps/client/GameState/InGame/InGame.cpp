@@ -5,6 +5,7 @@
 #include <util/Random.h>
 #include <util/BBTime.h>
 #include <util/File.h>
+#include <util/Container.h>
 
 #include <math/Interpolation.h>
 
@@ -246,28 +247,7 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
     }
 
     // Extra data: Respawns, etc
-
-    for(auto& [playerId, extraData] : playersExtraData)
-    {
-        extraData.respawnTimer.Update(deltaTime);
-        if(extraData.respawnTimer.IsDone())
-        {
-            if(this->playerId == playerId)
-            {
-                // On Player respawn
-                fpsAvatar.isEnabled = true;
-                inGameGui.crosshairImg.SetIsVisible(true);
-
-                inGameGui.killText.SetIsVisible(false);
-                inGameGui.respawnTimeText.SetIsVisible(false);
-            }
-            else
-            {   
-                // Reset scale after death animation
-                playerModelStateTable[playerId].gScale = 1.0f;
-            }
-        }
-    }
+    respawnTimer.Update(deltaTime);
 }
 
 void InGame::HandleSDLEvents()
@@ -410,22 +390,17 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             // Set server params
             this->serverTickRate = Util::Time::Seconds(welcome->tickRate);
             this->offsetTime = serverTickRate * 0.5;
-            this->predOffset = serverTickRate;
             this->playerId = welcome->playerId;
             this->connected = true;
 
             // Set player state
             Entity::Player player;
             player.id = this->playerId;
-            player.ApplyState(welcome->playerState);
             GetLogger()->LogInfo("We play as player " + std::to_string(this->playerId));
 
             // Add to table
             playerTable[playerId] = player;
             prevPlayerTable[playerId] = player;
-
-            auto camRot = camera_.GetRotationDeg();
-            camera_.SetRotationDeg(camRot.x, welcome->playerState.transform.rot.y + 90.0f);
         }
         break;
 
@@ -507,27 +482,58 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_DIED:
         {
             auto ptd = packet.To<PlayerDied>();
-            client_->logger->LogInfo("Enemy player was hit!");
 
             if(ptd->victimId == playerId)
-            {
+            {   
+                // Set player dead
+                auto& player = playerTable[playerId];
+                player.health.hp = 0;
+
                 fpsAvatar.isEnabled = false;
                 inGameGui.crosshairImg.SetIsVisible(false);
 
                 inGameGui.killText.SetIsVisible(true);
                 inGameGui.respawnTimeText.SetIsVisible(true);
-                playerTable[playerId].ResetHealth();
+
+                // Clear prediction history. No prediction is useful
+                predictionHistory_.Clear();
+
+                respawnTimer.SetDuration(ptd->respawnTime);
+                respawnTimer.Start();
             }
             else
             {
                 playerModelStateTable[ptd->victimId].deathPlayer.Reset();
                 playerModelStateTable[ptd->victimId].deathPlayer.Play();
             }
+        }
+        break;
 
-            // Start respawn timer
-            auto& extraData = playersExtraData[ptd->victimId];
-            extraData.respawnTimer.SetDuration(ptd->respawnTime);
-            extraData.respawnTimer.Start();
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_RESPAWN:
+        {
+            auto respawn = packet.To<PlayerRespawn>();
+
+            if(respawn->playerId == playerId)
+            {
+                localPlayerStateHistory.PushBack(respawn->playerState);
+                playerTable[playerId].ResetHealth();
+                auto camRot = camera_.GetRotationDeg();
+                camera_.SetRotationDeg(camRot.x, respawn->playerState.transform.rot.y + 90.0f);
+
+                // On Player respawn
+                fpsAvatar.isEnabled = true;
+                inGameGui.crosshairImg.SetIsVisible(true);
+
+                inGameGui.killText.SetIsVisible(false);
+                inGameGui.respawnTimeText.SetIsVisible(false);
+            }
+            else
+            {
+                // Reset scale after death animation
+                playerModelStateTable[respawn->playerId].gScale = 1.0f;
+                if(Util::Map::Contains(playerTable, respawn->playerId))
+                    playerTable[respawn->playerId].ApplyState(respawn->playerState);
+            }
         }
         break;
 
@@ -546,17 +552,19 @@ void InGame::UpdateNetworking()
     client_->logger->LogInfo("Input: Sending player inputs");
 
     auto& player = playerTable[playerId];
-    // Sample player input
-    auto mask = inGameGui.IsMenuOpen() || player.IsDead() ? Entity::PlayerInput{false} : Entity::PlayerInput{true};
-    auto input = Input::GetPlayerInputNumpad(mask);
+    if(!player.IsDead())
+    {
+        // Sample player input
+        auto mask = inGameGui.IsMenuOpen() ? Entity::PlayerInput{false} : Entity::PlayerInput{true};
+        auto input = Input::GetPlayerInput(mask);
 
-    // Prediction
-    Predict(input);
+        // Prediction
+        Predict(input);
+        SendPlayerInput();
 
-    SendPlayerInput();
-
-    // Update last cmdId
-    this->cmdId++;
+        // Update last cmdId
+        this->cmdId++;
+    }
 }
 
 void InGame::SendPlayerInput()
@@ -603,11 +611,11 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     {
         // Discard old commands
         std::optional<Prediction> prediction;
-        GetLogger()->LogError("Prediction: Last ACK " + std::to_string(this->lastAck));
+        GetLogger()->LogDebug("Prediction: Last ACK " + std::to_string(this->lastAck));
         do
         {
             prediction = predictionHistory_.PopFront();
-            GetLogger()->LogError("Prediction: Discarding prediction for " + std::to_string(prediction->inputReq.reqId));
+            GetLogger()->LogDebug("Prediction: Discarding prediction for " + std::to_string(prediction->inputReq.reqId));
         } while(prediction && prediction->inputReq.reqId < lastAck);
 
         // Checking prediction errors
@@ -616,6 +624,13 @@ void InGame::Predict(Entity::PlayerInput playerInput)
         {
             auto newState = lastState.value();
             auto pState = prediction->dest;
+
+            /*
+            GetLogger()->LogError("New state pos " + glm::to_string(newState.transform.pos));
+            GetLogger()->LogError("Predicted state pos " + glm::to_string(pState.transform.pos));
+            GetLogger()->LogError("Render pos " + glm::to_string(playerTable[playerId].GetRenderTransform().position));
+            GetLogger()->LogError("Error correction offset " + glm::to_string(errorCorrectionDiff.pos));
+            */
 
             // On error
             auto areSame = newState == pState;
@@ -656,25 +671,23 @@ void InGame::Predict(Entity::PlayerInput playerInput)
         }
     }
 
-    auto now = Util::Time::GetTime();
-
     // Get prev pos
-    auto preState = playerTable[playerId].ExtractState();
+    auto preState = localPlayerStateHistory.Back();
     auto prevPred = predictionHistory_.Back();
     if(prevPred.has_value())
         preState = prevPred->dest;
 
     // Run predicted command for this simulation
     auto camRot = camera_.GetRotationDeg();
-    auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
+    auto predState = PredPlayerState(preState.value(), playerInput, camRot.y, serverTickRate);
     predState.transform.rot.x = camRot.x;
     auto fov = camera_.GetParam(Rendering::Camera::FOV);
     auto aspectRatio = camera_.GetParam(Rendering::Camera::ASPECT_RATIO);
     InputReq inputReq{cmdId, playerInput, camRot.y, camRot.x, fov, aspectRatio, GetRenderTime()};
 
-    Prediction p{inputReq, preState, predState, now};
+    auto now = Util::Time::GetTime();
+    Prediction p{inputReq, preState.value(), predState, now};
     predictionHistory_.PushBack(p);
-    predOffset = predOffset - serverTickRate;
 }
 
 void InGame::SmoothPlayerMovement()
@@ -682,13 +695,17 @@ void InGame::SmoothPlayerMovement()
     if(playerTable.find(playerId) == playerTable.end())
         return;
 
+    auto& player = playerTable[playerId];
+
+    if(player.IsDead())
+        return;
+
     auto lastPred = predictionHistory_.Back();
     if(lastPred)
     {
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
-        predOffset += deltaTime;
-        auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, predOffset);
+        auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;

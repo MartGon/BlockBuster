@@ -126,6 +126,7 @@ namespace BlockBuster
         void SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin);
         void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId);
         void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime);
+        void BroadcastRespawn(ENet::PeerId peerId);
         void SendPacket(ENet::PeerId peerId, Networking::Packet& packet);
         void Broadcast(Networking::Packet& packet);
 
@@ -144,7 +145,7 @@ namespace BlockBuster
         bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const;
 
         // Players
-        void SpawnPlayer(Entity::Player& player);
+        void SpawnPlayer(ENet::PeerId clientId);
         void OnPlayerTakeDmg(ENet::PeerId author, ENet::PeerId victim);
         std::vector<Entity::Player> GetPlayers() const;
 

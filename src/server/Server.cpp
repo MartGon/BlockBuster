@@ -124,10 +124,6 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     Entity::Player player;
     player.id = this->lastId++;
     player.teamId = player.id;
-    player.weapon = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::CHEAT_SMG).CreateInstance();
-
-    // Player Respawn
-    SpawnPlayer(player);
 
     // Add player to table
     clients[peerId].player = player;
@@ -136,9 +132,10 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     Networking::Packets::Server::Welcome welcome;
     welcome.playerId = player.id;
     welcome.tickRate = TICK_RATE.count();
-    welcome.playerState = player.ExtractState();
-
     SendPacket(peerId, welcome);
+
+    // Player Respawn
+    SpawnPlayer(peerId);
 }
 
 void Server::OnClientLeave(ENet::PeerId peerId)
@@ -259,7 +256,7 @@ void Server::HandleClientsInput()
                     auto cmdId = command->reqId;
                     client.lastAck = cmdId;
 
-                    logger.LogError("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
+                    logger.LogDebug("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
                     HandleClientInput(peerId, command.value());
 
                     logger.LogDebug("Ring size " + std::to_string(client.inputBuffer.GetSize()));
@@ -371,7 +368,6 @@ void Server::HandleShootCommand(ShotCommand sc)
 
     // Check collision with players. This allows collaterals
     auto& author = clients[sc.clientId].player;
-
     for(auto& [peerId, client] : clients)
     {
         if(peerId == sc.clientId)
@@ -425,6 +421,9 @@ void Server::SendWorldUpdate()
     for(auto& [id, client] : clients)
     {
         auto& player = client.player;
+        if(player.IsDead())
+            continue;
+
         s.players[player.id] = Networking::PlayerSnapshot::FromPlayerState(player.ExtractState());
     }
     history.PushBack(s);
@@ -479,6 +478,17 @@ void Server::BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util:
     Broadcast(pd);
 }
 
+void Server::BroadcastRespawn(ENet::PeerId peerId)
+{
+    auto& player = this->clients[peerId].player;
+
+    Networking::Packets::Server::PlayerRespawn pr;
+    pr.playerId = player.id;
+    pr.playerState = player.ExtractState();
+
+    Broadcast(pr);
+}
+
 void Server::SendPacket(ENet::PeerId peerId, Networking::Packet& packet)
 {
     packet.Write();
@@ -509,7 +519,7 @@ void Server::UpdateWorld()
         if(player.IsDead())
         {
             if(client.respawnTime < Util::Time::Seconds{0.0f})
-                player.ResetHealth();
+                SpawnPlayer(id);
             else
                 client.respawnTime -= TICK_RATE;
         }
@@ -618,13 +628,23 @@ bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
 
 // Players
 
-void Server::SpawnPlayer(Entity::Player& player)
+void Server::SpawnPlayer(ENet::PeerId clientId)
 {
+    auto& player = clients[clientId].player;
+
+    // Set pos
     auto sIndex = FindSpawnPoint(player);
     auto spawn = map.GetRespawn(sIndex);
     auto playerPos = ToSpawnPos(sIndex);
     auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{1.0f}};
     player.SetTransform(playerTransform);
+
+    // Set weapon and health
+    player.ResetWeaponAmmo(Entity::WeaponTypeID::CHEAT_SMG);
+    player.ResetHealth();
+
+    // Notify client
+    BroadcastRespawn(clientId);
 }
 
 void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
@@ -641,7 +661,6 @@ void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
         // TODO: Change according to mode
         clients[victimId].respawnTime = Util::Time::Seconds{5.0f};
         BroadcastPlayerDied(author.id, victim.id, clients[victimId].respawnTime);
-        SpawnPlayer(victim);
     }
 }
 

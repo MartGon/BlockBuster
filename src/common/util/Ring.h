@@ -54,7 +54,7 @@ namespace Util
         {
             std::optional<T> ret;
             index = index >= 0 ? index : GetSize() + index;
-            if(index < vector_.size())
+            if(index < vector_.size() && index >= 0)
                 ret = vector_[index];
 
             return ret;

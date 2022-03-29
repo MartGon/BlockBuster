@@ -137,6 +137,7 @@ namespace Entity
             float hp = MAX_HEALTH;
         };
         void TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance);
+        void ResetWeaponAmmo(Entity::WeaponTypeID weaponType);
         void ResetHealth();
         bool IsDead();
 

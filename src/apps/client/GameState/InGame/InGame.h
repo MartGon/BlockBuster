@@ -113,12 +113,15 @@ namespace BlockBuster
         };
         struct ExtraData
         {
-            Util::Timer respawnTimer;
+            
         };
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerTable;
         std::unordered_map<Entity::ID, PlayerModelState> playerModelStateTable;
         std::unordered_map<Entity::ID, ExtraData> playersExtraData;
+
+        uint8_t playerId = 0;
+        Util::Timer respawnTimer;
 
         // Simulation
         Util::Time::SteadyPoint preSimulationTime;
@@ -131,7 +134,6 @@ namespace BlockBuster
         uint16_t serverPort = 0;
         ENet::Host host;
         ENet::PeerId serverId = 0;
-        uint8_t playerId = 0;
         Util::Time::Seconds serverTickRate{0.0};
         bool connected = false;
         const uint32_t redundantInputs = 3;
@@ -149,7 +151,6 @@ namespace BlockBuster
         Util::Ring<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
-        Util::Time::Seconds predOffset{0};
 
         const Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0};
         Entity::PlayerState::Transform errorCorrectionDiff;

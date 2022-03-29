@@ -43,6 +43,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_PLAYER_DIED:
         packet = std::make_unique<PlayerDied>();
         break;
+
+        case OpcodeServer::OPCODE_SERVER_PLAYER_RESPAWN:
+        packet = std::make_unique<PlayerRespawn>();
+        break;
     
     default:
         break;
@@ -97,14 +101,12 @@ void Welcome::OnRead(Util::Buffer::Reader reader)
 {
     playerId = reader.Read<uint8_t>();
     tickRate = reader.Read<double>();
-    playerState = reader.Read<Entity::PlayerState>();
 }
 
 void Welcome::OnWrite()
 {
     buffer.Write(playerId);
     buffer.Write(tickRate);
-    buffer.Write(playerState);
 }
 
 void WorldUpdate::OnRead(Util::Buffer::Reader reader)
@@ -182,6 +184,18 @@ void PlayerDied::OnWrite()
     buffer.Write(killerId);
     buffer.Write(victimId);
     buffer.Write(respawnTime);
+}
+
+void PlayerRespawn::OnRead(Util::Buffer::Reader reader)
+{
+    playerId = reader.Read<Entity::ID>();
+    playerState = reader.Read<Entity::PlayerState>();
+}
+
+void PlayerRespawn::OnWrite()
+{
+    buffer.Write(playerId);
+    buffer.Write(playerState);
 }
 
 using namespace Networking::Packets::Client;

@@ -88,7 +88,7 @@ bool Entity::operator==(const PlayerState::Transform& a, const PlayerState::Tran
 {
     // Pos
     auto distance = glm::length(a.pos - b.pos);
-    return distance <= 0.005f;
+    return distance == 0.0f;
 }
 
 
@@ -263,6 +263,11 @@ void Player::TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float 
         else
             health = 0.0f;
     }
+}
+
+void Player::ResetWeaponAmmo(Entity::WeaponTypeID wepId)
+{
+    weapon = Entity::WeaponMgr::weaponTypes.at(wepId).CreateInstance();
 }
 
 void Player::ResetHealth()

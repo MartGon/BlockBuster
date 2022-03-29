@@ -26,7 +26,8 @@ namespace Networking
         OPCODE_SERVER_PLAYER_INPUT_ACK,
         OPCODE_SERVER_PLAYER_TAKE_DMG,
         OPCODE_SERVER_PLAYER_HIT_CONFIRM,
-        OPCODE_SERVER_PLAYER_DIED
+        OPCODE_SERVER_PLAYER_DIED,
+        OPCODE_SERVER_PLAYER_RESPAWN,
     };
 
     enum OpcodeClient : uint16_t
@@ -136,7 +137,6 @@ namespace Networking
 
                 uint8_t playerId;
                 double tickRate;
-                Entity::PlayerState playerState;
             };
 
             class WorldUpdate final : public Packet
@@ -224,6 +224,21 @@ namespace Networking
                 Entity::ID killerId;
                 Entity::ID victimId;
                 Util::Time::Seconds respawnTime;
+            };
+
+            class PlayerRespawn final : public Packet
+            {
+            public:
+                PlayerRespawn() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_RESPAWN, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader reader) override;
+                void OnWrite() override;
+
+                Entity::ID playerId;
+                Entity::PlayerState playerState;
             };
         }
 

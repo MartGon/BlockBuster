@@ -386,15 +386,11 @@ void InGameGUI::UpdateScore()
 
 void InGameGUI::UpdateRespawnText()
 {
-    auto& extraData = inGame->playersExtraData[inGame->playerId];
-    auto respawnTime = extraData.respawnTimer.GetDuration() - extraData.respawnTimer.GetElapsedTime();
-    if(respawnTime >= Util::Time::Seconds{0.0f})
-    {
-        int seconds = std::ceil(respawnTime.count());
-        std::string text = "You'll respawn in " + std::to_string(seconds) + " seconds";
-        respawnTimeText.SetText(text);
-        respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
-    }
+    auto respawnTime = inGame->respawnTimer.GetDuration() - inGame->respawnTimer.GetElapsedTime();
+    int seconds = std::ceil(respawnTime.count());
+    std::string text = "You'll respawn in " + std::to_string(seconds) + " seconds";
+    respawnTimeText.SetText(text);
+    respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
 }
 
 void InGameGUI::CloseMenu()
