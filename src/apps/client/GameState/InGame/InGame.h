@@ -101,19 +101,24 @@ namespace BlockBuster
         void ApplyGameOptions(GameOptions options);
         void WriteGameOptions();
 
-        // Player transforms
+        // Players
         struct PlayerModelState
         {
             Animation::Player shootPlayer;
-            Animation::Player idlePlayer;
+            Animation::Player deathPlayer;
             Math::Transform armsPivot;
+            float gScale = 1.0f;
             bool leftFlashActive = false;
             bool rightFlashActive = false;
+        };
+        struct ExtraData
+        {
+            Util::Timer respawnTimer;
         };
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerTable;
         std::unordered_map<Entity::ID, PlayerModelState> playerModelStateTable;
-        float PLAYER_SPEED = 5.f;
+        std::unordered_map<Entity::ID, ExtraData> playersExtraData;
 
         // Simulation
         Util::Time::SteadyPoint preSimulationTime;

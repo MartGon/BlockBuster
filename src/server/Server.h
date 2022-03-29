@@ -62,11 +62,15 @@ namespace BlockBuster
         Entity::Player player;
         Entity::PlayerController pController;
 
+        // Respawn Time
+        Util::Time::Seconds respawnTime;
+
+        // Inputs
         Util::Ring<InputReq, MAX_INPUT_BUFFER_SIZE> inputBuffer;
-        Util::Ring<ShotCommand, MAX_INPUT_BUFFER_SIZE> shotBuffer;
         uint32_t lastAck = 0;
         BufferingState state = BufferingState::REFILLING;
 
+        // DEBUG: AI
         bool isAI = false;
         glm::vec3 targetPos;
     };
@@ -121,10 +125,12 @@ namespace BlockBuster
         void SendWorldUpdate();
         void SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin);
         void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId);
+        void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime);
         void SendPacket(ENet::PeerId peerId, Networking::Packet& packet);
         void Broadcast(Networking::Packet& packet);
 
         // Simulation
+        void UpdateWorld();
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
 
         // MMServer
@@ -135,8 +141,12 @@ namespace BlockBuster
         static const float MIN_SPAWN_ENEMY_DISTANCE;
         glm::ivec3 FindSpawnPoint(Entity::Player player);
         glm::vec3 ToSpawnPos(glm::ivec3 spawnPoint);
-        std::vector<Entity::Player> GetPlayers() const;
         bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const;
+
+        // Players
+        void SpawnPlayer(Entity::Player& player);
+        void OnPlayerTakeDmg(ENet::PeerId author, ENet::PeerId victim);
+        std::vector<Entity::Player> GetPlayers() const;
 
         // Server params
         Params params;

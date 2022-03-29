@@ -69,6 +69,7 @@ glm::ivec2 Widget::GetOffsetByAnchor(AnchorPoint anchor, glm::ivec2 parentSize)
 
     case AnchorPoint::CENTER_DOWN:
         offset.x = offset.x + parentSize.x / 2;
+        offset.y = offset.y - parentSize.y;
         break;
 
     case AnchorPoint::CENTER_UP:

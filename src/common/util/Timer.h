@@ -42,6 +42,16 @@ namespace Util
             isPaused = true;
         }
 
+        inline void SetDuration(Util::Time::Seconds duration)
+        {
+            this->duration_ = duration;
+        }
+
+        inline Util::Time::Seconds GetDuration() const
+        {
+            return duration_;
+        }
+
         inline Util::Time::Seconds GetElapsedTime() const
         {
             return elapsed_;

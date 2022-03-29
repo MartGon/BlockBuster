@@ -22,6 +22,7 @@ namespace Game::Models
         Animation::Clip* GetIdleAnim();
         Animation::Clip* GetShootAnim();
         Animation::Clip* GetReloadAnim();
+        Animation::Clip* GetDeathAnim();
 
         Math::Transform armsPivot;
         Math::Transform bTransform;
@@ -49,5 +50,6 @@ namespace Game::Models
         Animation::Clip idle;
         Animation::Clip shoot; 
         Animation::Clip reload;
+        Animation::Clip death;
     };
 }

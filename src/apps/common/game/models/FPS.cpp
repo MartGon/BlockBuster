@@ -19,6 +19,9 @@ void FPS::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mes
 
 void FPS::Draw(const glm::mat4& projMat)
 {
+    if(!isEnabled)
+        return;
+
     auto t = transform.GetTransformMat();
     auto pt = idlePivot.GetTransformMat();
     auto tMat = projMat * t * pt;

@@ -76,9 +76,9 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
     auto wsA = a.weaponState; auto wsB = b.weaponState;
     if(wsA.weaponTypeId != WeaponTypeID::NONE)
     {
-        bool stateError = wsA.state != wsB.state;
-        bool cdError = std::abs((wsA.cooldown - wsB.cooldown).count()) > 0.05;
-        same = !stateError && !cdError;
+        bool sameState = wsA.state == wsB.state;
+        bool sameCd = std::abs((wsA.cooldown - wsB.cooldown).count()) < 0.05;
+        same = same && sameState && sameCd;
     }
 
     return same;
@@ -88,10 +88,7 @@ bool Entity::operator==(const PlayerState::Transform& a, const PlayerState::Tran
 {
     // Pos
     auto distance = glm::length(a.pos - b.pos);
-    bool posError = distance > 0.005f;
-    bool same = !posError;
-
-    return same;
+    return distance <= 0.005f;
 }
 
 
@@ -266,6 +263,12 @@ void Player::TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float 
         else
             health = 0.0f;
     }
+}
+
+void Player::ResetHealth()
+{
+    health.hp = MAX_HEALTH;
+    health.shield = MAX_SHIELD;
 }
 
 bool Player::IsDead()

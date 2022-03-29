@@ -86,6 +86,11 @@ Animation::Clip* Player::GetReloadAnim()
     return &reload;
 }
 
+Animation::Clip* Player::GetDeathAnim()
+{
+    return &death;
+}
+
 void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
 {
     // Get model handlers
@@ -242,4 +247,21 @@ void Player::InitAnimations()
     Animation::KeyFrame rf3{rs2, 120};
     Animation::KeyFrame rf4{rs1, 150};
     reload.keyFrames = {rf1, rf2, rf3, rf4};
+
+    // Death animation
+    Animation::Sample ds1{
+        {
+            {"scale", 1.0f},
+        }
+
+    };
+    Animation::KeyFrame df1{ds1, 0};    
+    Animation::Sample ds2{
+        {
+            {"scale", 0.f},
+        }
+    };
+
+    Animation::KeyFrame df2{ds2, 30};
+    death.keyFrames = {df1, df2};
 }

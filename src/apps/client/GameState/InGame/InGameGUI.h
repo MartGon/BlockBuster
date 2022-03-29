@@ -57,6 +57,7 @@ namespace BlockBuster
         std::string GetBoundedValue(int val, int max);
         void UpdateAmmo();
         void UpdateScore();
+        void UpdateRespawnText();
 
         void ScoreboardWindow();
         void ScoreTable(const char* name);
@@ -97,6 +98,10 @@ namespace BlockBuster
         Animation::Clip hitmarkerAnim;
         bool showHitmarker = false;
         Animation::Player hitMarkerPlayer;
+
+        // Log
+        GUI::Text killText;
+        GUI::Text respawnTimeText;
 
         // ScoreBoard
         bool showScoreboard = false;

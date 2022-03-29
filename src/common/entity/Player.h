@@ -131,18 +131,19 @@ namespace Entity
         glm::vec3 GetFPSCamPos() const;
 
         // Weapons / Health
+        struct HealthState
+        {
+            float shield = MAX_SHIELD;
+            float hp = MAX_HEALTH;
+        };
         void TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance);
+        void ResetHealth();
         bool IsDead();
 
         // Data
         ID id = 0;
 
         // Health
-        struct HealthState
-        {
-            float shield = MAX_SHIELD;
-            float hp = MAX_HEALTH;
-        };
         HealthState health;
 
         ID teamId = 0;

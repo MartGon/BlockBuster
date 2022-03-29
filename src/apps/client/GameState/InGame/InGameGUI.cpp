@@ -274,6 +274,24 @@ void InGameGUI::InitTexts()
     rightScoreText.SetParent(&midScoreText);
     rightScoreText.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
     rightScoreText.SetOffset(glm::ivec2{0, -5});
+
+    // Logs
+    killText = pixelFont->CreateText();
+    killText.SetText("YOU DIED");
+    killText.SetColor(red);
+    killText.SetAnchorPoint(GUI::AnchorPoint::CENTER);
+    killText.SetScale(2.0f);
+    killText.SetOffset(-killText.GetSize() / 2);
+    killText.SetIsVisible(false);
+
+    respawnTimeText = pixelFont->CreateText();
+    respawnTimeText.SetText("You'll respawn in 5 seconds");
+    respawnTimeText.SetColor(white);
+    respawnTimeText.SetParent(&killText);
+    respawnTimeText.SetAnchorPoint(GUI::AnchorPoint::CENTER_DOWN);
+    respawnTimeText.SetScale(1.5f);
+    respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
+    respawnTimeText.SetIsVisible(false);
 }
 
 void InGameGUI::HUD()
@@ -284,6 +302,7 @@ void InGameGUI::HUD()
     UpdateHealth();
     UpdateArmor();
     UpdateAmmo();
+    UpdateRespawnText();
 
     armorText.Draw(inGame->textShader, winSize);
     shieldIcon.Draw(inGame->textShader, winSize);
@@ -303,6 +322,10 @@ void InGameGUI::HUD()
     hitMarkerPlayer.Update(inGame->deltaTime);
 
     crosshairImg.Draw(inGame->imgShader, winSize);
+
+    killText.Draw(inGame->textShader, winSize);
+    respawnTimeText.Draw(inGame->textShader, winSize);
+
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -359,6 +382,19 @@ void InGameGUI::UpdateAmmo()
 void InGameGUI::UpdateScore()
 {
     
+}
+
+void InGameGUI::UpdateRespawnText()
+{
+    auto& extraData = inGame->playersExtraData[inGame->playerId];
+    auto respawnTime = extraData.respawnTimer.GetDuration() - extraData.respawnTimer.GetElapsedTime();
+    if(respawnTime >= Util::Time::Seconds{0.0f})
+    {
+        int seconds = std::ceil(respawnTime.count());
+        std::string text = "You'll respawn in " + std::to_string(seconds) + " seconds";
+        respawnTimeText.SetText(text);
+        respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
+    }
 }
 
 void InGameGUI::CloseMenu()

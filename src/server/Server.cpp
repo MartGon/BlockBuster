@@ -35,6 +35,7 @@ void Server::Run()
         auto preSimulationTime = Util::Time::GetTime();
 
         HandleClientsInput();
+        UpdateWorld();
         SendWorldUpdate();
 
         tickCount++;
@@ -81,6 +82,9 @@ void Server::InitNetworking()
     {
         this->OnClientLeave(peerId);
     });
+
+    // Allocate clients
+    clients.reserve(params.maxPlayers);
 }
 
 void Server::InitAI()
@@ -114,7 +118,7 @@ void Server::InitMap()
 
 void Server::OnClientJoin(ENet::PeerId peerId)
 {
-    logger.LogInfo("Connected with peer " + std::to_string(peerId));
+    logger.LogError("Connected with peer " + std::to_string(peerId));
 
     // Create Player
     Entity::Player player;
@@ -122,12 +126,8 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     player.teamId = player.id;
     player.weapon = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::CHEAT_SMG).CreateInstance();
 
-    // Player Respawn. TODO: Should convert this to a function
-    auto sIndex = FindSpawnPoint(player);
-    auto spawn = map.GetRespawn(sIndex);
-    auto playerPos = ToSpawnPos(sIndex);
-    auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{1.0f}};
-    player.SetTransform(playerTransform);
+    // Player Respawn
+    SpawnPlayer(player);
 
     // Add player to table
     clients[peerId].player = player;
@@ -144,8 +144,8 @@ void Server::OnClientJoin(ENet::PeerId peerId)
 void Server::OnClientLeave(ENet::PeerId peerId)
 {
     logger.LogInfo("Peer with id " + std::to_string(peerId) + " disconnected.");
-    auto client = clients[peerId];
-    auto player = client.player;
+    auto& client = clients[peerId];
+    auto& player = client.player;
 
     // Informing players
     Networking::Packets::Server::PlayerDisconnected pd;
@@ -206,7 +206,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
             auto inputReq = inputPacket->req;
 
             auto cmdId = inputReq.reqId;
-            logger.LogDebug("Command arrived with cmdid " + std::to_string(cmdId));
+            logger.LogError("Command arrived with cmdid " + std::to_string(cmdId) + " from " + std::to_string(peerId));
 
             // Check if we already have this input
             auto found = client.inputBuffer.FindFirst([cmdId](auto input)
@@ -253,12 +253,13 @@ void Server::HandleClientsInput()
             if(client.state == BufferingState::CONSUMING)
             {
                 // Consume movement commands
-                if(auto command = client.inputBuffer.PopFront())
+                if(!client.inputBuffer.Empty())
                 {
+                    auto command = client.inputBuffer.PopFront();
                     auto cmdId = command->reqId;
                     client.lastAck = cmdId;
 
-                    logger.LogDebug("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
+                    logger.LogError("Cmd id: " + std::to_string(client.lastAck) + " from " + std::to_string(peerId));
                     HandleClientInput(peerId, command.value());
 
                     logger.LogDebug("Ring size " + std::to_string(client.inputBuffer.GetSize()));
@@ -296,6 +297,9 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 {
     auto& client = clients[peerId];
     auto& player = client.player;
+
+    if(player.IsDead())
+        return;
 
     auto playerTransform = player.GetTransform();
     auto playerPos = playerTransform.position;
@@ -367,12 +371,16 @@ void Server::HandleShootCommand(ShotCommand sc)
 
     // Check collision with players. This allows collaterals
     auto& author = clients[sc.clientId].player;
+
     for(auto& [peerId, client] : clients)
     {
         if(peerId == sc.clientId)
             continue;
 
         auto& victim = client.player;
+        if(victim.IsDead())
+            continue;
+
         auto playerId = victim.id;
         bool s1HasData = s1.players.find(playerId) != s1.players.end();
         bool s2HasData = s2.players.find(playerId) != s2.players.end();
@@ -393,8 +401,7 @@ void Server::HandleShootCommand(ShotCommand sc)
             if(colDist < bColDist)
             {
                 victim.TakeWeaponDmg(author.weapon, rpc.hitboxType, colDist);
-                SendPlayerTakeDmg(peerId, victim.health, author.GetTransform().position);
-                SendPlayerHitConfirm(sc.clientId, victim.id);
+                OnPlayerTakeDmg(sc.clientId, peerId);
 
                 logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
                 logger.LogDebug("Victim's shield " + std::to_string(victim.health.shield) + " Victim health " + std::to_string(victim.health.hp));
@@ -462,6 +469,16 @@ void Server::SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId)
     SendPacket(peerId, phc);
 }
 
+void Server::BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime)
+{
+    Networking::Packets::Server::PlayerDied pd;
+    pd.killerId = killerId;
+    pd.victimId = victimId;
+    pd.respawnTime = respawnTime;
+
+    Broadcast(pd);
+}
+
 void Server::SendPacket(ENet::PeerId peerId, Networking::Packet& packet)
 {
     packet.Write();
@@ -482,7 +499,22 @@ void Server::Broadcast(Networking::Packet& packet)
     host->Broadcast(0, epacket);
 }
 
-// Misc
+// Simulation
+
+void Server::UpdateWorld()
+{
+    for(auto& [id, client] : clients)
+    {
+        auto& player = client.player;
+        if(player.IsDead())
+        {
+            if(client.respawnTime < Util::Time::Seconds{0.0f})
+                player.ResetHealth();
+            else
+                client.respawnTime -= TICK_RATE;
+        }
+    }
+}
 
 void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
 {
@@ -584,11 +616,40 @@ bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
     return true;
 }
 
+// Players
+
+void Server::SpawnPlayer(Entity::Player& player)
+{
+    auto sIndex = FindSpawnPoint(player);
+    auto spawn = map.GetRespawn(sIndex);
+    auto playerPos = ToSpawnPos(sIndex);
+    auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{1.0f}};
+    player.SetTransform(playerTransform);
+}
+
+void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
+{
+    auto& author = clients[authorId].player;
+    auto& victim = clients[victimId].player;
+
+    auto dmgOrigin = author.GetTransform().position;
+    SendPlayerTakeDmg(victimId, victim.health, dmgOrigin);
+
+    SendPlayerHitConfirm(authorId, victim.id);
+    if(victim.IsDead())
+    {   
+        // TODO: Change according to mode
+        clients[victimId].respawnTime = Util::Time::Seconds{5.0f};
+        BroadcastPlayerDied(author.id, victim.id, clients[victimId].respawnTime);
+        SpawnPlayer(victim);
+    }
+}
+
 std::vector<Entity::Player> Server::GetPlayers() const
 {
     std::vector<Entity::Player> players;
     players.reserve(clients.size());
-    for(auto [id, client] : clients)
+    for(auto& [id, client] : clients)
         players.push_back(client.player);
 
     return players;

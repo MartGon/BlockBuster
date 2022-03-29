@@ -237,33 +237,37 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
     else
         camController_.Update();
 
+    // Update animations
     fpsAvatar.Update(deltaTime);
-
     for(auto& [playerId, playerState] : playerModelStateTable)
     {
-        playerState.idlePlayer.Update(deltaTime);
+        playerState.deathPlayer.Update(deltaTime);
         playerState.shootPlayer.Update(deltaTime);
     }
 
-    // Debug
-    /* TODO: Remove
-    for(auto [playerId, player] : playerTable)
-    {
-        if(playerId == this->playerId)
-            continue;
+    // Extra data: Respawns, etc
 
-        auto mousePos = client_->GetMousePos();
-        auto winSize = client_->GetWindowSize();
-        auto ray = Rendering::ScreenToWorldRay(camera_, glm::vec2{0.5f, 0.5f}, glm::vec2{winSize.x, winSize.y});
-        auto playerTransform = playerTable[playerId].GetRenderTransform();
-        auto lastMoveDir = GetLastMoveDir(playerId);
-        auto collision = Game::RayCollidesWithPlayer(ray, playerTransform.position, playerTransform.rotation.y, lastMoveDir);
-        if(collision.collides)
+    for(auto& [playerId, extraData] : playersExtraData)
+    {
+        extraData.respawnTimer.Update(deltaTime);
+        if(extraData.respawnTimer.IsDone())
         {
-            std::cout << "Collision with " << std::to_string(collision.hitboxType) << "\n";
+            if(this->playerId == playerId)
+            {
+                // On Player respawn
+                fpsAvatar.isEnabled = true;
+                inGameGui.crosshairImg.SetIsVisible(true);
+
+                inGameGui.killText.SetIsVisible(false);
+                inGameGui.respawnTimeText.SetIsVisible(false);
+            }
+            else
+            {   
+                // Reset scale after death animation
+                playerModelStateTable[playerId].gScale = 1.0f;
+            }
         }
     }
-    */
 }
 
 void InGame::HandleSDLEvents()
@@ -335,10 +339,8 @@ void InGame::OnPlayerJoin(Entity::ID playerId, Networking::PlayerSnapshot player
     playerModelStateTable[playerId] = PlayerModelState();
     PlayerModelState& ps = playerModelStateTable[playerId];
 
-    ps.idlePlayer.SetClip(playerAvatar.GetIdleAnim());
-    ps.idlePlayer.SetTargetFloat("yPos", &ps.armsPivot.position.y);
-    ps.idlePlayer.isLooping = true;
-    //ps.idlePlayer.Play();
+    ps.deathPlayer.SetClip(playerAvatar.GetDeathAnim());
+    ps.deathPlayer.SetTargetFloat("scale", &ps.gScale);
 
     ps.shootPlayer.SetClip(playerAvatar.GetShootAnim());
     ps.shootPlayer.SetTargetFloat("zPos", &ps.armsPivot.position.z);
@@ -449,11 +451,6 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 {
                     OnPlayerJoin(playerId, player);
                 }
-
-                // Update dmg status
-                //playerTable[playerId].onDmg = player.onDmg;
-                //if(player.onDmg)
-                //    client_->logger->LogInfo("Player is on dmg " + std::to_string(playerId));
             }            
 
             // Store snapshot
@@ -482,6 +479,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             this->lastAck = pi->lastCmd;
             localPlayerStateHistory.PushBack(pi->playerState);
             client_->logger->LogInfo("Server ack command: " + std::to_string(this->lastAck));
+            //client_->logger->LogError("Player new pos " + glm::to_string(pi->playerState.transform.pos));
         }
         break;
 
@@ -506,6 +504,33 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         }
         break;
 
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_DIED:
+        {
+            auto ptd = packet.To<PlayerDied>();
+            client_->logger->LogInfo("Enemy player was hit!");
+
+            if(ptd->victimId == playerId)
+            {
+                fpsAvatar.isEnabled = false;
+                inGameGui.crosshairImg.SetIsVisible(false);
+
+                inGameGui.killText.SetIsVisible(true);
+                inGameGui.respawnTimeText.SetIsVisible(true);
+                playerTable[playerId].ResetHealth();
+            }
+            else
+            {
+                playerModelStateTable[ptd->victimId].deathPlayer.Reset();
+                playerModelStateTable[ptd->victimId].deathPlayer.Play();
+            }
+
+            // Start respawn timer
+            auto& extraData = playersExtraData[ptd->victimId];
+            extraData.respawnTimer.SetDuration(ptd->respawnTime);
+            extraData.respawnTimer.Start();
+        }
+        break;
+
         default:
             break;
     }
@@ -520,19 +545,18 @@ void InGame::UpdateNetworking()
 {
     client_->logger->LogInfo("Input: Sending player inputs");
 
+    auto& player = playerTable[playerId];
     // Sample player input
-    auto mask = inGameGui.IsMenuOpen() ? Entity::PlayerInput{false} : Entity::PlayerInput{true};
+    auto mask = inGameGui.IsMenuOpen() || player.IsDead() ? Entity::PlayerInput{false} : Entity::PlayerInput{true};
     auto input = Input::GetPlayerInputNumpad(mask);
-    auto mouseState = SDL_GetMouseState(nullptr, nullptr);
-    auto click = mouseState & SDL_BUTTON_RIGHT;
-
-    // Update last cmdId. Note: Breaks prediction when removed. Should prolly be ++this->cmdId in Predict.
-    this->cmdId++;
 
     // Prediction
     Predict(input);
 
     SendPlayerInput();
+
+    // Update last cmdId
+    this->cmdId++;
 }
 
 void InGame::SendPlayerInput()
@@ -548,14 +572,12 @@ void InGame::SendPlayerInput()
     // Write inputs
     for(int i = 0; i < amount; i++)
     {
-        auto oldCmd = predictionHistory_.At((historySize - 1) - i);
-        auto reqId = cmdId - i;
+        auto oldCmd = predictionHistory_.At((historySize - (1 + i)));
 
         using InputPacket = Networking::Packets::Client::Input;
         auto inputPacket = std::make_unique<InputPacket>();
         
         inputPacket->req = oldCmd->inputReq;
-        inputPacket->req.reqId = reqId;
 
         batch.PushPacket(std::move(inputPacket));
     }
@@ -577,15 +599,15 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     auto& player = playerTable[playerId];
 
     // Check prediction errors
-    if(!predictionHistory_.Empty() && predictionHistory_.Front()->inputReq.reqId >= this->lastAck)
+    if(!predictionHistory_.Empty() && predictionHistory_.Front()->inputReq.reqId <= this->lastAck)
     {
         // Discard old commands
         std::optional<Prediction> prediction;
-        GetLogger()->LogDebug("Prediction: ACK " + std::to_string(this->lastAck));
+        GetLogger()->LogError("Prediction: Last ACK " + std::to_string(this->lastAck));
         do
         {
-            prediction = predictionHistory_.Front();
-            GetLogger()->LogDebug("Prediction: Discarding prediction for " + std::to_string(prediction->inputReq.reqId));
+            prediction = predictionHistory_.PopFront();
+            GetLogger()->LogError("Prediction: Discarding prediction for " + std::to_string(prediction->inputReq.reqId));
         } while(prediction && prediction->inputReq.reqId < lastAck);
 
         // Checking prediction errors
@@ -897,31 +919,6 @@ void InGame::DrawScene()
         if(this->playerId == playerId && camController_.GetMode() == CameraMode::FPS)
             continue;
 
-        // Start Debug
-        {
-            auto oldPos = prevPlayerTable[playerId].GetTransform().position;
-            auto newPos = player.GetTransform().position;
-            auto diff = newPos - oldPos;
-            auto distDiff = glm::length(diff);
-            if(distDiff > 0.05f)
-            {
-                auto expectedDiff = PLAYER_SPEED *  deltaTime.count();
-                client_->logger->LogDebug("Render: Player " + std::to_string(playerId) + " Prev " + glm::to_string(oldPos)
-                    + " New " + glm::to_string(newPos) + " Diff " + glm::to_string(diff));
-
-                auto offset = glm::abs(distDiff - expectedDiff);
-                if(offset > 0.008f)
-                {
-                    client_->logger->LogDebug("Render: Difference is bigger than expected: ");
-                    client_->logger->LogDebug("Found diff " + std::to_string(distDiff) + " Expected diff " + std::to_string(expectedDiff) 
-                        + " Offset " + std::to_string(offset) + " Frame interval " + std::to_string(deltaTime.count()));
-                }
-            }
-            else
-                client_->logger->LogDebug("Player didn't move this frame");
-        }
-        // End debug
-
         // Apply changes to model
         auto playerState = playerModelStateTable[playerId];
         auto playerT = player.GetTransform();
@@ -935,11 +932,12 @@ void InGame::DrawScene()
 
         // Draw model
         playerT = player.GetRenderTransform();
+        playerT.scale *= playerState.gScale;
         auto t = playerT.GetTransformMat();
         auto transform = view * t;
-        // shader.SetUniformInt("dmg", player.onDmg); // TODO: Comment this or change color when player is dmg
         playerAvatar.Draw(transform);
 
+        // TODO: Remove
         // Draw player move collision box
         Math::Transform boxTf = pController.GetECB();
         //DrawCollisionBox(view, boxTf);

@@ -19,6 +19,10 @@ namespace Util
             vector_.reserve(capacity);
         }
 
+        Ring(const Ring&) = delete;
+        Ring& operator=(const Ring&) = delete;
+
+
         inline uint32_t GetSize() const
         {
             return vector_.size();

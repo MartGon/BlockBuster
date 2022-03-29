@@ -16,6 +16,8 @@ namespace Game::Models
 
         void PlayShootAnimation();
         void PlayReloadAnimation();
+
+        bool isEnabled = true;
         
         Math::Transform idlePivot;
     private:

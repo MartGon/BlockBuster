@@ -39,6 +39,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_PLAYER_HIT_CONFIRM:
         packet = std::make_unique<PlayerHitConfirm>();
         break;
+
+    case OpcodeServer::OPCODE_SERVER_PLAYER_DIED:
+        packet = std::make_unique<PlayerDied>();
+        break;
     
     default:
         break;
@@ -164,6 +168,20 @@ void PlayerHitConfirm::OnRead(Util::Buffer::Reader reader)
 void PlayerHitConfirm::OnWrite()
 {
     buffer.Write(victimId);
+}
+
+void PlayerDied::OnRead(Util::Buffer::Reader reader)
+{
+    killerId = reader.Read<Entity::ID>();
+    victimId = reader.Read<Entity::ID>();
+    respawnTime = reader.Read<Util::Time::Seconds>();
+}
+
+void PlayerDied::OnWrite()
+{
+    buffer.Write(killerId);
+    buffer.Write(victimId);
+    buffer.Write(respawnTime);
 }
 
 using namespace Networking::Packets::Client;

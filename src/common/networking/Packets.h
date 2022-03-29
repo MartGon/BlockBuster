@@ -25,7 +25,8 @@ namespace Networking
         OPCODE_SERVER_PLAYER_DISCONNECTED,
         OPCODE_SERVER_PLAYER_INPUT_ACK,
         OPCODE_SERVER_PLAYER_TAKE_DMG,
-        OPCODE_SERVER_PLAYER_HIT_CONFIRM
+        OPCODE_SERVER_PLAYER_HIT_CONFIRM,
+        OPCODE_SERVER_PLAYER_DIED
     };
 
     enum OpcodeClient : uint16_t
@@ -208,6 +209,22 @@ namespace Networking
 
                 Entity::ID victimId;
             };
+
+            class PlayerDied final : public Packet
+            {
+            public:
+                PlayerDied() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_DIED, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader reader) override;
+                void OnWrite() override;
+
+                Entity::ID killerId;
+                Entity::ID victimId;
+                Util::Time::Seconds respawnTime;
+            };
         }
 
         namespace Client
@@ -232,7 +249,7 @@ namespace Networking
 
                 struct Req
                 {
-                    uint32_t reqId;
+                    uint32_t reqId ;
                     Entity::PlayerInput playerInput;
                     float camYaw;
                     float camPitch;

@@ -11,6 +11,7 @@ Host::Host(Address address, uint32_t connections, uint32_t channels, uint32_t in
     socket_ = enet_host_create(&address.address_, connections, channels, inBandwidth, outBandwidth);
     if(socket_ == nullptr)
         throw Exception("Could not create Enet::Host");
+    peers_.reserve(connections);
 }
 
 Host::Host(uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth) : 
@@ -19,6 +20,7 @@ Host::Host(uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32
     socket_ = enet_host_create(nullptr, connections, channels, inBandwidth, outBandwidth);
     if(socket_ == nullptr)
         throw Exception("Could not create Enet::Host");
+    peers_.reserve(connections);
 }
 
 Host::~Host()
