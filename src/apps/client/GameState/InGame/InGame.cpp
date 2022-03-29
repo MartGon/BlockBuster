@@ -197,9 +197,7 @@ void InGame::Update()
 
             simulationLag -= serverTickRate;
         }
-
-        EntityInterpolation();
-        SmoothPlayerMovement();
+        OnNewFrame();
         Render();
         UpdateAudio();
 
@@ -228,16 +226,6 @@ void InGame::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)
 
 void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 {
-    auto camMode = camController_.GetMode();
-    if(camMode == CameraMode::FPS)
-    {
-        auto player = playerTable[playerId];
-        auto camPos = player.GetFPSCamPos();
-        camera_.SetPos(camPos);
-    }
-    else
-        camController_.Update();
-
     // Update animations
     fpsAvatar.Update(deltaTime);
     for(auto& [playerId, playerState] : playerModelStateTable)
@@ -248,6 +236,32 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 
     // Extra data: Respawns, etc
     respawnTimer.Update(deltaTime);
+}
+
+void InGame::OnNewFrame()
+{
+    EntityInterpolation();
+    SmoothPlayerMovement();
+
+    auto camMode = camController_.GetMode();
+    if(camMode == CameraMode::FPS)
+    {
+        auto& player = playerTable[playerId];
+        auto camPos = player.GetFPSCamPos();
+        camera_.SetPos(camPos);
+    }
+    else
+        camController_.Update();
+
+    // Rellocate camera
+    auto& player = playerTable[playerId];
+    if(player.IsDead() && Util::Map::Contains(playerTable, killerId))
+    {
+        // Look to killer during death
+        auto& killer = playerTable[killerId];
+        auto pos = killer.GetRenderTransform().position;
+        camera_.SetTarget(pos);
+    }
 }
 
 void InGame::HandleSDLEvents()
@@ -500,6 +514,9 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
 
                 respawnTimer.SetDuration(ptd->respawnTime);
                 respawnTimer.Start();
+
+                // Set killer
+                killerId = ptd->killerId;
             }
             else
             {
@@ -516,7 +533,10 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             if(respawn->playerId == playerId)
             {
                 localPlayerStateHistory.PushBack(respawn->playerState);
+                playerTable[playerId].ApplyState(respawn->playerState);
                 playerTable[playerId].ResetHealth();
+
+                // Set spawn camera rotation
                 auto camRot = camera_.GetRotationDeg();
                 camera_.SetRotationDeg(camRot.x, respawn->playerState.transform.rot.y + 90.0f);
 
@@ -672,21 +692,21 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     }
 
     // Get prev pos
-    auto preState = localPlayerStateHistory.Back();
+    auto preState = localPlayerStateHistory.Back().value();
     auto prevPred = predictionHistory_.Back();
     if(prevPred.has_value())
         preState = prevPred->dest;
 
     // Run predicted command for this simulation
     auto camRot = camera_.GetRotationDeg();
-    auto predState = PredPlayerState(preState.value(), playerInput, camRot.y, serverTickRate);
+    auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
     predState.transform.rot.x = camRot.x;
     auto fov = camera_.GetParam(Rendering::Camera::FOV);
     auto aspectRatio = camera_.GetParam(Rendering::Camera::ASPECT_RATIO);
     InputReq inputReq{cmdId, playerInput, camRot.y, camRot.x, fov, aspectRatio, GetRenderTime()};
 
     auto now = Util::Time::GetTime();
-    Prediction p{inputReq, preState.value(), predState, now};
+    Prediction p{inputReq, preState, predState, now};
     predictionHistory_.PushBack(p);
 }
 

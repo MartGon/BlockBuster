@@ -52,6 +52,7 @@ namespace BlockBuster
     private:
 
         void DoUpdate(Util::Time::Seconds deltaTime);
+        void OnNewFrame();
 
         // Input
         void HandleSDLEvents();
@@ -122,6 +123,7 @@ namespace BlockBuster
 
         uint8_t playerId = 0;
         Util::Timer respawnTimer;
+        Entity::ID killerId = 0;
 
         // Simulation
         Util::Time::SteadyPoint preSimulationTime;
