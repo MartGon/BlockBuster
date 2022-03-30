@@ -33,7 +33,14 @@ namespace BlockBuster
         void CloseMenu();
         bool IsMenuOpen();
 
-        void PlayerHitMarkerAnim();
+        enum class HitMarkerType
+        {
+            DMG,
+            KILL
+        };
+
+        void PlayHitMarkerAnim(HitMarkerType type);
+        void PlayDmgAnim();
 
     private:
         // PopUps
@@ -49,7 +56,8 @@ namespace BlockBuster
         void OpenMenu(PopUpState state);
         
         void InitPopUps();
-        void InitTexts();        
+        void InitTexts();
+        void InitAnimations();
 
         void HUD();
         void UpdateHealth();
@@ -82,6 +90,7 @@ namespace BlockBuster
         // Textures
         GL::Texture crosshair;
         GL::Texture hitmarker;
+        GL::Texture dmgTexture;
 
         // HUD
         GUI::Text healthIcon;
@@ -95,9 +104,15 @@ namespace BlockBuster
         GUI::Text rightScoreText;
         GUI::Image crosshairImg;
         GUI::Image hitmarkerImg;
+        GUI::Image dmgEffectImg;
+
+        // Animations
         Animation::Clip hitmarkerAnim;
         bool showHitmarker = false;
         Animation::Player hitMarkerPlayer;
+        float dmgAlpha = 0.0f;
+        Animation::Clip dmgAnim;
+        Animation::Player dmgAnimationPlayer;
 
         // Log
         GUI::Text killText;

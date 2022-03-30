@@ -64,20 +64,45 @@ glm::vec3 Entity::PlayerController::UpdatePosition(glm::vec3 pos, float yaw, Ent
 Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, Util::Time::Seconds deltaTime)
 {
     const auto weaponType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
+    auto wepState = weapon.state;
     switch(weapon.state)
     {
         case Weapon::State::IDLE:
         {
-            if(input[Entity::SHOOT] && Entity::HasAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType))
+            bool isBurst = weaponType.firingMode == WeaponType::FiringMode::BURST;
+            bool isBursting = isBurst && weapon.burstCount < weaponType.burstShots && weapon.burstCount > 0;
+            bool doShoot = input[Entity::SHOOT] || isBursting;
+            if(doShoot)
             {
-                weapon.state = Weapon::State::SHOOTING;
-                weapon.cooldown = weaponType.cooldown;
-                weapon.ammoState = Entity::UseAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType);
+                if(Entity::HasAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType))
+                {
+                    if(Entity::CanShoot(weapon))
+                    {
+                        weapon.state = Weapon::State::SHOOTING;
+                        weapon.cooldown = weaponType.cooldown;
+                        weapon.ammoState = Entity::UseAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType);
+                        weapon.triggerPressed = true;
+
+                        if(isBurst)
+                            weapon.burstCount++;
+                    }
+                }
+                // Stop burst if it doesn't have enough ammo
+                else if(isBurst)
+                    weapon.burstCount = 0;
             }
             else if(input[Entity::RELOAD] && !Entity::IsMagFull(weapon.ammoState, weaponType.ammoData, weaponType.ammoType))
             {
                 weapon.state = Weapon::State::RELOADING;
-                weapon.cooldown = weaponType.reloadTime;
+                float mod = weaponType.ammoType == AmmoType::OVERHEAT ? 0.25f + (weapon.ammoState.overheat / 100.f) : 1.0f;
+                weapon.cooldown = weaponType.reloadTime * mod;
+            }
+
+            weapon.triggerPressed = input[Entity::SHOOT];
+            if(weaponType.ammoType == AmmoType::OVERHEAT && !Entity::HasShot(wepState, weapon.state))        
+            {
+                float reduction = deltaTime.count() * OVERHEAT_REDUCTION_RATE;
+                weapon.ammoState.overheat = std::max(0.0f, weapon.ammoState.overheat - reduction);
             }
         }
         break;
@@ -85,7 +110,22 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
         {
             weapon.cooldown -= deltaTime;
             if(weapon.cooldown.count() <= 0.0)
-                weapon.state = Weapon::State::IDLE;
+            {
+                // Force reload when MAX_OVERHEAT is reached
+                if(weaponType.ammoType == AmmoType::OVERHEAT && weapon.ammoState.overheat == MAX_OVERHEAT)
+                {
+                    weapon.state = Weapon::State::RELOADING;
+                    weapon.cooldown = weaponType.reloadTime * 2.0f;
+                    weapon.burstCount = 0;
+                }
+                else
+                    weapon.state = Weapon::State::IDLE;
+
+                // Stop burst after last burst shot
+                bool isBurst = weaponType.firingMode == WeaponType::FiringMode::BURST;
+                if(isBurst && weapon.burstCount >= weaponType.burstShots)
+                    weapon.burstCount = 0;
+            }
         }
         break;
         case Weapon::State::RELOADING:

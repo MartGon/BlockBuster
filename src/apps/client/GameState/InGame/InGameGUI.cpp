@@ -27,6 +27,8 @@ void InGameGUI::Start()
     // Textures
     TRY_LOAD(crosshair.LoadFromFolder(TEXTURES_DIR, "crosshairW.png"));
     TRY_LOAD(hitmarker.LoadFromFolder(TEXTURES_DIR, "hitmarker.png"));
+    glm::u8vec4 white{255, 255, 255, 255};
+    dmgTexture.Load(&white.x, glm::ivec2{1, 1}, GL_RGBA);
 
     // Images
     crosshairImg.SetTexture(&crosshair);
@@ -41,20 +43,11 @@ void InGameGUI::Start()
     hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
     hitmarkerImg.SetColor(glm::vec4{1.0f, 1.0f, 1.0f, 0.5f});
 
-    // Hit marker anim
-    Animation::Sample s1{
-        {},
-        {{"show", true}}
-    };
-    Animation::KeyFrame f1{s1, 0};    
-    Animation::Sample s2{
-        {},
-        {{"show", false}}
-    };
-    Animation::KeyFrame f2{s2, 30};
-    hitmarkerAnim.keyFrames = {f1, f2};
-    hitMarkerPlayer.SetClip(&hitmarkerAnim);
-    hitMarkerPlayer.SetTargetBool("show", &showHitmarker);
+    dmgEffectImg.SetTexture(&dmgTexture);
+    dmgEffectImg.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+
+    // Animations
+    InitAnimations();
 }
 
 void InGameGUI::DrawGUI(GL::Shader& textShader)
@@ -294,6 +287,40 @@ void InGameGUI::InitTexts()
     respawnTimeText.SetIsVisible(false);
 }
 
+void InGameGUI::InitAnimations()
+{
+    // Hit marker anim
+    Animation::Sample s1{
+        {},
+        {{"show", true}}
+    };
+    Animation::KeyFrame f1{s1, 0};    
+    Animation::Sample s2{
+        {},
+        {{"show", false}}
+    };
+    Animation::KeyFrame f2{s2, 30};
+    hitmarkerAnim.keyFrames = {f1, f2};
+    hitMarkerPlayer.SetClip(&hitmarkerAnim);
+    hitMarkerPlayer.SetTargetBool("show", &showHitmarker);
+
+    // Dmg anim
+    Animation::Sample ds1{
+        {{"alpha", 0.65f}},
+        {}
+    };
+    Animation::KeyFrame df1{ds1, 0};
+    Animation::KeyFrame df2{ds1, 10};
+    Animation::Sample ds2{
+        {{"alpha", 0.0f}},
+        {}
+    };
+    Animation::KeyFrame df3{ds2, 20};
+    dmgAnim.keyFrames = {df1, df2, df3};
+    dmgAnimationPlayer.SetClip(&dmgAnim);
+    dmgAnimationPlayer.SetTargetFloat("alpha", &dmgAlpha);
+}
+
 void InGameGUI::HUD()
 {
     glDisable(GL_DEPTH_TEST);
@@ -315,9 +342,7 @@ void InGameGUI::HUD()
     leftScoreText.Draw(inGame->textShader, winSize);
     rightScoreText.Draw(inGame->textShader, winSize);
 
-    hitmarkerImg.SetScale(glm::vec2{tScale});
     hitmarkerImg.SetIsVisible(showHitmarker);
-    hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
     hitmarkerImg.Draw(inGame->imgShader, winSize);
     hitMarkerPlayer.Update(inGame->deltaTime);
 
@@ -325,6 +350,12 @@ void InGameGUI::HUD()
 
     killText.Draw(inGame->textShader, winSize);
     respawnTimeText.Draw(inGame->textShader, winSize);
+
+    dmgAnimationPlayer.Update(inGame->deltaTime);
+    dmgEffectImg.SetScale(winSize);
+    const auto red = glm::vec4{1.0f, 0.0f, 0.0f, dmgAlpha};
+    dmgEffectImg.SetColor(red);
+    dmgEffectImg.Draw(inGame->imgShader, winSize);
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -365,17 +396,30 @@ std::string InGameGUI::GetBoundedValue(int val, int max)
 void InGameGUI::UpdateAmmo()
 {
     auto& player = inGame->GetLocalPlayer();
+    constexpr const int MAX_DISPLAY = 30;
 
-    // TODO: Update for overheat weapon
     auto& weapon = Entity::WeaponMgr::weaponTypes.at(player.weapon.weaponTypeId);
-    int ammo = 0;
-    if(weapon.ammoType != Entity::AmmoType::AMMO)
-        ammo = player.weapon.ammoState.magazine;
+
+    int ammoNum = 0;
+    int size = 0;
+    if(weapon.ammoType == Entity::AmmoType::AMMO)
+    {
+        ammoNum = player.weapon.ammoState.magazine;
+        size = ammoNum;
+    }
+    else if(weapon.ammoType == Entity::AmmoType::OVERHEAT)
+    {
+        ammoNum = std::ceil(player.weapon.ammoState.overheat);
+        constexpr float rate = MAX_DISPLAY / Entity::MAX_OVERHEAT;
+        size = ammoNum * rate;
+    }
     
-    ammoNumIcon.SetText(std::to_string(ammo));
+    ammoNumIcon.SetText(std::to_string(ammoNum));
+    ammoNumIcon.SetOffset(-ammoNumIcon.GetSize() + glm::ivec2{-5, -5});
 
     std::string ammoStr;
-    ammoStr.resize(ammo, 'l');
+    size = std::min(size, MAX_DISPLAY);
+    ammoStr.resize(size, 'l');
     ammoText.SetText(ammoStr);
 }
 
@@ -388,7 +432,7 @@ void InGameGUI::UpdateRespawnText()
 {
     auto respawnTime = inGame->respawnTimer.GetDuration() - inGame->respawnTimer.GetElapsedTime();
     int seconds = std::ceil(respawnTime.count());
-    std::string text = "You'll respawn in " + std::to_string(seconds) + " seconds";
+    std::string text = "Respawning in " + std::to_string(seconds) + " seconds";
     respawnTimeText.SetText(text);
     respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
 }
@@ -409,10 +453,27 @@ bool InGameGUI::IsMenuOpen()
     return puMgr.IsOpen();
 }
 
-void InGameGUI::PlayerHitMarkerAnim()
+void InGameGUI::PlayHitMarkerAnim(HitMarkerType type)
 {
+    if(type == HitMarkerType::DMG)
+    {  
+        const auto white = glm::vec4{1.0f, 1.0f, 1.0f, 0.5f};
+        hitmarkerImg.SetColor(white);
+    }
+    else if(type == HitMarkerType::KILL)
+    {
+        const auto red = glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
+        hitmarkerImg.SetColor(red);
+    }
+
     hitMarkerPlayer.Reset();
     hitMarkerPlayer.Play();
+}
+
+void InGameGUI::PlayDmgAnim()
+{
+    dmgAnimationPlayer.Reset();
+    dmgAnimationPlayer.Play();
 }
 
 // Private
@@ -561,6 +622,14 @@ void InGameGUI::DebugWindow()
                     break;
                 }
             }
+            if(ImGui::Button("Dmg"))
+            {
+                PlayDmgAnim();
+            }
+            if(ImGui::Button("Kill"))
+            {
+                PlayHitMarkerAnim(HitMarkerType::KILL);
+            }
         }
 
         if(ImGui::CollapsingHeader("Audio"))
@@ -641,7 +710,6 @@ void InGameGUI::RenderStatsWindow()
     }
     ImGui::End();
 }
-
 
 // Handy 
 

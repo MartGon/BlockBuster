@@ -489,7 +489,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             auto ptd = packet.To<PlayerHitConfirm>();
             client_->logger->LogInfo("Enemy player was hit!");
 
-            inGameGui.PlayerHitMarkerAnim();
+            inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::DMG);
         }
         break;
 
@@ -523,6 +523,9 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 playerModelStateTable[ptd->victimId].deathPlayer.Reset();
                 playerModelStateTable[ptd->victimId].deathPlayer.Play();
             }
+
+            if(ptd->killerId == playerId)
+                inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::KILL);
         }
         break;
 
@@ -756,7 +759,7 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     if(Entity::HasShot(a.weaponState.state, nextState.weaponState.state))
         fpsAvatar.PlayShootAnimation();
     else if(Entity::HasReloaded(a.weaponState.state, nextState.weaponState.state))
-        fpsAvatar.PlayReloadAnimation();
+        fpsAvatar.PlayReloadAnimation(nextState.weaponState.cooldown);
 
     return nextState;
 }
