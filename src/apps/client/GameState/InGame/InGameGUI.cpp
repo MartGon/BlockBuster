@@ -43,8 +43,8 @@ void InGameGUI::Start()
     hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
     hitmarkerImg.SetColor(glm::vec4{1.0f, 1.0f, 1.0f, 0.5f});
 
-    dmgIndicator.SetTexture(&dmgTexture);
-    dmgIndicator.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+    dmgEffectImg.SetTexture(&dmgTexture);
+    dmgEffectImg.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
 
     // Animations
     InitAnimations();
@@ -352,10 +352,10 @@ void InGameGUI::HUD()
     respawnTimeText.Draw(inGame->textShader, winSize);
 
     dmgAnimationPlayer.Update(inGame->deltaTime);
-    dmgIndicator.SetScale(winSize);
+    dmgEffectImg.SetScale(winSize);
     const auto red = glm::vec4{1.0f, 0.0f, 0.0f, dmgAlpha};
-    dmgIndicator.SetColor(red);
-    dmgIndicator.Draw(inGame->imgShader, winSize);
+    dmgEffectImg.SetColor(red);
+    dmgEffectImg.Draw(inGame->imgShader, winSize);
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -453,8 +453,19 @@ bool InGameGUI::IsMenuOpen()
     return puMgr.IsOpen();
 }
 
-void InGameGUI::PlayerHitMarkerAnim()
+void InGameGUI::PlayHitMarkerAnim(HitMarkerType type)
 {
+    if(type == HitMarkerType::DMG)
+    {  
+        const auto white = glm::vec4{1.0f, 1.0f, 1.0f, 0.5f};
+        hitmarkerImg.SetColor(white);
+    }
+    else if(type == HitMarkerType::KILL)
+    {
+        const auto red = glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
+        hitmarkerImg.SetColor(red);
+    }
+
     hitMarkerPlayer.Reset();
     hitMarkerPlayer.Play();
 }
@@ -614,6 +625,10 @@ void InGameGUI::DebugWindow()
             if(ImGui::Button("Dmg"))
             {
                 PlayDmgAnim();
+            }
+            if(ImGui::Button("Kill"))
+            {
+                PlayHitMarkerAnim(HitMarkerType::KILL);
             }
         }
 

@@ -33,7 +33,13 @@ namespace BlockBuster
         void CloseMenu();
         bool IsMenuOpen();
 
-        void PlayerHitMarkerAnim();
+        enum class HitMarkerType
+        {
+            DMG,
+            KILL
+        };
+
+        void PlayHitMarkerAnim(HitMarkerType type);
         void PlayDmgAnim();
 
     private:
@@ -98,7 +104,7 @@ namespace BlockBuster
         GUI::Text rightScoreText;
         GUI::Image crosshairImg;
         GUI::Image hitmarkerImg;
-        GUI::Image dmgIndicator;
+        GUI::Image dmgEffectImg;
 
         // Animations
         Animation::Clip hitmarkerAnim;

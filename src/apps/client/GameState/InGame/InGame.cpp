@@ -474,7 +474,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             auto ptd = packet.To<PlayerHitConfirm>();
             client_->logger->LogInfo("Enemy player was hit!");
 
-            inGameGui.PlayerHitMarkerAnim();
+            inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::DMG);
         }
         break;
 
@@ -505,6 +505,9 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 playerModelStateTable[ptd->victimId].deathPlayer.Reset();
                 playerModelStateTable[ptd->victimId].deathPlayer.Play();
             }
+
+            if(ptd->killerId == playerId)
+                inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::KILL);
         }
         break;
 
