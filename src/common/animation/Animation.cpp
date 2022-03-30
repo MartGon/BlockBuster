@@ -13,6 +13,7 @@ void Player::Update(Util::Time::Seconds secs)
         return;
 
     timer.Update(secs);
+
     auto curFrame = GetCurrentFrame();
     auto index = GetKeyFrameIndex(curFrame);
     if(!IsDone(curFrame))
@@ -37,6 +38,17 @@ void Player::Update(Util::Time::Seconds secs)
             timer.Start();
         }
     }
+}
+
+void Player::SetClipDuration(Util::Time::Seconds secs)
+{
+    if(!clip)
+        return;
+    
+    auto lastFrame = GetClipLastFrame();
+    auto clipDuration = (float)lastFrame / (float)clip->fps;
+    auto speedMod = clipDuration / secs.count();
+    SetSpeed(speedMod);
 }
 
 Sample Animation::Interpolate(Sample s1, Sample s2, float alpha)
@@ -65,7 +77,7 @@ Sample Animation::Interpolate(Sample s1, Sample s2, float alpha)
 uint32_t Player::GetCurrentFrame() const
 {
     auto elapsed = timer.GetElapsedTime();
-    auto frameDist = 1.0 / clip->fps;
+    auto frameDist = 1.0 / (clip->fps * speedMod);
     auto curFrame = elapsed.count() / frameDist;
 
     return curFrame;

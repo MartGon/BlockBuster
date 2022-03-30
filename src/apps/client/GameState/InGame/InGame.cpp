@@ -735,7 +735,7 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     if(Entity::HasShot(a.weaponState.state, nextState.weaponState.state))
         fpsAvatar.PlayShootAnimation();
     else if(Entity::HasReloaded(a.weaponState.state, nextState.weaponState.state))
-        fpsAvatar.PlayReloadAnimation();
+        fpsAvatar.PlayReloadAnimation(nextState.weaponState.cooldown);
 
     return nextState;
 }

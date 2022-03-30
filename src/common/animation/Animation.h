@@ -39,6 +39,7 @@ namespace Animation
         inline void SetClip(Clip* clip)
         {
             this->clip = clip;
+            this->speedMod = 1.0f;
         }
 
         inline void SetTargetFloat(std::string key, float* target)
@@ -71,6 +72,11 @@ namespace Animation
             timer.Resume();
         }
 
+        inline void SetSpeed(float speed)
+        {
+            this->speedMod = speed;
+        }
+
         void Reset()
         {
             isDone = false;
@@ -79,6 +85,7 @@ namespace Animation
         }
         
         void Update(Util::Time::Seconds secs);
+        void SetClipDuration(Util::Time::Seconds secs);
 
         bool isLooping = false;
 
@@ -94,6 +101,7 @@ namespace Animation
         bool isDone = false;
         Clip* clip = nullptr;
         Util::Timer timer;
+        float speedMod = 1.0f;
 
         std::function<void()> onDone;
 

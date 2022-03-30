@@ -15,7 +15,7 @@ namespace Game::Models
         void Update(Util::Time::Seconds deltaTime);
 
         void PlayShootAnimation();
-        void PlayReloadAnimation();
+        void PlayReloadAnimation(Util::Time::Seconds reloadTime);
 
         bool isEnabled = true;
         
