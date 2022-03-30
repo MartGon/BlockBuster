@@ -115,6 +115,7 @@ RayIntersection Collisions::RaySlopeIntersection(Ray worldRay, glm::mat4 modelMa
     auto modelRay = ToModelSpace(worldRay, modelMat);
     auto intersection = RaySlopeIntersection(modelRay, glm::vec3{0.5f});
     intersection.normal = NormalToWorldSpace(intersection.normal, modelMat);
+    intersection.colPoint = ToWorldSpace(intersection.colPoint, modelMat);
     return intersection;
 }
 
