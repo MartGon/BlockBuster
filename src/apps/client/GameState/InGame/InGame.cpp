@@ -427,6 +427,8 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             countdownTimer.SetDuration(welcome->timeToStart);
             countdownTimer.Start();
             matchState = welcome->matchState;
+            if(matchState == Match::State::WAITING_FOR_PLAYERS)
+                inGameGui.countdownText.SetIsVisible(true);
         }
         break;
 

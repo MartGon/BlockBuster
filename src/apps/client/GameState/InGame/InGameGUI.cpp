@@ -291,6 +291,7 @@ void InGameGUI::InitTexts()
     countdownText.SetColor(white);
     countdownText.SetAnchorPoint(GUI::AnchorPoint::CENTER);
     countdownText.SetScale(3.0f);
+    countdownText.SetIsVisible(false);
 }
 
 void InGameGUI::InitAnimations()
