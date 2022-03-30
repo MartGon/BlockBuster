@@ -124,7 +124,7 @@ void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
         }
         break;
     case ON_GOING:
-        gameTimer.Update();
+        gameTimer.Update(deltaTime);
         if(gameMode->IsGameOver() || gameTimer.IsDone())
         {
             waitTimer.Start();
