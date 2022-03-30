@@ -13,8 +13,8 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
     {
         WeaponTypeID::CHEAT_SMG, 
         {
-            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::BURST, Util::Time::Seconds{0.1f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, 3, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 8}
+            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.1f}, Util::Time::Seconds{2.0f}, 100.0f, 
+            300.0f, 0.0f, 3, 21, 12, AmmoType::OVERHEAT, AmmoTypeData{ .overheatRate = 10.0f}
         }
     }
 };
@@ -35,12 +35,12 @@ Weapon WeaponType::CreateInstance() const
 
 bool Entity::HasShot(Weapon::State s1, Weapon::State s2)
 {
-    return s1 == Weapon::State::IDLE && s2 == Weapon::State::SHOOTING;
+    return s1 != Weapon::State::SHOOTING && s2 == Weapon::State::SHOOTING;
 }
 
 bool Entity::HasReloaded(Weapon::State s1, Weapon::State s2)
 {
-    return s1 == Weapon::State::IDLE && s2 == Weapon::State::RELOADING;
+    return s1 != Weapon::State::RELOADING && s2 == Weapon::State::RELOADING;
 }
 
 bool Entity::CanShoot(Weapon weapon)
@@ -78,8 +78,8 @@ Weapon::AmmoState Entity::UseAmmo(Weapon::AmmoState ammoState, AmmoTypeData ammo
         break;
     
     case AmmoType::OVERHEAT:
-        if(ammoState.overheat < 100.0f)
-            ammoState.overheat += ammoData.overheatRate;
+        if(ammoState.overheat < MAX_OVERHEAT)
+            ammoState.overheat = std::min(ammoState.overheat + ammoData.overheatRate, MAX_OVERHEAT);
         break;
 
     case AmmoType::INFINITE_AMMO:
@@ -123,7 +123,8 @@ bool Entity::IsMagFull(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoT
     break;
     
     case AmmoType::OVERHEAT:
-        isFull = ammoState.overheat == MAX_OVERHEAT;
+        isFull = ammoState.overheat <= 1.0f;
+    break;
 
     case AmmoType::INFINITE_AMMO:
         isFull = true;

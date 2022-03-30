@@ -365,17 +365,30 @@ std::string InGameGUI::GetBoundedValue(int val, int max)
 void InGameGUI::UpdateAmmo()
 {
     auto& player = inGame->GetLocalPlayer();
+    constexpr const int MAX_DISPLAY = 30;
 
-    // TODO: Update for overheat weapon
     auto& weapon = Entity::WeaponMgr::weaponTypes.at(player.weapon.weaponTypeId);
-    int ammo = 0;
+
+    int ammoNum = 0;
+    int size = 0;
     if(weapon.ammoType == Entity::AmmoType::AMMO)
-        ammo = player.weapon.ammoState.magazine;
+    {
+        ammoNum = player.weapon.ammoState.magazine;
+        size = ammoNum;
+    }
+    else if(weapon.ammoType == Entity::AmmoType::OVERHEAT)
+    {
+        ammoNum = std::ceil(player.weapon.ammoState.overheat);
+        constexpr float rate = MAX_DISPLAY / Entity::MAX_OVERHEAT;
+        size = ammoNum * rate;
+    }
     
-    ammoNumIcon.SetText(std::to_string(ammo));
+    ammoNumIcon.SetText(std::to_string(ammoNum));
+    ammoNumIcon.SetOffset(-ammoNumIcon.GetSize() + glm::ivec2{-5, -5});
 
     std::string ammoStr;
-    ammoStr.resize(ammo, 'l');
+    size = std::min(size, MAX_DISPLAY);
+    ammoStr.resize(size, 'l');
     ammoText.SetText(ammoStr);
 }
 

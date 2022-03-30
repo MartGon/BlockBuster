@@ -35,7 +35,8 @@ namespace Entity
         float overheatRate;
         uint32_t magazineSize;
     };
-    const float MAX_OVERHEAT = 100.0f;
+    constexpr const float MAX_OVERHEAT = 100.0f;
+    constexpr const float OVERHEAT_REDUCTION_RATE = 20.0f;
 
     class WeaponType
     {
