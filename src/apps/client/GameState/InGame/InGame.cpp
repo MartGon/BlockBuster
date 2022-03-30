@@ -167,7 +167,7 @@ void InGame::Start()
 
     if(!connected)
     {
-        client_->logger->LogInfo("Could not connect to server. Quitting");
+        client_->logger->LogError("Could not connect to server. Quitting");
     }
 
     client_->quit = !connected;

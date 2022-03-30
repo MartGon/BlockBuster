@@ -6,10 +6,10 @@ using namespace BlockBuster;
 
 const std::string BlockBuster::GameMode::typeStrings[GameMode::Type::COUNT] = {"Free for All", "Team DeathMatch", "Domination", "Capture the Flag"};
 const std::unordered_map<std::string, GameMode::Type> GameMode::stringTypes = {
-    {"FreeForAll", GameMode::Type::FREE_FOR_ALL}, 
-    {"TeamDeathMatch", GameMode::Type::TEAM_DEATHMATCH}, 
+    {"Free for All", GameMode::Type::FREE_FOR_ALL}, 
+    {"Team DeathMatch", GameMode::Type::TEAM_DEATHMATCH}, 
     {"Domination", GameMode::Type::DOMINATION},
-    {"CaptureTheFlag", GameMode::Type::CAPTURE_THE_FLAG}
+    {"Capture the Flag", GameMode::Type::CAPTURE_THE_FLAG}
 };
 
 // Gamemode
@@ -89,14 +89,17 @@ Match::Match(GameMode::Type type)
         break;
 
     case GameMode::Type::TEAM_DEATHMATCH:
+        assertm(false, "This mode has not been implemented yet");
         //gameMode = std::make_unique<FreeForAll>();
         break;
 
     case GameMode::Type::DOMINATION:
+        assertm(false, "This mode has not been implemented yet");
         //gameMode = std::make_unique<FreeForAll>();
         break;
 
     case GameMode::Type::CAPTURE_THE_FLAG:
+        assertm(false, "This mode has not been implemented yet");
         //gameMode = std::make_unique<FreeForAll>();
         break;
     
