@@ -2,9 +2,13 @@
 
 #include <Player.h>
 #include <Map.h>
+#include <util/Timer.h>
+
+#include <mglogger/Logger.h>
 
 #include <unordered_map>
 #include <vector>
+#include <optional>
 
 namespace BlockBuster
 {
@@ -17,45 +21,109 @@ namespace BlockBuster
     };
     using Scoreboard = std::unordered_map<Entity::ID, PlayerScore>;
 
-    enum GameModeType
-    {
-        FREE_FOR_ALL,
-        TEAM_DEATHMATCH,
-        DOMINATION,
-        CAPTURE_THE_FLAG,
-
-        COUNT
-    };
-
     class GameMode
     {
     public:
+        enum Type
+        {
+            FREE_FOR_ALL,
+            TEAM_DEATHMATCH,
+            DOMINATION,
+            CAPTURE_THE_FLAG,
+
+            COUNT
+        };
+
+        GameMode(Type type) : type{type}
+        {
+
+        }
+        virtual ~GameMode() {}
+
         // This would need map and player data
         virtual void Start() {}; // Spawn players
         virtual void Update() {}; // Check for domination points, flag carrying
 
         virtual void OnPlayerDeath(Entity::ID killer, Entity::ID victim) {}; // Change score, check for game over, etc.
 
-        virtual bool IsGameOver() = 0;        
+        virtual bool IsGameOver() = 0;
 
-        static const std::string typeStrings[GameModeType::COUNT];
-    private:
+        // Scoreboard
+        void AddPlayer(Entity::ID id, std::string name);
+        std::optional<PlayerScore> GetPlayerScore(Entity::ID playerId);
+
+        static const std::string typeStrings[Type::COUNT];
+        static const std::unordered_map<std::string, Type> stringTypes;
+    protected:
+        Type type;
         Scoreboard scoreBoard;
     };
-    std::unordered_map<GameModeType, bool> GetSupportedGameModes(Game::Map::Map& map);
+    std::unordered_map<GameMode::Type, bool> GetSupportedGameModes(Game::Map::Map& map);
     std::vector<std::string> GetSupportedGameModesAsString(Game::Map::Map& map);
 
-    struct Match
+    class FreeForAll : public GameMode
     {
+    public:
+        FreeForAll() : GameMode(Type::FREE_FOR_ALL)
+        {
+
+        }
+
+        void OnPlayerDeath(Entity::ID killer, Entity::ID victim) override;
+        bool IsGameOver() override;
+        int MAX_KILLS = 30;
+    };
+
+    class Match
+    {
+    public:
+        Match(GameMode::Type type);
+
         enum State
         {
             WAITING_FOR_PLAYERS,
             ON_GOING,
+            ENDING,
             ENDED
         };
 
-        std::unordered_map<Entity::ID, Entity::Player> players;
+        inline GameMode* GetGameMode()
+        {
+            return gameMode.get();
+        }
+
+        inline State GetState()
+        {
+            return state;
+        }
+
+        inline bool IsOver()
+        {
+            return state == ENDED;
+        }
+
+        inline bool IsOnGoing()
+        {
+            return state == ON_GOING;
+        }
+
+        inline Util::Time::Seconds GetTimeToStart()
+        {
+            return state == WAITING_FOR_PLAYERS ? waitTimer.GetTimeLeft() : Util::Time::Seconds(0.0);
+        }
+
+        void Start();
+        void Update(Log::Logger* logger, Util::Time::Seconds deltaTime);
+
         ::Game::Map::Map map;
-        GameMode* gameMode;
+
+    private:
+        std::unique_ptr<GameMode> gameMode;
+        State state = WAITING_FOR_PLAYERS;
+
+        const Util::Time::Seconds waitTime{15.0f};
+        Util::Timer waitTimer{waitTime};
+        const Util::Time::Seconds gameTime{60.0f * 12}; // 12 min
+        Util::Timer gameTimer{gameTime};
     };
 }

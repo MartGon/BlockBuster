@@ -8,7 +8,8 @@
 using namespace BlockBuster;
 using namespace Networking::Packets::Client;
 
-Server::Server(Params params, MMServer mmServer) : params{params}, mmServer{mmServer}, asyncClient{mmServer.address, mmServer.port}
+Server::Server(Params params, MMServer mmServer) : params{params}, mmServer{mmServer}, 
+    asyncClient{mmServer.address, mmServer.port}, match{GameMode::stringTypes.at(params.mode)}
 {
 
 }
@@ -17,10 +18,8 @@ void Server::Start()
 {
     InitLogger();
     InitNetworking();
-    InitAI();
-    InitMap();
+    InitMatch();
     
-
     auto next = Util::Time::GetTime() + TICK_RATE;
     nextTickDate = next;
 }
@@ -28,19 +27,23 @@ void Server::Start()
 void Server::Run()
 {
     // Server loop
-    while(true)
+    while(!match.IsOver())
     {
         host->PollAllEvents();
 
         auto preSimulationTime = Util::Time::GetTime();
 
-        HandleClientsInput();
-        UpdateWorld();
-        SendWorldUpdate();
+        if(match.IsOnGoing())
+        {
+            HandleClientsInput();
+            UpdateWorld();
+            SendWorldUpdate();
 
-        tickCount++;
+            tickCount++;
+        }
+
+        match.Update(&logger, TICK_RATE);
         logger.Flush();
-
         SleepUntilNextTick(preSimulationTime);
     }
 
@@ -87,6 +90,13 @@ void Server::InitNetworking()
     clients.reserve(params.maxPlayers);
 }
 
+void Server::InitMatch()
+{
+    InitAI();
+    InitMap();
+    match.Start();
+}
+
 void Server::InitAI()
 {
     // Create AI players
@@ -105,7 +115,7 @@ void Server::InitMap()
     if(res.isOk())
     {
         auto mapPtr = std::move(res.unwrap());
-        map = std::move(*mapPtr.get());
+        match.map = std::move(*mapPtr.get());
     }
     else
     {
@@ -132,6 +142,8 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     Networking::Packets::Server::Welcome welcome;
     welcome.playerId = player.id;
     welcome.tickRate = TICK_RATE.count();
+    welcome.matchState = match.GetState();
+    welcome.timeToStart = match.GetTimeToStart();
     SendPacket(peerId, welcome);
 
     // Player Respawn
@@ -303,7 +315,7 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     auto playerYaw = cmd.camYaw;
 
     auto& pController = client.pController;
-    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
+    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &match.map, TICK_RATE);
     playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
     player.SetTransform(playerTransform);
 
@@ -361,7 +373,7 @@ void Server::HandleShootCommand(ShotCommand sc)
     logger.LogDebug("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
 
     // Check collision with block
-    auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
+    auto bCol = Game::CastRayFirst(&match.map, ray, match.map.GetBlockScale());
     auto bColDist = std::numeric_limits<float>::max();
     if(bCol.intersection.intersects)
         bColDist = bCol.intersection.GetRayLength(ray);
@@ -578,7 +590,7 @@ const float Server::MIN_SPAWN_ENEMY_DISTANCE = 5.0f;
 // Return the first one, if it 
 glm::ivec3 Server::FindSpawnPoint(Entity::Player player)
 {
-    auto spawnPoints = map.GetRespawnIndices();
+    auto spawnPoints = match.map.GetRespawnIndices();
 
     std::vector<glm::ivec3> validSpawns;
     for(auto sPoint : spawnPoints)
@@ -598,9 +610,9 @@ glm::ivec3 Server::FindSpawnPoint(Entity::Player player)
 
 glm::vec3 Server::ToSpawnPos(glm::ivec3 spawnPoint)
 {
-    auto blockCenter = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
+    auto blockCenter = Game::Map::ToRealPos(spawnPoint, match.map.GetBlockScale());
     auto mcb = Entity::Player::GetMoveCollisionBox();
-    auto offsetY = (mcb.scale.y / 2.0f) - mcb.position.y - map.GetBlockScale() / 2.0f;
+    auto offsetY = (mcb.scale.y / 2.0f) - mcb.position.y - match.map.GetBlockScale() / 2.0f;
     auto pos = blockCenter + glm::vec3{0.0f, offsetY, 0.0f};
 
     return pos;
@@ -608,7 +620,7 @@ glm::vec3 Server::ToSpawnPos(glm::ivec3 spawnPoint)
 
 bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
 {
-    auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
+    auto spawnPos = Game::Map::ToRealPos(spawnPoint, match.map.GetBlockScale());
 
     auto players = GetPlayers();
     for(auto other : players)
@@ -634,7 +646,7 @@ void Server::SpawnPlayer(ENet::PeerId clientId)
 
     // Set pos
     auto sIndex = FindSpawnPoint(player);
-    auto spawn = map.GetRespawn(sIndex);
+    auto spawn = match.map.GetRespawn(sIndex);
     auto playerPos = ToSpawnPos(sIndex);
     auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, spawn->orientation, 0.0f}, glm::vec3{1.0f}};
     player.SetTransform(playerTransform);

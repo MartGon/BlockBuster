@@ -5,6 +5,8 @@
 
 #include <networking/Networking.h>
 #include <entity/Player.h>
+#include <entity/Match.h>
+
 #include <Snapshot.h>
 
 #include <enetw/ENetW.h>
@@ -137,6 +139,8 @@ namespace Networking
 
                 uint8_t playerId;
                 double tickRate;
+                Util::Time::Seconds timeToStart;
+                BlockBuster::Match::State matchState;
             };
 
             class WorldUpdate final : public Packet

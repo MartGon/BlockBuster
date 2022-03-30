@@ -25,6 +25,7 @@
 
 #include <entity/Player.h>
 #include <entity/PlayerController.h>
+#include <entity/Match.h>
 
 #include <networking/enetw/ENetW.h>
 #include <networking/Snapshot.h>
@@ -125,6 +126,10 @@ namespace BlockBuster
         uint8_t playerId = 0;
         Util::Timer respawnTimer;
         Entity::ID killerId = 0;
+
+        // Match
+        Util::Timer countdownTimer;
+        Match::State matchState = Match::WAITING_FOR_PLAYERS;
 
         // Simulation
         Util::Time::SteadyPoint preSimulationTime;

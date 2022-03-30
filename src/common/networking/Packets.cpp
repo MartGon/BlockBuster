@@ -101,12 +101,16 @@ void Welcome::OnRead(Util::Buffer::Reader reader)
 {
     playerId = reader.Read<uint8_t>();
     tickRate = reader.Read<double>();
+    timeToStart = reader.Read<Util::Time::Seconds>();
+    matchState = reader.Read<BlockBuster::Match::State>();
 }
 
 void Welcome::OnWrite()
 {
     buffer.Write(playerId);
     buffer.Write(tickRate);
+    buffer.Write(timeToStart);
+    buffer.Write(matchState);
 }
 
 void WorldUpdate::OnRead(Util::Buffer::Reader reader)

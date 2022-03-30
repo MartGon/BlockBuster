@@ -57,6 +57,11 @@ namespace Util
             return elapsed_;
         }
 
+        inline Util::Time::Seconds GetTimeLeft() const
+        {
+            return duration_ - elapsed_;
+        }
+
         inline void Update(Util::Time::Seconds elapsed)
         {
             if(!isPaused)

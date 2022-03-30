@@ -235,7 +235,14 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
     }
 
     // Extra data: Respawns, etc
+    using namespace BlockBuster;
     respawnTimer.Update(deltaTime);
+    countdownTimer.Update(deltaTime);
+    if(countdownTimer.IsDone() && matchState == Match::WAITING_FOR_PLAYERS)
+    {
+        matchState = BlockBuster::Match::ON_GOING;
+        inGameGui.countdownText.SetIsVisible(false);
+    }
 }
 
 void InGame::OnNewFrame()
@@ -243,10 +250,11 @@ void InGame::OnNewFrame()
     EntityInterpolation();
     SmoothPlayerMovement();
 
+    auto& player = GetLocalPlayer();
+
     auto camMode = camController_.GetMode();
     if(camMode == CameraMode::FPS)
     {
-        auto& player = playerTable[playerId];
         auto camPos = player.GetFPSCamPos();
         camera_.SetPos(camPos);
     }
@@ -254,7 +262,6 @@ void InGame::OnNewFrame()
         camController_.Update();
 
     // Rellocate camera
-    auto& player = playerTable[playerId];
     if(player.IsDead() && Util::Map::Contains(playerTable, killerId))
     {
         // Look to killer during death
@@ -415,6 +422,11 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             // Add to table
             playerTable[playerId] = player;
             prevPlayerTable[playerId] = player;
+
+            // Set match data
+            countdownTimer.SetDuration(welcome->timeToStart);
+            countdownTimer.Start();
+            matchState = welcome->matchState;
         }
         break;
 
@@ -477,10 +489,10 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             auto ptd = packet.To<PlayerTakeDmg>();
             client_->logger->LogInfo("Player took dmg!");
 
-            auto& player = playerTable[playerId];
+            auto& player = GetLocalPlayer();
             player.health = ptd->healthState;
 
-            // TODO: Start take dmg animation effect
+            inGameGui.PlayDmgAnim();
         }
         break;
 
@@ -500,7 +512,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             if(ptd->victimId == playerId)
             {   
                 // Set player dead
-                auto& player = playerTable[playerId];
+                auto& player = GetLocalPlayer();
                 player.health.hp = 0;
 
                 fpsAvatar.isEnabled = false;
@@ -536,8 +548,8 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             if(respawn->playerId == playerId)
             {
                 localPlayerStateHistory.PushBack(respawn->playerState);
-                playerTable[playerId].ApplyState(respawn->playerState);
-                playerTable[playerId].ResetHealth();
+                GetLocalPlayer().ApplyState(respawn->playerState);
+                GetLocalPlayer().ResetHealth();
 
                 // Set spawn camera rotation
                 auto camRot = camera_.GetRotationDeg();
@@ -572,10 +584,9 @@ void InGame::RecvServerSnapshots()
 
 void InGame::UpdateNetworking()
 {
-    client_->logger->LogInfo("Input: Sending player inputs");
-
-    auto& player = playerTable[playerId];
-    if(!player.IsDead())
+    auto& player = GetLocalPlayer();
+    bool sendInputs = !player.IsDead() && matchState == Match::ON_GOING;
+    if(sendInputs)
     {
         // Sample player input
         auto mask = inGameGui.IsMenuOpen() ? Entity::PlayerInput{false} : Entity::PlayerInput{true};
@@ -627,7 +638,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     if(playerTable.find(playerId) == playerTable.end())
         return;
 
-    auto& player = playerTable[playerId];
+    auto& player = GetLocalPlayer();
 
     // Check prediction errors
     if(!predictionHistory_.Empty() && predictionHistory_.Front()->inputReq.reqId <= this->lastAck)
@@ -687,7 +698,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
                 }
 
                 // Update error correction values
-                auto renderState = playerTable[playerId].ExtractState();
+                auto renderState = GetLocalPlayer().ExtractState();
                 errorCorrectionDiff = renderState.transform - realState.transform;
                 errorCorrectionStart = Util::Time::GetTime();
             }
@@ -718,7 +729,7 @@ void InGame::SmoothPlayerMovement()
     if(playerTable.find(playerId) == playerTable.end())
         return;
 
-    auto& player = playerTable[playerId];
+    auto& player = GetLocalPlayer();
 
     if(player.IsDead())
         return;
@@ -735,7 +746,7 @@ void InGame::SmoothPlayerMovement()
         float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
         auto errorCorrection = errorCorrectionDiff * weight;
         predState.transform = predState.transform + errorCorrection;
-        playerTable[playerId].ApplyState(predState);
+        player.ApplyState(predState);
 
         #ifdef _DEBUG
             auto dist = glm::length(errorCorrection.pos);
@@ -747,7 +758,7 @@ void InGame::SmoothPlayerMovement()
 
 Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::PlayerInput playerInput, float playerYaw, Util::Time::Seconds deltaTime)
 {
-    auto& player = playerTable[playerId];
+    auto& player = GetLocalPlayer();
     
     Entity::PlayerState nextState = a;
     nextState.transform.pos = pController.UpdatePosition(a.transform.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
@@ -886,7 +897,8 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
     auto state1 = s1.players.at(playerId);
     auto state2 = s2.players.at(playerId);
 
-    auto oldState = playerTable[playerId].ExtractState();
+    auto& player = playerTable[playerId];
+    auto oldState = player.ExtractState();
     auto interpolation = Networking::PlayerSnapshot::Interpolate(state1, state2, alpha);
 
     if(Entity::HasShot(oldState.weaponState.state, interpolation.wepState))
@@ -906,7 +918,7 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
     }
 
     auto newState = interpolation.ToPlayerState(oldState);
-    playerTable[playerId].ApplyState(newState);
+    player.ApplyState(newState);
 }
 
 glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const

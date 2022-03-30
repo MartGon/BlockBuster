@@ -1,18 +1,45 @@
 #include <Match.h>
 
+#include <util/Container.h>
+
 using namespace BlockBuster;
 
-const std::string BlockBuster::GameMode::typeStrings[BlockBuster::GameModeType::COUNT] = {"Free for All", "Team DeathMatch", "Domination", "Capture the Flag"};
+const std::string BlockBuster::GameMode::typeStrings[GameMode::Type::COUNT] = {"Free for All", "Team DeathMatch", "Domination", "Capture the Flag"};
+const std::unordered_map<std::string, GameMode::Type> GameMode::stringTypes = {
+    {"FreeForAll", GameMode::Type::FREE_FOR_ALL}, 
+    {"TeamDeathMatch", GameMode::Type::TEAM_DEATHMATCH}, 
+    {"Domination", GameMode::Type::DOMINATION},
+    {"CaptureTheFlag", GameMode::Type::CAPTURE_THE_FLAG}
+};
 
-std::unordered_map<GameModeType, bool> BlockBuster::GetSupportedGameModes(Game::Map::Map& map)
+// Gamemode
+
+void GameMode::AddPlayer(Entity::ID id, std::string name)
 {
-    std::unordered_map<GameModeType, bool> gameModes;
+    PlayerScore ps{id, name, 0, 0};
+    scoreBoard[id] = ps;
+}
+
+std::optional<PlayerScore> GameMode::GetPlayerScore(Entity::ID id)
+{
+    std::optional<PlayerScore> ps;
+    if(Util::Map::Contains(scoreBoard, id))
+        ps = scoreBoard[id];
+    
+    return ps;
+}
+
+// Other
+
+std::unordered_map<GameMode::Type, bool> BlockBuster::GetSupportedGameModes(Game::Map::Map& map)
+{
+    std::unordered_map<GameMode::Type, bool> gameModes;
 
     auto goIndices = map.GetGameObjectIndices();
-    gameModes[GameModeType::FREE_FOR_ALL] = !map.FindGameObjectByType(Entity::GameObject::RESPAWN).empty();
-    gameModes[GameModeType::TEAM_DEATHMATCH] = gameModes[GameModeType::FREE_FOR_ALL];
-    gameModes[GameModeType::DOMINATION] = gameModes[GameModeType::FREE_FOR_ALL] && !map.FindGameObjectByType(Entity::GameObject::DOMINATION_POINT).empty();
-    gameModes[GameModeType::CAPTURE_THE_FLAG] = gameModes[GameModeType::FREE_FOR_ALL] && !map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A).empty()
+    gameModes[GameMode::Type::FREE_FOR_ALL] = !map.FindGameObjectByType(Entity::GameObject::RESPAWN).empty();
+    gameModes[GameMode::Type::TEAM_DEATHMATCH] = gameModes[GameMode::Type::FREE_FOR_ALL];
+    gameModes[GameMode::Type::DOMINATION] = gameModes[GameMode::Type::FREE_FOR_ALL] && !map.FindGameObjectByType(Entity::GameObject::DOMINATION_POINT).empty();
+    gameModes[GameMode::Type::CAPTURE_THE_FLAG] = gameModes[GameMode::Type::FREE_FOR_ALL] && !map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A).empty()
         && !map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_B).empty();;
 
     return gameModes;
@@ -30,4 +57,91 @@ std::vector<std::string> BlockBuster::GetSupportedGameModesAsString(Game::Map::M
     }
 
     return gameModesStr;
+}
+
+// GameMode - FreeForAll
+
+void FreeForAll::OnPlayerDeath(Entity::ID killer, Entity::ID victim)
+{
+    if(Util::Map::Contains(scoreBoard, killer))
+        scoreBoard[killer].score++;
+    if(Util::Map::Contains(scoreBoard, victim))
+        scoreBoard[victim].deaths++;
+}
+
+bool FreeForAll::IsGameOver()
+{
+    for(auto& [id, score] : scoreBoard)
+        if(score.score >= MAX_KILLS)
+            return true;
+
+    return false;
+}
+
+// Match
+
+Match::Match(GameMode::Type type)
+{
+    switch (type)
+    {
+    case GameMode::Type::FREE_FOR_ALL:
+        gameMode = std::make_unique<FreeForAll>();
+        break;
+
+    case GameMode::Type::TEAM_DEATHMATCH:
+        //gameMode = std::make_unique<FreeForAll>();
+        break;
+
+    case GameMode::Type::DOMINATION:
+        //gameMode = std::make_unique<FreeForAll>();
+        break;
+
+    case GameMode::Type::CAPTURE_THE_FLAG:
+        //gameMode = std::make_unique<FreeForAll>();
+        break;
+    
+    default:
+        break;
+    }
+}
+
+void Match::Start()
+{
+    waitTimer.Start();
+}
+
+void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
+{
+    switch (state)
+    {
+    case WAITING_FOR_PLAYERS:
+        waitTimer.Update(deltaTime);
+        if(waitTimer.IsDone())
+        {
+            state = ON_GOING;
+            logger->LogError("Match started");
+            gameTimer.Start();
+        }
+        break;
+    case ON_GOING:
+        gameTimer.Update();
+        if(gameMode->IsGameOver() || gameTimer.IsDone())
+        {
+            waitTimer.Start();
+            state = ENDING;
+        }
+        break;
+    case ENDING:
+        waitTimer.Update(deltaTime);
+        if(waitTimer.IsDone())
+            state = ENDED;
+        break;
+
+    case ENDED:
+        break;
+    
+    default:
+        break;
+    }
+    gameMode->Update();
 }

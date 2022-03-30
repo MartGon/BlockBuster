@@ -285,6 +285,12 @@ void InGameGUI::InitTexts()
     respawnTimeText.SetScale(1.5f);
     respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
     respawnTimeText.SetIsVisible(false);
+
+    countdownText = pixelFont->CreateText();
+    countdownText.SetText("15");
+    countdownText.SetColor(white);
+    countdownText.SetAnchorPoint(GUI::AnchorPoint::CENTER);
+    countdownText.SetScale(3.0f);
 }
 
 void InGameGUI::InitAnimations()
@@ -330,6 +336,7 @@ void InGameGUI::HUD()
     UpdateArmor();
     UpdateAmmo();
     UpdateRespawnText();
+    UpdateCountdownText();
 
     armorText.Draw(inGame->textShader, winSize);
     shieldIcon.Draw(inGame->textShader, winSize);
@@ -350,6 +357,8 @@ void InGameGUI::HUD()
 
     killText.Draw(inGame->textShader, winSize);
     respawnTimeText.Draw(inGame->textShader, winSize);
+
+    countdownText.Draw(inGame->textShader, winSize);
 
     dmgAnimationPlayer.Update(inGame->deltaTime);
     dmgEffectImg.SetScale(winSize);
@@ -430,11 +439,21 @@ void InGameGUI::UpdateScore()
 
 void InGameGUI::UpdateRespawnText()
 {
-    auto respawnTime = inGame->respawnTimer.GetDuration() - inGame->respawnTimer.GetElapsedTime();
+    auto respawnTime = inGame->respawnTimer.GetTimeLeft();
     int seconds = std::ceil(respawnTime.count());
     std::string text = "Respawning in " + std::to_string(seconds) + " seconds";
     respawnTimeText.SetText(text);
     respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
+}
+
+void InGameGUI::UpdateCountdownText()
+{
+    auto countdownTime = inGame->countdownTimer.GetTimeLeft();
+    int seconds = std::ceil(countdownTime.count());
+    std::string text = std::to_string(seconds);
+    countdownText.SetText(text);
+    auto size = countdownText.GetSize();
+    countdownText.SetOffset(glm::ivec2{-size.x / 2, size.y});
 }
 
 void InGameGUI::CloseMenu()

@@ -21,6 +21,7 @@
 #include <entity/Player.h>
 #include <entity/PlayerController.h>
 #include <entity/Map.h>
+#include <entity/Match.h>
 
 #include <http/AsyncClient.h>
 
@@ -111,6 +112,7 @@ namespace BlockBuster
         // Initialization
         void InitLogger();
         void InitNetworking();
+        void InitMatch();
         void InitAI();
         void InitMap();
 
@@ -166,8 +168,8 @@ namespace BlockBuster
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
 
-        // World
-        Game::Map::Map map;
+        // Match
+        Match match;
 
         // Logs        
         Log::ComposedLogger logger;

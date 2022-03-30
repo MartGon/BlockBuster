@@ -66,6 +66,7 @@ namespace BlockBuster
         void UpdateAmmo();
         void UpdateScore();
         void UpdateRespawnText();
+        void UpdateCountdownText();
 
         void ScoreboardWindow();
         void ScoreTable(const char* name);
@@ -117,6 +118,7 @@ namespace BlockBuster
         // Log
         GUI::Text killText;
         GUI::Text respawnTimeText;
+        GUI::Text countdownText;
 
         // ScoreBoard
         bool showScoreboard = false;
