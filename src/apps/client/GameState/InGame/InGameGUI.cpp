@@ -27,6 +27,8 @@ void InGameGUI::Start()
     // Textures
     TRY_LOAD(crosshair.LoadFromFolder(TEXTURES_DIR, "crosshairW.png"));
     TRY_LOAD(hitmarker.LoadFromFolder(TEXTURES_DIR, "hitmarker.png"));
+    glm::u8vec4 white{255, 255, 255, 255};
+    dmgTexture.Load(&white.x, glm::ivec2{1, 1}, GL_RGBA);
 
     // Images
     crosshairImg.SetTexture(&crosshair);
@@ -41,20 +43,11 @@ void InGameGUI::Start()
     hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
     hitmarkerImg.SetColor(glm::vec4{1.0f, 1.0f, 1.0f, 0.5f});
 
-    // Hit marker anim
-    Animation::Sample s1{
-        {},
-        {{"show", true}}
-    };
-    Animation::KeyFrame f1{s1, 0};    
-    Animation::Sample s2{
-        {},
-        {{"show", false}}
-    };
-    Animation::KeyFrame f2{s2, 30};
-    hitmarkerAnim.keyFrames = {f1, f2};
-    hitMarkerPlayer.SetClip(&hitmarkerAnim);
-    hitMarkerPlayer.SetTargetBool("show", &showHitmarker);
+    dmgIndicator.SetTexture(&dmgTexture);
+    dmgIndicator.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+
+    // Animations
+    InitAnimations();
 }
 
 void InGameGUI::DrawGUI(GL::Shader& textShader)
@@ -294,6 +287,40 @@ void InGameGUI::InitTexts()
     respawnTimeText.SetIsVisible(false);
 }
 
+void InGameGUI::InitAnimations()
+{
+    // Hit marker anim
+    Animation::Sample s1{
+        {},
+        {{"show", true}}
+    };
+    Animation::KeyFrame f1{s1, 0};    
+    Animation::Sample s2{
+        {},
+        {{"show", false}}
+    };
+    Animation::KeyFrame f2{s2, 30};
+    hitmarkerAnim.keyFrames = {f1, f2};
+    hitMarkerPlayer.SetClip(&hitmarkerAnim);
+    hitMarkerPlayer.SetTargetBool("show", &showHitmarker);
+
+    // Dmg anim
+    Animation::Sample ds1{
+        {{"alpha", 0.65f}},
+        {}
+    };
+    Animation::KeyFrame df1{ds1, 0};
+    Animation::KeyFrame df2{ds1, 10};
+    Animation::Sample ds2{
+        {{"alpha", 0.0f}},
+        {}
+    };
+    Animation::KeyFrame df3{ds2, 20};
+    dmgAnim.keyFrames = {df1, df2, df3};
+    dmgAnimationPlayer.SetClip(&dmgAnim);
+    dmgAnimationPlayer.SetTargetFloat("alpha", &dmgAlpha);
+}
+
 void InGameGUI::HUD()
 {
     glDisable(GL_DEPTH_TEST);
@@ -315,9 +342,7 @@ void InGameGUI::HUD()
     leftScoreText.Draw(inGame->textShader, winSize);
     rightScoreText.Draw(inGame->textShader, winSize);
 
-    hitmarkerImg.SetScale(glm::vec2{tScale});
     hitmarkerImg.SetIsVisible(showHitmarker);
-    hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
     hitmarkerImg.Draw(inGame->imgShader, winSize);
     hitMarkerPlayer.Update(inGame->deltaTime);
 
@@ -325,6 +350,12 @@ void InGameGUI::HUD()
 
     killText.Draw(inGame->textShader, winSize);
     respawnTimeText.Draw(inGame->textShader, winSize);
+
+    dmgAnimationPlayer.Update(inGame->deltaTime);
+    dmgIndicator.SetScale(winSize);
+    const auto red = glm::vec4{1.0f, 0.0f, 0.0f, dmgAlpha};
+    dmgIndicator.SetColor(red);
+    dmgIndicator.Draw(inGame->imgShader, winSize);
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -401,7 +432,7 @@ void InGameGUI::UpdateRespawnText()
 {
     auto respawnTime = inGame->respawnTimer.GetDuration() - inGame->respawnTimer.GetElapsedTime();
     int seconds = std::ceil(respawnTime.count());
-    std::string text = "You'll respawn in " + std::to_string(seconds) + " seconds";
+    std::string text = "Respawning in " + std::to_string(seconds) + " seconds";
     respawnTimeText.SetText(text);
     respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
 }
@@ -426,6 +457,12 @@ void InGameGUI::PlayerHitMarkerAnim()
 {
     hitMarkerPlayer.Reset();
     hitMarkerPlayer.Play();
+}
+
+void InGameGUI::PlayDmgAnim()
+{
+    dmgAnimationPlayer.Reset();
+    dmgAnimationPlayer.Play();
 }
 
 // Private
@@ -574,6 +611,10 @@ void InGameGUI::DebugWindow()
                     break;
                 }
             }
+            if(ImGui::Button("Dmg"))
+            {
+                PlayDmgAnim();
+            }
         }
 
         if(ImGui::CollapsingHeader("Audio"))
@@ -654,7 +695,6 @@ void InGameGUI::RenderStatsWindow()
     }
     ImGui::End();
 }
-
 
 // Handy 
 
