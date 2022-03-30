@@ -7,6 +7,7 @@ SET(SOURCES
     RenderMgr.cpp
     Model.cpp
     Skybox.cpp
+    TextureMgr.cpp
 )
 
 
