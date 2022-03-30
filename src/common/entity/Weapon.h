@@ -54,7 +54,7 @@ namespace Entity
         float baseDmg;
         float maxRange; // Damage will be reduced across range. if distance > maxRange => dmg = baseDmg * max(0, (1 - (distance - maxRange) / maxRange));
         float baseSpread; // Size of the crosshair
-        float burstRate; // Time between burst shots.
+        uint8_t burstShots; // Amount of shots per burst
 
         uint32_t visualId;
         uint32_t soundPackId;
@@ -87,6 +87,7 @@ namespace Entity
             float overheat;
         } ammoState;
         bool triggerPressed = false;
+        uint8_t burstCount = 0;
     };
 
     // Weapon

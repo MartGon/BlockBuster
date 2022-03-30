@@ -7,14 +7,14 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
         WeaponTypeID::SNIPER, 
         {
             WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, 0.0f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
+            300.0f, 0.0f, 0, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
         },
     },
     {
         WeaponTypeID::CHEAT_SMG, 
         {
-            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.1f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, 0.0f, 21, 12, AmmoType::INFINITE_AMMO, AmmoTypeData{ .magazineSize = 20}
+            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::BURST, Util::Time::Seconds{0.1f}, Util::Time::Seconds{2.0f}, 100.0f, 
+            300.0f, 0.0f, 3, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 8}
         }
     }
 };
@@ -47,9 +47,10 @@ bool Entity::CanShoot(Weapon weapon)
 {
     auto wepType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
     bool isAuto = wepType.firingMode == WeaponType::FiringMode::AUTO;
-    bool canShootSemi = (wepType.firingMode == WeaponType::FiringMode::SEMI_AUTO || wepType.firingMode == WeaponType::FiringMode::BURST) && !weapon.triggerPressed;
+    bool canShootSemi = (wepType.firingMode == WeaponType::FiringMode::SEMI_AUTO) && !weapon.triggerPressed;
+    bool canShootBurst = wepType.firingMode == WeaponType::FiringMode::BURST && (weapon.burstCount > 0 || (!weapon.triggerPressed && weapon.burstCount == 0));
 
-    bool canShoot = isAuto || canShootSemi;
+    bool canShoot = isAuto || canShootSemi || canShootBurst;
 
     return canShoot;
 }

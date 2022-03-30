@@ -369,7 +369,7 @@ void InGameGUI::UpdateAmmo()
     // TODO: Update for overheat weapon
     auto& weapon = Entity::WeaponMgr::weaponTypes.at(player.weapon.weaponTypeId);
     int ammo = 0;
-    if(weapon.ammoType != Entity::AmmoType::AMMO)
+    if(weapon.ammoType == Entity::AmmoType::AMMO)
         ammo = player.weapon.ammoState.magazine;
     
     ammoNumIcon.SetText(std::to_string(ammo));

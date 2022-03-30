@@ -68,11 +68,27 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
     {
         case Weapon::State::IDLE:
         {
-            if(input[Entity::SHOOT] && Entity::HasAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType) && Entity::CanShoot(weapon))
+            bool isBurst = weaponType.firingMode == WeaponType::FiringMode::BURST;
+            bool isBursting = isBurst && weapon.burstCount < weaponType.burstShots && weapon.burstCount > 0;
+            bool doShoot = input[Entity::SHOOT] || isBursting;
+            if(doShoot)
             {
-                weapon.state = Weapon::State::SHOOTING;
-                weapon.cooldown = weaponType.cooldown;
-                weapon.ammoState = Entity::UseAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType);
+                if(Entity::HasAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType))
+                {
+                    if(Entity::CanShoot(weapon))
+                    {
+                        weapon.state = Weapon::State::SHOOTING;
+                        weapon.cooldown = weaponType.cooldown;
+                        weapon.ammoState = Entity::UseAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType);
+                        weapon.triggerPressed = true;
+
+                        if(isBurst)
+                            weapon.burstCount++;
+                    }
+                }
+                // Stop burst if it doesn't have enough ammo
+                else if(isBurst)
+                    weapon.burstCount = 0;
             }
             else if(input[Entity::RELOAD] && !Entity::IsMagFull(weapon.ammoState, weaponType.ammoData, weaponType.ammoType))
             {
@@ -87,7 +103,13 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
         {
             weapon.cooldown -= deltaTime;
             if(weapon.cooldown.count() <= 0.0)
+            {
                 weapon.state = Weapon::State::IDLE;
+
+                bool isBurst = weaponType.firingMode == WeaponType::FiringMode::BURST;
+                if(isBurst && weapon.burstCount >= weaponType.burstShots)
+                    weapon.burstCount = 0;
+            }
         }
         break;
         case Weapon::State::RELOADING:

@@ -203,7 +203,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
             auto inputReq = inputPacket->req;
 
             auto cmdId = inputReq.reqId;
-            logger.LogError("Command arrived with cmdid " + std::to_string(cmdId) + " from " + std::to_string(peerId));
+            logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId) + " from " + std::to_string(peerId));
 
             // Check if we already have this input
             auto found = client.inputBuffer.FindFirst([cmdId](auto input)
