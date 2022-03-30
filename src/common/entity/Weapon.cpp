@@ -13,8 +13,8 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
     {
         WeaponTypeID::CHEAT_SMG, 
         {
-            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.1f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, 0.0f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 20}
+            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.1f}, Util::Time::Seconds{2.0f}, 100.0f, 
+            300.0f, 0.0f, 0.0f, 21, 12, AmmoType::INFINITE_AMMO, AmmoTypeData{ .magazineSize = 20}
         }
     }
 };
@@ -41,6 +41,17 @@ bool Entity::HasShot(Weapon::State s1, Weapon::State s2)
 bool Entity::HasReloaded(Weapon::State s1, Weapon::State s2)
 {
     return s1 == Weapon::State::IDLE && s2 == Weapon::State::RELOADING;
+}
+
+bool Entity::CanShoot(Weapon weapon)
+{
+    auto wepType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
+    bool isAuto = wepType.firingMode == WeaponType::FiringMode::AUTO;
+    bool canShootSemi = (wepType.firingMode == WeaponType::FiringMode::SEMI_AUTO || wepType.firingMode == WeaponType::FiringMode::BURST) && !weapon.triggerPressed;
+
+    bool canShoot = isAuto || canShootSemi;
+
+    return canShoot;
 }
 
 // Ammo

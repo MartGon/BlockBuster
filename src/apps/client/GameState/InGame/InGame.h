@@ -120,6 +120,7 @@ namespace BlockBuster
         std::unordered_map<Entity::ID, PlayerModelState> playerModelStateTable;
         std::unordered_map<Entity::ID, ExtraData> playersExtraData;
 
+        // Local player
         uint8_t playerId = 0;
         Util::Timer respawnTimer;
 

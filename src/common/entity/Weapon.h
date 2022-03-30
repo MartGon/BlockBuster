@@ -86,11 +86,13 @@ namespace Entity
             uint32_t magazine;
             float overheat;
         } ammoState;
+        bool triggerPressed = false;
     };
 
     // Weapon
     bool HasShot(Weapon::State s1, Weapon::State s2);
     bool HasReloaded(Weapon::State s1, Weapon::State s2);
+    bool CanShoot(Weapon weapon);
 
     // Ammo
     Weapon::AmmoState ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType);

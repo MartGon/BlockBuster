@@ -197,7 +197,6 @@ void InGame::Update()
 
             simulationLag -= serverTickRate;
         }
-
         EntityInterpolation();
         SmoothPlayerMovement();
         Render();

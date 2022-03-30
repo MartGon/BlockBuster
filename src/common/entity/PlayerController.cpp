@@ -68,7 +68,7 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
     {
         case Weapon::State::IDLE:
         {
-            if(input[Entity::SHOOT] && Entity::HasAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType))
+            if(input[Entity::SHOOT] && Entity::HasAmmo(weapon.ammoState, weaponType.ammoData, weaponType.ammoType) && Entity::CanShoot(weapon))
             {
                 weapon.state = Weapon::State::SHOOTING;
                 weapon.cooldown = weaponType.cooldown;
@@ -79,6 +79,8 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
                 weapon.state = Weapon::State::RELOADING;
                 weapon.cooldown = weaponType.reloadTime;
             }
+
+            weapon.triggerPressed = input[Entity::SHOOT];
         }
         break;
         case Weapon::State::SHOOTING:
