@@ -2,7 +2,9 @@
 
 #include <Player.h>
 #include <Map.h>
+
 #include <util/Timer.h>
+#include <util/Buffer.h>
 
 #include <mglogger/Logger.h>
 
@@ -17,10 +19,54 @@ namespace BlockBuster
     {
         Entity::ID playerId;
         std::string name;
+        uint32_t kills;
         uint32_t score;
         uint32_t deaths;
+
+        Util::Buffer ToBuffer();
+        static PlayerScore FromBuffer(Util::Buffer::Reader& reader);
     };
-    using Scoreboard = std::unordered_map<Entity::ID, PlayerScore>;
+
+    struct TeamScore
+    {
+        Entity::ID teamId;
+        uint32_t score;
+    };
+
+    class Scoreboard
+    {
+    public:
+
+        inline bool HasChanged() const
+        {
+            return hasChanged;
+        }
+
+        inline void CommitChanges()
+        {
+            hasChanged = false;
+        }
+
+        void AddPlayer(Entity::ID playerId, std::string name);
+        void SetPlayerScore(PlayerScore ps);
+        void RemovePlayer(Entity::ID playerId);
+        std::vector<Entity::ID> GetPlayerIDs();
+        std::optional<PlayerScore> GetPlayerScore(Entity::ID playerId);
+
+        void AddTeam(Entity::ID teamId);
+        void SetTeamScore(TeamScore teamScore);
+        void RemoveTeam(Entity::ID teamId);
+        std::vector<Entity::ID> GetTeamIDs();
+        std::optional<TeamScore> GetTeamScore(Entity::ID teamId);
+
+        Util::Buffer ToBuffer();
+        static Scoreboard FromBuffer(Util::Buffer::Reader& reader);
+
+    private:
+        std::unordered_map<Entity::ID, PlayerScore> playersScore;
+        std::unordered_map<Entity::ID, TeamScore> teamsScore;
+        bool hasChanged = false;
+    };
 
     class GameMode
     {
@@ -47,6 +93,16 @@ namespace BlockBuster
             return type;
         }
 
+        inline Scoreboard& GetScoreboard()
+        {
+            return this->scoreBoard;
+        }
+
+        inline void SetScoreboard(Scoreboard scoreboard)
+        {
+            this->scoreBoard = scoreboard;
+        }
+
         // This would need map and player data
         virtual void Start() {}; // Spawn players
         virtual void Update() {}; // Check for domination points, flag carrying
@@ -54,10 +110,6 @@ namespace BlockBuster
         virtual void OnPlayerDeath(Entity::ID killer, Entity::ID victim) {}; // Change score, check for game over, etc.
 
         virtual bool IsGameOver() = 0;
-
-        // Scoreboard
-        void AddPlayer(Entity::ID id, std::string name);
-        std::optional<PlayerScore> GetPlayerScore(Entity::ID playerId);
 
         static const std::string typeStrings[Type::COUNT];
         static const std::unordered_map<std::string, Type> stringTypes;

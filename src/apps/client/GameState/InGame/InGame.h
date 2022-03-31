@@ -56,7 +56,7 @@ namespace BlockBuster
         // Update funcs
         void DoUpdate(Util::Time::Seconds deltaTime);
         void OnEnterMatchState(Match::StateType type);
-        void OnNewFrame();
+        void OnNewFrame(Util::Time::Seconds deltaTime);
 
         // Input
         void HandleSDLEvents();

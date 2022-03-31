@@ -125,6 +125,7 @@ namespace BlockBuster
         void HandleClientsInput();
         void HandleShootCommand(ShotCommand sc);
         void SendWorldUpdate();
+        void SendScoreboardReport();
         void SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin);
         void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId);
         void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime);

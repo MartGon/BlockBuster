@@ -195,7 +195,7 @@ void InGame::Update()
 
             simulationLag -= serverTickRate;
         }
-        OnNewFrame();
+        OnNewFrame(deltaTime);
         Render();
         UpdateAudio();
 
@@ -224,14 +224,6 @@ void InGame::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)
 
 void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 {
-    // Update animations
-    fpsAvatar.Update(deltaTime);
-    for(auto& [playerId, playerState] : playerModelStateTable)
-    {
-        playerState.deathPlayer.Update(deltaTime);
-        playerState.shootPlayer.Update(deltaTime);
-    }
-
     // Extra data: Respawns, etc
     respawnTimer.Update(deltaTime);
     match.Update(GetLogger(), deltaTime);
@@ -251,13 +243,14 @@ void InGame::OnEnterMatchState(Match::StateType type)
     }
 }
 
-void InGame::OnNewFrame()
+void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
 {
     EntityInterpolation();
     SmoothPlayerMovement();
 
     auto& player = GetLocalPlayer();
 
+    // Set camera in player
     auto camMode = camController_.GetMode();
     if(camMode == CameraMode::FPS)
     {
@@ -274,6 +267,14 @@ void InGame::OnNewFrame()
         auto& killer = playerTable[killerId];
         auto pos = killer.GetRenderTransform().position;
         camera_.SetTarget(pos);
+    }
+
+    // Update animations
+    fpsAvatar.Update(deltaTime);
+    for(auto& [playerId, playerState] : playerModelStateTable)
+    {
+        playerState.deathPlayer.Update(deltaTime);
+        playerState.shootPlayer.Update(deltaTime);
     }
 }
 
@@ -590,6 +591,13 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 if(Util::Map::Contains(playerTable, respawn->playerId))
                     playerTable[respawn->playerId].ApplyState(respawn->playerState);
             }
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_SCOREBOARD_REPORT:
+        {
+            auto sr = packet.To<ScoreboardReport>();
+            match.GetGameMode()->SetScoreboard(sr->scoreboard);
         }
         break;
 

@@ -31,6 +31,7 @@ namespace Networking
         OPCODE_SERVER_PLAYER_HIT_CONFIRM,
         OPCODE_SERVER_PLAYER_DIED,
         OPCODE_SERVER_PLAYER_RESPAWN,
+        OPCODE_SERVER_SCOREBOARD_REPORT
     };
 
     enum OpcodeClient : uint16_t
@@ -67,7 +68,7 @@ namespace Networking
     public:
         Batch();
 
-        void OnRead(Util::Buffer::Reader reader) override
+        void OnRead(Util::Buffer::Reader& reader) override
         {
             while(!reader.IsOver())
             {
@@ -135,7 +136,7 @@ namespace Networking
                 {
 
                 }
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 uint8_t playerId;
@@ -150,7 +151,7 @@ namespace Networking
                 {
 
                 }
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 BlockBuster::Match::State state;
@@ -163,7 +164,7 @@ namespace Networking
                 {
 
                 }
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 Snapshot snapShot;
@@ -177,7 +178,7 @@ namespace Networking
                     
                 }
 
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 Entity::ID playerId;
@@ -191,7 +192,7 @@ namespace Networking
                     
                 }
 
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 Entity::PlayerState playerState;
@@ -206,7 +207,7 @@ namespace Networking
                     
                 }
 
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 glm::vec3 origin;
@@ -221,7 +222,7 @@ namespace Networking
                     
                 }
 
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 Entity::ID victimId;
@@ -235,7 +236,7 @@ namespace Networking
                     
                 }
 
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 Entity::ID killerId;
@@ -251,11 +252,25 @@ namespace Networking
                     
                 }
 
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 Entity::ID playerId;
                 Entity::PlayerState playerState;
+            };
+
+            class ScoreboardReport final : public Packet
+            {
+            public:
+                ScoreboardReport() : Packet{OpcodeServer::OPCODE_SERVER_SCOREBOARD_REPORT, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader& reader) override;
+                void OnWrite() override;
+
+                BlockBuster::Scoreboard scoreboard;
             };
         }
 
@@ -268,7 +283,7 @@ namespace Networking
                 {
 
                 }
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 std::string playerUuid;
@@ -294,7 +309,7 @@ namespace Networking
                 {
 
                 }
-                void OnRead(Util::Buffer::Reader reader) override;
+                void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
                 Req req;

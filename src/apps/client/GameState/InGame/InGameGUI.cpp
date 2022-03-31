@@ -7,6 +7,10 @@
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
 
+#include <sstream>
+
+#include <util/Container.h>
+
 using namespace BlockBuster;
 
 InGameGUI::InGameGUI(InGame& inGame) : inGame{&inGame}
@@ -279,6 +283,7 @@ void InGameGUI::InitTexts()
     gameTimeText.SetAnchorPoint(GUI::AnchorPoint::CENTER_DOWN);
     size = gameTimeText.GetSize();
     gameTimeText.SetOffset(glm::ivec2{-size.x / 2, -size.y} + glm::ivec2{0, -5});
+    gameTimeText.SetIsVisible(false);
 
     // Logs
     killText = pixelFont->CreateText();
@@ -549,17 +554,34 @@ void InGameGUI::ScoreboardWindow()
     {   
         ImVec4 red{0.8f, 0.05f, 0.05f, 0.75f};
         ImVec4 blue{0.05f, 0.05f, 0.7f, 0.75f};
+        ImVec4 yellow{0.921f, 0.886f, 0.058f, 0.75f};
 
-        ImGui::PushStyleColor(ImGuiCol_TableRowBg, red);
-        ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, red);
-            ScoreTable("Red Team");
-        ImGui::PopStyleColor(2);
-        
-        ImGui::Dummy(ImVec2(0, 10));
+        ImVec4 headerColor = ImGui::GetStyleColorVec4(ImGuiCol_TableHeaderBg);
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, headerColor);
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive, headerColor);
 
-        ImGui::PushStyleColor(ImGuiCol_TableRowBg, blue);
-        ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, blue);
-            ScoreTable("Blue Team");
+        auto gameMode = inGame->match.GetGameMode();
+        if(gameMode->GetType() == GameMode::FREE_FOR_ALL)
+        {
+            ImGui::PushStyleColor(ImGuiCol_TableRowBg, yellow);
+            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, yellow);
+                ScoreTable("Free For All");
+            ImGui::PopStyleColor(2);
+        }
+        else
+        {   
+            ImGui::PushStyleColor(ImGuiCol_TableRowBg, red);
+            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, red);
+                ScoreTable("Red Team");
+            ImGui::PopStyleColor(2);
+            
+            ImGui::Dummy(ImVec2(0, 10));
+
+            ImGui::PushStyleColor(ImGuiCol_TableRowBg, blue);
+            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, blue);
+                ScoreTable("Blue Team");
+            ImGui::PopStyleColor(2);
+        }
         ImGui::PopStyleColor(2);
     }
     ImGui::End();
@@ -569,57 +591,107 @@ void InGameGUI::ScoreTable(const char* name)
 {
     ImGui::Text("%s", name);
     auto winSize = ImGui::GetWindowSize();
+
+    auto teamId = 0;
+    auto gameMode = inGame->match.GetGameMode();
+    bool isFFA = gameMode->GetType() == GameMode::FREE_FOR_ALL;
+
+    auto scoreBoard = gameMode->GetScoreboard();
+    std::vector<PlayerScore> playerScores;
+    auto playerIds = scoreBoard.GetPlayerIDs();
+    for(auto id : playerIds)
+    {
+        if(Util::Map::Contains(inGame->playerTable, id))
+        {
+            auto playerTeam = inGame->playerTable[id].teamId;
+            if(playerTeam == teamId || isFFA)
+                playerScores.push_back(scoreBoard.GetPlayerScore(id).value());
+        }
+    }
+    std::sort(playerScores.begin(), playerScores.end(), [](auto a, auto b)
+    {
+        return a.score > b.score;
+    });
     
     auto tFlags = ImGuiTableFlags_None | ImGuiTableFlags_RowBg;
-    if(ImGui::BeginTable("#Score board", 5, tFlags))
+    if(ImGui::BeginTable("#Score board", 7, tFlags))
     {
         auto columnFlags = ImGuiTableColumnFlags_WidthFixed;
         auto nameSize = winSize.x * 0.65f;
         ImGui::TableSetupColumn("Rank", columnFlags);
         ImGui::TableSetupColumn("Name", columnFlags, nameSize);
-        ImGui::TableSetupColumn("Points", columnFlags);
+        ImGui::TableSetupColumn("Score", columnFlags);
+        ImGui::TableSetupColumn("Kills", columnFlags);
+        ImGui::TableSetupColumn("K/D", columnFlags);
         ImGui::TableSetupColumn("Deaths", columnFlags);
         ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
         ImGui::TableHeadersRow();
 
-        // Total Row
-        ImGui::TableNextRow();
+        if(!isFFA)
+        {
+            // Total Row
+            ImGui::TableNextRow();
 
-        ImGui::TableNextColumn();
-        // Rank
+            ImGui::TableNextColumn();
+            // Rank
 
-        ImGui::TableNextColumn();
-        ImGui::Text("%s", name);
+            ImGui::TableNextColumn();
+            ImGui::Text("%s", name);
 
-        ImGui::TableNextColumn();
-        std::string points = std::to_string(35);
-        auto width = ImGui::CalcTextSize(points.c_str()).x;
-        GUI::TableCenterEntry(width);
-        ImGui::Text("%s", points.c_str());
+            ImGui::TableNextColumn();
+            std::string points = std::to_string(35);
+            auto width = ImGui::CalcTextSize(points.c_str()).x;
+            GUI::TableCenterEntry(width);
+            ImGui::Text("%s", points.c_str());
+        }
         
         // Players
-        for(auto i = 0; i < 8; i++)
+        for(auto i = 0; i < playerScores.size(); i++)
         {
+            auto playerScore = playerScores[i];
+
             ImGui::TableNextRow();
             
+
+            // Rank
             ImGui::TableNextColumn();
             std::string rank = std::to_string(i + 1);
             auto width = ImGui::CalcTextSize(rank.c_str()).x;
             GUI::TableCenterEntry(width);
             ImGui::Text("%s", rank.c_str());
 
+            // Name
             ImGui::TableNextColumn();
-            std::string playerName = "Defuminador, God Slayer";
+            std::string playerName = playerScore.name;
             ImGui::Text("%s", playerName.c_str());
 
+            // Points
             ImGui::TableNextColumn();
-            std::string points = std::to_string(10 - i);
+            std::string points = std::to_string(playerScore.score);
             width = ImGui::CalcTextSize(points.c_str()).x;
             GUI::TableCenterEntry(width);
             ImGui::Text("%s", points.c_str());
 
+            // Kills
             ImGui::TableNextColumn();
-            std::string deaths = std::to_string(3);
+            std::string kills = std::to_string(playerScore.kills);
+            width = ImGui::CalcTextSize(kills.c_str()).x;
+            GUI::TableCenterEntry(width);
+            ImGui::Text("%s", kills.c_str());
+
+            // K/D
+            ImGui::TableNextColumn();
+            auto r = (float)playerScore.kills / std::max(1.0f, (float)playerScore.deaths);
+            std::stringstream stream;
+            stream << std::fixed << std::setprecision(2) << r;
+            std::string ratio = stream.str();
+            width = ImGui::CalcTextSize(ratio.c_str()).x;
+            GUI::TableCenterEntry(width);
+            ImGui::Text("%s", ratio.c_str());
+
+            // Deaths
+            ImGui::TableNextColumn();
+            std::string deaths = std::to_string(playerScore.deaths);
             width = ImGui::CalcTextSize(deaths.c_str()).x;
             GUI::TableCenterEntry(width);
             ImGui::Text("%s", deaths.c_str());

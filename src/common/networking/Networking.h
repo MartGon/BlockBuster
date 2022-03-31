@@ -62,7 +62,7 @@ namespace Networking
         void Read();
         void Write();
 
-        virtual void OnRead(Util::Buffer::Reader reader) = 0;
+        virtual void OnRead(Util::Buffer::Reader& reader) = 0;
         virtual void OnWrite() = 0;
 
     protected:

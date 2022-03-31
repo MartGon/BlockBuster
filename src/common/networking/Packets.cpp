@@ -48,8 +48,12 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
         packet = std::make_unique<PlayerDied>();
         break;
 
-        case OpcodeServer::OPCODE_SERVER_PLAYER_RESPAWN:
+    case OpcodeServer::OPCODE_SERVER_PLAYER_RESPAWN:
         packet = std::make_unique<PlayerRespawn>();
+        break;
+
+    case OpcodeServer::OPCODE_SERVER_SCOREBOARD_REPORT:
+        packet = std::make_unique<ScoreboardReport>();
         break;
     
     default:
@@ -101,7 +105,7 @@ Batch<Networking::PacketType::Server>::Batch() : Packet{OPCODE_SERVER_BATCH}
 
 using namespace Networking::Packets::Server;
 
-void Welcome::OnRead(Util::Buffer::Reader reader)
+void Welcome::OnRead(Util::Buffer::Reader& reader)
 {
     playerId = reader.Read<uint8_t>();
     tickRate = reader.Read<double>();
@@ -116,7 +120,7 @@ void Welcome::OnWrite()
     buffer.Write(mode);
 }
 
-void MatchState::OnRead(Util::Buffer::Reader reader)
+void MatchState::OnRead(Util::Buffer::Reader& reader)
 {
     state = reader.Read<BlockBuster::Match::State>();
 }
@@ -126,7 +130,7 @@ void MatchState::OnWrite()
     buffer.Write(state);
 }
 
-void WorldUpdate::OnRead(Util::Buffer::Reader reader)
+void WorldUpdate::OnRead(Util::Buffer::Reader& reader)
 {
     snapShot.serverTick = reader.Read<uint32_t>();
 
@@ -145,7 +149,7 @@ void WorldUpdate::OnWrite()
 }
  
 
-void PlayerDisconnected::OnRead(Util::Buffer::Reader reader)
+void PlayerDisconnected::OnRead(Util::Buffer::Reader& reader)
 {
     playerId = reader.Read<Entity::ID>();
 }
@@ -155,7 +159,7 @@ void PlayerDisconnected::OnWrite()
     buffer.Write(playerId);
 }
 
-void PlayerInputACK::OnRead(Util::Buffer::Reader reader)
+void PlayerInputACK::OnRead(Util::Buffer::Reader& reader)
 {
     lastCmd = reader.Read<uint32_t>();
     playerState = reader.Read<Entity::PlayerState>();
@@ -167,7 +171,7 @@ void PlayerInputACK::OnWrite()
     buffer.Write(playerState);
 }
 
-void PlayerTakeDmg::OnRead(Util::Buffer::Reader reader)
+void PlayerTakeDmg::OnRead(Util::Buffer::Reader& reader)
 {
     origin = reader.Read<glm::vec3>();
     healthState = reader.Read<Entity::Player::HealthState>();
@@ -179,7 +183,7 @@ void PlayerTakeDmg::OnWrite()
     buffer.Write(healthState);
 }
 
-void PlayerHitConfirm::OnRead(Util::Buffer::Reader reader)
+void PlayerHitConfirm::OnRead(Util::Buffer::Reader& reader)
 {
     victimId = reader.Read<Entity::ID>();
 }
@@ -189,7 +193,7 @@ void PlayerHitConfirm::OnWrite()
     buffer.Write(victimId);
 }
 
-void PlayerDied::OnRead(Util::Buffer::Reader reader)
+void PlayerDied::OnRead(Util::Buffer::Reader& reader)
 {
     killerId = reader.Read<Entity::ID>();
     victimId = reader.Read<Entity::ID>();
@@ -203,7 +207,7 @@ void PlayerDied::OnWrite()
     buffer.Write(respawnTime);
 }
 
-void PlayerRespawn::OnRead(Util::Buffer::Reader reader)
+void PlayerRespawn::OnRead(Util::Buffer::Reader& reader)
 {
     playerId = reader.Read<Entity::ID>();
     playerState = reader.Read<Entity::PlayerState>();
@@ -215,9 +219,19 @@ void PlayerRespawn::OnWrite()
     buffer.Write(playerState);
 }
 
+void ScoreboardReport::OnRead(Util::Buffer::Reader& reader)
+{
+    scoreboard = BlockBuster::Scoreboard::FromBuffer(reader);
+}
+
+void ScoreboardReport::OnWrite()
+{
+    buffer.Append(scoreboard.ToBuffer());
+}
+
 using namespace Networking::Packets::Client;
 
-void Login::OnRead(Util::Buffer::Reader reader)
+void Login::OnRead(Util::Buffer::Reader& reader)
 {
     playerUuid = reader.Read<std::string>();
     playerName = reader.Read<std::string>();
@@ -229,7 +243,7 @@ void Login::OnWrite()
     buffer.Write(playerName);
 }
 
-void Input::OnRead(Util::Buffer::Reader reader)
+void Input::OnRead(Util::Buffer::Reader& reader)
 {
     req = reader.Read<Req>();
 }

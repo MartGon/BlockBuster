@@ -81,6 +81,9 @@ namespace Util
         {
         public:
             Reader(const void* buffer, uint32_t size) : buffer{buffer}, size{size} {}
+            Reader(const Reader& reader) = delete;
+            Reader& operator=(const Reader& reader) = delete;
+            
             template<typename T>
             T Read()
             {

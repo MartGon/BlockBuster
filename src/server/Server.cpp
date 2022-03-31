@@ -38,6 +38,7 @@ void Server::Run()
             HandleClientsInput();
             UpdateWorld();
             SendWorldUpdate();
+            SendScoreboardReport();
 
             tickCount++;
         }
@@ -136,7 +137,6 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     player.id = this->lastId++;
     player.teamId = player.id;
 
-    // Add player to table
     clients[peerId].player = player;
 
     // Send welcome packet
@@ -166,10 +166,12 @@ void Server::OnClientLeave(ENet::PeerId peerId)
     auto& client = clients[peerId];
     auto& player = client.player;
 
+    // Update scoreboard
+    match.GetGameMode()->GetScoreboard().RemovePlayer(player.id);
+
     // Informing players
     Networking::Packets::Server::PlayerDisconnected pd;
     pd.playerId = player.id;
-
     Broadcast(pd);
 
     // Inform MM Server
@@ -217,6 +219,8 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
             auto login = packet.To<Networking::Packets::Client::Login>();
             client.playerUuuid = login->playerUuid;
             client.playerName = login->playerName;
+
+            match.GetGameMode()->GetScoreboard().AddPlayer(client.player.id, login->playerName);
         }
         break;
         case Networking::OpcodeClient::OPCODE_CLIENT_INPUT:
@@ -473,6 +477,18 @@ void Server::SendWorldUpdate()
     }
 }
 
+void Server::SendScoreboardReport()
+{
+    auto scoreboard = match.GetGameMode()->GetScoreboard();
+    if(!scoreboard.HasChanged())
+        return;
+    scoreboard.CommitChanges();
+
+    Networking::Packets::Server::ScoreboardReport sr;
+    sr.scoreboard = scoreboard;
+    Broadcast(sr);
+}
+
 void Server::SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin)
 {
     Networking::Packets::Server::PlayerTakeDmg ptd;
@@ -680,9 +696,11 @@ void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
     SendPlayerHitConfirm(authorId, victim.id);
     if(victim.IsDead())
     {   
+        auto gameMode = match.GetGameMode();
         // TODO: Change according to mode
         clients[victimId].respawnTime = Util::Time::Seconds{5.0f};
         BroadcastPlayerDied(author.id, victim.id, clients[victimId].respawnTime);
+        gameMode->OnPlayerDeath(author.id, victim.id);
     }
 }
 
