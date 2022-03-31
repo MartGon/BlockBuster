@@ -38,6 +38,9 @@ void InGame::Start()
     SDL_SetWindowResizable(this->client_->window_, SDL_TRUE);
     client_->ApplyVideoOptions(client_->config.window);
 
+    // Load config
+    LoadGameOptions();
+
     // GL features
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_DEPTH_TEST);
@@ -64,6 +67,7 @@ void InGame::Start()
     }
 
     // Textures
+    renderMgr.Start();
     std::filesystem::path texturesDir = TEXTURES_DIR;
     GL::Cubemap::TextureMap map = {
         {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
@@ -74,17 +78,7 @@ void InGame::Start()
         {GL::Cubemap::BACK, texturesDir / "back.jpg"},
     };
     TRY_LOAD(skybox.Load(map, false));
-
-    try{
-        flashTexture.LoadFromFolder(TEXTURES_DIR, "flash.png");
-    }
-    catch(const std::runtime_error& e)
-    {
-        this->client_->logger->LogError(e.what());
-    }
-
-    // Load config
-    LoadGameOptions();
+    renderMgr.GetTextureMgr().SetDefaultFolder(texturesDir);
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
@@ -95,14 +89,12 @@ void InGame::Start()
 
     // Models
     playerAvatar.SetMeshes(quad, cube, cylinder, slope);
-    playerAvatar.Start(renderMgr, shader, quadShader, flashTexture);
+    playerAvatar.Start(renderMgr, shader, quadShader);
 
     fpsAvatar.SetMeshes(quad, cube, cylinder);
-    fpsAvatar.Start(renderMgr, shader, quadShader, flashTexture);
+    fpsAvatar.Start(renderMgr, shader, quadShader);
 
     // Camera
-    camera_.SetPos(glm::vec3{0, 8, 16});
-    camera_.SetTarget(glm::vec3{0});
     auto winSize = client_->GetWindowSize();
     camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, client_->config.window.fov);
@@ -168,6 +160,7 @@ void InGame::Start()
     if(!connected)
     {
         client_->logger->LogError("Could not connect to server. Quitting");
+        // TODO: Go back to main menu with error pop up Server Browser
     }
 
     client_->quit = !connected;

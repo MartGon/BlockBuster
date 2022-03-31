@@ -12,6 +12,7 @@
 #include <rendering/Model.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
+#include <rendering/TextureMgr.h>
 #include <rendering/Skybox.h>
 
 #include <game/Map.h>
@@ -184,9 +185,6 @@ namespace BlockBuster
         GL::Shader textShader;
         GL::Shader imgShader;
         GL::Shader skyboxShader;
-
-            // Textures
-        GL::Texture flashTexture;
 
             // Meshes
         Rendering::Mesh quad;

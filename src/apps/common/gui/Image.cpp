@@ -34,7 +34,6 @@ void Image::DoDraw(GL::Shader& shader, glm::ivec2 pos, glm::ivec2 screenSize)
     shader.SetUniformVec4("uColor", color);
     shader.SetUniformVec2("offset", renderPos);
     shader.SetUniformVec2("scale", scale);
-
     texture->Bind(GL_TEXTURE0);
 
     quadMesh->Draw(shader);

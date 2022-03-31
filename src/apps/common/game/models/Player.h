@@ -9,7 +9,7 @@ namespace Game::Models
     class Player : public Rendering::ModelI
     {
     public:
-        void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
+        void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader);
         void SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder, Rendering::Mesh& slope); // NOTE: This should be called before Start
         void Draw(const glm::mat4& tMat, uint8_t flags = 0);
         
@@ -31,7 +31,7 @@ namespace Game::Models
         Rendering::Model* armsModel;
 
     private:
-        void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
+        void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader);
         void InitAnimations();
 
         // Models

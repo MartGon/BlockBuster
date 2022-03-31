@@ -8,9 +8,9 @@
 
 using namespace Game::Models;
 
-void Player::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
+void Player::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
 {
-    InitModel(renderMgr, shader, quadShader, texture);
+    InitModel(renderMgr, shader, quadShader);
     InitAnimations();
 }
 
@@ -91,12 +91,16 @@ Animation::Clip* Player::GetDeathAnim()
     return &death;
 }
 
-void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
+void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
 {
     // Get model handlers
     bodyModel = renderMgr.CreateModel();
     wheelsModel = renderMgr.CreateModel();
     armsModel = renderMgr.CreateModel();
+
+    // Textures
+    std::string textureName = "flash.png";
+    auto flashTextureId = renderMgr.GetTextureMgr().LoadFromDefaultFolder(textureName);
 
     // Upper Body
     auto bodyT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
@@ -175,7 +179,7 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
         auto flashT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.0f, -2.75f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{3.f}};
         painting.type = Rendering::PaintingType::TEXTURE;
         painting.hasAlpha = true;
-        painting.texture = &texture;
+        painting.texture = flashTextureId;
         auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false};
         *fid = armsModel->AddSubModel(std::move(flashModel));
     }

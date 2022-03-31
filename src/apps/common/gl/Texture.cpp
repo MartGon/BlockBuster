@@ -28,8 +28,6 @@ void GL::Texture::LoadFromMemory(void* buffer, size_t bufferSize, bool flipVerti
 
         stbi_image_free(data);
         stbi_set_flip_vertically_on_load(false);
-
-        loaded = true;
     }
 }
 
@@ -40,16 +38,14 @@ void GL::Texture::Load(std::filesystem::path texturePath, bool flipVertically)
 
     int channels;
     stbi_set_flip_vertically_on_load(flipVertically);
-    auto data = stbi_load(texturePath.string().c_str(), &dimensions_.x, &dimensions_.y, &channels, 0);
+    auto data = stbi_load(texturePath.string().c_str(), &dimensions_.x, &dimensions_.y, &channels, 4);
     if(data)
     {
-        format_ = channels == 3 ? GL_RGB : GL_RGBA;
+        format_ = GL_RGBA;
         Load(data, dimensions_, format_);
 
         stbi_image_free(data);
         stbi_set_flip_vertically_on_load(false);
-
-        loaded = true;
     }
     else
         throw LoadTextureError{texturePath, stbi_failure_reason()};   
@@ -70,6 +66,8 @@ void GL::Texture::Load(uint8_t* data, glm::ivec2 size, int format)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    loaded = true;
 }
 
 GL::Texture::~Texture()

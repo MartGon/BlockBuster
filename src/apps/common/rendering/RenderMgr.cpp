@@ -20,6 +20,11 @@ RenderMgr::~RenderMgr()
         delete model;
 }
 
+void RenderMgr::Start()
+{
+    textureMgr.Start();
+}
+
 void RenderMgr::Render(const Rendering::Camera& camera)
 {
     std::sort(transparentReq.begin(), transparentReq.end(), [&camera](auto a, auto b){
@@ -46,7 +51,10 @@ void RenderMgr::DrawList(std::vector<DrawReq>* list)
         auto submodel = drawReq.toDraw;
         submodel.shader->SetUniformMat4("transform", drawReq.t);
         if(submodel.painting.type == PaintingType::TEXTURE)
-            submodel.mesh->Draw(*submodel.shader, submodel.painting.texture);
+        {
+            textureMgr.Bind(submodel.painting.texture);
+            submodel.mesh->Draw(*submodel.shader);
+        }
         else if(submodel.painting.type == PaintingType::COLOR)
             submodel.mesh->Draw(*submodel.shader, submodel.painting.color);
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rendering/Mesh.h>
+#include <rendering/TextureMgr.h>
 
 #include <math/Transform.h>
 
@@ -19,7 +20,7 @@ namespace Rendering
         union
         {
             glm::vec4 color;
-            const GL::Texture* texture;
+            TextureID texture;
         };
     };
 

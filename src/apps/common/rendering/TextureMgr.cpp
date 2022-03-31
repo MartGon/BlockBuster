@@ -4,24 +4,34 @@
 
 using namespace Rendering;
 
-GL::Texture TextureMgr::nullTexture{};
-std::unique_ptr<TextureMgr> TextureMgr::textureMgr_;
-
-TextureMgr* TextureMgr::Get()
+void TextureMgr::Start()
 {
-    TextureMgr* ptr = textureMgr_.get();
-    if(ptr == nullptr)
-    {
-        textureMgr_ = std::unique_ptr<TextureMgr>(new TextureMgr);
-        ptr = textureMgr_.get();
-
-        glm::u8vec4 pink{255, 192, 203, 255};
-        nullTexture.Load(&pink.x, glm::ivec2{1}, GL_RGBA);
-        ptr->SetTexture(0, std::move(nullTexture));
-    }
-
-    return ptr;
+    glm::u8vec4 pink{255, 192, 203, 255};
+    LoadRaw(NULL_TEXTURE_ID, &pink.x, glm::ivec2{1}, GL_RGBA);
 }   
+
+void TextureMgr::SetDefaultFolder(std::filesystem::path folder)
+{
+    this->defaultFolder = folder;
+}
+
+TextureMgr::~TextureMgr()
+{
+    for(auto& [id, texture] :  textures)
+        delete texture;
+}
+
+TextureID TextureMgr::LoadFromDefaultFolder(std::filesystem::path texturePath, bool flipVertically)
+{
+    auto id = GetFreeID();
+    return LoadFromFolder(id, defaultFolder, texturePath, flipVertically);
+}
+
+TextureID TextureMgr::LoadFromDefaultFolder(TextureID id, std::filesystem::path texturePath, bool flipVertically)
+{
+    return LoadFromFolder(id, defaultFolder, texturePath, flipVertically);
+}
+
 
 TextureID TextureMgr::LoadFromFile(std::filesystem::path texturePath, bool flipVertically)
 {
@@ -31,10 +41,21 @@ TextureID TextureMgr::LoadFromFile(std::filesystem::path texturePath, bool flipV
 
 TextureID TextureMgr::LoadFromFile(TextureID id, std::filesystem::path texturePath, bool flipVertically)
 {
-    GL::Texture texture;
-    texture.Load(texturePath, flipVertically);
-    if(texture.IsLoaded())
+    GL::Texture* texture = new GL::Texture;
+    try
+    {
+        texture->Load(texturePath, flipVertically);
+    }catch(const std::runtime_error& e)
+    {
+    }
+    
+    if(texture->IsLoaded())
         id = SetTexture(id, std::move(texture));    
+    else
+    {
+        id = NULL_TEXTURE_ID;
+        delete texture;
+    }
 
     return id;
 }
@@ -53,11 +74,16 @@ TextureID TextureMgr::LoadFromFolder(TextureID id, std::filesystem::path folder,
 
 TextureID TextureMgr::LoadFromMemory(TextureID id, void* data, size_t bufferSize, bool flipVertically)
 {
-    GL::Texture texture;
-    texture.LoadFromMemory(data, bufferSize, flipVertically);
-    if(texture.IsLoaded())
+    GL::Texture* texture = new GL::Texture;
+    texture->LoadFromMemory(data, bufferSize, flipVertically);
+    if(texture->IsLoaded())
         id = SetTexture(id, std::move(texture));
-    
+    else
+    {
+        id = NULL_TEXTURE_ID;
+        delete texture;
+    }
+
     return id;
 }
 
@@ -67,27 +93,60 @@ TextureID TextureMgr::LoadFromMemory(void* data, size_t bufferSize, bool flipVer
     return LoadFromMemory(id, data, bufferSize, flipVertically);
 }
 
+TextureID TextureMgr::LoadRaw(uint8_t* data, glm::ivec2 size, int format)
+{   
+    auto id = GetFreeID();
+    return LoadRaw(id, data, size, format);
+}
+
+TextureID TextureMgr::LoadRaw(TextureID id, uint8_t* data, glm::ivec2 size, int format)
+{
+    GL::Texture* texture = new GL::Texture;
+    texture->Load(data, size, format);
+    if(texture->IsLoaded())
+        id = SetTexture(id, std::move(texture));
+    else
+    {
+        id = NULL_TEXTURE_ID;
+        delete texture;
+    }
+
+    return id;
+}
+
 void TextureMgr::Bind(TextureID id, unsigned int activeTexture)
 {
     if(!Util::Map::Contains(textures, id))
         id = 0;
     
     auto& texture = textures[id];
-    texture.Bind(activeTexture);
+    texture->Bind(activeTexture);
+}
+
+GL::Texture* TextureMgr::GetTexture(TextureID id)
+{
+    GL::Texture* texture = textures[NULL_TEXTURE_ID];
+    if(Util::Map::Contains(textures, id))
+        texture = textures[id];
+
+    return texture;
 }
 
 // Private
 
-TextureID TextureMgr::AddTexture(GL::Texture texture)
+TextureID TextureMgr::AddTexture(GL::Texture* texture)
 {
     auto id = GetFreeID();
-    return SetTexture(id, std::move(texture));
+    return SetTexture(id, texture);
 }
 
 
-TextureID TextureMgr::SetTexture(TextureID textureId, GL::Texture texture)
+TextureID TextureMgr::SetTexture(TextureID textureId, GL::Texture* texture)
 {
-    textures[textureId] = std::move(texture);
+    if(Util::Map::Contains(textures, textureId))
+        delete textures[textureId];
+
+    textures[textureId] = texture;
     return textureId;
 }
 

@@ -64,7 +64,7 @@ void Editor::Start()
     respawnModel.Start(renderMgr, colorShader);
 
     playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
-    playerAvatar.Start(renderMgr, colorShader, quadShader, flashTexture);
+    playerAvatar.Start(renderMgr, colorShader, quadShader);
     modelMgr.SetModel(Entity::GameObject::Type::PLAYER_DECOY, &playerAvatar);
     
     // OpenGL features

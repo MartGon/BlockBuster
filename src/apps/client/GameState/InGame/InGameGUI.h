@@ -13,6 +13,8 @@
 
 #include <GameState/InGame/InGameFwd.h>
 
+#include <rendering/TextureMgr.h>
+
 #include <mglogger/Logger.h>
 
 namespace BlockBuster
@@ -89,9 +91,9 @@ namespace BlockBuster
         GUI::PopUpMgr<PopUpState::MAX> puMgr;
 
         // Textures
-        GL::Texture crosshair;
-        GL::Texture hitmarker;
-        GL::Texture dmgTexture;
+        Rendering::TextureID crosshair;
+        Rendering::TextureID hitmarker;
+        Rendering::TextureID dmgTexture;
 
         // HUD
         GUI::Text healthIcon;

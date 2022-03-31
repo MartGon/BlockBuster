@@ -47,10 +47,10 @@ void Cubemap::Load(Cubemap::TextureMap texturePaths, bool flipVertically)
         auto path = texturePaths[(Face)i];
 
         int channels;
-        auto data = stbi_load(path.string().c_str(), &dimensions_.x, &dimensions_.y, &channels, 0);
+        auto data = stbi_load(path.string().c_str(), &dimensions_.x, &dimensions_.y, &channels, 4);
         if(data)
         {
-            format_ = channels == 3 ? GL_RGB : GL_RGBA;
+            format_ = GL_RGBA;
             auto face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
             glTexImage2D(face, 0, GL_RGBA, dimensions_.x, dimensions_.y, 0, format_, GL_UNSIGNED_BYTE, data);
 

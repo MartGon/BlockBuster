@@ -9,7 +9,7 @@ namespace Game::Models
     class FPS
     {
     public:
-        void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
+        void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader);
         void SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder); // NOTE: This should be called before Start
         void Draw(const glm::mat4& projMat);
         void Update(Util::Time::Seconds deltaTime);
@@ -22,7 +22,7 @@ namespace Game::Models
         Math::Transform idlePivot;
     private:
 
-        void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture);
+        void InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader);
         void InitAnimations();
 
         // Base Meshes

@@ -2,6 +2,7 @@
 
 #include <Model.h>
 #include <Camera.h>
+#include <TextureMgr.h>
 
 namespace Rendering
 {
@@ -16,6 +17,13 @@ namespace Rendering
             NO_FACE_CULLING = 1,
             IGNORE_DEPTH = 2,
         };
+
+        inline TextureMgr& GetTextureMgr()
+        {
+            return textureMgr;
+        }
+
+        void Start();
 
         Model* CreateModel();
 
@@ -37,7 +45,7 @@ namespace Rendering
         void AddDrawReq(AlphaType type, DrawReq dr);
         void DrawList(std::vector<DrawReq>* list);
 
-        // TODO: Should do something about this hardcoded value
+        TextureMgr textureMgr;
         std::vector<Model*> models;
         std::vector<DrawReq> opaqueReq;
         std::vector<DrawReq> transparentReq;

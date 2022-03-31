@@ -4,9 +4,9 @@
 
 using namespace Game::Models;
 
-void FPS::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
+void FPS::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
 {
-    InitModel(renderMgr, shader, quadShader, texture);
+    InitModel(renderMgr, shader, quadShader);
     InitAnimations();
 }
 
@@ -53,13 +53,18 @@ void FPS::PlayReloadAnimation(Util::Time::Seconds reloadTime)
     shootPlayer.Play();
 }
 
-void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader, GL::Texture& texture)
+void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
 {
     leftArm = renderMgr.CreateModel();
     rightArm = renderMgr.CreateModel();
 
+    // Colors
     const auto blue = glm::vec4{0.065f, 0.072f, 0.8f, 1.0f};
     const auto lightBlue = glm::vec4{0.130f, 0.142f, 0.8f, 1.0f};
+
+    // Textures
+    std::string textureName = "flash.png";
+    auto flashTextureId = renderMgr.GetTextureMgr().LoadFromDefaultFolder(textureName);
 
     for(int i = -1; i < 2; i += 2)
     {
@@ -80,7 +85,7 @@ void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Sha
 
         auto flashT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, -2.125f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{3.f}};
         painting.type = Rendering::PaintingType::TEXTURE;
-        painting.texture = &texture;
+        painting.texture = flashTextureId;
         painting.hasAlpha = true;
         auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false};
         auto fid = arm->AddSubModel(std::move(flashModel));
