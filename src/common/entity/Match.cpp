@@ -31,6 +31,42 @@ std::optional<PlayerScore> GameMode::GetPlayerScore(Entity::ID id)
 
 // Other
 
+std::unique_ptr<GameMode> BlockBuster::CreateGameMode(GameMode::Type type)
+{
+    std::unique_ptr<GameMode> gameMode;
+
+    switch (type)
+    {
+    case GameMode::Type::NULL_MODE:
+        gameMode = nullptr;
+        break;
+
+    case GameMode::Type::FREE_FOR_ALL:
+        gameMode = std::make_unique<FreeForAll>();
+        break;
+
+    case GameMode::Type::TEAM_DEATHMATCH:
+        assertm(false, "This mode has not been implemented yet");
+        //gameMode = std::make_unique<FreeForAll>();
+        break;
+
+    case GameMode::Type::DOMINATION:
+        assertm(false, "This mode has not been implemented yet");
+        //gameMode = std::make_unique<FreeForAll>();
+        break;
+
+    case GameMode::Type::CAPTURE_THE_FLAG:
+        assertm(false, "This mode has not been implemented yet");
+        //gameMode = std::make_unique<FreeForAll>();
+        break;
+    
+    default:
+        break;
+    }
+
+    return gameMode;
+}
+
 std::unordered_map<GameMode::Type, bool> BlockBuster::GetSupportedGameModes(Game::Map::Map& map)
 {
     std::unordered_map<GameMode::Type, bool> gameModes;
@@ -80,37 +116,10 @@ bool FreeForAll::IsGameOver()
 
 // Match
 
-Match::Match(GameMode::Type type)
+void Match::Start(GameMode::Type gameMode)
 {
-    switch (type)
-    {
-    case GameMode::Type::FREE_FOR_ALL:
-        gameMode = std::make_unique<FreeForAll>();
-        break;
-
-    case GameMode::Type::TEAM_DEATHMATCH:
-        assertm(false, "This mode has not been implemented yet");
-        //gameMode = std::make_unique<FreeForAll>();
-        break;
-
-    case GameMode::Type::DOMINATION:
-        assertm(false, "This mode has not been implemented yet");
-        //gameMode = std::make_unique<FreeForAll>();
-        break;
-
-    case GameMode::Type::CAPTURE_THE_FLAG:
-        assertm(false, "This mode has not been implemented yet");
-        //gameMode = std::make_unique<FreeForAll>();
-        break;
-    
-    default:
-        break;
-    }
-}
-
-void Match::Start()
-{
-    waitTimer.Start();
+    this->gameMode = CreateGameMode(gameMode);
+    timer.Start();
 }
 
 void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
@@ -118,26 +127,30 @@ void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
     switch (state)
     {
     case WAITING_FOR_PLAYERS:
-        waitTimer.Update(deltaTime);
-        if(waitTimer.IsDone())
+        timer.Update(deltaTime);
+        if(timer.IsDone())
         {
-            state = ON_GOING;
+            EnterState(ON_GOING);
             logger->LogError("Match started");
-            gameTimer.Start();
+
+            timer.SetDuration(gameTime);
+            timer.Start();
         }
         break;
     case ON_GOING:
-        gameTimer.Update(deltaTime);
-        if(gameMode->IsGameOver() || gameTimer.IsDone())
+        timer.Update(deltaTime);
+        if(gameMode->IsGameOver() || timer.IsDone())
         {
-            waitTimer.Start();
-            state = ENDING;
+            timer.SetDuration(waitTime);
+            timer.Start();
+            
+            EnterState(ENDING);
         }
         break;
     case ENDING:
-        waitTimer.Update(deltaTime);
-        if(waitTimer.IsDone())
-            state = ENDED;
+        timer.Update(deltaTime);
+        if(timer.IsDone())
+            EnterState(ENDED);
         break;
 
     case ENDED:
@@ -146,5 +159,14 @@ void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
     default:
         break;
     }
-    gameMode->Update();
+
+    if(gameMode.get())
+        gameMode->Update();
+}
+
+void Match::EnterState(StateType type)
+{
+    state = type;
+    if(onEnterState)
+        onEnterState(state);
 }

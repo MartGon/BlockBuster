@@ -8,6 +8,7 @@ namespace Util::Time
     using Nanos = std::chrono::duration<double, std::nano>;
     using Millis = std::chrono::duration<double, std::milli>;
     using Seconds = std::chrono::duration<double>;
+    using Minutes = std::chrono::duration<double, std::chrono::minutes>;
 
     template<typename Duration>
     using Point = std::chrono::time_point<std::chrono::steady_clock, Duration>;

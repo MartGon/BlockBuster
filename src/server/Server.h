@@ -170,6 +170,7 @@ namespace BlockBuster
 
         // Match
         Match match;
+        ::Game::Map::Map map;
 
         // Logs        
         Log::ComposedLogger logger;

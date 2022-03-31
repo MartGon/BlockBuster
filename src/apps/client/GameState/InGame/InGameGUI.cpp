@@ -271,6 +271,15 @@ void InGameGUI::InitTexts()
     rightScoreText.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
     rightScoreText.SetOffset(glm::ivec2{0, -5});
 
+    gameTimeText = pixelFont->CreateText();
+    gameTimeText.SetText("10:23");
+    gameTimeText.SetScale(1.f);
+    gameTimeText.SetColor(white);
+    gameTimeText.SetParent(&midScoreText);
+    gameTimeText.SetAnchorPoint(GUI::AnchorPoint::CENTER_DOWN);
+    size = gameTimeText.GetSize();
+    gameTimeText.SetOffset(glm::ivec2{-size.x / 2, -size.y} + glm::ivec2{0, -5});
+
     // Logs
     killText = pixelFont->CreateText();
     killText.SetText("YOU DIED");
@@ -341,7 +350,9 @@ void InGameGUI::HUD()
     UpdateAmmo();
     UpdateRespawnText();
     UpdateCountdownText();
+    UpdateGameTimeText();
 
+    // HUD
     armorText.Draw(inGame->textShader, winSize);
     shieldIcon.Draw(inGame->textShader, winSize);
     healthText.Draw(inGame->textShader, winSize);
@@ -349,10 +360,13 @@ void InGameGUI::HUD()
     ammoNumIcon.Draw(inGame->textShader, winSize);
     ammoText.Draw(inGame->textShader, winSize);
 
+    // Score
     midScoreText.Draw(inGame->textShader, winSize);
     leftScoreText.Draw(inGame->textShader, winSize);
     rightScoreText.Draw(inGame->textShader, winSize);
+    gameTimeText.Draw(inGame->textShader, winSize);
 
+    // Hit marker
     hitmarkerImg.SetIsVisible(showHitmarker);
     hitmarkerImg.Draw(inGame->imgShader, winSize);
     hitMarkerPlayer.Update(inGame->deltaTime);
@@ -394,15 +408,22 @@ void InGameGUI::UpdateArmor()
 
 std::string InGameGUI::GetBoundedValue(int val, int max)
 {
-    auto str = std::to_string(val);
     auto targetSize = glm::floor(std::log10(max)) + 1;
+    auto str = LeadingZeros(val, targetSize);
 
-    auto diff = targetSize - str.size();
+    str = str + "/" + std::to_string(max);
+
+    return str;
+}
+
+std::string InGameGUI::LeadingZeros(int val, int size)
+{
+    std::string str = std::to_string(val);
+    auto diff = size - str.size();
     std::string prefix;
     prefix.resize(diff, '0');
 
-    str = prefix + str + "/" + std::to_string(max);
-
+    str = prefix + str;
     return str;
 }
 
@@ -452,12 +473,28 @@ void InGameGUI::UpdateRespawnText()
 
 void InGameGUI::UpdateCountdownText()
 {
-    auto countdownTime = inGame->countdownTimer.GetTimeLeft();
+    auto countdownTime = inGame->match.GetTimeLeft();
     int seconds = std::ceil(countdownTime.count());
     std::string text = std::to_string(seconds);
     countdownText.SetText(text);
     auto size = countdownText.GetSize();
     countdownText.SetOffset(glm::ivec2{-size.x / 2, size.y});
+}
+
+void InGameGUI::UpdateGameTimeText()
+{
+    auto countdownTime = inGame->match.GetTimeLeft();
+    int secs = countdownTime.count();
+    int minutes = secs / 60;
+    int offsetSecs = secs % 60;
+
+    std::string minStr = LeadingZeros(minutes, 2);
+    std::string secsStr = LeadingZeros(offsetSecs, 2);
+    
+    std::string text = minStr + ':' + secsStr;
+    gameTimeText.SetText(text);
+    auto size = gameTimeText.GetSize();
+    gameTimeText.SetOffset(glm::ivec2{-size.x / 2, -size.y} + glm::ivec2{0, -5});
 }
 
 void InGameGUI::CloseMenu()

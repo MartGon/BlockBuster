@@ -53,7 +53,9 @@ namespace BlockBuster
 
     private:
 
+        // Update funcs
         void DoUpdate(Util::Time::Seconds deltaTime);
+        void OnEnterMatchState(Match::StateType type);
         void OnNewFrame();
 
         // Input
@@ -128,9 +130,12 @@ namespace BlockBuster
         Util::Timer respawnTimer;
         Entity::ID killerId = 0;
 
+        // Match Making data
+        std::string playerUuid;
+        std::string playerName;
+
         // Match
-        Util::Timer countdownTimer;
-        Match::State matchState = Match::WAITING_FOR_PLAYERS;
+        Match match;
 
         // Simulation
         Util::Time::SteadyPoint preSimulationTime;
@@ -169,10 +174,6 @@ namespace BlockBuster
         const Util::Time::Seconds EXTRAPOLATION_DURATION{0.25};
         Networking::Snapshot extrapolatedSnapshot;
         Util::Time::Seconds offsetTime{0};
-
-        // Match Making data
-        std::string playerUuid;
-        std::string playerName;
 
         // Rendering
             // Mgr

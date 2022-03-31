@@ -20,6 +20,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
         packet = std::make_unique<Welcome>();
         break;
 
+    case OpcodeServer::OPCODE_SERVER_MATCH_STATE:
+        packet = std::make_unique<MatchState>();
+        break;
+
     case OpcodeServer::OPCODE_SERVER_SNAPSHOT:
         packet = std::make_unique<Packets::Server::WorldUpdate>();
         break;
@@ -101,16 +105,25 @@ void Welcome::OnRead(Util::Buffer::Reader reader)
 {
     playerId = reader.Read<uint8_t>();
     tickRate = reader.Read<double>();
-    timeToStart = reader.Read<Util::Time::Seconds>();
-    matchState = reader.Read<BlockBuster::Match::State>();
+    mode = reader.Read<BlockBuster::GameMode::Type>();
+    buffer.Write(mode);
 }
 
 void Welcome::OnWrite()
 {
     buffer.Write(playerId);
     buffer.Write(tickRate);
-    buffer.Write(timeToStart);
-    buffer.Write(matchState);
+    buffer.Write(mode);
+}
+
+void MatchState::OnRead(Util::Buffer::Reader reader)
+{
+    state = reader.Read<BlockBuster::Match::State>();
+}
+
+void MatchState::OnWrite()
+{
+    buffer.Write(state);
 }
 
 void WorldUpdate::OnRead(Util::Buffer::Reader reader)

@@ -23,6 +23,7 @@ namespace Networking
     {
         OPCODE_SERVER_BATCH,
         OPCODE_SERVER_WELCOME,
+        OPCODE_SERVER_MATCH_STATE,
         OPCODE_SERVER_SNAPSHOT,
         OPCODE_SERVER_PLAYER_DISCONNECTED,
         OPCODE_SERVER_PLAYER_INPUT_ACK,
@@ -139,8 +140,20 @@ namespace Networking
 
                 uint8_t playerId;
                 double tickRate;
-                Util::Time::Seconds timeToStart;
-                BlockBuster::Match::State matchState;
+                BlockBuster::GameMode::Type mode;
+            };
+
+            class MatchState final : public Packet
+            {
+            public:
+                MatchState() : Packet{OpcodeServer::OPCODE_SERVER_MATCH_STATE, ENET_PACKET_FLAG_RELIABLE}
+                {
+
+                }
+                void OnRead(Util::Buffer::Reader reader) override;
+                void OnWrite() override;
+
+                BlockBuster::Match::State state;
             };
 
             class WorldUpdate final : public Packet

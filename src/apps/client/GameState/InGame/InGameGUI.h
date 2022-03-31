@@ -65,10 +65,12 @@ namespace BlockBuster
         void UpdateHealth();
         void UpdateArmor();
         std::string GetBoundedValue(int val, int max);
+        std::string LeadingZeros(int val, int size);
         void UpdateAmmo();
         void UpdateScore();
         void UpdateRespawnText();
         void UpdateCountdownText();
+        void UpdateGameTimeText();
 
         void ScoreboardWindow();
         void ScoreTable(const char* name);
@@ -102,9 +104,6 @@ namespace BlockBuster
         GUI::Text shieldIcon;
         GUI::Text ammoText;
         GUI::Text ammoNumIcon;
-        GUI::Text leftScoreText;
-        GUI::Text midScoreText;
-        GUI::Text rightScoreText;
         GUI::Image crosshairImg;
         GUI::Image hitmarkerImg;
         GUI::Image dmgEffectImg;
@@ -116,6 +115,12 @@ namespace BlockBuster
         float dmgAlpha = 0.0f;
         Animation::Clip dmgAnim;
         Animation::Player dmgAnimationPlayer;
+
+        // Score
+        GUI::Text leftScoreText;
+        GUI::Text midScoreText;
+        GUI::Text rightScoreText;
+        GUI::Text gameTimeText;
 
         // Log
         GUI::Text killText;

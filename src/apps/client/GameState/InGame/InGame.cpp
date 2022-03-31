@@ -109,6 +109,11 @@ void InGame::Start()
     //LoadMap("/home/seix/Other/Repos/BlockBuster/resources/maps/Alpha2.bbm");
     LoadMap(mapFolder, mapFileName);
 
+    // Match
+    match.SetOnEnterState([this](Match::StateType type){
+        this->OnEnterMatchState(type);
+    });
+
     // UI
     inGameGui.Start();
 
@@ -228,13 +233,21 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
     }
 
     // Extra data: Respawns, etc
-    using namespace BlockBuster;
     respawnTimer.Update(deltaTime);
-    countdownTimer.Update(deltaTime);
-    if(countdownTimer.IsDone() && matchState == Match::WAITING_FOR_PLAYERS)
+    match.Update(GetLogger(), deltaTime);
+}
+
+void InGame::OnEnterMatchState(Match::StateType type)
+{
+    switch (type)
     {
-        matchState = BlockBuster::Match::ON_GOING;
+    case Match::StateType::ON_GOING:
         inGameGui.countdownText.SetIsVisible(false);
+        inGameGui.gameTimeText.SetIsVisible(true);
+        break;
+    
+    default:
+        break;
     }
 }
 
@@ -416,12 +429,19 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             playerTable[playerId] = player;
             prevPlayerTable[playerId] = player;
 
-            // Set match data
-            countdownTimer.SetDuration(welcome->timeToStart);
-            countdownTimer.Start();
-            matchState = welcome->matchState;
-            if(matchState == Match::State::WAITING_FOR_PLAYERS)
+            this->match.Start(welcome->mode);
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_MATCH_STATE:
+        {
+            auto ms = packet.To<MatchState>();
+            auto matchState = ms->state.state;
+            if(matchState == Match::StateType::WAITING_FOR_PLAYERS)
                 inGameGui.countdownText.SetIsVisible(true);
+
+            // Set server params
+            this->match.ApplyState(ms->state);
         }
         break;
 
@@ -580,7 +600,7 @@ void InGame::RecvServerSnapshots()
 void InGame::UpdateNetworking()
 {
     auto& player = GetLocalPlayer();
-    bool sendInputs = !player.IsDead() && matchState == Match::ON_GOING;
+    bool sendInputs = !player.IsDead() && match.GetState() == Match::ON_GOING;
     if(sendInputs)
     {
         // Sample player input
