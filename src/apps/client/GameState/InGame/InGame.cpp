@@ -308,11 +308,17 @@ void InGame::HandleSDLEvents()
                     inGameGui.CloseMenu();
             }
             if(e.key.keysym.sym == SDLK_TAB)
+            {
                 inGameGui.showScoreboard = true;
+                inGameGui.crosshairImg.SetIsVisible(false);
+            }
             break;
         case SDL_KEYUP:
             if(e.key.keysym.sym == SDLK_TAB)
+            {
                 inGameGui.showScoreboard = false;
+                inGameGui.crosshairImg.SetIsVisible(true);
+            }
         case SDL_MOUSEBUTTONDOWN:
             {
             }
@@ -568,7 +574,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
 
                 // Set spawn camera rotation
                 auto camRot = camera_.GetRotationDeg();
-                camera_.SetRotationDeg(camRot.x, respawn->playerState.transform.rot.y + 90.0f);
+                camera_.SetRotationDeg(90.0f, respawn->playerState.transform.rot.y + 90.0f);
 
                 // On Player respawn
                 fpsAvatar.isEnabled = true;

@@ -36,13 +36,13 @@ void InGameGUI::Start()
 
     crosshairImg.SetTexture(textureMgr.GetTexture(crosshair));
     crosshairImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
-    crosshairImg.SetSize(glm::ivec2{100});
+    crosshairImg.SetSize(glm::ivec2{75});
     crosshairImg.SetOffset(- crosshairImg.GetSize() / 2);
     crosshairImg.SetColor(glm::vec4{1.0f, 1.0f, 0.0f, 0.75f});
 
     hitmarkerImg.SetTexture(textureMgr.GetTexture(hitmarker));
     hitmarkerImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
-    hitmarkerImg.SetSize(glm::ivec2{100});
+    hitmarkerImg.SetSize(crosshairImg.GetSize());
     hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
     hitmarkerImg.SetColor(glm::vec4{1.0f, 1.0f, 1.0f, 0.5f});
 
