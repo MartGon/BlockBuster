@@ -25,6 +25,7 @@ namespace Networking
         OPCODE_SERVER_WELCOME,
         OPCODE_SERVER_MATCH_STATE,
         OPCODE_SERVER_SNAPSHOT,
+        OPCODE_SERVER_PLAYER_JOINED,
         OPCODE_SERVER_PLAYER_DISCONNECTED,
         OPCODE_SERVER_PLAYER_INPUT_ACK,
         OPCODE_SERVER_PLAYER_TAKE_DMG,
@@ -139,7 +140,8 @@ namespace Networking
                 void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
-                uint8_t playerId;
+                Entity::ID playerId;
+                Entity::ID teamId;
                 double tickRate;
                 BlockBuster::GameMode::Type mode;
             };
@@ -168,6 +170,22 @@ namespace Networking
                 void OnWrite() override;
 
                 Snapshot snapShot;
+            };
+
+            class PlayerJoined final : public Packet
+            {
+            public:
+                PlayerJoined() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_JOINED, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader& reader) override;
+                void OnWrite() override;
+
+                Entity::ID playerId;
+                Entity::ID teamId;
+                PlayerSnapshot playerSnapshot;
             };
             
             class PlayerDisconnected final : public Packet

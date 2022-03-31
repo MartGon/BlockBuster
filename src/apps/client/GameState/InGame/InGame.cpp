@@ -24,6 +24,33 @@
 using namespace BlockBuster;
 using namespace ::App::Client;
 
+glm::vec4 teamColors[2] = {
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}, // BLUE
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f}   // RED
+};
+
+glm::vec4 ffaColors[16] = {
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},  // RED
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}, // BLUE
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+};
+
 InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid, std::string playerName) : 
     GameState{client}, serverDomain{serverDomain}, serverPort{serverPort}, mapName{map}, playerUuid{playerUuid}, playerName{playerName},
     host{ENet::HostFactory::Get()->CreateHost(1, 2)}
@@ -340,10 +367,11 @@ Entity::Player& InGame::GetLocalPlayer()
 
 // Networking
 
-void InGame::OnPlayerJoin(Entity::ID playerId, Networking::PlayerSnapshot playerState)
+void InGame::OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::PlayerSnapshot playerState)
 {
     Entity::Player player;
     player.id = playerId;
+    player.teamId = teamId;
     player.ApplyState(playerState.ToPlayerState(player.ExtractState()));
 
     playerTable[playerId] = player;
@@ -430,6 +458,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             // Set player state
             Entity::Player player;
             player.id = this->playerId;
+            player.teamId = welcome->teamId;
             GetLogger()->LogInfo("We play as player " + std::to_string(this->playerId));
 
             // Add to table
@@ -466,17 +495,8 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 client_->logger->LogInfo("Offset millis " + std::to_string(this->offsetTime.count()));
             }
             
-            auto s = snapShot->snapShot;
-            for(auto& [playerId, player] : s.players)
-            {
-                // Create player entries
-                if(playerTable.find(playerId) == playerTable.end() && this->playerId != playerId)
-                {
-                    OnPlayerJoin(playerId, player);
-                }
-            }            
-
             // Store snapshot
+            auto s = snapShot->snapShot;           
             snapshotHistory.PushBack(s);
 
             // Sort by tick. This is only needed if a packet arrives late.
@@ -484,6 +504,13 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             {
                 return a.serverTick < b.serverTick;
             });
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_JOINED:
+        {
+            auto pd = packet.To<PlayerJoined>();
+            OnPlayerJoin(pd->playerId, pd->teamId, pd->playerSnapshot);
         }
         break;
 
@@ -984,6 +1011,9 @@ void InGame::Render()
 
 void InGame::DrawScene()
 {
+    // GameMode
+    bool isFFA = match.GetGameMode()->GetType() == GameMode::FREE_FOR_ALL;
+
     // Bind textures
     map_.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
     chunkShader.SetUniformInt("textureArray", 0);
@@ -1016,6 +1046,8 @@ void InGame::DrawScene()
         playerT.scale *= playerState.gScale;
         auto t = playerT.GetTransformMat();
         auto transform = view * t;
+        auto color = isFFA ? ffaColors[player.teamId] : teamColors[player.teamId];
+        playerAvatar.SetColor(color);
         playerAvatar.Draw(transform);
 
         // TODO: Remove
@@ -1051,7 +1083,9 @@ void InGame::DrawScene()
     // Draw fpsModel, always rendered last
     auto proj = camera_.GetProjMat();
     shader.SetUniformInt("dmg", 0);
-    fpsAvatar.Draw(proj);
+    auto& player = playerTable[playerId];
+    auto color = isFFA ? ffaColors[player.teamId] : teamColors[player.teamId];
+    fpsAvatar.Draw(proj, color);
 }
 
 void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)

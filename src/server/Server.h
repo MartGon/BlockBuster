@@ -56,6 +56,7 @@ namespace BlockBuster
     using InputReq = Networking::Packets::Client::Input::Req;
     struct Client
     {
+        ENet::PeerId id;
         std::string playerUuuid;
         std::string playerName;
 

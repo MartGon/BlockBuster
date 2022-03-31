@@ -132,18 +132,26 @@ void Server::OnClientJoin(ENet::PeerId peerId)
 {
     logger.LogError("Connected with peer " + std::to_string(peerId));
 
+    std::vector<ENet::PeerId> connectedClients;
+    for(auto& [id, client] : clients)
+        connectedClients.push_back(id);
+
     // Create Player
     Entity::Player player;
     player.id = this->lastId++;
-    player.teamId = player.id;
+    player.teamId = player.id; // TODO: Let gamemode decide based on current teams
 
+    // Add to table
+    clients[peerId].id = peerId;
     clients[peerId].player = player;
+    SpawnPlayer(peerId);
 
     // Send welcome packet
     Networking::Batch<Networking::PacketType::Server> batch;
 
     auto welcome = std::make_unique<Networking::Packets::Server::Welcome>();
     welcome->playerId = player.id;
+    welcome->teamId = player.teamId;
     welcome->tickRate = TICK_RATE.count();
     welcome->mode = match.GetGameMode()->GetType();
     logger.LogError("Game mode sent is " + std::to_string(welcome->mode));
@@ -154,10 +162,32 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     ms->state = match.ExtractState();
     batch.PushPacket(std::move(ms));
 
-    SendPacket(peerId, batch);
+    // Send info about already connected players
+    for(auto& id : connectedClients)
+    {
+        auto& client = clients[id];
+        auto pj = std::make_unique<Networking::Packets::Server::PlayerJoined>();
+        auto& player = client.player;
+        pj->playerId = player.id;
+        pj->teamId = player.teamId;
+        pj->playerSnapshot = Networking::PlayerSnapshot::FromPlayerState(player.ExtractState());
+        batch.PushPacket(std::move(pj));
+    }
 
-    // Player Respawn
-    SpawnPlayer(peerId);
+    // Send batch to new client
+    SendPacket(peerId, batch);
+    BroadcastRespawn(peerId);
+
+    // Broadcast to already connected players
+    for(auto& id : connectedClients)
+    {
+        auto& client = clients[id];
+        auto pj = std::make_unique<Networking::Packets::Server::PlayerJoined>();
+        pj->playerId = player.id;
+        pj->teamId = player.teamId;
+        pj->playerSnapshot = Networking::PlayerSnapshot::FromPlayerState(player.ExtractState());
+        SendPacket(client.id, *pj);
+    }
 }
 
 void Server::OnClientLeave(ENet::PeerId peerId)
@@ -557,7 +587,10 @@ void Server::UpdateWorld()
         if(player.IsDead())
         {
             if(client.respawnTime < Util::Time::Seconds{0.0f})
+            {
                 SpawnPlayer(id);
+                BroadcastRespawn(id);
+            }
             else
                 client.respawnTime -= TICK_RATE;
         }
@@ -680,9 +713,6 @@ void Server::SpawnPlayer(ENet::PeerId clientId)
     // Set weapon and health
     player.ResetWeaponAmmo(Entity::WeaponTypeID::CHEAT_SMG);
     player.ResetHealth();
-
-    // Notify client
-    BroadcastRespawn(clientId);
 }
 
 void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
@@ -700,7 +730,7 @@ void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
         // TODO: Change according to mode
         clients[victimId].respawnTime = Util::Time::Seconds{5.0f};
         BroadcastPlayerDied(author.id, victim.id, clients[victimId].respawnTime);
-        gameMode->OnPlayerDeath(author.id, victim.id);
+        gameMode->OnPlayerDeath(author.id, victim.id, author.teamId);
     }
 }
 

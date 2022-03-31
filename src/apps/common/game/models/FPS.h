@@ -11,7 +11,7 @@ namespace Game::Models
     public:
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader);
         void SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mesh& cylinder); // NOTE: This should be called before Start
-        void Draw(const glm::mat4& projMat);
+        void Draw(const glm::mat4& projMat, glm::vec4 color);
         void Update(Util::Time::Seconds deltaTime);
 
         void PlayShootAnimation();
@@ -35,6 +35,8 @@ namespace Game::Models
         Rendering::Model* rightArm;
         Rendering::SubModel* leftFlash;
         Rendering::SubModel* rightFlash;
+        uint32_t leftArmId;
+        uint32_t rightArmId;
 
         // Animations
         Animation::Clip idle;

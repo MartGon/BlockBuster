@@ -27,6 +27,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_SNAPSHOT:
         packet = std::make_unique<Packets::Server::WorldUpdate>();
         break;
+    
+    case OpcodeServer::OPCODE_SERVER_PLAYER_JOINED:
+        packet = std::make_unique<PlayerJoined>();
+        break;
 
     case OpcodeServer::OPCODE_SERVER_PLAYER_DISCONNECTED:
         packet = std::make_unique<PlayerDisconnected>();
@@ -107,7 +111,8 @@ using namespace Networking::Packets::Server;
 
 void Welcome::OnRead(Util::Buffer::Reader& reader)
 {
-    playerId = reader.Read<uint8_t>();
+    playerId = reader.Read<Entity::ID>();
+    teamId = reader.Read<Entity::ID>();
     tickRate = reader.Read<double>();
     mode = reader.Read<BlockBuster::GameMode::Type>();
     buffer.Write(mode);
@@ -116,6 +121,7 @@ void Welcome::OnRead(Util::Buffer::Reader& reader)
 void Welcome::OnWrite()
 {
     buffer.Write(playerId);
+    buffer.Write(teamId);
     buffer.Write(tickRate);
     buffer.Write(mode);
 }
@@ -148,6 +154,19 @@ void WorldUpdate::OnWrite()
     buffer.Append(this->snapShot.ToBuffer());
 }
  
+void PlayerJoined::OnRead(Util::Buffer::Reader& reader)
+{
+    playerId = reader.Read<Entity::ID>();
+    teamId = reader.Read<Entity::ID>();
+    playerSnapshot = reader.Read<PlayerSnapshot>();
+}
+
+void PlayerJoined::OnWrite()
+{
+    buffer.Write(playerId);
+    buffer.Write(teamId);
+    buffer.Write(playerSnapshot);
+}
 
 void PlayerDisconnected::OnRead(Util::Buffer::Reader& reader)
 {

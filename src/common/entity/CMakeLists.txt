@@ -2,6 +2,7 @@ SET(SOURCES
     Block.cpp
     Map.cpp
     Game.cpp
+    GameMode.cpp
     Player.cpp
     PlayerController.cpp
     Weapon.cpp

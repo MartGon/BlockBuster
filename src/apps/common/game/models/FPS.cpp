@@ -17,10 +17,16 @@ void FPS::SetMeshes(Rendering::Mesh& quad, Rendering::Mesh& cube, Rendering::Mes
     cylinderPtr = &cylinder;
 }
 
-void FPS::Draw(const glm::mat4& projMat)
+void FPS::Draw(const glm::mat4& projMat, glm::vec4 color)
 {
     if(!isEnabled)
         return;
+
+    auto leftArmSm = leftArm->GetSubModel(leftArmId);
+    leftArmSm->painting.color = color;
+
+    auto rightArmSm = rightArm->GetSubModel(rightArmId);
+    rightArmSm->painting.color = color;
 
     auto t = transform.GetTransformMat();
     auto pt = idlePivot.GetTransformMat();
@@ -70,13 +76,14 @@ void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Sha
     {
         bool isLeft = i == -1;
         auto arm = isLeft ? leftArm : rightArm;
+        auto armId = isLeft ? &leftArmId : &rightArmId;
 
         Rendering::Painting painting;
         painting.type = Rendering::PaintingType::COLOR;
         auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, 0.625f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
         painting.color = lightBlue;
         auto armModel = Rendering::SubModel{armT, painting, cubePtr, &shader};
-        arm->AddSubModel(std::move(armModel));
+        *armId = arm->AddSubModel(std::move(armModel));
 
         auto cannonT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.2f, -0.775f}, glm::vec3{90.0f, 0.0f, 0.0f}, glm::vec3{0.25f, 2.5f, 0.25f}};
         painting.color = glm::vec4{glm::vec3{0.15f}, 1.0f};

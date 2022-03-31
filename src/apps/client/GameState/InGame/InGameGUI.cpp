@@ -731,13 +731,6 @@ void InGameGUI::DebugWindow()
             ImGui::InputFloat("Precision", &sliderPrecision);
             if(ImGui::Button("Apply"))
             {
-                // Edit player model
-                if(auto sm = inGame->playerAvatar.armsModel->GetSubModel(modelId))
-                {
-                    inGame->playerAvatar.aTransform.position = modelOffset;
-                    inGame->playerAvatar.aTransform.scale = modelScale;
-                    inGame->playerAvatar.aTransform.rotation = modelRot;
-                }
             }
         }
 

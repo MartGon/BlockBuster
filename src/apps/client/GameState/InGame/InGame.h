@@ -65,7 +65,7 @@ namespace BlockBuster
         Entity::Player& GetLocalPlayer();
 
         // Networking
-        void OnPlayerJoin(Entity::ID playerId, Networking::PlayerSnapshot playerState);
+        void OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::PlayerSnapshot playerState);
         void OnPlayerLeave(Entity::ID playerId);
         void OnConnectToServer(ENet::PeerId peerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket packet);
