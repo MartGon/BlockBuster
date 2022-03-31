@@ -9,7 +9,7 @@ uniform vec2 scale;
 
 void main()
 {
-    vec2 normalizedPos = (vertex.xy + offset.xy)* scale;
+    vec2 normalizedPos = (vertex.xy + offset.xy) * scale;
     gl_Position = vec4(normalizedPos.xy, 0.0, 1.0);
     TexCoords = texCoords.xy;
 }  

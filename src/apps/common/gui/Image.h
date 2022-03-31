@@ -27,6 +27,11 @@ namespace GUI
             return imgScale;
         }
 
+        inline void SetSize(glm::ivec2 size)
+        {
+            imgScale = glm::vec2{size} / glm::vec2{texture->GetSize()};
+        }
+
         void SetColor(glm::vec4 color)
         {
             this->color = color;

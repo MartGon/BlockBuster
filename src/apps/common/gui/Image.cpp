@@ -26,7 +26,7 @@ void Image::DoDraw(GL::Shader& shader, glm::ivec2 pos, glm::ivec2 screenSize)
         return;
 
     glm::vec2 size = GetSize();
-    auto scale = imgScale * (size / glm::vec2{screenSize});
+    auto scale = (size / glm::vec2{screenSize}) * 2.0f;
     auto renderPos = (glm::vec2{pos} / size) + 0.5f;
 
     shader.Use();

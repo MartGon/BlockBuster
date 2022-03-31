@@ -26,21 +26,23 @@ void InGameGUI::Start()
     
     // Textures
     auto& textureMgr = inGame->renderMgr.GetTextureMgr();
-    crosshair = textureMgr.LoadFromDefaultFolder("crosshair1.png");
+    crosshair = textureMgr.LoadFromDefaultFolder("crosshairW.png");
     hitmarker = textureMgr.LoadFromDefaultFolder("hitmarker.png");
     glm::u8vec4 white{255, 255, 255, 255};
     dmgTexture = textureMgr.LoadRaw(&white.x, glm::ivec2{1, 1}, GL_RGBA);
 
     // Images
+    auto winSize = inGame->client_->GetWindowSize();
+
     crosshairImg.SetTexture(textureMgr.GetTexture(crosshair));
     crosshairImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
-    crosshairImg.SetScale(glm::vec2{0.33f});
+    crosshairImg.SetSize(glm::ivec2{100});
     crosshairImg.SetOffset(- crosshairImg.GetSize() / 2);
     crosshairImg.SetColor(glm::vec4{1.0f, 1.0f, 0.0f, 0.75f});
 
     hitmarkerImg.SetTexture(textureMgr.GetTexture(hitmarker));
     hitmarkerImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
-    hitmarkerImg.SetScale(glm::vec2{0.45f});
+    hitmarkerImg.SetSize(glm::ivec2{100});
     hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
     hitmarkerImg.SetColor(glm::vec4{1.0f, 1.0f, 1.0f, 0.5f});
 

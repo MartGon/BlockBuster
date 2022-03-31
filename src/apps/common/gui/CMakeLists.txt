@@ -2,7 +2,6 @@ SET(SOURCES
     Image.cpp
     PopUp.cpp
     PopUpMgr.h
-    Text.cpp
     TextFactory.cpp
     GUI.cpp
     Widget.cpp    
