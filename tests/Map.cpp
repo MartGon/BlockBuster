@@ -1,7 +1,9 @@
 #include <doctest/doctest.h>
 
 #include <entity/Map.h>
+
 #include <util/Random.h>
+#include <util/File.h>
 
 TEST_CASE("Block Init")
 {
@@ -31,9 +33,9 @@ TEST_CASE("Block Init")
                     if(placedBlocks >= chunkBlocks)
                         break;
 
-                    auto intType = Util::Random::Uniform(0u, 2u) + 1u;
+                    auto intType = Util::Random::Uniform(0u, 1u) + 1u;
                     auto type = static_cast<BlockType>(intType);
-                    map.AddBlock(glm::ivec3{x, y, z} + glm::ivec3{i}, Block{type, BlockRot{RotType::ROT_0, RotType::ROT_0}, Display{DisplayType::TEXTURE, 0}});
+                    map.AddBlock(glm::ivec3{x, y, z} + glm::ivec3{i}, Block{type, BlockRot{RotType::ROT_0, RotType::ROT_0}, Display{DisplayType::COLOR, 0}});
                     placedBlocks++;
                 }
             }            
@@ -77,4 +79,40 @@ TEST_CASE("Block Init")
         CHECK(countedBlocks == blockCount);
         CHECK(blockCount == 300);
     }
+
+    // Write to file
+    std::filesystem::path rscFolder = RESOURCES_DIR;
+    auto mapFolder = rscFolder / "maps";
+    auto filePath = mapFolder / "Tests/Tests.bbm";
+    std::fstream file{filePath, file.binary | file.out};
+
+    using namespace Util::File;
+    // Magic number
+    WriteToFile(file, Map::Map::magicNumber);
+
+    // Map
+    auto mapBuffer = loaded.ToBuffer();
+    // texure palette
+    auto texCount = 0;
+    mapBuffer.Write<std::size_t>(texCount);
+    // Color palette
+    auto colorCount = 1;
+    glm::u8vec4 color{255};
+    mapBuffer.Write<std::size_t>(colorCount);
+    mapBuffer.Write(color);
+
+    WriteToFile(file, mapBuffer.GetSize());
+    WriteToFile(file, mapBuffer.GetData(), mapBuffer.GetSize());
+
+    // Camera Pos/Rot
+    WriteToFile(file, glm::vec3{0.0f});
+    WriteToFile(file, glm::vec2{90.0f, 0.0f});
+
+    // Cursor scale/pos
+    WriteToFile(file, glm::ivec3{0});
+    WriteToFile(file, glm::ivec3{1});
+
+    file.close();
+    std::fstream iFile{filePath, file.binary | file.in};
+    Map::Map::LoadFromFile(filePath);
 }
