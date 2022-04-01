@@ -3,6 +3,7 @@ SET(SOURCES
     Util.cpp
     Math.cpp
     Leak.cpp
+    Map.cpp
 )
 
 add_executable(BlockBusterTests ${SOURCES})
