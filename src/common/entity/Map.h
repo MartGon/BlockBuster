@@ -179,11 +179,10 @@ namespace Game
                 private:
                     BlockIterator(Chunk* chunk) : chunk_{chunk}
                     {
-
                     }
 
                     Chunk* chunk_ = nullptr;
-                    glm::ivec3 index_{0};
+                    uint32_t index_ = 0;
 
                     bool end_ = false;
                 };
@@ -198,6 +197,7 @@ namespace Game
                 constexpr static const glm::ivec3 HALF_DIMENSIONS = (DIMENSIONS / 2);
             private:
                 int ToIndex(glm::ivec3 pos) const;
+                glm::ivec3 ToPos(uint32_t index) const;
                 bool hasChanged_ = false;
 
                 Block blocks_[CHUNK_BLOCKS];
