@@ -71,6 +71,21 @@ namespace Game
     class Block
     {
     public:
+        /*
+        Block(BlockType type, RotType x, RotType y, Display display) :
+            Block(type, BlockRot{x, y}, display)
+        {
+
+        }
+        Block(BlockType type, BlockRot rot, Display display) :
+            type{type}, rot{rot}, display{display}
+        {
+
+        }
+        Block()
+        {
+        }
+        */
 
         BlockType type;
         BlockRot rot;

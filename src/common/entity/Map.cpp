@@ -220,6 +220,7 @@ Util::Buffer Game::Map::Map::ToBuffer()
         auto blockCount = chunk.GetBlockCount();
         buffer.Write(blockCount);
 
+        // TODO: Assert blockount is equal to iterations
         auto chunkIt = chunk.CreateBlockIterator();
         for(auto b = chunkIt.GetNextBlock(); !chunkIt.IsOver(); b = chunkIt.GetNextBlock())
         {
