@@ -33,7 +33,5 @@ std::string File::ReadFromFile(std::fstream& file)
 
 Util::Buffer File::ReadFromFile(std::fstream& file, uint32_t size)
 {
-    Util::Buffer buffer{size};
-    file.read(reinterpret_cast<char*>(buffer.GetData()), size);
-    return std::move(buffer);
+    return Util::Buffer::FromFile(file, size);
 }

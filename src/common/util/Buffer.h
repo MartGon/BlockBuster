@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <fstream>
 
 #include <debug/Debug.h>
 
@@ -11,6 +12,7 @@ namespace Util
     {
     public:
         static Buffer Concat(Buffer first, Buffer second);
+        static Buffer FromFile(std::fstream& file, uint32_t size);
 
         Buffer();
         Buffer(uint32_t capacity);

@@ -18,6 +18,16 @@ Buffer Buffer::Concat(Buffer a, Buffer b)
     return std::move(newBuff);
 }
 
+Buffer Buffer::FromFile(std::fstream& file, uint32_t size)
+{
+    Util::Buffer buffer;
+    buffer.Reserve(size);
+    file.read(reinterpret_cast<char*>(buffer.GetData()), size);
+    buffer.size = size;
+
+    return std::move(buffer);
+}
+
 Buffer::Buffer(uint32_t capacity) : capacity{capacity}
 {
     buffer = new unsigned char[capacity];
