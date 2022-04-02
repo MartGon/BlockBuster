@@ -27,10 +27,9 @@ void Client::Start()
     mapMgr.SetMapsFolder(mapsFolder);
 
     state = std::make_unique<MainMenu>(this);
-    //state = std::make_unique<InGame>(this, "localhost", 8081, "Alpha2");
     state->Start();
     
-    LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID", "Defu");
+    //LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID", "Defu");
 }
 
 void Client::Shutdown()
@@ -44,13 +43,18 @@ void Client::Update()
 {
     state->Update();
 
-    if(nextState)
+    if(nextState.get() != nullptr)
     {
-        state->Shutdown();
+        if(saveState)
+            oldState = std::move(state);
+        else
+            state->Shutdown();
 
         state = std::move(nextState);
         state->Start();
         nextState = nullptr;
+
+        saveState = false;
     }
 }
 
@@ -62,6 +66,16 @@ bool Client::Quit()
 void Client::LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid, std::string playerName)
 {
     nextState = std::make_unique<InGame>(this, address, port, map, playerUuid, playerName);
+    saveState = true;
+}
+
+void Client::GoBackToMainMenu()
+{
+    saveState = false;
+    if(oldState.get() != nullptr)
+        nextState = std::move(oldState);
+    else
+        nextState = std::make_unique<MainMenu>(this);
 }
 
 void Client::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)

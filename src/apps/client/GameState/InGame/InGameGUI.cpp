@@ -72,7 +72,8 @@ void InGameGUI::DrawGUI(GL::Shader& textShader)
         RenderStatsWindow();
         puMgr.Update();
 
-        if(showScoreboard && !IsMenuOpen())
+        bool show = showScoreboard || inGame->match.GetState() == Match::StateType::ENDED;
+        if(show && !IsMenuOpen())
             ScoreboardWindow();
 
         HUD();
@@ -93,9 +94,28 @@ void InGameGUI::OpenMenu()
 void InGameGUI::OpenMenu(PopUpState state)
 {
     puMgr.Open(state);
+    SetMouseGrab(false);
+}
 
-    SDL_SetWindowGrab(this->inGame->client_->window_, SDL_FALSE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
+void InGameGUI::CloseMenu()
+{
+    if(this->inGame->camController_.GetMode() != App::Client::CameraMode::EDITOR)
+    {
+        SetMouseGrab(true);
+    }
+
+    puMgr.Close();
+}
+
+bool InGameGUI::IsMenuOpen()
+{
+    return puMgr.IsOpen();
+}
+
+void InGameGUI::SetMouseGrab(bool grab)
+{
+    SDL_SetWindowGrab(this->inGame->client_->window_, (SDL_bool)grab);
+    SDL_SetRelativeMouseMode((SDL_bool)grab);
 }
 
 void InGameGUI::InitPopUps()
@@ -183,7 +203,7 @@ void InGameGUI::InitPopUps()
 
         GUI::CenterSection(size.x * 2, ImGui::GetWindowWidth());
         if(ImGui::Button("Yes", size))
-            this->inGame->client_->quit = true;
+            this->inGame->exit = true;
         ImGui::SameLine();
         if(ImGui::Button("No", size))
             this->CloseMenu();
@@ -288,6 +308,24 @@ void InGameGUI::InitTexts()
     gameTimeText.SetOffset(glm::ivec2{-size.x / 2, -size.y} + glm::ivec2{0, -5});
     gameTimeText.SetIsVisible(false);
 
+    winnerText = pixelFont->CreateText();
+    winnerText.SetText("RED TEAM");
+    winnerText.SetAnchorPoint(GUI::AnchorPoint::CENTER);
+    winnerText.SetColor(red);
+    winnerText.SetScale(3.0f);
+    winnerText.SetOffset(-winnerText.GetSize() / 2);
+    winnerText.SetIsVisible(false);
+
+    winnerAnnoucerText = pixelFont->CreateText();
+    winnerAnnoucerText.SetText("THE WINNER IS");
+    winnerAnnoucerText.SetScale(1.5f);
+    winnerAnnoucerText.SetColor(white);
+    winnerAnnoucerText.SetParent(&winnerText);
+    winnerAnnoucerText.SetAnchorPoint(GUI::AnchorPoint::CENTER_UP);
+    size = winnerAnnoucerText.GetSize();
+    winnerAnnoucerText.SetOffset(glm::ivec2{-size.x / 2, 0} + glm::ivec2{0, 20});
+    winnerAnnoucerText.SetIsVisible(false);
+
     // Logs
     killText = pixelFont->CreateText();
     killText.SetText("YOU DIED");
@@ -374,6 +412,9 @@ void InGameGUI::HUD()
     leftScoreText.Draw(inGame->textShader, winSize);
     rightScoreText.Draw(inGame->textShader, winSize);
     gameTimeText.Draw(inGame->textShader, winSize);
+
+    winnerAnnoucerText.Draw(inGame->textShader, winSize);
+    winnerText.Draw(inGame->textShader, winSize);
 
     // Hit marker
     hitmarkerImg.SetIsVisible(showHitmarker);
@@ -526,22 +567,6 @@ void InGameGUI::UpdateGameTimeText()
     gameTimeText.SetOffset(glm::ivec2{-size.x / 2, -size.y} + glm::ivec2{0, -5});
 }
 
-void InGameGUI::CloseMenu()
-{
-    if(this->inGame->camController_.GetMode() != App::Client::CameraMode::EDITOR)
-    {
-        SDL_SetWindowGrab(this->inGame->client_->window_, SDL_TRUE);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-    }
-
-    puMgr.Close();
-}
-
-bool InGameGUI::IsMenuOpen()
-{
-    return puMgr.IsOpen();
-}
-
 void InGameGUI::PlayHitMarkerAnim(HitMarkerType type)
 {
     if(type == HitMarkerType::DMG)
@@ -565,10 +590,64 @@ void InGameGUI::PlayDmgAnim()
     dmgAnimationPlayer.Play();
 }
 
-void InGameGUI::EnableScore()
+void InGameGUI::EnableScore(bool enabled)
 {
-    leftScoreText.SetIsVisible(true);
-    rightScoreText.SetIsVisible(true);
+    leftScoreText.SetIsVisible(enabled);
+    rightScoreText.SetIsVisible(enabled);
+}
+
+void InGameGUI::EnableHUD(bool enabled)
+{
+    healthIcon.SetIsVisible(enabled);
+    healthText.SetIsVisible(enabled);
+
+    shieldIcon.SetIsVisible(enabled);
+    armorText.SetIsVisible(enabled);
+
+    ammoNumIcon.SetIsVisible(enabled);
+    ammoText.SetIsVisible(enabled);
+
+    crosshairImg.SetIsVisible(enabled);
+    hitmarkerImg.SetIsVisible(enabled);
+    dmgEffectImg.SetIsVisible(enabled);
+
+    leftScoreText.SetIsVisible(enabled);
+    rightScoreText.SetIsVisible(enabled);
+    midScoreText.SetIsVisible(enabled);
+    gameTimeText.SetIsVisible(enabled);
+
+    killText.SetIsVisible(enabled);
+    respawnTimeText.SetIsVisible(enabled);
+    countdownText.SetIsVisible(enabled);
+}
+
+void InGameGUI::EnableWinnerText(bool enabled)
+{
+    if(enabled)
+    {
+        auto mode = inGame->match.GetGameMode();
+        auto scoreBoard = mode->GetScoreboard();
+        auto winner = scoreBoard.GetWinner().value();
+
+        auto color = inGame->teamColors[winner.teamId];
+        std::string text = winner.teamId == 0 ? "BLUE TEAM" : "RED TEAM";
+
+        auto isFFA = mode->GetType() == GameMode::FREE_FOR_ALL;
+        if(isFFA)
+        {
+            color = inGame->ffaColors[winner.teamId];
+            text = scoreBoard.GetPlayerScore(winner.teamId)->name;
+        }
+
+        winnerText.SetColor(color);
+        winnerText.SetText(text);
+        auto size = winnerText.GetSize();
+        winnerText.SetOffset(-size / 2 );
+    }
+
+    winnerAnnoucerText.SetIsVisible(enabled);
+    winnerText.SetIsVisible(enabled);
+    EnableHUD(false);
 }
 
 // Private
@@ -610,6 +689,17 @@ void InGameGUI::ScoreboardWindow()
             ImGui::PopStyleColor(2);
         }
         ImGui::PopStyleColor(2);
+
+        if(inGame->match.GetState() == Match::StateType::ENDED)
+        {
+            auto size = ImGui::CalcTextSize(" Leave Game ");
+            auto regionSize = ImGui::GetContentRegionAvail();
+            GUI::CenterSection(size.x, regionSize.x);
+            if(ImGui::Button("Leave Game"))
+            {
+                inGame->exit = true;
+            }
+        }
     }
     ImGui::End();
 }

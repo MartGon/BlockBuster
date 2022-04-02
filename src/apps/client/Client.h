@@ -48,12 +48,16 @@ namespace BlockBuster
     private:
 
         void LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid, std::string playerName);
+        void GoBackToMainMenu();
 
         void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) override;
 
         std::unique_ptr<GameState> state;
-        std::unique_ptr<GameState> nextState;
+        std::unique_ptr<GameState> nextState = nullptr;
+        std::unique_ptr<GameState> oldState = nullptr;
+        bool saveState = false;
 
+        // Map Mgr
         MapMgr mapMgr;
 
         // App

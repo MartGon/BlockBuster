@@ -22,6 +22,17 @@ MainMenu::~MainMenu()
 
 void MainMenu::Start()
 {
+    if(isStarted)
+    {
+        httpClient.Enable();
+        enteringGame = false;
+        currentGame->game.state = "InLobby";
+        UpdateGame();
+        return;
+    }
+
+    isStarted = true;
+
     menuState_ = std::make_unique<MenuState::Login>(this);
 
     // Set default name
@@ -465,7 +476,7 @@ void MainMenu::StartGame()
     };
 
     httpClient.Request("/start_game", nlohmann::to_string(body), onSuccess, onError);
-    httpClient.Disable();
+    //httpClient.Disable();
 }
 
 void MainMenu::DownloadMap(std::string mapName)

@@ -119,6 +119,7 @@ namespace BlockBuster
 
         // Networking
         void OnClientJoin(ENet::PeerId peerId);
+        void OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::string playerName);
         void OnClientLeave(ENet::PeerId peerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket);
         void OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet);

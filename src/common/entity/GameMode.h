@@ -49,10 +49,10 @@ namespace BlockBuster
         std::optional<PlayerScore> GetPlayerScore(Entity::ID playerId);
 
         void SetTeamScore(TeamScore teamScore);
-        void RemoveTeam(Entity::ID teamId);
         std::vector<Entity::ID> GetTeamIDs();
         std::optional<TeamScore> GetTeamScore(Entity::ID teamId);
         std::vector<TeamScore> GetTeamScores();
+        
         std::optional<TeamScore> GetWinner();
         std::vector<PlayerScore> GetTeamPlayers(Entity::ID teamId);
 
@@ -60,6 +60,8 @@ namespace BlockBuster
         static Scoreboard FromBuffer(Util::Buffer::Reader& reader);
 
     private:
+        void RemoveTeam(Entity::ID teamId);
+
         std::unordered_map<Entity::ID, PlayerScore> playersScore;
         std::unordered_map<Entity::ID, TeamScore> teamsScore;
         bool hasChanged = false;
@@ -109,6 +111,7 @@ namespace BlockBuster
         virtual void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) {}; // Change score, check for game over, etc.
 
         virtual bool IsGameOver() = 0;
+        virtual Util::Time::Seconds GetDuration(){ return Util::Time::Seconds{60.0f * 15.0f}; };
 
         static const std::string typeStrings[Type::COUNT];
         static const std::unordered_map<std::string, Type> stringTypes;
@@ -131,8 +134,13 @@ namespace BlockBuster
         Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;
         void OnPlayerLeave(Entity::ID id) override;
         void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
+
         bool IsGameOver() override;
+        Util::Time::Seconds GetDuration() override {return duration;};
+
+
         int MAX_KILLS = 30;
+        const Util::Time::Seconds duration{60.0f * 0.5f};
     };
 
     class TeamDeathMatch : public GameMode

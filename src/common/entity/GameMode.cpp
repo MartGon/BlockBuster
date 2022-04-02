@@ -58,8 +58,14 @@ void Scoreboard::SetPlayerScore(PlayerScore ps)
 
 void Scoreboard::RemovePlayer(Entity::ID playerId)
 {
-    playersScore.erase(playerId);
-    hasChanged = true;
+    if(auto ps = GetPlayerScore(playerId))
+    {
+        playersScore.erase(playerId);
+        if(GetTeamPlayers(ps->teamId).empty())
+            RemoveTeam(ps->teamId);
+
+        hasChanged = true;
+    }
 }
 
 std::vector<Entity::ID> Scoreboard::GetPlayerIDs()
@@ -270,7 +276,6 @@ Entity::ID FreeForAll::OnPlayerJoin(Entity::ID id, std::string name)
 void FreeForAll::OnPlayerLeave(Entity::ID id)
 {
     scoreBoard.RemovePlayer(id);
-    scoreBoard.RemoveTeam(id);
 }
 
 void FreeForAll::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)

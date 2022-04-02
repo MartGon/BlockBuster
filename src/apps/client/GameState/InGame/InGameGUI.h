@@ -34,6 +34,8 @@ namespace BlockBuster
         void OpenMenu();
         void CloseMenu();
         bool IsMenuOpen();
+        
+        void SetMouseGrab(bool grab);
 
         enum class HitMarkerType
         {
@@ -43,7 +45,10 @@ namespace BlockBuster
 
         void PlayHitMarkerAnim(HitMarkerType type);
         void PlayDmgAnim();
-        void EnableScore();
+
+        void EnableScore(bool enabled = true);
+        void EnableHUD(bool enabled);
+        void EnableWinnerText(bool enabled);
 
     private:
         // PopUps
@@ -63,6 +68,7 @@ namespace BlockBuster
         void InitAnimations();
 
         void HUD();
+
         void UpdateHealth();
         void UpdateArmor();
         std::string GetBoundedValue(int val, int max);
@@ -122,6 +128,8 @@ namespace BlockBuster
         GUI::Text midScoreText;
         GUI::Text rightScoreText;
         GUI::Text gameTimeText;
+        GUI::Text winnerText;
+        GUI::Text winnerAnnoucerText;
 
         // Log
         GUI::Text killText;

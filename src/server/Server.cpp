@@ -38,17 +38,21 @@ void Server::Run()
             HandleClientsInput();
             UpdateWorld();
             SendWorldUpdate();
-            SendScoreboardReport();
 
             tickCount++;
         }
 
+        SendScoreboardReport();
         match.Update(&logger, TICK_RATE);
         logger.Flush();
         SleepUntilNextTick(preSimulationTime);
     }
 
     logger.LogInfo("Server shutdown");
+    ServerEvent::Notification n;
+    n.eventType = ServerEvent::Type::GAME_ENDED;
+    n.event = ServerEvent::GameEnded();
+    SendServerNotification(n);
 }
 
 // Initialization
@@ -132,26 +136,37 @@ void Server::OnClientJoin(ENet::PeerId peerId)
 {
     logger.LogError("Connected with peer " + std::to_string(peerId));
 
-    std::vector<ENet::PeerId> connectedClients;
-    for(auto& [id, client] : clients)
-        connectedClients.push_back(id);
-
-    // Create Player
+    // Create Client
     Entity::Player player;
     player.id = peerId;
-    player.teamId = player.id; // TODO: Let gamemode decide based on current teams
 
     // Add to table
     clients[peerId].id = peerId;
     clients[peerId].player = player;
+}
+
+void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::string playerName)
+{
+    auto& client = clients[peerId];
+    auto& player = client.player;
+
+    // Set name
+    client.playerUuuid = playerUuid;
+    client.playerName = playerName;
+
+    // Get Team id
+    auto teamId = match.GetGameMode()->OnPlayerJoin(client.player.id, playerName);
+    client.player.teamId = teamId;
+
+    // Spawn player
     SpawnPlayer(peerId);
 
     // Send welcome packet
     Networking::Batch<Networking::PacketType::Server> batch;
 
     auto welcome = std::make_unique<Networking::Packets::Server::Welcome>();
-    welcome->playerId = player.id;
-    welcome->teamId = player.teamId;
+    welcome->playerId = peerId;
+    welcome->teamId = teamId;
     welcome->tickRate = TICK_RATE.count();
     welcome->mode = match.GetGameMode()->GetType();
     logger.LogError("Game mode sent is " + std::to_string(welcome->mode));
@@ -162,7 +177,14 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     ms->state = match.ExtractState();
     batch.PushPacket(std::move(ms));
 
-    // Send info about already connected players
+    // Send info about other connected players
+    std::vector<ENet::PeerId> connectedClients;
+    for(auto& [id, client] : clients)
+    {
+        if(id != peerId)
+            connectedClients.push_back(id);
+    }
+
     for(auto& id : connectedClients)
     {
         auto& client = clients[id];
@@ -247,10 +269,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
         case Networking::OpcodeClient::OPCODE_CLIENT_LOGIN:
         {
             auto login = packet.To<Networking::Packets::Client::Login>();
-            client.playerUuuid = login->playerUuid;
-            client.playerName = login->playerName;
-
-            match.GetGameMode()->OnPlayerJoin(client.player.id, login->playerName);
+            OnClientLogin(peerId, login->playerUuid, login->playerName);
         }
         break;
         case Networking::OpcodeClient::OPCODE_CLIENT_INPUT:
@@ -509,10 +528,12 @@ void Server::SendWorldUpdate()
 
 void Server::SendScoreboardReport()
 {
-    auto scoreboard = match.GetGameMode()->GetScoreboard();
+    auto& scoreboard = match.GetGameMode()->GetScoreboard();
     if(!scoreboard.HasChanged())
         return;
+
     scoreboard.CommitChanges();
+    logger.LogError("Sending scoreboard");
 
     Networking::Packets::Server::ScoreboardReport sr;
     sr.scoreboard = scoreboard;

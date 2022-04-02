@@ -61,6 +61,8 @@ InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, st
 
 void InGame::Start()
 {
+    isStarted = true;
+
     // Window
     SDL_SetWindowResizable(this->client_->window_, SDL_TRUE);
     client_->ApplyVideoOptions(client_->config.window);
@@ -133,7 +135,6 @@ void InGame::Start()
     // Map
     auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
     auto mapFileName = mapName + ".bbm";
-    //LoadMap("/home/seix/Other/Repos/BlockBuster/resources/maps/Alpha2.bbm");
     LoadMap(mapFolder, mapFileName);
 
     // Match
@@ -192,10 +193,9 @@ void InGame::Start()
     if(!connected)
     {
         client_->logger->LogError("Could not connect to server. Quitting");
-        // TODO: Go back to main menu with error pop up Server Browser
     }
 
-    client_->quit = !connected;
+    exit = !connected;
     client_->logger->Flush();
 }
 
@@ -204,7 +204,7 @@ void InGame::Update()
     simulationLag = serverTickRate;
     
     client_->logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate.count()));
-    while(!client_->quit)
+    while(!exit)
     {
         preSimulationTime = Util::Time::GetTime();
 
@@ -233,6 +233,8 @@ void InGame::Update()
         client_->logger->LogInfo("Update: Delta time " + std::to_string(deltaTime.count()));
         client_->logger->LogInfo("Update: Simulation lag " + std::to_string(simulationLag.count()));
     }
+    
+    client_->GoBackToMainMenu();
 }
 
 void InGame::Shutdown()
@@ -266,6 +268,16 @@ void InGame::OnEnterMatchState(Match::StateType type)
         inGameGui.EnableScore();
         break;
     
+    case Match::StateType::ENDING:
+        inGameGui.EnableWinnerText(true);
+        predictionHistory_.Clear();
+        break;
+
+    case Match::StateType::ENDED:
+        inGameGui.EnableWinnerText(false);
+        inGameGui.SetMouseGrab(false);
+        break;
+
     default:
         break;
     }
@@ -317,7 +329,7 @@ void InGame::HandleSDLEvents()
         switch(e.type)
         {
         case SDL_QUIT:
-            client_->quit = true;
+            exit = true;
             break;
         case SDL_KEYDOWN:
             if(e.key.keysym.sym == SDLK_f)
@@ -354,7 +366,7 @@ void InGame::HandleSDLEvents()
             break;
         }
         
-        if(!inGameGui.IsMenuOpen())
+        if(!inGameGui.IsMenuOpen() && match.GetState() != Match::StateType::ENDED)
             camController_.HandleSDLEvent(e);
     }
 }
@@ -364,6 +376,16 @@ void InGame::HandleSDLEvents()
 Entity::Player& InGame::GetLocalPlayer()
 {
     return playerTable[playerId];
+}
+
+Entity::ID InGame::GetPlayerTeam(Entity::ID playerId)
+{
+    Entity::ID teamId = 0;
+    auto scoreBoard = match.GetGameMode()->GetScoreboard();
+    if(auto score = scoreBoard.GetPlayerScore(playerId))
+        teamId = score->teamId;
+
+    return teamId;
 }
 
 // Networking
@@ -474,6 +496,9 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         {
             auto ms = packet.To<MatchState>();
             auto matchState = ms->state.state;
+            // Set server params
+            this->match.ApplyState(ms->state);
+
             if(matchState == Match::StateType::WAITING_FOR_PLAYERS)
                 inGameGui.countdownText.SetIsVisible(true);
             else if(matchState == Match::StateType::ON_GOING)
@@ -481,9 +506,6 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 inGameGui.gameTimeText.SetIsVisible(true);
                 inGameGui.EnableScore();
             }
-
-            // Set server params
-            this->match.ApplyState(ms->state);
         }
         break;
 
@@ -631,6 +653,12 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         {
             auto sr = packet.To<ScoreboardReport>();
             match.GetGameMode()->SetScoreboard(sr->scoreboard);
+
+            if(match.GetState() == Match::StateType::ENDING)
+            {
+                inGameGui.EnableWinnerText(true);
+                inGameGui.SetMouseGrab(false);
+            }
         }
         break;
 

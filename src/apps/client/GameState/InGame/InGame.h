@@ -63,6 +63,7 @@ namespace BlockBuster
 
         // Handy
         Entity::Player& GetLocalPlayer();
+        Entity::ID GetPlayerTeam(Entity::ID playerId);
 
         // Networking
         void OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::PlayerSnapshot playerState);
@@ -229,5 +230,6 @@ namespace BlockBuster
 
         // Config
         GameOptions gameOptions;
+        bool exit = false;
     };
 }

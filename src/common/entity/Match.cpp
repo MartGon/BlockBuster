@@ -21,7 +21,7 @@ void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
             EnterState(ON_GOING);
             logger->LogError("Match started");
 
-            timer.SetDuration(gameTime);
+            timer.SetDuration(gameMode->GetDuration());
             timer.Start();
         }
         break;
