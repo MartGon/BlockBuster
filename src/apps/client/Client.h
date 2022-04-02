@@ -48,7 +48,7 @@ namespace BlockBuster
     private:
 
         void LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid, std::string playerName);
-        void GoBackToMainMenu();
+        void GoBackToMainMenu(bool onGoing = false);
 
         void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) override;
 

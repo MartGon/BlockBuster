@@ -234,7 +234,8 @@ void InGame::Update()
         client_->logger->LogInfo("Update: Simulation lag " + std::to_string(simulationLag.count()));
     }
     
-    client_->GoBackToMainMenu();
+    auto onGoing = match.GetState() == Match::StateType::ON_GOING || match.GetState() == Match::StateType::WAITING_FOR_PLAYERS;
+    client_->GoBackToMainMenu(onGoing);
 }
 
 void InGame::Shutdown()
@@ -351,14 +352,12 @@ void InGame::HandleSDLEvents()
             if(e.key.keysym.sym == SDLK_TAB)
             {
                 inGameGui.showScoreboard = true;
-                inGameGui.crosshairImg.SetIsVisible(false);
             }
             break;
         case SDL_KEYUP:
             if(e.key.keysym.sym == SDLK_TAB)
             {
                 inGameGui.showScoreboard = false;
-                inGameGui.crosshairImg.SetIsVisible(true);
             }
         case SDL_MOUSEBUTTONDOWN:
             {

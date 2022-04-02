@@ -65,7 +65,7 @@ namespace HTTP
 
         std::string address;
         uint16_t port;
-        Util::Time::Seconds timeout{5};
+        Util::Time::Seconds timeout{20};
 
         std::mutex reqMutex;
         using ThreadID = uint8_t;

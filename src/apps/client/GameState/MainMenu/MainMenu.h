@@ -25,8 +25,10 @@ namespace BlockBuster
 {
     class Client;
 
+
     class MainMenu : public GameState
     {
+    friend class Client;
     friend class MenuState::Login;
     friend class MenuState::ServerBrowser;
     friend class MenuState::CreateGame;
@@ -53,7 +55,7 @@ namespace BlockBuster
         void LeaveGame();
         void ToggleReady();
         void SendChatMsg(std::string msg);
-        void UpdateGame();
+        void UpdateGame(bool forced = false);
         void StartGame();
         void DownloadMap(std::string mapName);
         void GetMapPicture(std::string mapName);
@@ -103,5 +105,6 @@ namespace BlockBuster
         std::optional<GameDetails> currentGame;
         MenuState::Lobby* lobby = nullptr;
         bool enteringGame = false;
+        bool leaveGame = false;
     };
 }

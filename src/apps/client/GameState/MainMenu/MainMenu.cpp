@@ -26,8 +26,12 @@ void MainMenu::Start()
     {
         httpClient.Enable();
         enteringGame = false;
-        currentGame->game.state = "InLobby";
-        UpdateGame();
+        if(leaveGame)
+            LeaveGame();
+        else
+            UpdateGame(true);
+
+        leaveGame = false;
         return;
     }
 
@@ -371,7 +375,7 @@ void MainMenu::SendChatMsg(std::string msg)
     httpClient.Request("/send_chat_msg", nlohmann::to_string(body), onSuccess, onError);
 }
 
-void MainMenu::UpdateGame()
+void MainMenu::UpdateGame(bool forced)
 {
     // Only update current game while in lobby
     if(lobby && lobby->updatePending)
@@ -379,6 +383,7 @@ void MainMenu::UpdateGame()
 
     nlohmann::json body;
     body["game_id"] = currentGame->game.id;
+    body["forced"] = forced;
 
     auto onSuccess = [this](httplib::Response& res)
     {

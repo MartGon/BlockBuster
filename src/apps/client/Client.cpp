@@ -69,13 +69,20 @@ void Client::LaunchGame(std::string address, uint16_t port, std::string map, std
     saveState = true;
 }
 
-void Client::GoBackToMainMenu()
+void Client::GoBackToMainMenu(bool onGoing)
 {
     saveState = false;
-    if(oldState.get() != nullptr)
-        nextState = std::move(oldState);
-    else
+        
+    if(oldState.get() == nullptr)
         nextState = std::make_unique<MainMenu>(this);
+    else
+        nextState = std::move(oldState);
+
+    if(onGoing)
+    {
+        auto mainMenu = static_cast<MainMenu*>(nextState.get());
+        mainMenu->leaveGame = true;
+    }
 }
 
 void Client::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)
