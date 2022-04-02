@@ -140,7 +140,7 @@ namespace BlockBuster
 
 
         int MAX_KILLS = 30;
-        const Util::Time::Seconds duration{60.0f * 0.5f};
+        const Util::Time::Seconds duration{60.0f * 10.0f};
     };
 
     class TeamDeathMatch : public GameMode
