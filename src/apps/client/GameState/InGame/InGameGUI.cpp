@@ -258,6 +258,7 @@ void InGameGUI::InitTexts()
     midScoreText.SetAnchorPoint(GUI::AnchorPoint::CENTER_UP);
     auto size = midScoreText.GetSize();
     midScoreText.SetOffset(glm::ivec2{-size.x / 2, -size.y * 8} + glm::ivec2{0, 0});
+    midScoreText.SetIsVisible(false);
 
     leftScoreText = pixelFont->CreateText();
     leftScoreText.SetText("3");
@@ -266,6 +267,7 @@ void InGameGUI::InitTexts()
     leftScoreText.SetParent(&midScoreText);
     leftScoreText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
     leftScoreText.SetOffset(glm::ivec2{-leftScoreText.GetSize().x, -5});
+    leftScoreText.SetIsVisible(false);
 
     rightScoreText = pixelFont->CreateText();
     rightScoreText.SetText("6");
@@ -274,6 +276,7 @@ void InGameGUI::InitTexts()
     rightScoreText.SetParent(&midScoreText);
     rightScoreText.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
     rightScoreText.SetOffset(glm::ivec2{0, -5});
+    rightScoreText.SetIsVisible(false);
 
     gameTimeText = pixelFont->CreateText();
     gameTimeText.SetText("10:23");
@@ -353,6 +356,7 @@ void InGameGUI::HUD()
     UpdateHealth();
     UpdateArmor();
     UpdateAmmo();
+    UpdateScore();
     UpdateRespawnText();
     UpdateCountdownText();
     UpdateGameTimeText();
@@ -464,7 +468,27 @@ void InGameGUI::UpdateAmmo()
 
 void InGameGUI::UpdateScore()
 {
-    
+    auto mode =inGame->match.GetGameMode();
+    auto scoreBoard = mode->GetScoreboard();
+    if(mode->GetType() == GameMode::FREE_FOR_ALL)
+    {
+        auto playerScore = scoreBoard.GetPlayerScore(inGame->playerId);
+        if(!playerScore)
+            return;
+        leftScoreText.SetText(std::to_string(playerScore->score));
+        leftScoreText.SetColor(inGame->ffaColors[inGame->playerId]);
+        leftScoreText.SetOffset(glm::ivec2{-leftScoreText.GetSize().x, -5});
+
+        auto scores = scoreBoard.GetTeamScores();
+        std::sort(scores.begin(), scores.end(), [](auto a, auto b){
+            return a.score > b.score;
+        });
+        auto first = scores[0];
+        if(first.teamId == inGame->playerId && scores.size() > 1)
+            first = scores[1];
+        rightScoreText.SetText(std::to_string(first.score));
+        rightScoreText.SetColor(inGame->ffaColors[first.teamId]);
+    }
 }
 
 void InGameGUI::UpdateRespawnText()
@@ -541,6 +565,12 @@ void InGameGUI::PlayDmgAnim()
     dmgAnimationPlayer.Play();
 }
 
+void InGameGUI::EnableScore()
+{
+    leftScoreText.SetIsVisible(true);
+    rightScoreText.SetIsVisible(true);
+}
+
 // Private
 
 void InGameGUI::ScoreboardWindow()
@@ -563,10 +593,7 @@ void InGameGUI::ScoreboardWindow()
         auto gameMode = inGame->match.GetGameMode();
         if(gameMode->GetType() == GameMode::FREE_FOR_ALL)
         {
-            ImGui::PushStyleColor(ImGuiCol_TableRowBg, yellow);
-            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, yellow);
-                ScoreTable("Free For All");
-            ImGui::PopStyleColor(2);
+            ScoreTable("Free For All");
         }
         else
         {   
@@ -597,17 +624,7 @@ void InGameGUI::ScoreTable(const char* name)
     bool isFFA = gameMode->GetType() == GameMode::FREE_FOR_ALL;
 
     auto scoreBoard = gameMode->GetScoreboard();
-    std::vector<PlayerScore> playerScores;
-    auto playerIds = scoreBoard.GetPlayerIDs();
-    for(auto id : playerIds)
-    {
-        if(Util::Map::Contains(inGame->playerTable, id))
-        {
-            auto playerTeam = inGame->playerTable[id].teamId;
-            if(playerTeam == teamId || isFFA)
-                playerScores.push_back(scoreBoard.GetPlayerScore(id).value());
-        }
-    }
+    auto playerScores = isFFA ? scoreBoard.GetPlayerScores() : scoreBoard.GetTeamPlayers(teamId);
     std::sort(playerScores.begin(), playerScores.end(), [](auto a, auto b)
     {
         return a.score > b.score;
@@ -624,35 +641,33 @@ void InGameGUI::ScoreTable(const char* name)
         ImGui::TableSetupColumn("Kills", columnFlags);
         ImGui::TableSetupColumn("K/D", columnFlags);
         ImGui::TableSetupColumn("Deaths", columnFlags);
-        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
         ImGui::TableHeadersRow();
 
+        // Team Row
         if(!isFFA)
         {
-            // Total Row
-            ImGui::TableNextRow();
-
             ImGui::TableNextColumn();
             // Rank
 
             ImGui::TableNextColumn();
             ImGui::Text("%s", name);
 
-            ImGui::TableNextColumn();
+            ImGui::TableNextColumn();   
             std::string points = std::to_string(35);
             auto width = ImGui::CalcTextSize(points.c_str()).x;
             GUI::TableCenterEntry(width);
             ImGui::Text("%s", points.c_str());
+
+            // Total Row
+            ImGui::TableNextRow();
         }
         
         // Players
         for(auto i = 0; i < playerScores.size(); i++)
         {
             auto playerScore = playerScores[i];
-
-            ImGui::TableNextRow();
+            auto teamId = playerScore.teamId;
             
-
             // Rank
             ImGui::TableNextColumn();
             std::string rank = std::to_string(i + 1);
@@ -695,6 +710,24 @@ void InGameGUI::ScoreTable(const char* name)
             width = ImGui::CalcTextSize(deaths.c_str()).x;
             GUI::TableCenterEntry(width);
             ImGui::Text("%s", deaths.c_str());
+
+            if(isFFA)
+            {
+                auto color = inGame->ffaColors[teamId];
+                auto ivec4 = ImVec4{color.x, color.y, color.z, color.w};
+                ImGui::PushStyleColor(ImGuiCol_TableRowBg, ivec4);
+                ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, ivec4);
+                if(teamId == InGame::FFA_WHITE)
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0, 0, 0, 1});
+            }
+            ImGui::TableNextRow();
+            if(isFFA)
+            {
+                ImGui::PopStyleColor(2);
+                if(teamId == InGame::FFA_WHITE)
+                    ImGui::PopStyleColor();
+            }
+            
         }
 
         ImGui::EndTable();

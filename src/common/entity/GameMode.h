@@ -11,6 +11,7 @@ namespace BlockBuster
     struct PlayerScore
     {
         Entity::ID playerId;
+        Entity::ID teamId;
         std::string name;
         uint32_t kills;
         uint32_t score;
@@ -40,17 +41,20 @@ namespace BlockBuster
             hasChanged = false;
         }
 
-        void AddPlayer(Entity::ID playerId, std::string name);
+        void AddPlayer(Entity::ID playerId, Entity::ID teamID, std::string name);
         void SetPlayerScore(PlayerScore ps);
         void RemovePlayer(Entity::ID playerId);
         std::vector<Entity::ID> GetPlayerIDs();
+        std::vector<PlayerScore> GetPlayerScores();
         std::optional<PlayerScore> GetPlayerScore(Entity::ID playerId);
 
-        void AddTeam(Entity::ID teamId);
         void SetTeamScore(TeamScore teamScore);
         void RemoveTeam(Entity::ID teamId);
         std::vector<Entity::ID> GetTeamIDs();
         std::optional<TeamScore> GetTeamScore(Entity::ID teamId);
+        std::vector<TeamScore> GetTeamScores();
+        std::optional<TeamScore> GetWinner();
+        std::vector<PlayerScore> GetTeamPlayers(Entity::ID teamId);
 
         Util::Buffer ToBuffer();
         static Scoreboard FromBuffer(Util::Buffer::Reader& reader);
@@ -100,6 +104,8 @@ namespace BlockBuster
         virtual void Start() {}; // Spawn players
         virtual void Update() {}; // Check for domination points, flag carrying
 
+        virtual Entity::ID OnPlayerJoin(Entity::ID playerId, std::string name) { return 0; };
+        virtual void OnPlayerLeave(Entity::ID playerId) {};
         virtual void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) {}; // Change score, check for game over, etc.
 
         virtual bool IsGameOver() = 0;
@@ -122,6 +128,8 @@ namespace BlockBuster
 
         }
 
+        Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;
+        void OnPlayerLeave(Entity::ID id) override;
         void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
         bool IsGameOver() override;
         int MAX_KILLS = 30;

@@ -124,6 +124,19 @@ namespace BlockBuster
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerTable;
         std::unordered_map<Entity::ID, PlayerModelState> playerModelStateTable;
         std::unordered_map<Entity::ID, ExtraData> playersExtraData;
+        enum TeamColors
+        {
+            TEAM_BLUE, TEAM_RED
+        };
+        enum FFAColors
+        {
+            FFA_RED, FFA_BLUE, FFA_DARK_GREEN, FFA_GOLD,
+            FFA_BLACK, FFA_WHITE, FFA_ORANGE, FFA_PURPLE,
+            FFA_BROWN, FFA_LIME, FFA_CYAN, FFA_PINK,
+            FFA_GREY, FFA_MAGENTA, FFA_ROSY_BROWN, FFA_AQUA_MARINE
+        };
+        static glm::vec4 teamColors[2];
+        static glm::vec4 ffaColors[16];
 
         // Local player
         uint8_t playerId = 0;

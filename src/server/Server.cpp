@@ -138,7 +138,7 @@ void Server::OnClientJoin(ENet::PeerId peerId)
 
     // Create Player
     Entity::Player player;
-    player.id = this->lastId++;
+    player.id = peerId;
     player.teamId = player.id; // TODO: Let gamemode decide based on current teams
 
     // Add to table
@@ -197,7 +197,7 @@ void Server::OnClientLeave(ENet::PeerId peerId)
     auto& player = client.player;
 
     // Update scoreboard
-    match.GetGameMode()->GetScoreboard().RemovePlayer(player.id);
+    match.GetGameMode()->OnPlayerLeave(player.id);
 
     // Informing players
     Networking::Packets::Server::PlayerDisconnected pd;
@@ -250,7 +250,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
             client.playerUuuid = login->playerUuid;
             client.playerName = login->playerName;
 
-            match.GetGameMode()->GetScoreboard().AddPlayer(client.player.id, login->playerName);
+            match.GetGameMode()->OnPlayerJoin(client.player.id, login->playerName);
         }
         break;
         case Networking::OpcodeClient::OPCODE_CLIENT_INPUT:

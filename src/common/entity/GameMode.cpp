@@ -18,6 +18,7 @@ Util::Buffer PlayerScore::ToBuffer()
 {
     Util::Buffer buffer;
     buffer.Write(playerId);
+    buffer.Write(teamId);
     buffer.Write(name);
     buffer.Write(kills);
     buffer.Write(score);
@@ -30,6 +31,7 @@ PlayerScore PlayerScore::FromBuffer(Util::Buffer::Reader& reader)
 {
     PlayerScore ps;
     ps.playerId = reader.Read<decltype(ps.playerId)>();
+    ps.teamId = reader.Read<decltype(ps.teamId)>();
     ps.name = reader.Read<decltype(ps.name)>();
     ps.kills = reader.Read<decltype(ps.kills)>();
     ps.score = reader.Read<decltype(ps.score)>();
@@ -40,9 +42,11 @@ PlayerScore PlayerScore::FromBuffer(Util::Buffer::Reader& reader)
 
 // Scoreboard
 
-void Scoreboard::AddPlayer(Entity::ID playerId, std::string name)
+void Scoreboard::AddPlayer(Entity::ID playerId, Entity::ID teamId, std::string name)
 {
-    PlayerScore ps{playerId, name, 0, 0};
+    PlayerScore ps{playerId, teamId, name, 0, 0};
+    if(!Util::Map::Contains(teamsScore, teamId))
+        SetTeamScore(TeamScore{teamId, 0});
     SetPlayerScore(ps);
 }
 
@@ -67,6 +71,15 @@ std::vector<Entity::ID> Scoreboard::GetPlayerIDs()
     return players;
 }
 
+std::vector<PlayerScore> Scoreboard::GetPlayerScores()
+{
+    std::vector<PlayerScore> ps;
+    for(auto& [id, score] : playersScore)
+        ps.push_back(score);
+
+    return ps;
+}
+
 std::optional<PlayerScore> Scoreboard::GetPlayerScore(Entity::ID playerId)
 {
     std::optional<PlayerScore> ps;
@@ -74,12 +87,6 @@ std::optional<PlayerScore> Scoreboard::GetPlayerScore(Entity::ID playerId)
         ps = playersScore[playerId];
     
     return ps;
-}
-
-void Scoreboard::AddTeam(Entity::ID teamId)
-{
-    TeamScore ts{teamId, 0};
-    SetTeamScore(ts);
 }
 
 void Scoreboard::SetTeamScore(TeamScore score)
@@ -110,6 +117,41 @@ std::optional<TeamScore> Scoreboard::GetTeamScore(Entity::ID teamId)
         ts = teamsScore[teamId];
     
     return ts;
+}
+
+std::vector<TeamScore> Scoreboard::GetTeamScores()
+{
+    std::vector<TeamScore> teamScores;
+    for(auto [id, score] : this->teamsScore)
+        teamScores.push_back(score);
+
+    return teamScores;
+}
+
+std::optional<TeamScore> Scoreboard::GetWinner()
+{
+    std::optional<TeamScore> ret;
+
+    auto scores = GetTeamScores();
+    if(!scores.empty())
+    {
+        std::sort(scores.begin(), scores.end(), [](auto a, auto b){
+            return a.score > b.score;
+        });
+        ret = scores[0];
+    }
+
+    return ret;
+}
+
+std::vector<PlayerScore> Scoreboard::GetTeamPlayers(Entity::ID teamId)
+{
+    std::vector<PlayerScore> tpScores;
+    for(auto [id, pScore] : playersScore)
+        if(pScore.teamId == teamId)
+            tpScores.push_back(pScore);
+
+    return tpScores;
 }
 
 Util::Buffer Scoreboard::ToBuffer()
@@ -218,6 +260,19 @@ std::vector<std::string> BlockBuster::GetSupportedGameModesAsString(Game::Map::M
 
 // GameMode - FreeForAll
 
+Entity::ID FreeForAll::OnPlayerJoin(Entity::ID id, std::string name)
+{
+    scoreBoard.AddPlayer(id, id, name);
+
+    return id;
+}
+
+void FreeForAll::OnPlayerLeave(Entity::ID id)
+{
+    scoreBoard.RemovePlayer(id);
+    scoreBoard.RemoveTeam(id);
+}
+
 void FreeForAll::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)
 {
     if(auto score = scoreBoard.GetPlayerScore(killer))
@@ -225,6 +280,10 @@ void FreeForAll::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID 
         score->kills++;
         score->score++;
         scoreBoard.SetPlayerScore(score.value());
+
+        auto teamScore = scoreBoard.GetTeamScore(killer);
+        teamScore->score++;
+        scoreBoard.SetTeamScore(teamScore.value());
     }
 
     if(auto score = scoreBoard.GetPlayerScore(victim))

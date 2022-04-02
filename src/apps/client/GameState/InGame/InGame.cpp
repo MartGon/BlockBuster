@@ -24,31 +24,31 @@
 using namespace BlockBuster;
 using namespace ::App::Client;
 
-glm::vec4 teamColors[2] = {
+glm::vec4 InGame::teamColors[2] = {
     glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}, // BLUE
     glm::vec4{0.8, 0.072f, 0.065f, 1.0f}   // RED
 };
 
-glm::vec4 ffaColors[16] = {
+glm::vec4 InGame::ffaColors[16] = {
     glm::vec4{0.8, 0.072f, 0.065f, 1.0f},  // RED
     glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}, // BLUE
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    Rendering::ColorU8ToFloat(0, 100, 0), // DARK GREEN
+    Rendering::ColorU8ToFloat(255, 215, 0), // GOLD
 
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    Rendering::ColorU8ToFloat(20, 20, 20), // BLACK
+    Rendering::ColorU8ToFloat(192,192,192), // WHITE
+    Rendering::ColorU8ToFloat(255, 165, 0), // ORANGE
+    Rendering::ColorU8ToFloat(128, 0, 128), // PURPLE
 
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    Rendering::ColorU8ToFloat(165, 42, 42), // BROWN
+    Rendering::ColorU8ToFloat(0, 255, 0), // LIME
+    Rendering::ColorU8ToFloat(0, 255, 255), // CYAN
+    Rendering::ColorU8ToFloat(255, 20, 147), // PINK
 
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    Rendering::ColorU8ToFloat(105, 105, 105), // GREY
+    Rendering::ColorU8ToFloat(255, 0, 255), // MAGENTA
+    Rendering::ColorU8ToFloat(188, 143, 143), // ROSY BROWN
+    Rendering::ColorU8ToFloat(127, 255, 212), // AQUA MARINE
 };
 
 InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid, std::string playerName) : 
@@ -263,6 +263,7 @@ void InGame::OnEnterMatchState(Match::StateType type)
     case Match::StateType::ON_GOING:
         inGameGui.countdownText.SetIsVisible(false);
         inGameGui.gameTimeText.SetIsVisible(true);
+        inGameGui.EnableScore();
         break;
     
     default:
@@ -475,6 +476,11 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             auto matchState = ms->state.state;
             if(matchState == Match::StateType::WAITING_FOR_PLAYERS)
                 inGameGui.countdownText.SetIsVisible(true);
+            else if(matchState == Match::StateType::ON_GOING)
+            {
+                inGameGui.gameTimeText.SetIsVisible(true);
+                inGameGui.EnableScore();
+            }
 
             // Set server params
             this->match.ApplyState(ms->state);

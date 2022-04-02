@@ -43,6 +43,7 @@ namespace BlockBuster
 
         void PlayHitMarkerAnim(HitMarkerType type);
         void PlayDmgAnim();
+        void EnableScore();
 
     private:
         // PopUps
