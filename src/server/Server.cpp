@@ -448,8 +448,9 @@ void Server::HandleShootCommand(ShotCommand sc)
         if(peerId == sc.clientId)
             continue;
 
+        // No Friendly fire or dmg to dead units
         auto& victim = client.player;
-        if(victim.IsDead())
+        if(victim.IsDead() || victim.teamId == author.teamId)
             continue;
 
         auto playerId = victim.id;
@@ -663,7 +664,7 @@ void Server::SendServerNotification(ServerEvent::Notification notification)
 }
 
 // Match
-const float Server::MIN_SPAWN_ENEMY_DISTANCE = 5.0f;
+const float Server::MIN_SPAWN_ENEMY_DISTANCE = 5.0f; // In Blocks
 
 // This should get a random spawn point from a list of valid ones
 // A valid spawn point is one which doesn't have an enemy in X distance
@@ -698,10 +699,13 @@ glm::vec3 Server::ToSpawnPos(glm::ivec3 spawnPoint)
     return pos;
 }
 
-bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
+bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player)
 {
-    auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
+    auto spawn = map.GetRespawn(spawnPoint);
+    if(spawn->teamId != player.teamId)
+        return false;
 
+    auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
     auto players = GetPlayers();
     for(auto other : players)
     {
@@ -710,7 +714,7 @@ bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
             auto posA = other.GetTransform().position;
             auto dist = glm::length(posA - spawnPos);
 
-            if(dist < MIN_SPAWN_ENEMY_DISTANCE)
+            if(dist < MIN_SPAWN_ENEMY_DISTANCE * map.GetBlockScale())
                 return false;
         }
     }
@@ -748,8 +752,7 @@ void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
     if(victim.IsDead())
     {   
         auto gameMode = match.GetGameMode();
-        // TODO: Change according to mode
-        clients[victimId].respawnTime = Util::Time::Seconds{5.0f};
+        clients[victimId].respawnTime = gameMode->GetRespawnTime();
         BroadcastPlayerDied(author.id, victim.id, clients[victimId].respawnTime);
         gameMode->PlayerDeath(author.id, victim.id, author.teamId);
     }

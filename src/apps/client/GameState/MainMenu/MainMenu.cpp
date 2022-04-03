@@ -11,7 +11,8 @@
 
 using namespace BlockBuster;
 
-MainMenu::MainMenu(Client* client)  : GameState{client}, httpClient{"localhost", 3030}
+MainMenu::MainMenu(Client* client)  : GameState{client}, httpClient{"localhost", 3030}, 
+    menuState_{std::make_unique<MenuState::Login>(this)}
 {
 
 }
@@ -22,8 +23,6 @@ MainMenu::~MainMenu()
 
 void MainMenu::Start()
 {
-    menuState_ = std::make_unique<MenuState::Login>(this);
-
     // Set default name
     popUp.SetTitle("Connecting");
     popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
@@ -31,7 +30,7 @@ void MainMenu::Start()
     // Set window properties
     SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
     SDL_SetWindowFullscreen(this->client_->window_, 0);
-    client_->SetWindowSize(glm::ivec2{1024, 720});
+    client_->SetWindowSize(glm::ivec2{800, 600});
 }
 
 void MainMenu::Shutdown()

@@ -63,16 +63,14 @@ void Client::GoBackToMainMenu(bool onGoing)
     inGame = nullptr;
 
     if(menu.get() == nullptr)
-    {
         menu = std::make_unique<MainMenu>(this);
-        menu->Start();
-    }
     else if(onGoing)
         menu->LeaveGame();
     else if(menu->lobby)
         menu->UpdateGame(true);
     
-
+    // Reset window size
+    menu->Start();
     state = menu.get();
 }
 

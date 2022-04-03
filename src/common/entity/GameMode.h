@@ -112,6 +112,7 @@ namespace BlockBuster
 
         virtual bool IsGameOver() = 0;
         virtual Util::Time::Seconds GetDuration(){ return Util::Time::Seconds{60.0f * 15.0f}; };
+        virtual Util::Time::Seconds GetRespawnTime() { return Util::Time::Seconds{5.0f}; };
 
         static const std::string typeStrings[Type::COUNT];
         static const std::unordered_map<std::string, Type> stringTypes;

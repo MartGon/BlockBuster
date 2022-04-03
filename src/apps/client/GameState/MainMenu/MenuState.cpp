@@ -118,6 +118,8 @@ void ServerBrowser::Update()
             ImGui::EndTable();
         }
 
+        auto buttonSize = ImGui::CalcTextSize(" Create Game ");
+        ImGui::SetCursorPosY(winSize.y - (buttonSize.y * 2 + 4));
         if(ImGui::Button("Create Game"))
         {
             mainMenu_->GetAvailableMaps();
@@ -310,7 +312,7 @@ void Lobby::Update()
         {
             // Columns Setup
             auto colFlags = ImGuiTableColumnFlags_::ImGuiTableColumnFlags_WidthFixed;
-            float leftColSize = layoutSize.x * 0.65f;
+            float leftColSize = layoutSize.x * 0.60f;
             ImGui::TableSetupColumn("#PlayerTable", colFlags, leftColSize);
             float rightColSize = 1.0f - leftColSize;
             ImGui::TableSetupColumn("#Game info", colFlags, rightColSize);

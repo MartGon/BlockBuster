@@ -147,7 +147,7 @@ namespace BlockBuster
         static const float MIN_SPAWN_ENEMY_DISTANCE;
         glm::ivec3 FindSpawnPoint(Entity::Player player);
         glm::vec3 ToSpawnPos(glm::ivec3 spawnPoint);
-        bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const;
+        bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player);
 
         // Players
         void SpawnPlayer(ENet::PeerId clientId);
