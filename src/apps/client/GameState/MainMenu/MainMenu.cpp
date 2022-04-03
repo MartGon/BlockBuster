@@ -39,6 +39,8 @@ void MainMenu::Shutdown()
     // Call LeaveGame and wait for it
     if(lobby && !enteringGame)
         LeaveGame();
+
+    httpClient.Close();
 }
 
 void MainMenu::Update()

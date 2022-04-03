@@ -24,9 +24,12 @@ namespace HTTP
         }
         ~AsyncClient()
         {
-            for(auto& [id, thread] : reqThreads)
-                if(thread.joinable())
-                    thread.join();
+            if(waitThreads)
+            {
+                for(auto& [id, thread] : reqThreads)
+                    if(thread.joinable())
+                        thread.join();
+            }
         }
 
         inline void SetReadTimeout(Util::Time::Seconds seconds)
@@ -42,6 +45,11 @@ namespace HTTP
         inline void Enable()
         {
             enabled = true;
+        }
+
+        inline void Close()
+        {
+            waitThreads = false;
         }
 
         void Request(const std::string& path, const std::string& body, RespHandler respHandler, ErrHandler errHandler);
@@ -75,5 +83,6 @@ namespace HTTP
         std::atomic_bool connecting = false;
         Util::Ring<Response, 16> responses;
         bool enabled = true;
+        bool waitThreads = true;
     };
 }
