@@ -32,7 +32,8 @@ namespace Networking
         OPCODE_SERVER_PLAYER_HIT_CONFIRM,
         OPCODE_SERVER_PLAYER_DIED,
         OPCODE_SERVER_PLAYER_RESPAWN,
-        OPCODE_SERVER_SCOREBOARD_REPORT
+        OPCODE_SERVER_SCOREBOARD_REPORT,
+        OPCODE_SERVER_GAME_EVENT,
     };
 
     enum OpcodeClient : uint16_t
@@ -289,6 +290,20 @@ namespace Networking
                 void OnWrite() override;
 
                 BlockBuster::Scoreboard scoreboard;
+            };
+
+            class GameEvent final : public Packet
+            {
+            public:
+                GameEvent() : Packet{OpcodeServer::OPCODE_SERVER_GAME_EVENT, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader& reader) override;
+                void OnWrite() override;
+
+                BlockBuster::GameMode::Event event;
             };
         }
 

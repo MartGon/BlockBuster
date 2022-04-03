@@ -4,10 +4,12 @@
 #include <Map.h>
 #include <GameMode.h>
 
-
 #include <util/Timer.h>
 
-#include <mglogger/Logger.h>
+
+
+#include <entity/Player.h>
+#include <entity/Map.h>
 
 #include <unordered_map>
 #include <vector>
@@ -79,8 +81,8 @@ namespace BlockBuster
             this->onEnterState = onEnterState;
         }
 
-        void Start(GameMode::Type type);
-        void Update(Log::Logger* logger, Util::Time::Seconds deltaTime);
+        void Start(World world, GameMode::Type type);
+        void Update(World world, Util::Time::Seconds deltaTime);
 
     private:
 

@@ -30,7 +30,7 @@ void Client::Start()
     state = menu.get();
     state->Start();
     
-    //LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID", "Defu");
+    LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID", "Defu");
 }
 
 void Client::Shutdown()

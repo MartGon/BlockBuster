@@ -20,6 +20,7 @@
 #include <game/ChunkMeshMgr.h>
 #include <game/models/Player.h>
 #include <game/models/FPS.h>
+#include <game/models/ModelMgr.h>
 
 #include <util/BBTime.h>
 #include <util/Ring.h>
@@ -56,6 +57,7 @@ namespace BlockBuster
         // Update funcs
         void DoUpdate(Util::Time::Seconds deltaTime);
         void OnEnterMatchState(Match::StateType type);
+        void UpdateGameMode();
         void OnNewFrame(Util::Time::Seconds deltaTime);
 
         // Exit
@@ -65,9 +67,10 @@ namespace BlockBuster
         // Input
         void HandleSDLEvents();
 
-        // Handy
+        // World
         Entity::Player& GetLocalPlayer();
         Entity::ID GetPlayerTeam(Entity::ID playerId);
+        World GetWorld();
 
         // Networking
         void OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::PlayerSnapshot playerState);
@@ -75,6 +78,7 @@ namespace BlockBuster
         void OnConnectToServer(ENet::PeerId peerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket packet);
         void OnRecvPacket(Networking::Packet& packet);
+        void HandleGameEvent(GameMode::Event event);
         void RecvServerSnapshots();
         void UpdateNetworking();
         void SendPlayerInput();
@@ -96,6 +100,7 @@ namespace BlockBuster
 
         // Rendering
         void DrawScene();
+        void DrawModeObjects();
         void DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box);
         void DrawGUI();
         void Render();
@@ -199,6 +204,7 @@ namespace BlockBuster
 
             // Shaders
         GL::Shader shader;
+        GL::Shader renderShader;
         GL::Shader chunkShader;
         GL::Shader quadShader;
         GL::Shader textShader;
@@ -214,6 +220,7 @@ namespace BlockBuster
         Rendering::Skybox skybox;
 
             // Models
+        Game::Models::ModelMgr modelMgr;
         Game::Models::Player playerAvatar;
         Game::Models::FPS fpsAvatar;
 

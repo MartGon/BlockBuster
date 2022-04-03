@@ -59,6 +59,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_SCOREBOARD_REPORT:
         packet = std::make_unique<ScoreboardReport>();
         break;
+
+    case OpcodeServer::OPCODE_SERVER_GAME_EVENT:
+        packet = std::make_unique<GameEvent>();
+        break;
     
     default:
         break;
@@ -246,6 +250,16 @@ void ScoreboardReport::OnRead(Util::Buffer::Reader& reader)
 void ScoreboardReport::OnWrite()
 {
     buffer.Append(scoreboard.ToBuffer());
+}
+
+void GameEvent::OnRead(Util::Buffer::Reader& reader)
+{
+    event = reader.Read<BlockBuster::GameMode::Event>();
+}
+
+void GameEvent::OnWrite()
+{
+    buffer.Write(event);
 }
 
 using namespace Networking::Packets::Client;

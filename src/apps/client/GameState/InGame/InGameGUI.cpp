@@ -275,7 +275,7 @@ void InGameGUI::InitTexts()
     midScoreText.SetIsVisible(false);
 
     leftScoreText = pixelFont->CreateText();
-    leftScoreText.SetText("3");
+    leftScoreText.SetText("0");
     leftScoreText.SetScale(2.f);
     leftScoreText.SetColor(blue);
     leftScoreText.SetParent(&midScoreText);
@@ -284,7 +284,7 @@ void InGameGUI::InitTexts()
     leftScoreText.SetIsVisible(false);
 
     rightScoreText = pixelFont->CreateText();
-    rightScoreText.SetText("6");
+    rightScoreText.SetText("0");
     rightScoreText.SetScale(2.f);
     rightScoreText.SetColor(red);
     rightScoreText.SetParent(&midScoreText);
@@ -528,8 +528,10 @@ void InGameGUI::UpdateScore()
         auto blueTeamScore = scoreBoard.GetTeamScore(TeamGameMode::BLUE_TEAM_ID);
         auto redTeamScore = scoreBoard.GetTeamScore(TeamGameMode::RED_TEAM_ID);
 
-        leftScoreText.SetText(std::to_string(blueTeamScore->score));
-        rightScoreText.SetText(std::to_string(redTeamScore->score));
+        if(blueTeamScore)
+            leftScoreText.SetText(std::to_string(blueTeamScore->score));
+        if(redTeamScore)
+            rightScoreText.SetText(std::to_string(redTeamScore->score));
     }
 
     leftScoreText.SetOffset(glm::ivec2{-leftScoreText.GetSize().x, -5});
@@ -633,7 +635,7 @@ void InGameGUI::EnableWinnerText(bool enabled)
         auto winner = scoreBoard.GetWinner().value();
 
         auto color = inGame->teamColors[winner.teamId];
-        std::string text = winner.teamId == 0 ? "BLUE TEAM" : "RED TEAM";
+        std::string text = winner.teamId == TeamGameMode::BLUE_TEAM_ID ? "BLUE TEAM" : "RED TEAM";
 
         auto isFFA = mode->GetType() == GameMode::FREE_FOR_ALL;
         if(isFFA)

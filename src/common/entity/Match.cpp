@@ -4,13 +4,14 @@ using namespace BlockBuster;
 
 // Match
 
-void Match::Start(GameMode::Type gameMode)
+void Match::Start(World world, GameMode::Type gameMode)
 {
     this->gameMode = CreateGameMode(gameMode);
+    this->gameMode->Start(world);
     timer.Start();
 }
 
-void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
+void Match::Update(World world, Util::Time::Seconds deltaTime)
 {
     switch (state)
     {
@@ -19,7 +20,7 @@ void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
         if(timer.IsDone())
         {
             EnterState(ON_GOING);
-            logger->LogError("Match started");
+            world.logger->LogError("Match started");
 
             timer.SetDuration(gameMode->GetDuration());
             timer.Start();
@@ -28,12 +29,13 @@ void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
     case ON_GOING:
         timer.Update(deltaTime);
         if(gameMode->IsGameOver() || timer.IsDone())
-        {
+        {   
             timer.SetDuration(waitTime);
             timer.Start();
-            
             EnterState(ENDING);
         }
+        else
+            gameMode->Update(world, deltaTime);
         break;
     case ENDING:
         timer.Update(deltaTime);
@@ -47,9 +49,6 @@ void Match::Update(Log::Logger* logger, Util::Time::Seconds deltaTime)
     default:
         break;
     }
-
-    if(gameMode.get())
-        gameMode->Update();
 }
 
 void Match::EnterState(StateType type)

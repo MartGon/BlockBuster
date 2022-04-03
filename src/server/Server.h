@@ -154,6 +154,9 @@ namespace BlockBuster
         void OnPlayerTakeDmg(ENet::PeerId author, ENet::PeerId victim);
         std::vector<Entity::Player> GetPlayers() const;
 
+        // World 
+        World GetWorld();
+
         // Server params
         Params params;
         MMServer mmServer;

@@ -43,7 +43,7 @@ void Server::Run()
         }
 
         SendScoreboardReport();
-        match.Update(&logger, TICK_RATE);
+        match.Update(GetWorld(), TICK_RATE);
         logger.Flush();
         SleepUntilNextTick(preSimulationTime);
     }
@@ -100,7 +100,7 @@ void Server::InitMatch()
     InitAI();
     InitMap();
     auto mode = GameMode::stringTypes.at(params.mode);
-    match.Start(mode);
+    match.Start(GetWorld(), mode);
 }
 
 void Server::InitAI()
@@ -617,6 +617,17 @@ void Server::UpdateWorld()
                 client.respawnTime -= TICK_RATE;
         }
     }
+
+    // Send events
+    auto events = match.GetGameMode()->PollEvents();
+    Networking::Batch<Networking::PacketType::Server> batch;
+    for(auto event : events)
+    {
+        auto eventPacket = std::make_unique<Networking::Packets::Server::GameEvent>();
+        eventPacket->event = event;
+        batch.PushPacket(std::move(eventPacket));
+    }
+    Broadcast(batch);
 }
 
 void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
@@ -766,4 +777,20 @@ std::vector<Entity::Player> Server::GetPlayers() const
         players.push_back(client.player);
 
     return players;
+}
+
+
+// World
+
+World Server::GetWorld()
+{
+    World world;
+
+    world.map = &map;
+    for(auto& [peerId, client] : clients)
+        world.players[peerId] = &client.player;
+
+    world.logger = &logger;
+
+    return world;
 }

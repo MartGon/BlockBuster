@@ -230,6 +230,27 @@ void GameMode::PlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID kill
     OnPlayerDeath(killer, victim, killerTeamId);
 }
 
+bool GameMode::IsGameOver()
+{
+    auto teams = scoreBoard.GetTeamIDs();
+    for(auto& tid : teams)
+        if(scoreBoard.GetTeamScore(tid)->score >= maxScore)
+            return true;
+
+    return false;
+}
+
+std::vector<GameMode::Event> GameMode::PollEvents()
+{
+    auto events = std::move(this->events);
+    return events;
+}
+
+void GameMode::AddEvent(Event event)
+{
+    events.push_back(event);
+}
+
 // GameMode - Non member functions
 
 std::unique_ptr<GameMode> BlockBuster::CreateGameMode(GameMode::Type type)
@@ -252,8 +273,8 @@ std::unique_ptr<GameMode> BlockBuster::CreateGameMode(GameMode::Type type)
         break;
 
     case GameMode::Type::DOMINATION:
-        assertm(false, "This mode has not been implemented yet");
-        //gameMode = std::make_unique<FreeForAll>();
+        // assertm(false, "This mode has not been implemented yet");
+        gameMode = std::make_unique<Domination>();
         break;
 
     case GameMode::Type::CAPTURE_THE_FLAG:
@@ -323,16 +344,6 @@ void FreeForAll::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID 
     }
 }
 
-bool FreeForAll::IsGameOver()
-{
-    auto players = scoreBoard.GetPlayerIDs();
-    for(auto& pid : players)
-        if(scoreBoard.GetPlayerScore(pid)->kills >= MAX_KILLS)
-            return true;
-
-    return false;
-}
-
 // GameMode - TeamGameMode
 
 Entity::ID TeamGameMode::OnPlayerJoin(Entity::ID id, std::string name)
@@ -370,12 +381,95 @@ void TeamDeathMatch::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity:
     }
 }
 
-bool TeamDeathMatch::IsGameOver()
-{
-    auto teams = scoreBoard.GetTeamIDs();
-    for(auto& tid : teams)
-        if(scoreBoard.GetTeamScore(tid)->score >= MAX_KILLS)
-            return true;
+// GameMode - Domination
 
-    return false;
+const Util::Time::Seconds Domination::timeToCapture{10.0f};
+const Util::Time::Seconds Domination::pointsTime{5.0f};
+
+void Domination::Start(World world)
+{
+    auto map = world.map;
+
+    auto domPoints = map->FindGameObjectByType(Entity::GameObject::DOMINATION_POINT);
+    for(auto index : domPoints)
+    {
+        PointState pointState;
+        pointState.index = index;
+        pointState.capturedBy = TeamGameMode::NEUTRAL;
+        pointState.timeLeft.SetDuration(timeToCapture);
+        pointState.timeLeft.Start();
+
+        pointsState[index] = pointState;
+    }
+
+    pointsTimer.SetDuration(pointsTime);
+    pointsTimer.Start();
+}
+
+void Domination::Update(World world, Util::Time::Seconds deltaTime)
+{
+    auto map = world.map;
+
+    // Check capture
+    for(auto& [index, point] : pointsState)
+    {
+        for(auto& [pid, player] : world.players)
+        {
+            if(point.capturedBy == player->teamId)
+                continue;
+
+            if(IsPlayerInPointArea(world, index, player))
+            {
+                auto& timer = point.timeLeft;
+                timer.Update(deltaTime);
+
+                // Captured
+                if(timer.IsDone())
+                {
+                    // Update owner
+                    point.capturedBy = player->teamId;
+
+                    // Add Event
+                    Event event;
+                    event.type = EventType::POINT_CAPTURED;
+                    event.pointCaptured.capturedBy = point.capturedBy;
+                    event.pointCaptured.pos = point.index;
+                    AddEvent(event);
+
+                    // Reset timers
+                    point.timeLeft.Reset();
+                    point.timeLeft.Start();
+                }
+            }
+        }
+    }
+
+    // Give points
+    pointsTimer.Update(deltaTime);
+    if(pointsTimer.IsDone())
+    {
+        pointsTimer.Reset();
+        pointsTimer.Start();
+        for(auto& [index, point] : pointsState)
+        {
+            auto team = point.capturedBy;
+            if(auto teamScore = scoreBoard.GetTeamScore(team))
+            {
+                teamScore->score++;
+                scoreBoard.SetTeamScore(teamScore.value());
+            }
+        }
+    }
+}
+
+
+bool Domination::IsPlayerInPointArea(World world, glm::ivec3 pos, Entity::Player* player)
+{
+    auto map = world.map;
+    auto domPoint = map->GetGameObject(pos);
+    auto scale = std::get<float>(domPoint->properties["Scale"].value);
+    auto playerPos = player->GetTransform().position;
+    auto realPos = Game::Map::ToRealPos(pos, map->GetBlockScale());
+    auto distance = glm::length(realPos - playerPos);
+    return distance <= scale;
 }

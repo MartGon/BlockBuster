@@ -8,6 +8,7 @@ SET(SOURCES
     Weapon.cpp
     GameObject.cpp
     Match.cpp
+    Scoreboard.cpp
 )
 
 
