@@ -10,7 +10,7 @@ Peer::Peer(ENetPeer* peer) : peer_{peer}
 }
 
 Peer::~Peer()
-{    
+{ 
 }
 
 Peer::Peer(Peer&& other)
@@ -28,4 +28,10 @@ bool Peer::SendPacket(uint8_t channelId, const SentPacket& packet)
 {
     auto p = enet_packet_create(packet.data_, packet.size_, packet.flags_);
     return enet_peer_send(peer_, channelId, p) == 0;
+}
+
+void Peer::Disconnect()
+{
+    if(peer_)
+        enet_peer_disconnect(peer_, 0);   
 }

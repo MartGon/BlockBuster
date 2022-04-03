@@ -25,8 +25,16 @@ Host::Host(uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32
 
 Host::~Host()
 {
+    for(auto& [id, peer] : peers_)
+    {
+        peer.Disconnect();
+    }
+    
     if(socket_)
+    {
+        PollAllEvents(3000);
         enet_host_destroy(socket_);
+    }
 }
 
 Host::Host(Host&& other) : address_{other.address_}

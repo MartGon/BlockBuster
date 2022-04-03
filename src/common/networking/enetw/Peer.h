@@ -22,6 +22,9 @@ namespace ENet
 
     private:
         Peer(ENetPeer* peer);
+
+        void Disconnect();
+
         ENetPeer* peer_ = nullptr;
     };
 }

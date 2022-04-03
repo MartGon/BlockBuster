@@ -87,7 +87,7 @@ namespace BlockBuster
         void EnterState(StateType type);
 
         std::unique_ptr<GameMode> gameMode;
-        StateType state = ENDING;
+        StateType state = WAITING_FOR_PLAYERS;
 
         const Util::Time::Seconds waitTime{15.0f};
         Util::Timer timer{waitTime};
