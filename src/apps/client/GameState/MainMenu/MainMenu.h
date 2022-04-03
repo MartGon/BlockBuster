@@ -29,6 +29,7 @@ namespace BlockBuster
     class MainMenu : public GameState
     {
     friend class Client;
+    friend class InGame;
     friend class MenuState::Login;
     friend class MenuState::ServerBrowser;
     friend class MenuState::CreateGame;

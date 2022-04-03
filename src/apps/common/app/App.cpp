@@ -150,6 +150,14 @@ glm::ivec2 AppI::GetMousePos()
     return mousePos;
 }
 
+
+void AppI::SetMouseGrab(bool grab)
+{
+    SDL_SetWindowGrab(this->window_, (SDL_bool)grab);
+    SDL_SetRelativeMouseMode((SDL_bool)grab);
+}
+
+
 void AppI::RenameMainWindow(const std::string& name)
 {
     SDL_SetWindowTitle(window_, name.c_str());

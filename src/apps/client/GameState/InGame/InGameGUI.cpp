@@ -94,14 +94,14 @@ void InGameGUI::OpenMenu()
 void InGameGUI::OpenMenu(PopUpState state)
 {
     puMgr.Open(state);
-    SetMouseGrab(false);
+    inGame->client_->SetMouseGrab(false);
 }
 
 void InGameGUI::CloseMenu()
 {
     if(this->inGame->camController_.GetMode() != App::Client::CameraMode::EDITOR)
     {
-        SetMouseGrab(true);
+        inGame->client_->SetMouseGrab(true);
     }
 
     puMgr.Close();
@@ -110,12 +110,6 @@ void InGameGUI::CloseMenu()
 bool InGameGUI::IsMenuOpen()
 {
     return puMgr.IsOpen();
-}
-
-void InGameGUI::SetMouseGrab(bool grab)
-{
-    SDL_SetWindowGrab(this->inGame->client_->window_, (SDL_bool)grab);
-    SDL_SetRelativeMouseMode((SDL_bool)grab);
 }
 
 void InGameGUI::InitPopUps()

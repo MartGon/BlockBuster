@@ -36,8 +36,6 @@ namespace BlockBuster
         void OpenMenu();
         void CloseMenu();
         bool IsMenuOpen();
-        
-        void SetMouseGrab(bool grab);
 
         enum class HitMarkerType
         {

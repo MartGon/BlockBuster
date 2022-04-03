@@ -175,6 +175,16 @@ void InGame::Start()
     {
         this->OnRecvPacket(id, channel, std::move(ePacket));
     });
+    host.SetOnDisconnectCallback([this](auto id){
+        this->Exit();
+        auto menu = this->client_->menu.get();
+        menu->popUp.SetText("Disconnected from Server");
+        menu->popUp.SetCloseable(true);
+        menu->popUp.SetButtonVisible(true);
+        menu->popUp.SetButtonCallback([menu](){
+            menu->popUp.SetButtonVisible(false);
+        });
+    });
     host.Connect(serverAddress);
 
     client_->logger->LogInfo("Connecting to server at " + serverAddress.GetHostIP() + ":" + std::to_string(serverAddress.GetPort()));
@@ -273,7 +283,7 @@ void InGame::OnEnterMatchState(Match::StateType type)
 
     case Match::StateType::ENDED:
         inGameGui.EnableWinnerText(false);
-        inGameGui.SetMouseGrab(false);
+        client_->SetMouseGrab(false);
         break;
 
     default:
@@ -327,6 +337,7 @@ void InGame::ReturnToMainMenu()
 void InGame::Exit()
 {
     exit = true;
+    client_->SetMouseGrab(false);
 }
 
 // Input
@@ -668,7 +679,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             if(match.GetState() == Match::StateType::ENDING)
             {
                 inGameGui.EnableWinnerText(true);
-                inGameGui.SetMouseGrab(false);
+                client_->SetMouseGrab(false);
             }
         }
         break;
