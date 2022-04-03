@@ -61,8 +61,6 @@ InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, st
 
 void InGame::Start()
 {
-    isStarted = true;
-
     // Window
     SDL_SetWindowResizable(this->client_->window_, SDL_TRUE);
     client_->ApplyVideoOptions(client_->config.window);
@@ -233,9 +231,8 @@ void InGame::Update()
         client_->logger->LogInfo("Update: Delta time " + std::to_string(deltaTime.count()));
         client_->logger->LogInfo("Update: Simulation lag " + std::to_string(simulationLag.count()));
     }
-    
-    auto onGoing = match.GetState() == Match::StateType::ON_GOING || match.GetState() == Match::StateType::WAITING_FOR_PLAYERS;
-    client_->GoBackToMainMenu(onGoing);
+
+    ReturnToMainMenu();
 }
 
 void InGame::Shutdown()
@@ -319,6 +316,21 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     }
 }
 
+// Exit
+
+void InGame::ReturnToMainMenu()
+{
+    auto onGoing = match.GetState() != Match::StateType::ENDED;
+    client_->GoBackToMainMenu(onGoing);
+}
+
+void InGame::Exit()
+{
+    exit = true;
+}
+
+// Input
+
 void InGame::HandleSDLEvents()
 {
     SDL_Event e;
@@ -330,7 +342,7 @@ void InGame::HandleSDLEvents()
         switch(e.type)
         {
         case SDL_QUIT:
-            exit = true;
+            Exit();
             break;
         case SDL_KEYDOWN:
             if(e.key.keysym.sym == SDLK_f)

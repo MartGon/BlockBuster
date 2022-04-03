@@ -22,21 +22,6 @@ MainMenu::~MainMenu()
 
 void MainMenu::Start()
 {
-    if(isStarted)
-    {
-        httpClient.Enable();
-        enteringGame = false;
-        if(leaveGame)
-            LeaveGame();
-        else
-            UpdateGame(true);
-
-        leaveGame = false;
-        return;
-    }
-
-    isStarted = true;
-
     menuState_ = std::make_unique<MenuState::Login>(this);
 
     // Set default name
@@ -772,7 +757,7 @@ void MainMenu::LaunchGame()
     auto port = currentGame->game.serverPort.value();
     client_->LaunchGame(address, port, currentGame->game.map, userId, user);
 
-    httpClient.Disable();
+    //httpClient.Disable();
     enteringGame = true;
 }
 

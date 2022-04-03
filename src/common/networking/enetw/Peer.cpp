@@ -10,7 +10,7 @@ Peer::Peer(ENetPeer* peer) : peer_{peer}
 }
 
 Peer::~Peer()
-{
+{    
 }
 
 Peer::Peer(Peer&& other)

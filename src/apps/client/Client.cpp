@@ -26,7 +26,8 @@ void Client::Start()
     auto mapsFolder = GetConfigOption("mapsFolder", "./maps");
     mapMgr.SetMapsFolder(mapsFolder);
 
-    state = std::make_unique<MainMenu>(this);
+    menu = std::make_unique<MainMenu>(this);
+    state = menu.get();
     state->Start();
     
     //LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID", "Defu");
@@ -42,20 +43,6 @@ void Client::Shutdown()
 void Client::Update()
 {
     state->Update();
-
-    if(nextState.get() != nullptr)
-    {
-        if(saveState)
-            oldState = std::move(state);
-        else
-            state->Shutdown();
-
-        state = std::move(nextState);
-        state->Start();
-        nextState = nullptr;
-
-        saveState = false;
-    }
 }
 
 bool Client::Quit()
@@ -65,24 +52,28 @@ bool Client::Quit()
 
 void Client::LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid, std::string playerName)
 {
-    nextState = std::make_unique<InGame>(this, address, port, map, playerUuid, playerName);
-    saveState = true;
+    inGame = std::make_unique<InGame>(this, address, port, map, playerUuid, playerName);
+    inGame->Start();
+    state = inGame.get();
 }
 
 void Client::GoBackToMainMenu(bool onGoing)
-{
-    saveState = false;
-        
-    if(oldState.get() == nullptr)
-        nextState = std::make_unique<MainMenu>(this);
-    else
-        nextState = std::move(oldState);
+{        
+    inGame->Shutdown();
+    inGame = nullptr;
 
-    if(onGoing)
+    if(menu.get() == nullptr)
     {
-        auto mainMenu = static_cast<MainMenu*>(nextState.get());
-        mainMenu->leaveGame = true;
+        menu = std::make_unique<MainMenu>(this);
+        menu->Start();
     }
+    else if(onGoing)
+        menu->LeaveGame();
+    else
+        menu->UpdateGame(true);
+    
+
+    state = menu.get();
 }
 
 void Client::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)

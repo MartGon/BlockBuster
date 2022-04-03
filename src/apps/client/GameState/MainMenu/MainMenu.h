@@ -105,6 +105,5 @@ namespace BlockBuster
         std::optional<GameDetails> currentGame;
         MenuState::Lobby* lobby = nullptr;
         bool enteringGame = false;
-        bool leaveGame = false;
     };
 }

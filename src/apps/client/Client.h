@@ -27,6 +27,8 @@
 #include <game/MapMgr.h>
 
 #include <GameState/GameState.h>
+#include <GameState/InGame/InGame.h>
+#include <GameState/MainMenu/MainMenu.h>
 
 namespace BlockBuster
 {
@@ -48,14 +50,13 @@ namespace BlockBuster
     private:
 
         void LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid, std::string playerName);
-        void GoBackToMainMenu(bool onGoing = false);
+        void GoBackToMainMenu(bool onGoing);
 
         void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) override;
 
-        std::unique_ptr<GameState> state;
-        std::unique_ptr<GameState> nextState = nullptr;
-        std::unique_ptr<GameState> oldState = nullptr;
-        bool saveState = false;
+        std::unique_ptr<MainMenu> menu = nullptr;
+        std::unique_ptr<InGame> inGame = nullptr;
+        GameState* state = nullptr;
 
         // Map Mgr
         MapMgr mapMgr;

@@ -203,7 +203,7 @@ void InGameGUI::InitPopUps()
 
         GUI::CenterSection(size.x * 2, ImGui::GetWindowWidth());
         if(ImGui::Button("Yes", size))
-            this->inGame->exit = true;
+            this->inGame->Exit();
         ImGui::SameLine();
         if(ImGui::Button("No", size))
             this->CloseMenu();
@@ -697,7 +697,7 @@ void InGameGUI::ScoreboardWindow()
             GUI::CenterSection(size.x, regionSize.x);
             if(ImGui::Button("Leave Game"))
             {
-                inGame->exit = true;
+                inGame->Exit();
             }
         }
     }

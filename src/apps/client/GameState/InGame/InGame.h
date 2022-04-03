@@ -58,6 +58,10 @@ namespace BlockBuster
         void OnEnterMatchState(Match::StateType type);
         void OnNewFrame(Util::Time::Seconds deltaTime);
 
+        // Exit
+        void Exit();
+        void ReturnToMainMenu();
+
         // Input
         void HandleSDLEvents();
 

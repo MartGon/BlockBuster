@@ -18,18 +18,11 @@ namespace BlockBuster
         virtual void Update() = 0;
         virtual void Shutdown(){};
 
-        inline bool IsStarted()
-        {
-            return isStarted;
-        }
-
         virtual void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) {};
 
     protected:
 
         Log::Logger* GetLogger();
-
-        bool isStarted = false;
         Client* client_;
     };
 }
