@@ -30,8 +30,8 @@ glm::vec4 InGame::teamColors[2] = {
 };
 
 glm::vec4 InGame::ffaColors[16] = {
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},  // RED
     glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}, // BLUE
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},  // RED
     Rendering::ColorU8ToFloat(0, 100, 0), // DARK GREEN
     Rendering::ColorU8ToFloat(255, 215, 0), // GOLD
 

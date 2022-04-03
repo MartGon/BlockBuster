@@ -198,7 +198,39 @@ Scoreboard Scoreboard::FromBuffer(Util::Buffer::Reader& reader)
 
 // Gamemode
 
-// Other
+Entity::ID GameMode::PlayerJoin(Entity::ID playerId, std::string name)
+{
+    auto teamId = OnPlayerJoin(playerId, name);
+    scoreBoard.AddPlayer(playerId, teamId, name);
+
+    return teamId;
+}
+
+void GameMode::PlayerLeave(Entity::ID playerId)
+{
+    scoreBoard.RemovePlayer(playerId);
+
+    OnPlayerLeave(playerId);
+}
+
+void GameMode::PlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)
+{
+    if(auto score = scoreBoard.GetPlayerScore(killer))
+    {
+        score->kills++;
+        scoreBoard.SetPlayerScore(score.value());
+    }
+
+    if(auto score = scoreBoard.GetPlayerScore(victim))
+    {
+        score->deaths++;
+        scoreBoard.SetPlayerScore(score.value());
+    }
+
+    OnPlayerDeath(killer, victim, killerTeamId);
+}
+
+// GameMode - Non member functions
 
 std::unique_ptr<GameMode> BlockBuster::CreateGameMode(GameMode::Type type)
 {
@@ -215,8 +247,8 @@ std::unique_ptr<GameMode> BlockBuster::CreateGameMode(GameMode::Type type)
         break;
 
     case GameMode::Type::TEAM_DEATHMATCH:
-        assertm(false, "This mode has not been implemented yet");
-        //gameMode = std::make_unique<FreeForAll>();
+        //assertm(false, "This mode has not been implemented yet");
+        gameMode = std::make_unique<TeamDeathMatch>();
         break;
 
     case GameMode::Type::DOMINATION:
@@ -275,26 +307,19 @@ Entity::ID FreeForAll::OnPlayerJoin(Entity::ID id, std::string name)
 
 void FreeForAll::OnPlayerLeave(Entity::ID id)
 {
-    scoreBoard.RemovePlayer(id);
+    
 }
 
 void FreeForAll::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)
 {
     if(auto score = scoreBoard.GetPlayerScore(killer))
     {
-        score->kills++;
         score->score++;
         scoreBoard.SetPlayerScore(score.value());
 
         auto teamScore = scoreBoard.GetTeamScore(killer);
         teamScore->score++;
         scoreBoard.SetTeamScore(teamScore.value());
-    }
-
-    if(auto score = scoreBoard.GetPlayerScore(victim))
-    {
-        score->deaths++;
-        scoreBoard.SetPlayerScore(score.value());
     }
 }
 
@@ -308,27 +333,40 @@ bool FreeForAll::IsGameOver()
     return false;
 }
 
+// GameMode - TeamGameMode
+
+Entity::ID TeamGameMode::OnPlayerJoin(Entity::ID id, std::string name)
+{
+    auto teamId = BLUE_TEAM_ID;
+    auto redTeamCount = scoreBoard.GetTeamPlayers(RED_TEAM_ID).size();
+    auto blueTeamCount = scoreBoard.GetTeamPlayers(BLUE_TEAM_ID).size();
+
+    if(redTeamCount < blueTeamCount)
+        teamId = RED_TEAM_ID;
+    else if(redTeamCount == blueTeamCount && redTeamCount > 0)
+    {
+        auto blueTeamScore = scoreBoard.GetTeamScore(BLUE_TEAM_ID);
+        auto redTeamScore = scoreBoard.GetTeamScore(RED_TEAM_ID);
+
+        if(redTeamScore->score < blueTeamScore->score)
+            teamId = RED_TEAM_ID;
+    }
+
+    return teamId;
+}
+
 // GameMode - Team DeathMatch
 
 void TeamDeathMatch::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)
 {
     if(auto score = scoreBoard.GetPlayerScore(killer))
     {
-        score->kills++;
         score->score++;
         scoreBoard.SetPlayerScore(score.value());
-    }
 
-    if(auto teamScore = scoreBoard.GetTeamScore(killerTeamId))
-    {
+        auto teamScore = scoreBoard.GetTeamScore(killer);
         teamScore->score++;
         scoreBoard.SetTeamScore(teamScore.value());
-    }
-
-    if(auto score = scoreBoard.GetPlayerScore(victim))
-    {
-        score->deaths++;
-        scoreBoard.SetPlayerScore(score.value());
     }
 }
 

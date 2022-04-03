@@ -15,6 +15,8 @@
 
 #include <rendering/TextureMgr.h>
 
+#include <entity/Player.h>
+
 #include <mglogger/Logger.h>
 
 namespace BlockBuster
@@ -80,7 +82,7 @@ namespace BlockBuster
         void UpdateGameTimeText();
 
         void ScoreboardWindow();
-        void ScoreTable(const char* name);
+        void ScoreTable(const char* name, Entity::ID teamId = 0);
         void DebugWindow();
         void RenderStatsWindow();
         void NetworkStatsWindow();

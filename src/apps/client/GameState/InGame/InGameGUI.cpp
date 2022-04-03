@@ -517,8 +517,7 @@ void InGameGUI::UpdateScore()
         if(!playerScore)
             return;
         leftScoreText.SetText(std::to_string(playerScore->score));
-        leftScoreText.SetColor(inGame->ffaColors[inGame->playerId]);
-        leftScoreText.SetOffset(glm::ivec2{-leftScoreText.GetSize().x, -5});
+        leftScoreText.SetColor(inGame->ffaColors[inGame->playerId]);        
 
         auto scores = scoreBoard.GetTeamScores();
         std::sort(scores.begin(), scores.end(), [](auto a, auto b){
@@ -530,6 +529,16 @@ void InGameGUI::UpdateScore()
         rightScoreText.SetText(std::to_string(first.score));
         rightScoreText.SetColor(inGame->ffaColors[first.teamId]);
     }
+    else
+    {
+        auto blueTeamScore = scoreBoard.GetTeamScore(TeamGameMode::BLUE_TEAM_ID);
+        auto redTeamScore = scoreBoard.GetTeamScore(TeamGameMode::RED_TEAM_ID);
+
+        leftScoreText.SetText(std::to_string(blueTeamScore->score));
+        rightScoreText.SetText(std::to_string(redTeamScore->score));
+    }
+
+    leftScoreText.SetOffset(glm::ivec2{-leftScoreText.GetSize().x, -5});
 }
 
 void InGameGUI::UpdateRespawnText()
@@ -676,16 +685,16 @@ void InGameGUI::ScoreboardWindow()
         }
         else
         {   
-            ImGui::PushStyleColor(ImGuiCol_TableRowBg, red);
-            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, red);
-                ScoreTable("Red Team");
+            ImGui::PushStyleColor(ImGuiCol_TableRowBg, blue);
+            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, blue);
+                ScoreTable("Blue Team", TeamGameMode::BLUE_TEAM_ID);
             ImGui::PopStyleColor(2);
             
             ImGui::Dummy(ImVec2(0, 10));
 
-            ImGui::PushStyleColor(ImGuiCol_TableRowBg, blue);
-            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, blue);
-                ScoreTable("Blue Team");
+            ImGui::PushStyleColor(ImGuiCol_TableRowBg, red);
+            ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, red);
+                ScoreTable("Red Team", TeamGameMode::RED_TEAM_ID);
             ImGui::PopStyleColor(2);
         }
         ImGui::PopStyleColor(2);
@@ -704,12 +713,11 @@ void InGameGUI::ScoreboardWindow()
     ImGui::End();
 }
 
-void InGameGUI::ScoreTable(const char* name)
+void InGameGUI::ScoreTable(const char* name, Entity::ID teamId)
 {
     ImGui::Text("%s", name);
     auto winSize = ImGui::GetWindowSize();
 
-    auto teamId = 0;
     auto gameMode = inGame->match.GetGameMode();
     bool isFFA = gameMode->GetType() == GameMode::FREE_FOR_ALL;
 
@@ -742,8 +750,10 @@ void InGameGUI::ScoreTable(const char* name)
             ImGui::TableNextColumn();
             ImGui::Text("%s", name);
 
-            ImGui::TableNextColumn();   
-            std::string points = std::to_string(35);
+            ImGui::TableNextColumn();
+            auto teamScore = scoreBoard.GetTeamScore(teamId);
+            int score = teamScore ? teamScore->score : 0;
+            std::string points = std::to_string(score);
             auto width = ImGui::CalcTextSize(points.c_str()).x;
             GUI::TableCenterEntry(width);
             ImGui::Text("%s", points.c_str());

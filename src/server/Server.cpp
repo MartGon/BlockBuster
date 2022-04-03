@@ -155,7 +155,7 @@ void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::str
     client.playerName = playerName;
 
     // Get Team id
-    auto teamId = match.GetGameMode()->OnPlayerJoin(client.player.id, playerName);
+    auto teamId = match.GetGameMode()->PlayerJoin(client.player.id, playerName);
     client.player.teamId = teamId;
 
     // Spawn player
@@ -219,7 +219,7 @@ void Server::OnClientLeave(ENet::PeerId peerId)
     auto& player = client.player;
 
     // Update scoreboard
-    match.GetGameMode()->OnPlayerLeave(player.id);
+    match.GetGameMode()->PlayerLeave(player.id);
 
     // Informing players
     Networking::Packets::Server::PlayerDisconnected pd;
@@ -751,7 +751,7 @@ void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
         // TODO: Change according to mode
         clients[victimId].respawnTime = Util::Time::Seconds{5.0f};
         BroadcastPlayerDied(author.id, victim.id, clients[victimId].respawnTime);
-        gameMode->OnPlayerDeath(author.id, victim.id, author.teamId);
+        gameMode->PlayerDeath(author.id, victim.id, author.teamId);
     }
 }
 

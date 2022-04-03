@@ -106,9 +106,9 @@ namespace BlockBuster
         virtual void Start() {}; // Spawn players
         virtual void Update() {}; // Check for domination points, flag carrying
 
-        virtual Entity::ID OnPlayerJoin(Entity::ID playerId, std::string name) { return 0; };
-        virtual void OnPlayerLeave(Entity::ID playerId) {};
-        virtual void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) {}; // Change score, check for game over, etc.
+        Entity::ID PlayerJoin(Entity::ID playerId, std::string name);
+        void PlayerLeave(Entity::ID playerId);
+        void PlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId);
 
         virtual bool IsGameOver() = 0;
         virtual Util::Time::Seconds GetDuration(){ return Util::Time::Seconds{60.0f * 15.0f}; };
@@ -116,6 +116,11 @@ namespace BlockBuster
         static const std::string typeStrings[Type::COUNT];
         static const std::unordered_map<std::string, Type> stringTypes;
     protected:
+
+        virtual Entity::ID OnPlayerJoin(Entity::ID playerId, std::string name) { return 0; };
+        virtual void OnPlayerLeave(Entity::ID playerId) {};
+        virtual void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) {}; // Change score, check for game over, etc.
+    
         Type type;
         Scoreboard scoreBoard;
     };
@@ -131,28 +136,56 @@ namespace BlockBuster
 
         }
 
-        Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;
-        void OnPlayerLeave(Entity::ID id) override;
-        void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
-
         bool IsGameOver() override;
         Util::Time::Seconds GetDuration() override {return duration;};
 
+    protected:
+        Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;  
+        void OnPlayerLeave(Entity::ID id) override;
+        void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
 
+    private:
         int MAX_KILLS = 30;
         const Util::Time::Seconds duration{60.0f * 10.0f};
     };
 
-    class TeamDeathMatch : public GameMode
+    class TeamGameMode : public GameMode
     {
     public:
-        TeamDeathMatch() : GameMode(Type::TEAM_DEATHMATCH)
+        TeamGameMode(Type type) : GameMode(type)
         {
 
         }
 
-        void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
+        virtual bool IsGameOver() override = 0;
+
+        enum TeamID : Entity::ID
+        {
+            BLUE_TEAM_ID,
+            RED_TEAM_ID,
+        };
+
+    protected:
+
+        Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;
+    };
+
+    class TeamDeathMatch : public TeamGameMode
+    {
+    public:
+        TeamDeathMatch() : TeamGameMode(Type::TEAM_DEATHMATCH)
+        {
+
+        }
+
         bool IsGameOver() override;
+        Util::Time::Seconds GetDuration() override {return duration;};
+
+    protected:
+        void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
+
+    private:
         int MAX_KILLS = 100;
+        const Util::Time::Seconds duration{60.0f * 12.0f};
     };
 }
