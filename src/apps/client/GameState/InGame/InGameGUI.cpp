@@ -207,6 +207,8 @@ void InGameGUI::InitPopUps()
 
 void InGameGUI::InitTexts()
 {
+    auto winSize = inGame->client_->GetWindowSize();
+
     // Colors
     auto green = glm::vec4{0.1f, 0.9f, 0.1f, 1.0f};
     auto blue = glm::vec4{0.1f, 0.1f, 0.8f, 1.0f};
@@ -344,6 +346,20 @@ void InGameGUI::InitTexts()
     countdownText.SetAnchorPoint(GUI::AnchorPoint::CENTER);
     countdownText.SetScale(3.0f);
     countdownText.SetIsVisible(false);
+
+    capturingText = pixelFont->CreateText();
+    capturingText.SetText("CAPTURING");
+    capturingText.SetColor(white);
+    capturingText.SetOffset(glm::ivec2{winSize.x / 2, winSize.y * 3 / 4} - capturingText.GetSize() / 2);
+    capturingText.SetScale(1.5f);
+
+    captCountdownText = pixelFont->CreateText();
+    captCountdownText.SetText("0");
+    captCountdownText.SetColor(white);
+    captCountdownText.SetParent(&capturingText);
+    captCountdownText.SetAnchorPoint(GUI::AnchorPoint::CENTER_DOWN);
+    captCountdownText.SetScale(2.0f);
+    EnableCapturingText(false);
 }
 
 void InGameGUI::InitAnimations()
@@ -427,6 +443,13 @@ void InGameGUI::HUD()
     const auto red = glm::vec4{1.0f, 0.0f, 0.0f, dmgAlpha};
     dmgEffectImg.SetColor(red);
     dmgEffectImg.Draw(inGame->imgShader, winSize);
+
+    // Capturing
+    capturingText.SetOffset(glm::ivec2{winSize.x / 2, winSize.y * 7 / 8} - capturingText.GetSize() / 2);
+    capturingText.Draw(inGame->textShader, winSize);
+    auto size = captCountdownText.GetSize();
+    captCountdownText.SetOffset(glm::ivec2{-size.x / 2, 0} + glm::ivec2{0, -15});
+    captCountdownText.Draw(inGame->textShader, winSize);
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -653,6 +676,19 @@ void InGameGUI::EnableWinnerText(bool enabled)
     winnerAnnoucerText.SetIsVisible(enabled);
     winnerText.SetIsVisible(enabled);
     EnableHUD(false);
+}
+
+void InGameGUI::EnableCapturingText(bool enabled)
+{
+    capturingText.SetIsVisible(enabled);
+    captCountdownText.SetIsVisible(enabled);
+}
+
+void InGameGUI::SetCapturePercent(float percent)
+{
+    int value = std::ceil(percent);
+    std::string text = std::to_string(value) + "%";
+    captCountdownText.SetText(text);
 }
 
 // Private

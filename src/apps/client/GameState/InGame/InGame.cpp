@@ -311,18 +311,27 @@ void InGame::UpdateGameMode()
             bool wasInArea = false;
             for(auto& [pos, point] : domination->pointsState)
             {
-                if(domination->IsPlayerInPointArea(world, pos, &player) && point.capturedBy != player.teamId)
+                if(domination->IsPlayerInPointArea(world, pos, &player))
                 {
-                    inGameGui.countdownText.SetIsVisible(true);
+                    inGameGui.EnableCapturingText(true);
                     auto percent = point.GetCapturePercent();
-                    auto text = std::to_string(percent) + "%";
-                    inGameGui.countdownText.SetText(text);
+
+                    if(point.capturedBy == player.teamId)
+                    {
+                        percent = 100.0f;
+                        inGameGui.capturingText.SetText("CAPTURED");
+                    }
+                    else
+                        inGameGui.capturingText.SetText("CAPTURING");
+
+                    inGameGui.SetCapturePercent(percent);
+
                     wasInArea = true;
                 }
             }
 
             if(!wasInArea)
-                inGameGui.countdownText.SetIsVisible(false);
+                inGameGui.EnableCapturingText(false);
         }
         break;
     

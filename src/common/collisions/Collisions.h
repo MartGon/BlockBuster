@@ -58,4 +58,8 @@ namespace Collisions
 
     AABBSlopeIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f);
     AABBSlopeIntersection AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope, float precision = 0.005f);
+
+    // Points
+    bool IsPointInAABB(glm::vec3 point, Math::Transform transformAABB);
+    bool IsPointInSphere(glm::vec3 point, glm::vec3 center, float scale);
 };

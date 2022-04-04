@@ -2,6 +2,8 @@
 
 #include <util/Container.h>
 
+#include <collisions/Collisions.h>
+
 using namespace BlockBuster;
 
 const std::string BlockBuster::GameMode::typeStrings[GameMode::Type::COUNT] = {"Free for All", "Team DeathMatch", "Domination", "Capture the Flag"};
@@ -462,7 +464,6 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
     }
 }
 
-
 bool Domination::IsPlayerInPointArea(World world, glm::ivec3 pos, Entity::Player* player)
 {
     auto map = world.map;
@@ -470,6 +471,7 @@ bool Domination::IsPlayerInPointArea(World world, glm::ivec3 pos, Entity::Player
     auto scale = std::get<float>(domPoint->properties["Scale"].value);
     auto playerPos = player->GetTransform().position;
     auto realPos = Game::Map::ToRealPos(pos, map->GetBlockScale());
-    auto distance = glm::length(realPos - playerPos);
-    return distance <= scale;
+
+    auto aabb = Math::Transform{realPos, glm::vec3{0}, glm::vec3{scale * map->GetBlockScale()}};
+    return Collisions::IsPointInAABB(playerPos, aabb);
 }

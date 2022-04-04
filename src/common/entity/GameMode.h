@@ -177,7 +177,7 @@ namespace BlockBuster
 
             inline float GetCapturePercent()
             {
-                return timeLeft.GetElapsedTime().count() / timeToCapture.count();
+                return (timeLeft.GetElapsedTime().count() / timeToCapture.count()) * 100.0f;
             }
         };
 

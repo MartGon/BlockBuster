@@ -49,6 +49,8 @@ namespace BlockBuster
         void EnableScore(bool enabled = true);
         void EnableHUD(bool enabled);
         void EnableWinnerText(bool enabled);
+        void EnableCapturingText(bool enabled);
+        void SetCapturePercent(float percent);
 
     private:
         // PopUps
@@ -135,6 +137,8 @@ namespace BlockBuster
         GUI::Text killText;
         GUI::Text respawnTimeText;
         GUI::Text countdownText;
+        GUI::Text capturingText;
+        GUI::Text captCountdownText;
 
         // ScoreBoard
         bool showScoreboard = false;

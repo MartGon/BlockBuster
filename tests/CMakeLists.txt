@@ -4,6 +4,7 @@ SET(SOURCES
     Math.cpp
     Leak.cpp
     Map.cpp
+    Collisions.cpp
 )
 
 add_executable(BlockBusterTests ${SOURCES})
@@ -17,6 +18,7 @@ target_link_libraries(BlockBusterTests
     Math
     Util
     Game
+    Collisions
     
     Debug
 )

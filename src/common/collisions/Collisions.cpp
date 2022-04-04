@@ -255,3 +255,20 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform
 
     return intersection;
 }
+
+// Points
+
+bool Collisions::IsPointInAABB(glm::vec3 point, Math::Transform aaBB)
+{
+    auto ldn = aaBB.position - (aaBB.scale * 0.5f);
+    auto ruf = aaBB.position + (aaBB.scale * 0.5f);
+
+    auto res = glm::greaterThanEqual(point, ldn) && glm::lessThanEqual(point, ruf);
+    return res.x && res.y && res.z;
+}
+
+bool Collisions::IsPointInSphere(glm::vec3 point, glm::vec3 center, float scale)
+{
+    auto distance = glm::length(point - center);
+    return distance <= scale;
+}
