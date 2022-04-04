@@ -172,7 +172,7 @@ namespace BlockBuster
         struct PointState
         {
             glm::ivec3 index;
-            Entity::ID capturedBy;
+            TeamID capturedBy;
             Util::Timer timeLeft;
 
             inline float GetCapturePercent()
@@ -189,10 +189,46 @@ namespace BlockBuster
         void Start(World world);
         void Update(World world, Util::Time::Seconds deltaTime);
 
-        bool IsPlayerInPointArea(World world, glm::ivec3 pos, Entity::Player* player);
+        bool IsPlayerInPointArea(World world, Entity::Player* player, glm::ivec3 pos);
 
         std::unordered_map<glm::ivec3, PointState> pointsState;
     protected:
         Util::Timer pointsTimer;
+    };
+
+    class CaptureFlag : public TeamGameMode
+    {
+    public:
+        const float captureArea = 2.0f;
+
+        struct Flag
+        {
+            Entity::ID flagId;
+            TeamID teamId;
+            std::optional<Entity::ID> carriedBy;
+            glm::vec3 pos;
+            glm::ivec3 origin;
+        };
+
+        CaptureFlag() : TeamGameMode(Type::CAPTURE_THE_FLAG, 3, Util::Time::Seconds{60.0f * 12.0f}, Util::Time::Seconds{12.0f})
+        {
+
+        }
+
+        void Start(World world);
+        void Update(World world, Util::Time::Seconds deltaTime);
+
+        bool IsPlayerInFlagArea(World world, Entity::Player* player, glm::vec3 flagPos);
+
+        std::unordered_map<Entity::ID, Flag> flags;
+
+    private:
+
+        void SpawnFlags(World world, TeamID teamId);
+        bool IsFlagInOrigin(Flag flag);
+        void ReturnFlag(Flag& flag);
+        void CarryFlag(Flag& flag, Entity::ID playerId);
+
+        Entity::ID flagId = 0;
     };
 }

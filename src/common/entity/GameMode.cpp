@@ -417,7 +417,7 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
     {
         for(auto& [pid, player] : world.players)
         {
-            if(IsPlayerInPointArea(world, index, player))
+            if(IsPlayerInPointArea(world, player, index))
             {
                 auto& timer = point.timeLeft;
 
@@ -434,7 +434,7 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
                 if(timer.IsDone())
                 {
                     // Update owner
-                    point.capturedBy = player->teamId;
+                    point.capturedBy = (TeamID)player->teamId;
 
                     // Add Event
                     Event event;
@@ -467,7 +467,7 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
     }
 }
 
-bool Domination::IsPlayerInPointArea(World world, glm::ivec3 pos, Entity::Player* player)
+bool Domination::IsPlayerInPointArea(World world, Entity::Player* player, glm::ivec3 pos)
 {
     auto map = world.map;
     auto domPoint = map->GetGameObject(pos);
@@ -477,4 +477,89 @@ bool Domination::IsPlayerInPointArea(World world, glm::ivec3 pos, Entity::Player
 
     auto aabb = Math::Transform{realPos, glm::vec3{0}, glm::vec3{scale * map->GetBlockScale()}};
     return Collisions::IsPointInAABB(playerPos, aabb);
+}
+
+// GameMode - Capture the flag
+
+void CaptureFlag::Start(World world)
+{
+    using namespace Entity;
+
+    auto map = world.map;
+    SpawnFlags(world, BLUE_TEAM_ID);
+    SpawnFlags(world, RED_TEAM_ID);
+}
+
+void CaptureFlag::Update(World world, Util::Time::Seconds deltaTime)
+{
+    auto& players = world.players;
+    for(auto& [id, flag] : flags)
+    {
+        if(auto playerId = flag.carriedBy)
+        {
+            flag.pos = players[playerId.value()]->GetRenderTransform().position;
+
+            // TODO: Check if flag is in any capture point
+        }
+        else
+        {
+            for(auto& [pid, player] : players)
+            {
+                if(IsPlayerInFlagArea(world, player, flag.pos))
+                {
+                    // Friendly player returns flag
+                    if(flag.teamId == player->teamId && !IsFlagInOrigin(flag))
+                        ReturnFlag(flag);
+                    // Enemy player starts carrying
+                    else if(flag.teamId != player->teamId)
+                        CarryFlag(flag, pid);
+                }
+            }
+        }
+    }
+}
+
+bool CaptureFlag::IsPlayerInFlagArea(World world, Entity::Player* player, glm::vec3 flagPos)
+{
+    auto map = world.map;
+    auto playerPos = player->GetTransform().position;
+
+    return Collisions::IsPointInSphere(playerPos, flagPos, captureArea);
+}
+
+void CaptureFlag::SpawnFlags(World world, TeamID teamId)
+{
+    using namespace Entity;
+
+    auto map = world.map;
+    auto goType = teamId == BLUE_TEAM_ID ? GameObject::Type::FLAG_SPAWN_A : GameObject::Type::FLAG_SPAWN_B;
+    auto flagSpawns = map->FindGameObjectByType(goType);
+
+    for(auto& pos : flagSpawns)
+    {
+        Flag flag;
+        flag.flagId = flagId++;
+        flag.pos = Game::Map::ToRealPos(pos, map->GetBlockScale());
+        flag.teamId = teamId;
+        flag.origin = pos;
+
+        flags[flag.flagId] = flag;
+    }
+}
+
+bool CaptureFlag::IsFlagInOrigin(Flag flag)
+{
+    glm::vec3 origin = flag.origin;
+    float distance = glm::length(origin - flag.pos);
+    return distance <= 0.25f;
+}
+
+void CaptureFlag::ReturnFlag(Flag& flag)
+{
+    flag.pos = flag.origin;
+}
+
+void CaptureFlag::CarryFlag(Flag& flag, Entity::ID playerId)
+{
+    flag.carriedBy = playerId;
 }
