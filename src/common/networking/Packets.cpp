@@ -254,7 +254,7 @@ void ScoreboardReport::OnWrite()
 
 void GameEvent::OnRead(Util::Buffer::Reader& reader)
 {
-    event = reader.Read<BlockBuster::GameMode::Event>();
+    event = reader.Read<BlockBuster::Event>();
 }
 
 void GameEvent::OnWrite()

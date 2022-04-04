@@ -78,7 +78,7 @@ namespace BlockBuster
         void OnConnectToServer(ENet::PeerId peerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket packet);
         void OnRecvPacket(Networking::Packet& packet);
-        void HandleGameEvent(GameMode::Event event);
+        void HandleGameEvent(Event event);
         void RecvServerSnapshots();
         void UpdateNetworking();
         void SendPlayerInput();

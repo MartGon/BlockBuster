@@ -1,5 +1,6 @@
 SET(SOURCES
     Block.cpp
+    Event.cpp
     Map.cpp
     Game.cpp
     GameMode.cpp

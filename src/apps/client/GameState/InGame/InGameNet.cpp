@@ -308,11 +308,11 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
     }
 }
 
-void InGame::HandleGameEvent(GameMode::Event event)
+void InGame::HandleGameEvent(Event event)
 {
     switch (event.type)
     {
-    case GameMode::EventType::POINT_CAPTURED:
+    case EventType::POINT_CAPTURED:
         {
             // Force captured by
             auto gameMode = match.GetGameMode();
@@ -329,6 +329,53 @@ void InGame::HandleGameEvent(GameMode::Event event)
             }
         }
         break;
+    case EventType::FLAG_EVENT:
+        {
+            auto flagEvent = event.flagEvent;
+            auto gameMode = match.GetGameMode();
+            if(gameMode->GetType() == GameMode::CAPTURE_THE_FLAG)
+            {
+                auto captureFlag = static_cast<CaptureFlag*>(gameMode);
+                auto& flag = captureFlag->flags[flagEvent.flagId];
+
+                switch (flagEvent.type)
+                {
+                case FLAG_TAKEN:
+                    {
+                        inGameGui.ShowLogMsg("The flag was taken");
+                        flag.carriedBy = flagEvent.playerSubject;
+                    }
+                    break;
+
+                case FLAG_DROPPED:
+                    {
+                        inGameGui.ShowLogMsg("The flag was dropped");
+                        flag.carriedBy.reset();
+                        flag.pos = flagEvent.pos;
+                    }
+                    break;
+
+                case FLAG_CAPTURED:
+                    {
+                        inGameGui.ShowLogMsg("The flag was captured");
+                        flag.carriedBy.reset();
+                        flag.pos = flag.origin;
+                    }
+                    break;
+
+                case FLAG_RECOVERED:
+                    {
+                        inGameGui.ShowLogMsg("The flag was recovered");
+                        flag.carriedBy.reset();
+                        flag.pos = flag.origin;
+                    }
+                    break;
+                
+                default:
+                    break;
+                }
+            }
+        }
     
     default:
         break;

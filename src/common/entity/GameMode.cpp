@@ -242,7 +242,7 @@ bool GameMode::IsGameOver()
     return false;
 }
 
-std::vector<GameMode::Event> GameMode::PollEvents()
+std::vector<Event> GameMode::PollEvents()
 {
     auto events = std::move(this->events);
     return events;
@@ -280,8 +280,8 @@ std::unique_ptr<GameMode> BlockBuster::CreateGameMode(GameMode::Type type)
         break;
 
     case GameMode::Type::CAPTURE_THE_FLAG:
-        assertm(false, "This mode has not been implemented yet");
-        //gameMode = std::make_unique<FreeForAll>();
+        //assertm(false, "This mode has not been implemented yet");
+        gameMode = std::make_unique<CaptureFlag>();
         break;
     
     default:
@@ -397,7 +397,7 @@ void Domination::Start(World world)
     {
         PointState pointState;
         pointState.index = index;
-        pointState.capturedBy = TeamGameMode::NEUTRAL;
+        pointState.capturedBy = TeamID::NEUTRAL;
         pointState.timeLeft.SetDuration(timeToCapture);
         pointState.timeLeft.Start();
 
@@ -445,6 +445,11 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
 
                     // Reset timers
                     point.timeLeft.Restart();
+
+                    // Increase player score
+                    auto playerScore = scoreBoard.GetPlayerScore(player->id);
+                    playerScore->score++;
+                    scoreBoard.SetPlayerScore(playerScore.value());
                 }
             }
         }
@@ -495,12 +500,21 @@ void CaptureFlag::Update(World world, Util::Time::Seconds deltaTime)
     auto& players = world.players;
     for(auto& [id, flag] : flags)
     {
-        if(auto playerId = flag.carriedBy)
+        // Carried flags
+        if(auto pid = flag.carriedBy)
         {
-            flag.pos = players[playerId.value()]->GetRenderTransform().position;
-
-            // TODO: Check if flag is in any capture point
+            auto playerId = pid.value();
+            auto player = world.players[playerId];
+            flag.pos = player->GetRenderTransform().position;
+            auto capturePoints = GetCapturePoints(world, (TeamID)player->teamId);
+            for(auto& captPoint : capturePoints)
+            {
+                auto realPos = Game::Map::ToRealPos(captPoint, world.map->GetBlockScale());
+                if(IsPlayerInFlagArea(world, player, realPos))
+                    CaptureFlagBy(player, flag);
+            }
         }
+        // Dropped flags
         else
         {
             for(auto& [pid, player] : players)
@@ -509,10 +523,10 @@ void CaptureFlag::Update(World world, Util::Time::Seconds deltaTime)
                 {
                     // Friendly player returns flag
                     if(flag.teamId == player->teamId && !IsFlagInOrigin(flag))
-                        ReturnFlag(flag);
+                        RecoverFlag(flag, player->id);
                     // Enemy player starts carrying
-                    else if(flag.teamId != player->teamId)
-                        CarryFlag(flag, pid);
+                    else if(flag.teamId != player->teamId && !player->IsDead())
+                        TakeFlag(flag, pid);
                 }
             }
         }
@@ -527,13 +541,30 @@ bool CaptureFlag::IsPlayerInFlagArea(World world, Entity::Player* player, glm::v
     return Collisions::IsPointInSphere(playerPos, flagPos, captureArea);
 }
 
+// Protected
+
+void CaptureFlag::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)
+{
+    for(auto& [flagId, flag] : flags)
+        if(flag.carriedBy.has_value() && flag.carriedBy == victim)
+            DropFlag(flag);
+}
+
+void CaptureFlag::OnPlayerLeave(Entity::ID playerId)
+{
+    for(auto& [flagId, flag] : flags)
+        if(flag.carriedBy.has_value() && flag.carriedBy == playerId)
+            DropFlag(flag);
+}
+
+// Private
+
 void CaptureFlag::SpawnFlags(World world, TeamID teamId)
 {
     using namespace Entity;
 
     auto map = world.map;
-    auto goType = teamId == BLUE_TEAM_ID ? GameObject::Type::FLAG_SPAWN_A : GameObject::Type::FLAG_SPAWN_B;
-    auto flagSpawns = map->FindGameObjectByType(goType);
+    auto flagSpawns = GetCapturePoints(world, teamId);
 
     for(auto& pos : flagSpawns)
     {
@@ -541,25 +572,109 @@ void CaptureFlag::SpawnFlags(World world, TeamID teamId)
         flag.flagId = flagId++;
         flag.pos = Game::Map::ToRealPos(pos, map->GetBlockScale());
         flag.teamId = teamId;
-        flag.origin = pos;
+        flag.origin = flag.pos;
 
         flags[flag.flagId] = flag;
     }
 }
 
-bool CaptureFlag::IsFlagInOrigin(Flag flag)
+void CaptureFlag::CaptureFlagBy(Entity::Player* player, Flag& flag)
+{
+    // Increase team score
+    auto teamScore = scoreBoard.GetTeamScore(player->teamId);
+    teamScore->score++;
+    scoreBoard.SetTeamScore(teamScore.value());
+
+    // Increase player score
+    auto playerScore = scoreBoard.GetPlayerScore(player->id);
+    playerScore->score++;
+    scoreBoard.SetPlayerScore(playerScore.value());
+
+    ReturnFlag(flag);
+
+    // Create event
+    FlagEvent fe;
+    fe.type = FlagEventType::FLAG_CAPTURED;
+    fe.flagId = flag.flagId;
+    fe.playerSubject = player->id;
+    fe.pos = flag.pos;
+
+    Event e;
+    e.type = EventType::FLAG_EVENT;
+    e.flagEvent = fe;
+
+    AddEvent(e);
+}
+
+std::vector<glm::ivec3> CaptureFlag::GetCapturePoints(World world, TeamID teamId)
+{
+    using namespace Entity;
+    auto goType = teamId == BLUE_TEAM_ID ? GameObject::Type::FLAG_SPAWN_A : GameObject::Type::FLAG_SPAWN_B;
+    return world.map->FindGameObjectByType(goType);
+}
+
+bool CaptureFlag::IsFlagInOrigin(Flag& flag)
 {
     glm::vec3 origin = flag.origin;
     float distance = glm::length(origin - flag.pos);
     return distance <= 0.25f;
 }
 
+void CaptureFlag::RecoverFlag(Flag& flag, Entity::ID playerId)
+{
+    ReturnFlag(flag);
+
+    // Flag Recovered event
+    FlagEvent fe;
+    fe.type = FlagEventType::FLAG_RECOVERED;
+    fe.flagId = flag.flagId;
+    fe.playerSubject = playerId;
+    fe.pos = flag.pos;
+
+    Event e;
+    e.type = EventType::FLAG_EVENT;
+    e.flagEvent = fe;
+
+    AddEvent(e);
+}
+
+void CaptureFlag::TakeFlag(Flag& flag, Entity::ID playerId)
+{
+    flag.carriedBy = playerId;
+    
+    // Flag Taken event
+    FlagEvent fe;
+    fe.type = FlagEventType::FLAG_TAKEN;
+    fe.flagId = flag.flagId;
+    fe.playerSubject = playerId;
+    fe.pos = flag.pos;
+    Event e;
+    e.type = EventType::FLAG_EVENT;
+    e.flagEvent = fe;
+    AddEvent(e);
+}
+
+void CaptureFlag::DropFlag(Flag& flag)
+{
+    // Flag Dropped event
+    FlagEvent fe;
+    fe.type = FlagEventType::FLAG_DROPPED;
+    fe.flagId = flag.flagId;
+    fe.playerSubject = flag.carriedBy.value();
+    fe.pos = flag.pos;
+
+    Event e;
+    e.type = EventType::FLAG_EVENT;
+    e.flagEvent = fe;
+
+    AddEvent(e);
+
+    // Remove from player
+    flag.carriedBy.reset();
+}
+
 void CaptureFlag::ReturnFlag(Flag& flag)
 {
     flag.pos = flag.origin;
-}
-
-void CaptureFlag::CarryFlag(Flag& flag, Entity::ID playerId)
-{
-    flag.carriedBy = playerId;
+    flag.carriedBy.reset();
 }

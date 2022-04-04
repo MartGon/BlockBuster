@@ -86,7 +86,7 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     auto flagA = renderMgr.CreateModel();
     auto cylinderT = Math::Transform{glm::vec3{0.0f}, glm::vec3{0.0f}, glm::vec3{0.8f, 0.15f, 0.8f}};
     painting.type = Rendering::PaintingType::COLOR;
-    painting.color = red;
+    painting.color = blue;
 
     sm1 = Rendering::SubModel{cylinderT, painting, &cylinder, &shader};
     flagA->AddSubModel(std::move(sm1));
@@ -94,7 +94,7 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 
     // Flag B
     auto flagB = renderMgr.CreateModel();
-    painting.color = blue;
+    painting.color = red;
 
     sm1 = Rendering::SubModel{cylinderT, painting, &cylinder, &shader};
     flagB->AddSubModel(std::move(sm1));

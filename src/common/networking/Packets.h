@@ -6,6 +6,7 @@
 #include <networking/Networking.h>
 #include <entity/Player.h>
 #include <entity/Match.h>
+#include <entity/Event.h>
 
 #include <Snapshot.h>
 
@@ -303,7 +304,7 @@ namespace Networking
                 void OnRead(Util::Buffer::Reader& reader) override;
                 void OnWrite() override;
 
-                BlockBuster::GameMode::Event event;
+                BlockBuster::Event event;
             };
         }
 

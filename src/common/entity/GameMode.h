@@ -4,6 +4,7 @@
 #include <Player.h>
 #include <util/Buffer.h>
 #include <util/Timer.h>
+#include <Event.h>
 
 #include <Scoreboard.h>
 
@@ -32,27 +33,6 @@ namespace BlockBuster
             CAPTURE_THE_FLAG,
 
             COUNT
-        };
-
-        enum EventType
-        {
-            POINT_CAPTURED,
-            FLAG_TAKEN,
-        };
-
-        struct PointCaptured
-        {
-            glm::ivec3 pos;
-            Entity::ID capturedBy;
-        };
-
-        struct Event
-        {
-            EventType type;
-            union
-            {
-                PointCaptured pointCaptured;
-            };
         };
 
         GameMode(Type type, uint32_t maxScore = 100, 
@@ -140,13 +120,6 @@ namespace BlockBuster
 
         }
 
-        enum TeamID : Entity::ID
-        {
-            BLUE_TEAM_ID,
-            RED_TEAM_ID,
-            NEUTRAL
-        };
-
     protected:
 
         Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;
@@ -196,6 +169,8 @@ namespace BlockBuster
         Util::Timer pointsTimer;
     };
 
+    // TODO: Add timer to recover flag. Increase recover area in that case
+    // TODO: Add timer to auto recover flag in case a player dies out of bounds.
     class CaptureFlag : public TeamGameMode
     {
     public:
@@ -207,7 +182,7 @@ namespace BlockBuster
             TeamID teamId;
             std::optional<Entity::ID> carriedBy;
             glm::vec3 pos;
-            glm::ivec3 origin;
+            glm::vec3 origin;
         };
 
         CaptureFlag() : TeamGameMode(Type::CAPTURE_THE_FLAG, 3, Util::Time::Seconds{60.0f * 12.0f}, Util::Time::Seconds{12.0f})
@@ -215,19 +190,28 @@ namespace BlockBuster
 
         }
 
-        void Start(World world);
-        void Update(World world, Util::Time::Seconds deltaTime);
+        void Start(World world) override;
+        void Update(World world, Util::Time::Seconds deltaTime) override;
 
         bool IsPlayerInFlagArea(World world, Entity::Player* player, glm::vec3 flagPos);
 
         std::unordered_map<Entity::ID, Flag> flags;
 
+    protected:
+
+        void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
+        void OnPlayerLeave(Entity::ID playerId) override;
+
     private:
 
         void SpawnFlags(World world, TeamID teamId);
-        bool IsFlagInOrigin(Flag flag);
+        std::vector<glm::ivec3> GetCapturePoints(World world, TeamID teamId);
+        bool IsFlagInOrigin(Flag& flag);
+        void CaptureFlagBy(Entity::Player* player, Flag& flag);
         void ReturnFlag(Flag& flag);
-        void CarryFlag(Flag& flag, Entity::ID playerId);
+        void RecoverFlag(Flag& flag, Entity::ID playerId);
+        void TakeFlag(Flag& flag, Entity::ID playerId);
+        void DropFlag(Flag& flag);
 
         Entity::ID flagId = 0;
     };

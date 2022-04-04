@@ -311,7 +311,7 @@ void InGame::UpdateGameMode()
             bool wasInArea = false;
             for(auto& [pos, point] : domination->pointsState)
             {
-                if(domination->IsPlayerInPointArea(world, pos, &player))
+                if(domination->IsPlayerInPointArea(world, &player, pos))
                 {
                     inGameGui.EnableCapturingText(true);
                     auto percent = point.GetCapturePercent();
@@ -582,31 +582,45 @@ void InGame::DrawModeObjects()
     auto mode = match.GetGameMode();
     auto map = map_.GetMap();
 
+    std::vector<glm::ivec3> goIndices;
+    auto blockScale = map_.GetBlockScale();
     switch (mode->GetType())
     {
     case GameMode::Type::DOMINATION:
         {
+            goIndices = map->FindGameObjectByType(Entity::GameObject::DOMINATION_POINT);
+        }
+        break;
 
-            auto goIndices = map->FindGameObjectByType(Entity::GameObject::DOMINATION_POINT);
-            auto blockScale = map_.GetBlockScale();
-            for(auto goPos : goIndices)
+    case GameMode::Type::CAPTURE_THE_FLAG:
+        {
+            goIndices = map->FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A);
+            auto goIndicesB = map->FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_B);
+            goIndices.insert(goIndices.begin(), goIndicesB.begin(), goIndicesB.end());
+
+            auto captureFlag = static_cast<CaptureFlag*>(match.GetGameMode());
+            for(auto& [id, flag] : captureFlag->flags)
             {
-                auto go = map->GetGameObject(goPos);
-                auto rPos = Game::Map::ToRealPos(goPos, blockScale);
-                rPos.y -= (blockScale / 2.0f);
-
-                Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
-                if(go->type != Entity::GameObject::Type::PLAYER_DECOY)
-                {
-                    auto tMat = view * t.GetTransformMat();
-                    modelMgr.Draw(go->type, tMat);
-                }
+                Math::Transform t{flag.pos, glm::vec3{0.0f}, glm::vec3{2.0f}};
+                auto tMat = view * t.GetTransformMat();
+                modelMgr.Draw(Entity::GameObject::Type::WEAPON_CRATE, tMat);
             }
         }
         break;
     
     default:
         break;
+    }
+
+    for(auto goPos : goIndices)
+    {
+        auto go = map->GetGameObject(goPos);
+        auto rPos = Game::Map::ToRealPos(goPos, blockScale);
+        rPos.y -= (blockScale / 2.0f);
+
+        Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
+        auto tMat = view * t.GetTransformMat();
+        modelMgr.Draw(go->type, tMat);
     }
 }
 

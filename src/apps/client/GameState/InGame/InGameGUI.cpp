@@ -337,7 +337,7 @@ void InGameGUI::InitTexts()
     respawnTimeText.SetParent(&killText);
     respawnTimeText.SetAnchorPoint(GUI::AnchorPoint::CENTER_DOWN);
     respawnTimeText.SetScale(1.5f);
-    respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0.0f});
+    respawnTimeText.SetOffset(glm::ivec2{-respawnTimeText.GetSize().x / 2, 0});
     respawnTimeText.SetIsVisible(false);
 
     countdownText = pixelFont->CreateText();
@@ -350,8 +350,11 @@ void InGameGUI::InitTexts()
     capturingText = pixelFont->CreateText();
     capturingText.SetText("CAPTURING");
     capturingText.SetColor(white);
-    capturingText.SetOffset(glm::ivec2{winSize.x / 2, winSize.y * 3 / 4} - capturingText.GetSize() / 2);
+    capturingText.SetParent(&gameTimeText);
+    capturingText.SetAnchorPoint(GUI::AnchorPoint::CENTER_DOWN);
     capturingText.SetScale(1.5f);
+    size = capturingText.GetSize();
+    //capturingText.SetOffset(glm::ivec2{-size.x / 2, -size.y} + glm::ivec2{6, -10});
 
     captCountdownText = pixelFont->CreateText();
     captCountdownText.SetText("0");
@@ -360,6 +363,16 @@ void InGameGUI::InitTexts()
     captCountdownText.SetAnchorPoint(GUI::AnchorPoint::CENTER_DOWN);
     captCountdownText.SetScale(2.0f);
     EnableCapturingText(false);
+
+    logText = pixelFont->CreateText();
+    logText.SetText("You killed Defu#4154");
+    logText.SetParent(&healthIcon);
+    logText.SetColor(white);
+    logText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+    logText.SetScale(0.75f);
+    logText.SetOffset(glm::ivec2{0, -logText.GetSize().y} + glm::ivec2{0, -10});
+    logText.SetIsVisible(true);
+
 }
 
 void InGameGUI::InitAnimations()
@@ -394,6 +407,21 @@ void InGameGUI::InitAnimations()
     dmgAnim.keyFrames = {df1, df2, df3};
     dmgAnimationPlayer.SetClip(&dmgAnim);
     dmgAnimationPlayer.SetTargetFloat("alpha", &dmgAlpha);
+
+    // Log anim
+     Animation::Sample ls1{
+        {{"alpha", 1.f}},
+        {}
+    };
+    Animation::KeyFrame lf1{ls1, 0};
+    Animation::Sample ls2{
+        {{"alpha", 0.0f}},
+        {}
+    };
+    Animation::KeyFrame lf2{ls2, 180};
+    logAnim.keyFrames = {lf1, lf2};
+    logAnimPlayer.SetClip(&logAnim);
+    logAnimPlayer.SetTargetFloat("alpha", &logAlpha);
 }
 
 void InGameGUI::HUD()
@@ -431,13 +459,17 @@ void InGameGUI::HUD()
     hitmarkerImg.Draw(inGame->imgShader, winSize);
     hitMarkerPlayer.Update(inGame->deltaTime);
 
+    // Croshair
     crosshairImg.Draw(inGame->imgShader, winSize);
 
+    // You've been killed
     killText.Draw(inGame->textShader, winSize);
     respawnTimeText.Draw(inGame->textShader, winSize);
 
+    // Countdown
     countdownText.Draw(inGame->textShader, winSize);
 
+    // Dmg animation
     dmgAnimationPlayer.Update(inGame->deltaTime);
     dmgEffectImg.SetScale(winSize);
     const auto red = glm::vec4{1.0f, 0.0f, 0.0f, dmgAlpha};
@@ -445,11 +477,18 @@ void InGameGUI::HUD()
     dmgEffectImg.Draw(inGame->imgShader, winSize);
 
     // Capturing
-    capturingText.SetOffset(glm::ivec2{winSize.x / 2, winSize.y * 7 / 8} - capturingText.GetSize() / 2);
+    auto size = capturingText.GetSize();
+    capturingText.SetOffset(glm::ivec2{-size.x / 2, -size.y} + glm::ivec2{0, -10});
     capturingText.Draw(inGame->textShader, winSize);
-    auto size = captCountdownText.GetSize();
+    size = captCountdownText.GetSize();
     captCountdownText.SetOffset(glm::ivec2{-size.x / 2, 0} + glm::ivec2{0, -15});
     captCountdownText.Draw(inGame->textShader, winSize);
+
+    // Log
+    logAnimPlayer.Update(inGame->deltaTime);
+    const auto white = glm::vec4{1.0f, 1.0f, 1.0f, logAlpha};
+    logText.SetColor(white);
+    logText.Draw(inGame->textShader, winSize);
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -548,8 +587,8 @@ void InGameGUI::UpdateScore()
     }
     else
     {
-        auto blueTeamScore = scoreBoard.GetTeamScore(TeamGameMode::BLUE_TEAM_ID);
-        auto redTeamScore = scoreBoard.GetTeamScore(TeamGameMode::RED_TEAM_ID);
+        auto blueTeamScore = scoreBoard.GetTeamScore(TeamID::BLUE_TEAM_ID);
+        auto redTeamScore = scoreBoard.GetTeamScore(TeamID::RED_TEAM_ID);
 
         if(blueTeamScore)
             leftScoreText.SetText(std::to_string(blueTeamScore->score));
@@ -620,6 +659,7 @@ void InGameGUI::EnableScore(bool enabled)
 {
     leftScoreText.SetIsVisible(enabled);
     rightScoreText.SetIsVisible(enabled);
+    midScoreText.SetIsVisible(enabled);
 }
 
 void InGameGUI::EnableHUD(bool enabled)
@@ -656,7 +696,7 @@ void InGameGUI::EnableWinnerText(bool enabled)
         auto winner = scoreBoard.GetWinner().value();
 
         auto color = inGame->teamColors[winner.teamId];
-        std::string text = winner.teamId == TeamGameMode::BLUE_TEAM_ID ? "BLUE TEAM" : "RED TEAM";
+        std::string text = winner.teamId == TeamID::BLUE_TEAM_ID ? "BLUE TEAM" : "RED TEAM";
 
         auto isFFA = mode->GetType() == GameMode::FREE_FOR_ALL;
         if(isFFA)
@@ -689,6 +729,12 @@ void InGameGUI::SetCapturePercent(float percent)
     captCountdownText.SetText(text);
 }
 
+void InGameGUI::ShowLogMsg(std::string msg)
+{
+    logText.SetText(msg);
+    logAnimPlayer.Restart();
+}
+
 // Private
 
 void InGameGUI::ScoreboardWindow()
@@ -717,14 +763,14 @@ void InGameGUI::ScoreboardWindow()
         {   
             ImGui::PushStyleColor(ImGuiCol_TableRowBg, blue);
             ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, blue);
-                ScoreTable("Blue Team", TeamGameMode::BLUE_TEAM_ID);
+                ScoreTable("Blue Team", TeamID::BLUE_TEAM_ID);
             ImGui::PopStyleColor(2);
             
             ImGui::Dummy(ImVec2(0, 10));
 
             ImGui::PushStyleColor(ImGuiCol_TableRowBg, red);
             ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, red);
-                ScoreTable("Red Team", TeamGameMode::RED_TEAM_ID);
+                ScoreTable("Red Team", TeamID::RED_TEAM_ID);
             ImGui::PopStyleColor(2);
         }
         ImGui::PopStyleColor(2);

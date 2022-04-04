@@ -52,6 +52,8 @@ namespace BlockBuster
         void EnableCapturingText(bool enabled);
         void SetCapturePercent(float percent);
 
+        void ShowLogMsg(std::string msg);
+
     private:
         // PopUps
         enum PopUpState
@@ -139,6 +141,10 @@ namespace BlockBuster
         GUI::Text countdownText;
         GUI::Text capturingText;
         GUI::Text captCountdownText;
+        GUI::Text logText;
+        float logAlpha = 1.0f;
+        Animation::Clip logAnim;
+        Animation::Player logAnimPlayer;
 
         // ScoreBoard
         bool showScoreboard = false;
