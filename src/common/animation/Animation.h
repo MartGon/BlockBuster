@@ -81,7 +81,12 @@ namespace Animation
         {
             isDone = false;
             timer.Reset();
-            timer.Pause();
+        }
+
+        void Restart()
+        {
+            isDone = false;
+            timer.Restart();
         }
         
         void Update(Util::Time::Seconds secs);

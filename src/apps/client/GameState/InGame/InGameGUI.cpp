@@ -608,14 +608,12 @@ void InGameGUI::PlayHitMarkerAnim(HitMarkerType type)
         hitmarkerImg.SetColor(red);
     }
 
-    hitMarkerPlayer.Reset();
-    hitMarkerPlayer.Play();
+    hitMarkerPlayer.Restart();
 }
 
 void InGameGUI::PlayDmgAnim()
 {
-    dmgAnimationPlayer.Reset();
-    dmgAnimationPlayer.Play();
+    dmgAnimationPlayer.Restart();
 }
 
 void InGameGUI::EnableScore(bool enabled)
@@ -907,8 +905,7 @@ void InGameGUI::DebugWindow()
                 for(auto& [playerId, playerState] : inGame->playerModelStateTable)
                 {
                     playerState.shootPlayer.SetClip(inGame->playerAvatar.GetReloadAnim());
-                    playerState.shootPlayer.Reset();
-                    playerState.shootPlayer.Play();
+                    playerState.shootPlayer.Restart();
                     break;
                 }
             }

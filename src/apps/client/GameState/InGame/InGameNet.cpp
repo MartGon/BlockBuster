@@ -243,8 +243,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             }
             else
             {
-                playerModelStateTable[ptd->victimId].deathPlayer.Reset();
-                playerModelStateTable[ptd->victimId].deathPlayer.Play();
+                playerModelStateTable[ptd->victimId].deathPlayer.Restart();
             }
 
             if(ptd->killerId == playerId)
@@ -325,8 +324,7 @@ void InGame::HandleGameEvent(GameMode::Event event)
                 {
                     auto& pointState = domination->pointsState[pointCaptured.pos];
                     pointState.capturedBy = pointCaptured.capturedBy;
-                    pointState.timeLeft.Reset();
-                    pointState.timeLeft.Start();
+                    pointState.timeLeft.Restart();
                 }
             }
         }
@@ -665,16 +663,14 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
     {
         auto& modelState = playerModelStateTable.at(playerId);
         modelState.shootPlayer.SetClip(playerAvatar.GetShootAnim());
-        modelState.shootPlayer.Reset();
-        modelState.shootPlayer.Play();
+        modelState.shootPlayer.Restart();
     }
 
     if(Entity::HasReloaded(oldState.weaponState.state, interpolation.wepState))
     {
         auto& modelState = playerModelStateTable.at(playerId);
         modelState.shootPlayer.SetClip(playerAvatar.GetReloadAnim());
-        modelState.shootPlayer.Reset();
-        modelState.shootPlayer.Play();
+        modelState.shootPlayer.Restart();
     }
 
     auto newState = interpolation.ToPlayerState(oldState);

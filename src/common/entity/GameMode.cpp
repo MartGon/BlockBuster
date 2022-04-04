@@ -417,12 +417,17 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
     {
         for(auto& [pid, player] : world.players)
         {
-            if(point.capturedBy == player->teamId)
-                continue;
-
             if(IsPlayerInPointArea(world, index, player))
             {
                 auto& timer = point.timeLeft;
+
+                // Reset timer and leave
+                if(point.capturedBy == player->teamId)
+                {
+                    timer.Restart();
+                    continue;
+                }
+
                 timer.Update(deltaTime);
 
                 // Captured
@@ -439,8 +444,7 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
                     AddEvent(event);
 
                     // Reset timers
-                    point.timeLeft.Reset();
-                    point.timeLeft.Start();
+                    point.timeLeft.Restart();
                 }
             }
         }
@@ -450,8 +454,7 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
     pointsTimer.Update(deltaTime);
     if(pointsTimer.IsDone())
     {
-        pointsTimer.Reset();
-        pointsTimer.Start();
+        pointsTimer.Restart();
         for(auto& [index, point] : pointsState)
         {
             auto team = point.capturedBy;

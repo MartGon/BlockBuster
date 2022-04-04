@@ -45,8 +45,7 @@ void FPS::PlayShootAnimation()
 {
     idlePlayer.Pause();
     shootPlayer.SetClip(&shoot);
-    shootPlayer.Reset();
-    shootPlayer.Play();
+    shootPlayer.Restart();
 }
 
 // TODO: This should take the reload time as param. Adapt the animation's speed accordingly
@@ -55,8 +54,7 @@ void FPS::PlayReloadAnimation(Util::Time::Seconds reloadTime)
     idlePlayer.Pause();
     shootPlayer.SetClip(&reload);
     shootPlayer.SetClipDuration(reloadTime);
-    shootPlayer.Reset();
-    shootPlayer.Play();
+    shootPlayer.Restart();
 }
 
 void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
