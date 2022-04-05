@@ -298,6 +298,7 @@ void InGame::OnEnterMatchState(Match::StateType type)
 void InGame::UpdateGameMode()
 {
     auto mode = match.GetGameMode();
+    mode->WipeEvents();
     auto map = map_.GetMap();
 
     switch (mode->GetType())

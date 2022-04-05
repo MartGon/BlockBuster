@@ -74,6 +74,12 @@ std::vector<Event> GameMode::PollEventMsgs(MsgType msgType, Entity::ID target)
     return events;
 }
 
+void GameMode::WipeEvents()
+{
+    broadEvents.clear();
+    targetedEvents.clear();
+}
+
 void GameMode::AddEvent(Event event)
 {
     broadEvents.push_back(event);
