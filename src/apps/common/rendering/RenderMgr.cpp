@@ -14,6 +14,16 @@ Model* RenderMgr::CreateModel()
     return model;
 }
 
+Billboard* RenderMgr::CreateBillboard()
+{
+    Billboard* billboard = new Billboard();
+    billboard->mgr = this;
+
+    billboards.push_back(billboard);
+
+    return billboard;
+}
+
 RenderMgr::~RenderMgr()
 {
     for(auto model : models)
@@ -28,7 +38,8 @@ void RenderMgr::Start()
 void RenderMgr::Render(const Rendering::Camera& camera)
 {
     std::sort(transparentReq.begin(), transparentReq.end(), [&camera](auto a, auto b){
-        return a.t[3].z > b.t[3].z;
+
+        return a.GetDepth() > b.GetDepth();
     });
     
     DrawList(&opaqueReq);
@@ -48,15 +59,42 @@ void RenderMgr::DrawList(std::vector<DrawReq>* list)
         if(drawReq.renderFlags & RenderMgr::NO_FACE_CULLING)
             glDisable(GL_CULL_FACE);
 
-        auto submodel = drawReq.toDraw;
-        submodel.shader->SetUniformMat4("transform", drawReq.t);
-        if(submodel.painting.type == PaintingType::TEXTURE)
+        
+        // Shader params
+        if(drawReq.reqType == ReqType::MODEL)
         {
-            textureMgr.Bind(submodel.painting.texture);
-            submodel.mesh->Draw(*submodel.shader);
+            auto submodel = drawReq.modelParams.toDraw;
+            submodel.shader->SetUniformMat4("transform", drawReq.modelParams.t);
+            submodel.shader->SetUniformInt("textureType", submodel.painting.type);
+
+            if(submodel.painting.type == PaintingType::TEXTURE)
+            {
+                textureMgr.Bind(submodel.painting.texture);
+                submodel.mesh->Draw(*submodel.shader);
+            }
+            else if(submodel.painting.type == PaintingType::COLOR)
+                submodel.mesh->Draw(*submodel.shader, submodel.painting.color);
         }
-        else if(submodel.painting.type == PaintingType::COLOR)
-            submodel.mesh->Draw(*submodel.shader, submodel.painting.color);
+        else if(drawReq.reqType == ReqType::BILLBOARD)
+        {
+            auto params = drawReq.billboardParams;
+            auto billboard = params.billboard;
+            billboard->shader->SetUniformVec3("center", params.pos);
+            billboard->shader->SetUniformVec3("camRight", params.cameraRight);
+            billboard->shader->SetUniformVec3("camUp", params.cameraUp);
+            billboard->shader->SetUniformVec2("scale", params.scale);
+            billboard->shader->SetUniformVec4("colorMod", params.colorMod);
+            billboard->shader->SetUniformMat4("projView", params.projView);
+
+            billboard->shader->SetUniformInt("textureType", billboard->painting.type);
+            if(billboard->painting.type == PaintingType::TEXTURE)
+            {
+                textureMgr.Bind(billboard->painting.texture);
+                billboard->quad->Draw(*billboard->shader);
+            }
+            else if(billboard->painting.type == PaintingType::COLOR)
+                billboard->quad->Draw(*billboard->shader, billboard->painting.color);
+        }
 
         glEnable(GL_CULL_FACE);
     }
@@ -73,4 +111,15 @@ void RenderMgr::AddDrawReq(AlphaType alphaType, DrawReq dr)
         else if(alphaType == AlphaType::ALPHA_TRANSPARENT)
             transparentReq.push_back(dr);
     }
+}
+
+float RenderMgr::DrawReq::GetDepth()
+{
+    float depth = 0;
+    if(reqType == ReqType::MODEL)
+        depth = modelParams.t[3].z;
+    else if(reqType == ReqType::BILLBOARD)
+        depth = billboardParams.pos.z;
+
+    return depth;
 }

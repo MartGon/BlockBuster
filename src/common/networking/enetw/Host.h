@@ -50,7 +50,7 @@ namespace ENet
         void SendPacket(PeerId id, uint8_t channelId, const SentPacket& packet);
         void Broadcast(uint8_t channelId, const SentPacket& packet);
 
-        PeerInfo GetPeerInfo(PeerId id) const;
+        std::optional<PeerInfo> GetPeerInfo(PeerId id) const;
 
     private:
         Host(Address address, uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32_t outBandwidth);

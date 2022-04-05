@@ -8,6 +8,7 @@ SET(SOURCES
     Model.cpp
     Skybox.cpp
     TextureMgr.cpp
+    Billboard.cpp
 )
 
 

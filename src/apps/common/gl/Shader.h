@@ -27,6 +27,7 @@ namespace GL
         
         void SetUniformMat4(const std::string& name, const glm::mat4& mat);
         void SetUniformVec2(const std::string& name, const glm::vec2& vec);
+        void SetUniformVec3(const std::string& name, const glm::vec3& vec);
         void SetUniformVec4(const std::string& name, const glm::vec4& vec);
         void SetUniformInt(const std::string& name, int a);
 

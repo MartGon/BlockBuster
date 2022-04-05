@@ -105,7 +105,10 @@ void InGame::Start()
         {GL::Cubemap::BACK, texturesDir / "back.jpg"},
     };
     TRY_LOAD(skybox.Load(map, false));
-    renderMgr.GetTextureMgr().SetDefaultFolder(texturesDir);
+
+    auto& texMgr = renderMgr.GetTextureMgr();
+    texMgr.SetDefaultFolder(texturesDir);
+    flagIconId = texMgr.LoadFromDefaultFolder("flagIcon.png", true);
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
@@ -121,6 +124,13 @@ void InGame::Start()
 
     fpsAvatar.SetMeshes(quad, cube, cylinder);
     fpsAvatar.Start(renderMgr, renderShader, renderShader);
+
+    // Billboards
+    flagIcon = renderMgr.CreateBillboard();
+    flagIcon->shader = &billboardShader;
+    flagIcon->painting.type = Rendering::PaintingType::TEXTURE;
+    flagIcon->painting.hasAlpha = true;
+    flagIcon->painting.texture = flagIconId;
 
     // Camera
     auto winSize = client_->GetWindowSize();
@@ -224,6 +234,10 @@ void InGame::Update()
         HandleSDLEvents();
         if(connected)
             RecvServerSnapshots();
+
+        // Handle disconnection
+        if(exit)
+            break;
 
         while(simulationLag >= serverTickRate)
         {
@@ -626,9 +640,23 @@ void InGame::DrawModeObjects()
 
     case GameMode::Type::CAPTURE_THE_FLAG:
         {
-            goIndices = map->FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A);
-            auto goIndicesB = map->FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_B);
-            goIndices.insert(goIndices.begin(), goIndicesB.begin(), goIndicesB.end());
+            std::vector<glm::ivec3> flagSpawns[2];
+            flagSpawns[TeamID::BLUE_TEAM_ID] = map->FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A);
+            flagSpawns[TeamID::RED_TEAM_ID] = map->FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_B);
+
+            for(auto teamId = 0; teamId < TeamID::NEUTRAL; teamId++)
+            {
+                auto& fs = flagSpawns[teamId];
+                goIndices.insert(goIndices.begin(), fs.begin(), fs.end());
+
+                for(auto pos : fs)
+                {
+                    auto color = teamColors[teamId];
+                    auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.0f, 3.0f, 0.0f};
+                    auto flags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
+                    flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, flags);
+                }
+            }
 
             auto captureFlag = static_cast<CaptureFlag*>(match.GetGameMode());
             for(auto& [id, flag] : captureFlag->flags)

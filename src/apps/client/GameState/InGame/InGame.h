@@ -223,6 +223,10 @@ namespace BlockBuster
         Game::Models::Player playerAvatar;
         Game::Models::FPS fpsAvatar;
 
+            // Billboards
+        Rendering::TextureID flagIconId;
+        Rendering::Billboard* flagIcon;
+
             // Camera
         Rendering::Camera camera_;
         int drawMode = GL_FILL;

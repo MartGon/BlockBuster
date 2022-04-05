@@ -62,6 +62,13 @@ void GL::Shader::SetUniformVec2(const std::string& name, const glm::vec2& vec)
     glUniform2fv(location, 1, glm::value_ptr(vec));
 }
 
+void GL::Shader::SetUniformVec3(const std::string& name, const glm::vec3& vec)
+{
+    Use();
+    auto location = GetCachedLoc(name);
+    glUniform3fv(location, 1, glm::value_ptr(vec));
+}
+
 void GL::Shader::SetUniformVec4(const std::string& name, const glm::vec4& vec)
 {
     Use();

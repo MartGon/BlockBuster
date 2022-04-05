@@ -29,6 +29,8 @@ namespace Rendering
         glm::vec2 GetRotation() const;
         glm::vec2 GetRotationDeg() const;
         glm::vec3 GetFront() const;
+        glm::vec3 GetRight() const;
+        glm::vec3 GetUp() const;
 
         glm::mat4 GetProjMat() const;
         glm::mat4 GetViewMat() const;

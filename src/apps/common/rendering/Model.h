@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rendering/Rendering.h>
 #include <rendering/Mesh.h>
 #include <rendering/TextureMgr.h>
 
@@ -7,24 +8,7 @@
 
 namespace Rendering
 {
-    enum PaintingType
-    {
-        TEXTURE,
-        COLOR
-    };
-
-    struct Painting
-    {
-        PaintingType type;
-        bool hasAlpha = false;
-        union
-        {
-            glm::vec4 color;
-            TextureID texture;
-        };
-    };
-
-    struct SubModel
+    struct  SubModel
     {
         Math::Transform transform;
         Painting painting;

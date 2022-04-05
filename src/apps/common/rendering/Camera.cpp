@@ -65,6 +65,16 @@ glm::vec3 Rendering::Camera::GetFront() const
     return front_;
 }
 
+glm::vec3 Rendering::Camera::GetRight() const
+{
+    return glm::vec3{viewMat_[0][0], viewMat_[1][0], viewMat_[2][0]};
+}
+
+glm::vec3 Rendering::Camera::GetUp() const
+{
+    return glm::vec3{viewMat_[0][1], viewMat_[1][1], viewMat_[2][1]};
+}
+
 glm::mat4 Rendering::Camera::GetProjMat() const
 {
     return projMat_;

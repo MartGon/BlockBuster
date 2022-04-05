@@ -1002,28 +1002,29 @@ void InGameGUI::NetworkStatsWindow()
 {
     if(ImGui::Begin("Network Stats"))
     {
-        auto info = inGame->host.GetPeerInfo(inGame->serverId);
+        if(auto info = inGame->host.GetPeerInfo(inGame->serverId))
+        {
+            ImGui::Text("Config");
+            ImGui::Separator();
+            ImGui::Text("Server tick rate: %.2f ms", inGame->serverTickRate.count());
 
-        ImGui::Text("Config");
-        ImGui::Separator();
-        ImGui::Text("Server tick rate: %.2f ms", inGame->serverTickRate.count());
+            ImGui::Text("Latency");
+            ImGui::Separator();
+            ImGui::Text("Ping:");ImGui::SameLine();ImGui::Text("%i ms", info->roundTripTimeMs);
+            ImGui::Text("Ping variance: %i", info->roundTripTimeVariance);
 
-        ImGui::Text("Latency");
-        ImGui::Separator();
-        ImGui::Text("Ping:");ImGui::SameLine();ImGui::Text("%i ms", info.roundTripTimeMs);
-        ImGui::Text("Ping variance: %i", info.roundTripTimeVariance);
+            ImGui::Text("Packets");
+            ImGui::Separator();
+            ImGui::Text("Packets sent: %i", info->packetsSent);
+            ImGui::Text("Packets ack: %i", info->packetsAck);
+            ImGui::Text("Packets lost: %i", info->packetsLost);
+            ImGui::Text("Packet loss: %i", info->packetLoss);
 
-        ImGui::Text("Packets");
-        ImGui::Separator();
-        ImGui::Text("Packets sent: %i", info.packetsSent);
-        ImGui::Text("Packets ack: %i", info.packetsAck);
-        ImGui::Text("Packets lost: %i", info.packetsLost);
-        ImGui::Text("Packet loss: %i", info.packetLoss);
-
-        ImGui::Text("Bandwidth");
-        ImGui::Separator();
-        ImGui::Text("In: %i B/s", info.incomingBandwidth);
-        ImGui::Text("Out: %i B/s", info.outgoingBandwidth);
+            ImGui::Text("Bandwidth");
+            ImGui::Separator();
+            ImGui::Text("In: %i B/s", info->incomingBandwidth);
+            ImGui::Text("Out: %i B/s", info->outgoingBandwidth);
+        }
     }
     ImGui::End();
 }

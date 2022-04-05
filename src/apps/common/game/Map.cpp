@@ -107,9 +107,7 @@ void Map::DrawChunkBorders(GL::Shader& shader, Rendering::Mesh& cubeMesh, const 
 
         auto transform = view * model;
         shader.SetUniformMat4("transform", transform);
-        shader.SetUniformInt("hasBorder", false);
-        shader.SetUniformInt("overrideColor", true);
-        shader.SetUniformInt("textureType", 1);
+        shader.SetUniformInt("textureType", 2);
         shader.SetUniformVec4("color", color);
         glDisable(GL_CULL_FACE);
         cubeMesh.Draw(shader, GL_LINE);
