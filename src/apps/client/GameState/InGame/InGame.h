@@ -203,10 +203,9 @@ namespace BlockBuster
         Rendering::RenderMgr renderMgr;
 
             // Shaders
-        GL::Shader shader;
         GL::Shader renderShader;
         GL::Shader chunkShader;
-        GL::Shader quadShader;
+        GL::Shader billboardShader;
         GL::Shader textShader;
         GL::Shader imgShader;
         GL::Shader skyboxShader;

@@ -25,10 +25,8 @@ void Editor::Start()
     try{
         auto sf = config.openGL.shadersFolder;
         renderShader = GL::Shader::FromFolder(sf, "renderVertex.glsl", "renderFrag.glsl");
-        colorShader = GL::Shader::FromFolder(sf, "simpleVertex.glsl", "simpleFrag.glsl");
         paintShader = GL::Shader::FromFolder(sf, "paintVertex.glsl", "paintFrag.glsl");
         chunkShader = GL::Shader::FromFolder(sf, "chunkVertex.glsl", "chunkFrag.glsl");
-        quadShader = GL::Shader::FromFolder(sf, "quadVertex.glsl", "quadFrag.glsl");
         skyboxShader = GL::Shader::FromFolder(sf, "skyboxVertex.glsl", "skyboxFrag.glsl");
     }
     catch(const std::runtime_error& e)
@@ -61,10 +59,10 @@ void Editor::Start()
     modelMgr.Start(renderMgr, renderShader);
 
     respawnModel.SetMeshes(cylinder, slope);
-    respawnModel.Start(renderMgr, colorShader);
+    respawnModel.Start(renderMgr, renderShader);
 
     playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
-    playerAvatar.Start(renderMgr, colorShader, quadShader);
+    playerAvatar.Start(renderMgr, renderShader, renderShader);
     modelMgr.SetModel(Entity::GameObject::Type::PLAYER_DECOY, &playerAvatar);
     
     // OpenGL features
@@ -523,7 +521,7 @@ void Editor::UpdateEditor()
     // Draw chunk borders
     const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
     if(gui.drawChunkBorders)
-        project.map.DrawChunkBorders(colorShader, cube, view, yellow);
+        project.map.DrawChunkBorders(renderShader, cube, view, yellow);
 
     renderMgr.Render(camera);
 
@@ -1093,15 +1091,13 @@ void Editor::DrawCursor(Math::Transform t)
     // Draw cursor
     auto model = t.GetTransformMat();
     auto transform = camera.GetProjViewMat() * model;
-    colorShader.SetUniformMat4("transform", transform);
-    colorShader.SetUniformInt("hasBorder", false);
-    colorShader.SetUniformInt("overrideColor", true);
-    colorShader.SetUniformInt("textureType", 1);
-    colorShader.SetUniformVec4("color", cursor.color);
+    renderShader.SetUniformMat4("transform", transform);
+    renderShader.SetUniformInt("textureType", 2);
+    renderShader.SetUniformVec4("color", cursor.color);
     auto& mesh = GetMesh(cursor.type);
     //mesh.Draw(shader, cursor.color, GL_LINE);
     glDisable(GL_CULL_FACE);
-    mesh.Draw(colorShader, GL_LINE);
+    mesh.Draw(renderShader, GL_LINE);
     glEnable(GL_CULL_FACE);
 }
 

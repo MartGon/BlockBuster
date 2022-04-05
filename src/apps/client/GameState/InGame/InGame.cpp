@@ -80,9 +80,8 @@ void InGame::Start()
     // Load shaders
     try{
         renderShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "renderVertex.glsl", "renderFrag.glsl");
-        shader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "simpleVertex.glsl", "simpleFrag.glsl");
         chunkShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
-        quadShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
+        billboardShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "billboardVertex.glsl", "billboardFrag.glsl");
         textShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "textVertex.glsl", "textFrag.glsl");
         imgShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "imgVertex.glsl", "imgFrag.glsl");
         skyboxShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "skyboxVertex.glsl", "skyboxFrag.glsl");
@@ -118,10 +117,10 @@ void InGame::Start()
     // Models
     modelMgr.Start(renderMgr, renderShader);
     playerAvatar.SetMeshes(quad, cube, cylinder, slope);
-    playerAvatar.Start(renderMgr, shader, quadShader);
+    playerAvatar.Start(renderMgr, renderShader, renderShader);
 
     fpsAvatar.SetMeshes(quad, cube, cylinder);
-    fpsAvatar.Start(renderMgr, shader, quadShader);
+    fpsAvatar.Start(renderMgr, renderShader, renderShader);
 
     // Camera
     auto winSize = client_->GetWindowSize();
@@ -178,14 +177,18 @@ void InGame::Start()
         this->OnRecvPacket(id, channel, std::move(ePacket));
     });
     host.SetOnDisconnectCallback([this](auto id){
-        this->Exit();
-        auto menu = this->client_->menu.get();
-        menu->popUp.SetText("Disconnected from Server");
-        menu->popUp.SetCloseable(true);
-        menu->popUp.SetButtonVisible(true);
-        menu->popUp.SetButtonCallback([menu](){
-            menu->popUp.SetButtonVisible(false);
-        });
+        if(this->match.GetState() != Match::ENDED && this->match.GetState() != Match::ENDING)
+        {
+            this->Exit();
+            auto menu = this->client_->menu.get();
+            menu->popUp.SetTitle("Connection error");
+            menu->popUp.SetText("Disconnected from Server");
+            menu->popUp.SetCloseable(true);
+            menu->popUp.SetButtonVisible(true);
+            menu->popUp.SetButtonCallback([menu](){
+                menu->popUp.SetButtonVisible(false);
+            });
+        }
     });
     host.Connect(serverAddress);
 
@@ -466,7 +469,8 @@ void InGame::HandleSDLEvents()
             break;
         }
         
-        if(!inGameGui.IsMenuOpen() && match.GetState() != Match::StateType::ENDED)
+        bool hasNotEnded = match.GetState() != Match::StateType::ENDED && match.GetState() != Match::StateType::ENDING;
+        if(!inGameGui.IsMenuOpen() && hasNotEnded)
             camController_.HandleSDLEvent(e);
     }
 }
@@ -599,7 +603,6 @@ void InGame::DrawScene()
 
     // Draw fpsModel, always rendered last
     auto proj = camera_.GetProjMat();
-    shader.SetUniformInt("dmg", 0);
     auto& player = playerTable[playerId];
     auto color = isFFA ? ffaColors[player.teamId] : teamColors[player.teamId];
     fpsAvatar.Draw(proj, color);
@@ -656,8 +659,8 @@ void InGame::DrawModeObjects()
 void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)
 {
     auto mat = viewProjMat * box.GetTransformMat();
-    shader.SetUniformMat4("transform", mat);
-    cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
+    renderShader.SetUniformMat4("transform", mat);
+    cube.Draw(renderShader, glm::vec4{1.0f}, GL_LINE);
 }
 
 // Audio

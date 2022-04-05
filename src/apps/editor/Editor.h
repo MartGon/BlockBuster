@@ -173,7 +173,6 @@ namespace BlockBuster::Editor
         // Rendering
         Rendering::RenderMgr renderMgr;
         GL::Shader renderShader;
-        GL::Shader colorShader;
         GL::Shader paintShader;
         GL::Shader chunkShader;
         GL::Shader quadShader;
