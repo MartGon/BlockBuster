@@ -1,6 +1,9 @@
 #pragma once
 
 #include <entity/Player.h>
+#include <util/Buffer.h>
+
+#include <vector>
 
 namespace BlockBuster
 {

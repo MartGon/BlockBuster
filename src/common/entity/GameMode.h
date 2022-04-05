@@ -21,6 +21,12 @@ namespace BlockBuster
         Log::Logger* logger;
     };
 
+    enum class MsgType
+    {
+        BROADCAST,
+        PLAYER_TARGET
+    };
+
     class GameMode
     {
     public:
@@ -71,7 +77,8 @@ namespace BlockBuster
         virtual Util::Time::Seconds GetDuration(){ return duration; };
         virtual Util::Time::Seconds GetRespawnTime() { return respawnTime; };
 
-        std::vector<Event> PollEvents();
+        std::vector<Event> PollEventMsgs(MsgType msgType = MsgType::BROADCAST, Entity::ID target = 0);
+        void WipeEvents(); // Client - only
 
         static const std::string typeStrings[Type::COUNT];
         static const std::unordered_map<std::string, Type> stringTypes;
@@ -82,6 +89,7 @@ namespace BlockBuster
         virtual void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) {}; // Change score, check for game over, etc.
     
         void AddEvent(Event event);
+        void AddEvent(Event event, Entity::ID playerTarget);
 
         Type type;
         Scoreboard scoreBoard;
@@ -89,7 +97,8 @@ namespace BlockBuster
         Util::Time::Seconds respawnTime;
         uint32_t maxScore;
 
-        std::vector<Event> events;
+        std::vector<Event> broadEvents;
+        std::unordered_map<Entity::ID, std::vector<Event>> targetedEvents;
     };
     std::unique_ptr<GameMode> CreateGameMode(GameMode::Type type);
     std::unordered_map<GameMode::Type, bool> GetSupportedGameModes(Game::Map::Map& map);
@@ -119,10 +128,11 @@ namespace BlockBuster
         {
 
         }
+        virtual ~TeamGameMode() {};
 
     protected:
 
-        Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;
+        virtual Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;
     };
 
     class TeamDeathMatch : public TeamGameMode
@@ -169,12 +179,13 @@ namespace BlockBuster
         Util::Timer pointsTimer;
     };
 
-    // TODO: Add timer to recover flag. Increase recover area in that case
-    // TODO: Add timer to auto recover flag in case a player dies out of bounds.
     class CaptureFlag : public TeamGameMode
     {
     public:
+        static const Util::Time::Seconds timeToRecover;
+        static const Util::Time::Seconds timeToReset;
         const float captureArea = 2.0f;
+        const float recoverArea = 4.0f;
 
         struct Flag
         {
@@ -183,9 +194,16 @@ namespace BlockBuster
             std::optional<Entity::ID> carriedBy;
             glm::vec3 pos;
             glm::vec3 origin;
+            Util::Timer recoverTimer;
+            Util::Timer resetTimer;
+
+            inline float GetRecoverPercent()
+            {
+                return (recoverTimer.GetElapsedTime().count() / timeToRecover.count()) * 100.0f;
+            }
         };
 
-        CaptureFlag() : TeamGameMode(Type::CAPTURE_THE_FLAG, 3, Util::Time::Seconds{60.0f * 12.0f}, Util::Time::Seconds{12.0f})
+        CaptureFlag() : TeamGameMode(Type::CAPTURE_THE_FLAG, 3, Util::Time::Seconds{60.0f * 12.0f}, Util::Time::Seconds{8.0f})
         {
 
         }
@@ -193,12 +211,15 @@ namespace BlockBuster
         void Start(World world) override;
         void Update(World world, Util::Time::Seconds deltaTime) override;
 
-        bool IsPlayerInFlagArea(World world, Entity::Player* player, glm::vec3 flagPos);
+        bool IsPlayerInFlagArea(World world, Entity::Player* player, glm::vec3 flagPos, float area);
+        bool IsFlagInOrigin(Flag& flag);
+
+        Event GetFlagState(Flag& flag);
 
         std::unordered_map<Entity::ID, Flag> flags;
-
     protected:
 
+        Entity::ID OnPlayerJoin(Entity::ID playerId, std::string name) override;
         void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
         void OnPlayerLeave(Entity::ID playerId) override;
 
@@ -206,13 +227,14 @@ namespace BlockBuster
 
         void SpawnFlags(World world, TeamID teamId);
         std::vector<glm::ivec3> GetCapturePoints(World world, TeamID teamId);
-        bool IsFlagInOrigin(Flag& flag);
         void CaptureFlagBy(Entity::Player* player, Flag& flag);
-        void ReturnFlag(Flag& flag);
+        void ResetFlag(Flag& flag);
         void RecoverFlag(Flag& flag, Entity::ID playerId);
         void TakeFlag(Flag& flag, Entity::ID playerId);
         void DropFlag(Flag& flag);
-
+        void ReturnFlag(Flag& flag);
+        
+        Util::Timer syncTimer{Util::Time::Seconds{3.0f}};
         Entity::ID flagId = 0;
     };
 }

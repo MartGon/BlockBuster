@@ -618,16 +618,35 @@ void Server::UpdateWorld()
         }
     }
 
-    // Send events
-    auto events = match.GetGameMode()->PollEvents();
+    // Send broad events
+    auto gameMode = match.GetGameMode();
+    auto broadEvents = gameMode->PollEventMsgs(MsgType::BROADCAST);
     Networking::Batch<Networking::PacketType::Server> batch;
-    for(auto event : events)
+    for(auto event : broadEvents)
     {
         auto eventPacket = std::make_unique<Networking::Packets::Server::GameEvent>();
         eventPacket->event = event;
         batch.PushPacket(std::move(eventPacket));
     }
     Broadcast(batch);
+
+    // Send targeted events
+    for(auto& [id, client] : clients)
+    {
+        auto targetedEvents = gameMode->PollEventMsgs(MsgType::PLAYER_TARGET, id);
+        if(!targetedEvents.empty())
+        {
+            logger.LogError("Sending targeted evenst");
+            Networking::Batch<Networking::PacketType::Server> batch;
+            for(auto event : targetedEvents)
+            {
+                auto eventPacket = std::make_unique<Networking::Packets::Server::GameEvent>();
+                eventPacket->event = event;
+                batch.PushPacket(std::move(eventPacket));
+            }
+            SendPacket(id, batch);
+        }
+    }
 }
 
 void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)

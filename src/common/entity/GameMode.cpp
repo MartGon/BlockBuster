@@ -14,194 +14,13 @@ const std::unordered_map<std::string, GameMode::Type> GameMode::stringTypes = {
     {"Capture the Flag", GameMode::Type::CAPTURE_THE_FLAG}
 };
 
-// Player Score
-
-Util::Buffer PlayerScore::ToBuffer()
-{
-    Util::Buffer buffer;
-    buffer.Write(playerId);
-    buffer.Write(teamId);
-    buffer.Write(name);
-    buffer.Write(kills);
-    buffer.Write(score);
-    buffer.Write(deaths);
-
-    return std::move(buffer);
-}
-
-PlayerScore PlayerScore::FromBuffer(Util::Buffer::Reader& reader)
-{
-    PlayerScore ps;
-    ps.playerId = reader.Read<decltype(ps.playerId)>();
-    ps.teamId = reader.Read<decltype(ps.teamId)>();
-    ps.name = reader.Read<decltype(ps.name)>();
-    ps.kills = reader.Read<decltype(ps.kills)>();
-    ps.score = reader.Read<decltype(ps.score)>();
-    ps.deaths = reader.Read<decltype(ps.deaths)>();
-
-    return ps;
-}
-
-// Scoreboard
-
-void Scoreboard::AddPlayer(Entity::ID playerId, Entity::ID teamId, std::string name)
-{
-    PlayerScore ps{playerId, teamId, name, 0, 0};
-    if(!Util::Map::Contains(teamsScore, teamId))
-        SetTeamScore(TeamScore{teamId, 0});
-    SetPlayerScore(ps);
-}
-
-void Scoreboard::SetPlayerScore(PlayerScore ps)
-{
-    playersScore[ps.playerId] = ps;
-    hasChanged = true;
-}
-
-void Scoreboard::RemovePlayer(Entity::ID playerId)
-{
-    if(auto ps = GetPlayerScore(playerId))
-    {
-        playersScore.erase(playerId);
-        if(GetTeamPlayers(ps->teamId).empty())
-            RemoveTeam(ps->teamId);
-
-        hasChanged = true;
-    }
-}
-
-std::vector<Entity::ID> Scoreboard::GetPlayerIDs()
-{
-    std::vector<Entity::ID> players;
-    for(auto& [id, score] : playersScore)
-        players.push_back(id);
-
-    return players;
-}
-
-std::vector<PlayerScore> Scoreboard::GetPlayerScores()
-{
-    std::vector<PlayerScore> ps;
-    for(auto& [id, score] : playersScore)
-        ps.push_back(score);
-
-    return ps;
-}
-
-std::optional<PlayerScore> Scoreboard::GetPlayerScore(Entity::ID playerId)
-{
-    std::optional<PlayerScore> ps;
-    if(Util::Map::Contains(playersScore, playerId))
-        ps = playersScore[playerId];
-    
-    return ps;
-}
-
-void Scoreboard::SetTeamScore(TeamScore score)
-{
-    teamsScore[score.teamId] = score;
-    hasChanged = true;
-}
-
-void Scoreboard::RemoveTeam(Entity::ID teamId)
-{
-    teamsScore.erase(teamId);
-    hasChanged = true;
-}
-
-std::vector<Entity::ID> Scoreboard::GetTeamIDs()
-{
-    std::vector<Entity::ID> teams;
-    for(auto& [id, score] : teamsScore)
-        teams.push_back(id);
-
-    return teams;
-}
-
-std::optional<TeamScore> Scoreboard::GetTeamScore(Entity::ID teamId)
-{
-    std::optional<TeamScore> ts;
-    if(Util::Map::Contains(teamsScore, teamId))
-        ts = teamsScore[teamId];
-    
-    return ts;
-}
-
-std::vector<TeamScore> Scoreboard::GetTeamScores()
-{
-    std::vector<TeamScore> teamScores;
-    for(auto [id, score] : this->teamsScore)
-        teamScores.push_back(score);
-
-    return teamScores;
-}
-
-std::optional<TeamScore> Scoreboard::GetWinner()
-{
-    std::optional<TeamScore> ret;
-
-    auto scores = GetTeamScores();
-    if(!scores.empty())
-    {
-        std::sort(scores.begin(), scores.end(), [](auto a, auto b){
-            return a.score > b.score;
-        });
-        ret = scores[0];
-    }
-
-    return ret;
-}
-
-std::vector<PlayerScore> Scoreboard::GetTeamPlayers(Entity::ID teamId)
-{
-    std::vector<PlayerScore> tpScores;
-    for(auto [id, pScore] : playersScore)
-        if(pScore.teamId == teamId)
-            tpScores.push_back(pScore);
-
-    return tpScores;
-}
-
-Util::Buffer Scoreboard::ToBuffer()
-{
-    Util::Buffer buffer;
-
-    buffer.Write(playersScore.size());
-    for(auto& [id, score] : playersScore)
-        buffer.Append(score.ToBuffer());
-
-    buffer.Write(teamsScore.size());
-    for(auto& [id, score] : teamsScore)
-        buffer.Write(score);
-
-    return std::move(buffer);
-}
-
-Scoreboard Scoreboard::FromBuffer(Util::Buffer::Reader& reader)
-{
-    Scoreboard scoreboard;
-
-    auto players = reader.Read<std::size_t>();
-    for(int i = 0; i < players; i++)
-    {
-        auto playerScore = PlayerScore::FromBuffer(reader);
-        scoreboard.playersScore[playerScore.playerId] = playerScore;
-    }
-
-    auto teams = reader.Read<std::size_t>();
-    for(int i = 0; i < teams; i++)
-    {
-        auto teamScore = reader.Read<TeamScore>();
-        scoreboard.teamsScore[teamScore.teamId] = teamScore;
-    }
-
-    return scoreboard;
-}
-
 // Gamemode
 
 Entity::ID GameMode::PlayerJoin(Entity::ID playerId, std::string name)
 {
+    // Note: We create it here, because OnPLayerJoin may add events
+    targetedEvents[playerId] = std::vector<Event>();
+
     auto teamId = OnPlayerJoin(playerId, name);
     scoreBoard.AddPlayer(playerId, teamId, name);
 
@@ -242,15 +61,27 @@ bool GameMode::IsGameOver()
     return false;
 }
 
-std::vector<Event> GameMode::PollEvents()
+std::vector<Event> GameMode::PollEventMsgs(MsgType msgType, Entity::ID target)
 {
-    auto events = std::move(this->events);
+    std::vector<Event> events;
+    if(msgType == MsgType::BROADCAST)
+        events = std::move(this->broadEvents);
+    else if(msgType == MsgType::PLAYER_TARGET)
+    {
+        events = std::move(targetedEvents[target]);
+    }
+
     return events;
 }
 
 void GameMode::AddEvent(Event event)
 {
-    events.push_back(event);
+    broadEvents.push_back(event);
+}
+
+void GameMode::AddEvent(Event event, Entity::ID playerTarget)
+{
+    targetedEvents[playerTarget].push_back(event);
 }
 
 // GameMode - Non member functions
@@ -417,7 +248,7 @@ void Domination::Update(World world, Util::Time::Seconds deltaTime)
     {
         for(auto& [pid, player] : world.players)
         {
-            if(IsPlayerInPointArea(world, player, index))
+            if(IsPlayerInPointArea(world, player, index) && !player->IsDead())
             {
                 auto& timer = point.timeLeft;
 
@@ -486,6 +317,9 @@ bool Domination::IsPlayerInPointArea(World world, Entity::Player* player, glm::i
 
 // GameMode - Capture the flag
 
+const Util::Time::Seconds CaptureFlag::timeToRecover{7.5f};
+const Util::Time::Seconds CaptureFlag::timeToReset{45.0f};
+
 void CaptureFlag::Start(World world)
 {
     using namespace Entity;
@@ -493,6 +327,7 @@ void CaptureFlag::Start(World world)
     auto map = world.map;
     SpawnFlags(world, BLUE_TEAM_ID);
     SpawnFlags(world, RED_TEAM_ID);
+    syncTimer.Start();
 }
 
 void CaptureFlag::Update(World world, Util::Time::Seconds deltaTime)
@@ -510,38 +345,71 @@ void CaptureFlag::Update(World world, Util::Time::Seconds deltaTime)
             for(auto& captPoint : capturePoints)
             {
                 auto realPos = Game::Map::ToRealPos(captPoint, world.map->GetBlockScale());
-                if(IsPlayerInFlagArea(world, player, realPos))
+                if(IsPlayerInFlagArea(world, player, realPos, captureArea))
                     CaptureFlagBy(player, flag);
             }
         }
         // Dropped flags
         else
         {
+            // Recover or Take
             for(auto& [pid, player] : players)
             {
-                if(IsPlayerInFlagArea(world, player, flag.pos))
+                // Friendly player attempts to recover flag
+                if(flag.teamId == player->teamId && !IsFlagInOrigin(flag) && IsPlayerInFlagArea(world, player, flag.pos, recoverArea))
                 {
-                    // Friendly player returns flag
-                    if(flag.teamId == player->teamId && !IsFlagInOrigin(flag))
-                        RecoverFlag(flag, player->id);
-                    // Enemy player starts carrying
-                    else if(flag.teamId != player->teamId && !player->IsDead())
-                        TakeFlag(flag, pid);
+                    flag.recoverTimer.Update(deltaTime);
+                    RecoverFlag(flag, player->id);
                 }
+                // Enemy player starts carrying
+                else if(flag.teamId != player->teamId && !player->IsDead() && IsPlayerInFlagArea(world, player, flag.pos, captureArea))
+                {
+                    TakeFlag(flag, pid);
+                    world.logger->LogError("[GameMode] Flag was taken");
+                }
+                    
+            }
+
+            // Reset flag
+            if(!IsFlagInOrigin(flag))
+            {
+                flag.resetTimer.Update(deltaTime);
+                if(flag.resetTimer.IsDone())
+                    ResetFlag(flag);
             }
         }
     }
+
+    // Sync flag state with clients
+    syncTimer.Update(deltaTime);
+    if(syncTimer.IsDone())
+    {
+        syncTimer.Restart();
+        for(auto& [id, flag] : flags)
+            AddEvent(GetFlagState(flag));
+    }
 }
 
-bool CaptureFlag::IsPlayerInFlagArea(World world, Entity::Player* player, glm::vec3 flagPos)
+bool CaptureFlag::IsPlayerInFlagArea(World world, Entity::Player* player, glm::vec3 flagPos, float area)
 {
     auto map = world.map;
     auto playerPos = player->GetTransform().position;
 
-    return Collisions::IsPointInSphere(playerPos, flagPos, captureArea);
+    return Collisions::IsPointInSphere(playerPos, flagPos, area);
 }
 
 // Protected
+
+Entity::ID CaptureFlag::OnPlayerJoin(Entity::ID playerId, std::string name)
+{
+    auto teamId = TeamGameMode::OnPlayerJoin(playerId, name);
+
+    // Notify player just joined of taken and dropped flags
+    for(auto& [flagId, flag] : flags)
+        AddEvent(GetFlagState(flag), playerId);
+
+    return teamId;
+}
 
 void CaptureFlag::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)
 {
@@ -573,6 +441,10 @@ void CaptureFlag::SpawnFlags(World world, TeamID teamId)
         flag.pos = Game::Map::ToRealPos(pos, map->GetBlockScale());
         flag.teamId = teamId;
         flag.origin = flag.pos;
+        flag.recoverTimer = Util::Timer{timeToRecover};
+        flag.recoverTimer.Start();
+        flag.resetTimer = Util::Timer{timeToReset};
+        flag.resetTimer.Start();
 
         flags[flag.flagId] = flag;
     }
@@ -620,8 +492,47 @@ bool CaptureFlag::IsFlagInOrigin(Flag& flag)
     return distance <= 0.25f;
 }
 
+Event CaptureFlag::GetFlagState(Flag& flag)
+{
+    // Flag State event
+    FlagEvent fe;
+    fe.type = FlagEventType::FLAG_STATE;
+    fe.flagId = flag.flagId;
+    if(flag.carriedBy)
+        fe.playerSubject = flag.carriedBy.value();
+    else
+        fe.playerSubject = -1;
+    fe.pos = flag.pos;
+    fe.elapsed = flag.recoverTimer.GetElapsedTime();
+    Event e;
+    e.type = EventType::FLAG_EVENT;
+    e.flagEvent = fe;
+
+    return e;
+}
+
+void CaptureFlag::ResetFlag(Flag& flag)
+{
+    ReturnFlag(flag);
+
+    // Flag Recovered event
+    FlagEvent fe;
+    fe.type = FlagEventType::FLAG_RESET;
+    fe.flagId = flag.flagId;
+    fe.pos = flag.pos;
+
+    Event e;
+    e.type = EventType::FLAG_EVENT;
+    e.flagEvent = fe;
+
+    AddEvent(e);
+}
+
 void CaptureFlag::RecoverFlag(Flag& flag, Entity::ID playerId)
 {
+    if(!flag.recoverTimer.IsDone())
+        return;
+
     ReturnFlag(flag);
 
     // Flag Recovered event
@@ -671,10 +582,16 @@ void CaptureFlag::DropFlag(Flag& flag)
 
     // Remove from player
     flag.carriedBy.reset();
+
+    // Restart timer
+    flag.recoverTimer.Restart();
+    flag.resetTimer.Restart();
 }
 
 void CaptureFlag::ReturnFlag(Flag& flag)
 {
     flag.pos = flag.origin;
     flag.carriedBy.reset();
+    flag.recoverTimer.Restart();
+    flag.resetTimer.Restart();
 }

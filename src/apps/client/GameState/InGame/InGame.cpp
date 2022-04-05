@@ -334,6 +334,34 @@ void InGame::UpdateGameMode()
                 inGameGui.EnableCapturingText(false);
         }
         break;
+
+     case GameMode::Type::CAPTURE_THE_FLAG:
+        {
+            auto captureFlag = static_cast<CaptureFlag*>(mode);
+            auto& player = GetLocalPlayer();
+            auto world = GetWorld();
+            
+            bool wasInArea = false;
+            for(auto& [flagId, flag] : captureFlag->flags)
+            {
+                bool friendlyFlag = flag.teamId == player.teamId;
+                bool inArea = captureFlag->IsPlayerInFlagArea(world, &player, flag.pos, captureFlag->recoverArea);
+                bool dropped = !captureFlag->IsFlagInOrigin(flag) && !flag.carriedBy.has_value();
+                if(friendlyFlag && dropped && inArea)
+                {
+                    inGameGui.EnableCapturingText(true);
+                    auto percent = flag.GetRecoverPercent();
+                    inGameGui.capturingText.SetText("RECOVERING");
+                    inGameGui.SetCapturePercent(percent);
+
+                    wasInArea = true;
+                }
+            }
+
+            if(!wasInArea)
+                inGameGui.EnableCapturingText(false);
+        }
+        break;
     
     default:
         break;

@@ -26,7 +26,9 @@ namespace BlockBuster
         FLAG_TAKEN,
         FLAG_DROPPED,
         FLAG_CAPTURED,
-        FLAG_RECOVERED
+        FLAG_RECOVERED,
+        FLAG_RESET,
+        FLAG_STATE
     };
 
     struct FlagEvent
@@ -35,6 +37,7 @@ namespace BlockBuster
         Entity::ID flagId;
         Entity::ID playerSubject;
         glm::vec3 pos;
+        Util::Time::Seconds elapsed;
     };
 
     struct Event

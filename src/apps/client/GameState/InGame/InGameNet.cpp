@@ -219,13 +219,14 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_DIED:
         {
             auto ptd = packet.To<PlayerDied>();
+            auto& killer = playerTable[ptd->killerId];
+            auto& victim = playerTable[ptd->victimId];
+
+            // Set Dead
+            victim.health.hp = 0;
 
             if(ptd->victimId == playerId)
             {   
-                // Set player dead
-                auto& player = GetLocalPlayer();
-                player.health.hp = 0;
-
                 fpsAvatar.isEnabled = false;
                 inGameGui.crosshairImg.SetIsVisible(false);
 
@@ -244,10 +245,14 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             else
             {
                 playerModelStateTable[ptd->victimId].deathPlayer.Restart();
+
             }
 
             if(ptd->killerId == playerId)
                 inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::KILL);
+
+            match.GetGameMode()->PlayerDeath(ptd->killerId, ptd->killerId, killer.teamId);
+            GetLogger()->LogError("Player died");
         }
         break;
 
@@ -279,6 +284,8 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 if(Util::Map::Contains(playerTable, respawn->playerId))
                     playerTable[respawn->playerId].ApplyState(respawn->playerState);
             }
+
+            GetLogger()->LogError("Player respawned");
         }
         break;
 
@@ -333,6 +340,7 @@ void InGame::HandleGameEvent(Event event)
         {
             auto flagEvent = event.flagEvent;
             auto gameMode = match.GetGameMode();
+            GetLogger()->LogError("Recv flag event");
             if(gameMode->GetType() == GameMode::CAPTURE_THE_FLAG)
             {
                 auto captureFlag = static_cast<CaptureFlag*>(gameMode);
@@ -343,6 +351,7 @@ void InGame::HandleGameEvent(Event event)
                 case FLAG_TAKEN:
                     {
                         inGameGui.ShowLogMsg("The flag was taken");
+                        GetLogger()->LogError("The flag wass taken");
                         flag.carriedBy = flagEvent.playerSubject;
                     }
                     break;
@@ -350,24 +359,52 @@ void InGame::HandleGameEvent(Event event)
                 case FLAG_DROPPED:
                     {
                         inGameGui.ShowLogMsg("The flag was dropped");
+                        GetLogger()->LogError("The flag wass dropped");
                         flag.carriedBy.reset();
                         flag.pos = flagEvent.pos;
+                        flag.recoverTimer.Restart();
                     }
                     break;
 
                 case FLAG_CAPTURED:
                     {
                         inGameGui.ShowLogMsg("The flag was captured");
+                        GetLogger()->LogError("The flag wass captured");
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
+                        flag.recoverTimer.Restart();
                     }
                     break;
 
                 case FLAG_RECOVERED:
                     {
                         inGameGui.ShowLogMsg("The flag was recovered");
+                        GetLogger()->LogError("The flag wass recovered");
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
+                        flag.recoverTimer.Restart();
+                    }
+                    break;
+
+                case FLAG_RESET:
+                    {
+                        inGameGui.ShowLogMsg("The flag was reset");
+                        GetLogger()->LogError("The flag wass reset");
+                        flag.carriedBy.reset();
+                        flag.pos = flag.origin;
+                        flag.recoverTimer.Restart();
+                    }
+                    break;
+
+                case FLAG_STATE:
+                    {
+                        inGameGui.ShowLogMsg("Flag state recv");
+                        GetLogger()->LogError("Flag state recv");
+                        if(flagEvent.playerSubject != 255)
+                            flag.carriedBy = flagEvent.playerSubject;
+                        flag.pos = flagEvent.pos;
+                        flag.recoverTimer.Restart();
+                        flag.recoverTimer.Update(flagEvent.elapsed);
                     }
                     break;
                 
