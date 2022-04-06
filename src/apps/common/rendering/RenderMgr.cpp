@@ -28,6 +28,9 @@ RenderMgr::~RenderMgr()
 {
     for(auto model : models)
         delete model;
+
+    for(auto billboard : billboards)
+        delete billboard;
 }
 
 void RenderMgr::Start()
@@ -58,9 +61,7 @@ void RenderMgr::DrawList(std::vector<DrawReq>* list)
     {
         if(drawReq.renderFlags & RenderMgr::NO_FACE_CULLING)
             glDisable(GL_CULL_FACE);
-
         
-        // Shader params
         if(drawReq.reqType == ReqType::MODEL)
         {
             auto submodel = drawReq.modelParams.toDraw;

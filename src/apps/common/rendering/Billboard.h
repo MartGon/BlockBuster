@@ -11,7 +11,7 @@ namespace Rendering
     {
     friend class RenderMgr;
     public:
-        ~Billboard();
+        ~Billboard() = default;
 
         Billboard(const Billboard&) = delete;
         Billboard& operator=(const Billboard&) = delete;
