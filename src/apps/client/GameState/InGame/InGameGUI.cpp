@@ -941,7 +941,7 @@ void InGameGUI::DebugWindow()
         if(ImGui::CollapsingHeader("Transform"))
         {
             ImGui::InputInt("ID", (int*)&modelId);
-            if(auto sm = inGame->playerAvatar.bodyModel->GetSubModel(modelId))
+            if(auto sm = inGame->playerAvatar.armsModel->GetSubModel(modelId))
             {
                 auto& t = sm->transform;
                 ImGui::SliderFloat3("Offset", &t.position.x, -sliderPrecision, sliderPrecision);

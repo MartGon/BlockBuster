@@ -27,7 +27,7 @@ namespace Game::Models
         Animation::Clip* GetReloadAnim();
         Animation::Clip* GetDeathAnim();
 
-        Rendering::Model* bodyModel;
+        Rendering::Model* armsModel;
 
         Math::Transform armsPivot;
         Math::Transform bTransform;
@@ -39,11 +39,12 @@ namespace Game::Models
         void InitAnimations();
 
         // Models
-        
+        Rendering::Model* bodyModel;
         Rendering::Model* wheelsModel;
-        Rendering::Model* armsModel;
         Rendering::SubModel* leftFlash;
         Rendering::SubModel* rightFlash;
+        Rendering::SubModel* leftAltFlash;
+        Rendering::SubModel* rightAltFlash;
         Rendering::SubModel* flagModel;
 
         // Base Meshes

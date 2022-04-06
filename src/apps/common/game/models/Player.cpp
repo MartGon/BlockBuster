@@ -71,6 +71,8 @@ void Player::SetFlashesActive(bool active)
 {
     leftFlash->enabled = active;
     rightFlash->enabled = active;
+    leftAltFlash->enabled = active;
+    rightAltFlash->enabled = active;
 }
 
 void Player::SetFacing(float facingAngle)
@@ -118,7 +120,9 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
 
     // Textures
     std::string textureName = "flash.png";
+    std::string altTextureName = "flashAlt.png";
     auto flashTextureId = renderMgr.GetTextureMgr().LoadFromDefaultFolder(textureName);
+    auto altFlashTextureId = renderMgr.GetTextureMgr().LoadFromDefaultFolder(altTextureName);
 
     // Upper Body
     auto bodyT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
@@ -190,10 +194,13 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
     // Weapon
     auto leftId = 0;
     auto rightId = 0;
+    auto altLeftId = 0;
+    auto altRightId = 0;
     for(int i = -1; i < 2; i += 2)
     {
         bool isLeft = i == -1;
         auto fid = isLeft ? &leftId : &rightId;
+        auto altFid = isLeft ? &altLeftId : &altRightId;
 
         auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
         painting.type = Rendering::PaintingType::COLOR;
@@ -214,10 +221,17 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
         painting.texture = flashTextureId;
         auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false, Rendering::RenderMgr::NO_FACE_CULLING};
         *fid = armsModel->AddSubModel(std::move(flashModel));
+
+        auto altFlashT = Math::Transform{glm::vec3{(float)i * 1.35f, 0.0f, -4.f}, glm::vec3{0.0f, 90.0f, 0.0f}, glm::vec3{3.0f}};
+        painting.texture = altFlashTextureId;
+        auto altFlashModel = Rendering::SubModel{altFlashT, painting, quadPtr, &quadShader, false, Rendering::RenderMgr::NO_FACE_CULLING};
+        *altFid = armsModel->AddSubModel(std::move(altFlashModel));
     }
 
     leftFlash = armsModel->GetSubModel(leftId);
     rightFlash = armsModel->GetSubModel(rightId);
+    leftAltFlash = armsModel->GetSubModel(altLeftId);
+    rightAltFlash = armsModel->GetSubModel(altRightId);
 }
 
 void Player::InitAnimations()
