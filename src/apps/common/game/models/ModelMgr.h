@@ -10,12 +10,23 @@
 
 namespace Game::Models
 {
+    enum ModelID
+    {
+        FLAG_MODEL_ID,
+        COUNT
+    };
+
     class ModelMgr
     {
     public:
         void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
-        void Draw(Entity::GameObject::Type goType, const glm::mat4& tMat);
-        void SetModel(Entity::GameObject::Type type, Rendering::ModelI* model);
+
+        void DrawGo(Entity::GameObject::Type goType, const glm::mat4& tMat);
+        void SetGoModel(Entity::GameObject::Type type, Rendering::ModelI* model);
+
+        void Draw(ModelID modelId, const glm::mat4& tMat);
+        //void SetGoModel(Entity::GameObject::Type type, Rendering::ModelI* model);
+        Rendering::ModelI* GetModel(ModelID model);
 
         // Base Meshes
         Rendering::Mesh quad;
@@ -25,11 +36,13 @@ namespace Game::Models
         Rendering::Mesh cube;
 
     private:
+        void InitGoModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
         void InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
         Log::Logger* GetLogger();
 
         GL::Texture crateTexture;
 
-        Rendering::ModelI* models[Entity::GameObject::Type::COUNT];
+        Rendering::ModelI* goModels[Entity::GameObject::Type::COUNT];
+        Rendering::ModelI* models[ModelID::COUNT];
     };
 }

@@ -941,12 +941,16 @@ void InGameGUI::DebugWindow()
         if(ImGui::CollapsingHeader("Transform"))
         {
             ImGui::InputInt("ID", (int*)&modelId);
-            if(auto sm = inGame->playerAvatar.armsModel->GetSubModel(modelId))
+            auto model = static_cast<Rendering::Model*>(inGame->modelMgr.GetModel(Game::Models::FLAG_MODEL_ID));
+            if(model)
             {
-                auto& t = sm->transform;
-                ImGui::SliderFloat3("Offset", &t.position.x, -sliderPrecision, sliderPrecision);
-                ImGui::SliderFloat3("Scale", &t.scale.x, -sliderPrecision, sliderPrecision);
-                ImGui::SliderFloat3("Rotation", &t.rotation.x, -sliderPrecision, sliderPrecision);
+                if(auto sm = model->GetSubModel(modelId))
+                {
+                    auto& t = sm->transform;
+                    ImGui::SliderFloat3("Offset", &t.position.x, -sliderPrecision, sliderPrecision);
+                    ImGui::SliderFloat3("Scale", &t.scale.x, -sliderPrecision, sliderPrecision);
+                    ImGui::SliderFloat3("Rotation", &t.rotation.x, -sliderPrecision, sliderPrecision);
+                }
             }
             
             ImGui::InputFloat("Precision", &sliderPrecision);

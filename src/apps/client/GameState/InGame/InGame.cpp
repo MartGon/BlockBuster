@@ -670,7 +670,7 @@ void InGame::DrawModeObjects()
                 for(auto pos : fs)
                 {
                     auto color = teamColors[teamId];
-                    auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.0f, 3.0f, 0.0f};
+                    auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.0f, 4.0f, 0.0f};
                     auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
                     flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
                 }
@@ -684,7 +684,11 @@ void InGame::DrawModeObjects()
                 
                 Math::Transform t{flag.pos, glm::vec3{0.0f}, glm::vec3{2.0f}};
                 auto tMat = view * t.GetTransformMat();
-                modelMgr.Draw(Entity::GameObject::Type::WEAPON_CRATE, tMat);
+                auto model = static_cast<Rendering::Model*>(modelMgr.GetModel(Game::Models::FLAG_MODEL_ID));
+                
+                const auto CLOTH_SM_ID = 1;
+                model->GetSubModel(CLOTH_SM_ID)->painting.color = teamColors[flag.teamId];
+                modelMgr.Draw(Game::Models::FLAG_MODEL_ID, tMat);
             }
         }
         break;
@@ -701,7 +705,7 @@ void InGame::DrawModeObjects()
 
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
         auto tMat = view * t.GetTransformMat();
-        modelMgr.Draw(go->type, tMat);
+        modelMgr.DrawGo(go->type, tMat);
     }
 }
 

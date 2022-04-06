@@ -63,7 +63,7 @@ void Editor::Start()
 
     playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
     playerAvatar.Start(renderMgr, renderShader, renderShader);
-    modelMgr.SetModel(Entity::GameObject::Type::PLAYER_DECOY, &playerAvatar);
+    modelMgr.SetGoModel(Entity::GameObject::Type::PLAYER_DECOY, &playerAvatar);
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
@@ -430,7 +430,7 @@ void Editor::UpdateEditor()
         if(go->type != Entity::GameObject::Type::PLAYER_DECOY)
         {
             auto tMat = view * t.GetTransformMat();
-            modelMgr.Draw(go->type, tMat);
+            modelMgr.DrawGo(go->type, tMat);
         }
                 
         // Special cases
@@ -440,7 +440,7 @@ void Editor::UpdateEditor()
             t.position.y = t.position.y + ecb.scale.y / 2.0f;
             t.scale = glm::vec3{Entity::Player::scale};
             auto tMat = view * t.GetTransformMat();
-            modelMgr.Draw(go->type, tMat);
+            modelMgr.DrawGo(go->type, tMat);
         }
 
         if(gui.selectedObj == goPos)

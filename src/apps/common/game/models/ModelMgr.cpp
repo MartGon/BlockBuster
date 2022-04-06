@@ -5,12 +5,6 @@
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
 
-#define TRY_LOAD(X) \
-  try{ \
-    (X); \
-  } \
-  catch(const std::runtime_error& e){ GetLogger()->LogError(e.what());} 
-
 using namespace Game::Models;
 using namespace Entity;
 
@@ -22,24 +16,40 @@ void ModelMgr::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     cube = Rendering::Primitive::GenerateCube();
     slope = Rendering::Primitive::GenerateSlope();
 
+    InitGoModels(renderMgr, shader);
     InitModels(renderMgr, shader);
 }
 
-void ModelMgr::Draw(GameObject::Type goType, const glm::mat4& tMat)
+void ModelMgr::DrawGo(GameObject::Type goType, const glm::mat4& tMat)
 {
-    if(auto model = models[goType])
+    if(auto model = goModels[goType])
         model->Draw(tMat);
 }
 
-void ModelMgr::SetModel(Entity::GameObject::Type type, Rendering::ModelI* model)
+void ModelMgr::SetGoModel(Entity::GameObject::Type type, Rendering::ModelI* model)
 {
-    models[type] = model;
+    goModels[type] = model;
 }
 
-void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
+void ModelMgr::Draw(ModelID modelId, const glm::mat4& tMat)
+{
+    if(auto model = models[modelId])
+        model->Draw(tMat);
+}
+
+Rendering::ModelI* ModelMgr::GetModel(ModelID modelId)
+{
+    Rendering::ModelI* ret = nullptr;
+    if(modelId >= 0 && modelId < ModelID::COUNT)
+        ret = models[modelId];
+
+    return ret;
+}
+
+void ModelMgr::InitGoModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 {
     for(int i = GameObject::Type::RESPAWN; i < GameObject::Type::COUNT; i++)
-        models[i] = nullptr;
+        goModels[i] = nullptr;
 
     // Colors
     Rendering::Painting painting;
@@ -58,19 +68,17 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     auto sm1 = Rendering::SubModel{cubeT, painting, &cube, &shader};
     domPoint->AddSubModel(std::move(sm1));
 
-    models[GameObject::Type::DOMINATION_POINT] = domPoint;
+    goModels[GameObject::Type::DOMINATION_POINT] = domPoint;
 
     // Weapon Crate
     auto weaponCrate = renderMgr.CreateModel();
     auto weaponCrateT = Math::Transform{glm::vec3{0.0f, 0.3725f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.3f, 0.75f, 1.3f}};
     painting.type = Rendering::PaintingType::COLOR;
-    //TRY_LOAD(crateTexture.LoadFromFolder(TEXTURES_DIR, "Crate.png"));
-    //painting.texture = &crateTexture;
     painting.color = Rendering::ColorU8ToFloat(59, 71, 49, 255);
     sm1 = Rendering::SubModel{weaponCrateT, painting, &cube, &shader};
     weaponCrate->AddSubModel(std::move(sm1));
 
-    models[GameObject::Type::WEAPON_CRATE] = weaponCrate;
+    goModels[GameObject::Type::WEAPON_CRATE] = weaponCrate;
 
     // Health pack
     auto healthPack = renderMgr.CreateModel();
@@ -80,7 +88,7 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     sm1 = Rendering::SubModel{healthPackT, painting, &cube, &shader};
     healthPack->AddSubModel(std::move(sm1));
 
-    models[GameObject::Type::HEALTHPACK] = healthPack;
+    goModels[GameObject::Type::HEALTHPACK] = healthPack;
 
     // Flag A
     auto flagA = renderMgr.CreateModel();
@@ -90,7 +98,7 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 
     sm1 = Rendering::SubModel{cylinderT, painting, &cylinder, &shader};
     flagA->AddSubModel(std::move(sm1));
-    models[GameObject::Type::FLAG_SPAWN_A] = flagA;
+    goModels[GameObject::Type::FLAG_SPAWN_A] = flagA;
 
     // Flag B
     auto flagB = renderMgr.CreateModel();
@@ -99,7 +107,7 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     sm1 = Rendering::SubModel{cylinderT, painting, &cylinder, &shader};
     flagB->AddSubModel(std::move(sm1));
 
-    models[GameObject::Type::FLAG_SPAWN_B] = flagB;
+    goModels[GameObject::Type::FLAG_SPAWN_B] = flagB;
 
     // Grenades
     auto grenades = renderMgr.CreateModel();
@@ -124,7 +132,7 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     grenades->AddSubModel(std::move(leftFragTop));
     grenades->AddSubModel(std::move(rigthFragTop));
 
-    models[GameObject::Type::GRENADES] = grenades;
+    goModels[GameObject::Type::GRENADES] = grenades;
 
     // Killbox
     auto killBox = renderMgr.CreateModel();
@@ -133,7 +141,37 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     sm1 = Rendering::SubModel{cubeT, painting, &cube, &shader};
     killBox->AddSubModel(std::move(sm1));
 
-    models[GameObject::Type::KILLBOX] = killBox;
+    goModels[GameObject::Type::KILLBOX] = killBox;
+}
+
+void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
+{
+    // Colors
+    Rendering::Painting painting;
+    const auto red = glm::vec4{0.8f, 0.1f, 0.1f, 1.f};
+    const auto green = glm::vec4{0.1f, 0.8f, 0.1f, 1.f};
+    const auto darkGreen = glm::vec4{0.2f, 0.65f, 0.2f, 1.f};
+    const auto blue = glm::vec4{0.1f, 0.1f, 0.8f, 1.f};
+    const auto gray = glm::vec4{0.2f, 0.2f, 0.2f, 1.f};
+    const auto black = glm::vec4{glm::vec3{0.0f}, 1.0f};
+
+    // Flag
+    auto flag = renderMgr.CreateModel();
+
+    auto cylinderT = Math::Transform{glm::vec3{0.0f, 0.5f, 0.0f}, glm::vec3{0.0f}, glm::vec3{0.1f, 2.f, 0.1f}};
+    painting.type = Rendering::PaintingType::COLOR;
+    painting.color = gray;
+    auto sm1 = Rendering::SubModel{cylinderT, painting, &cylinder, &shader, true};
+    flag->AddSubModel(std::move(sm1));
+
+    auto quadT = Math::Transform{glm::vec3{-0.475f, 1.25f, 0.0f}, glm::vec3{0.0f}, glm::vec3{0.75f, 0.5f, 1.f}};
+    painting.type = Rendering::PaintingType::COLOR;
+    painting.color = green;
+    auto sm = Rendering::SubModel{quadT, painting, &quad, &shader, true, Rendering::RenderMgr::NO_FACE_CULLING};
+    flag->AddSubModel(std::move(sm));
+
+    models[FLAG_MODEL_ID] = flag;
+
 }
 
 Log::Logger* ModelMgr::GetLogger()
