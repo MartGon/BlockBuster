@@ -117,6 +117,7 @@ namespace BlockBuster
         GUI::Text ammoNumIcon;
         GUI::Image crosshairImg;
         GUI::Image hitmarkerImg;
+        GUI::Image flagIconImg;
         GUI::Image dmgEffectImg;
 
         // Animations

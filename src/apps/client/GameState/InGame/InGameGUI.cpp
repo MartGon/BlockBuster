@@ -50,6 +50,13 @@ void InGameGUI::Start()
     hitmarkerImg.SetOffset(-hitmarkerImg.GetSize() / 2);
     hitmarkerImg.SetColor(glm::vec4{1.0f, 1.0f, 1.0f, 0.5f});
 
+    flagIconImg.SetTexture(textureMgr.GetTexture(inGame->flagIconId));
+    flagIconImg.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+    flagIconImg.SetParent(&logText);
+    flagIconImg.SetSize(glm::ivec2{64, 64});
+    flagIconImg.SetOffset(glm::ivec2{0, -flagIconImg.GetSize().y} + glm::ivec2{0, -5});
+    flagIconImg.SetIsVisible(false);
+
     dmgEffectImg.SetTexture(textureMgr.GetTexture(dmgTexture));
     dmgEffectImg.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
 
@@ -489,6 +496,11 @@ void InGameGUI::HUD()
     const auto white = glm::vec4{1.0f, 1.0f, 1.0f, logAlpha};
     logText.SetColor(white);
     logText.Draw(inGame->textShader, winSize);
+
+    // Flag Icon
+    auto teamColor = inGame->GetLocalPlayer().teamId == TeamID::BLUE_TEAM_ID ? inGame->teamColors[TeamID::RED_TEAM_ID] : inGame->teamColors[TeamID::BLUE_TEAM_ID];
+    flagIconImg.SetColor(teamColor);
+    flagIconImg.Draw(inGame->imgShader, winSize);
 
     glEnable(GL_DEPTH_TEST);
 }

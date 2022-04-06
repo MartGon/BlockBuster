@@ -398,7 +398,6 @@ void InGame::HandleGameEvent(Event event)
 
                 case FLAG_STATE:
                     {
-                        inGameGui.ShowLogMsg("Flag state recv");
                         GetLogger()->LogError("Flag state recv");
                         if(flagEvent.playerSubject != 255)
                             flag.carriedBy = flagEvent.playerSubject;
