@@ -2,6 +2,7 @@
 
 using namespace Entity;
 
+const float Entity::GameObject::ACTION_AREA = 2.5f;
 const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {
     "Respawn", "Weapon Crate", "HealthPack", 
     "Flag Spawn A", "Flag Spawn B", "Domination Point", 
@@ -84,6 +85,14 @@ GameObject GameObject::Create(GameObject::Type type)
     }
 
     return go;
+}
+
+bool GameObject::IsInteractable()
+{
+    bool isGrenade = type == Entity::GameObject::GRENADES;
+    bool isWep = type == Entity::GameObject::WEAPON_CRATE;
+    bool isHp = type == Entity::GameObject::HEALTHPACK;
+    return isWep || isGrenade || isHp;
 }
 
 static void WriteProperty(Util::Buffer& buf, GameObject::Property prop);

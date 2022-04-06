@@ -99,6 +99,7 @@ void Server::InitMatch()
 {
     InitAI();
     InitMap();
+    InitGameObjects();
     auto mode = GameMode::stringTypes.at(params.mode);
     match.Start(GetWorld(), mode);
 }
@@ -127,6 +128,25 @@ void Server::InitMap()
     {
         logger.LogError("Could not load map " + params.mapPath.string());
         std::exit(-1);
+    }
+}
+
+void Server::InitGameObjects()
+{
+    auto criteria = [this](glm::ivec3 pos, Entity::GameObject& go)
+    {
+        return go.IsInteractable();
+    };
+    auto goIndices = map.FindGameObjectByCriteria(criteria);
+    for(auto goIndex : goIndices)
+    {
+        auto go = map.GetGameObject(goIndex);
+        auto respawnTime = std::get<int>(go->properties["Respawn Time (s)"].value);
+
+        GOState goState;
+        goState.state = Entity::GameObject::State{true};
+        goState.respawnTimer.SetDuration(Util::Time::Seconds{respawnTime});
+        gameObjectStates[goIndex] = goState;
     }
 }
 
@@ -373,17 +393,19 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     if(player.IsDead())
         return;
 
+    auto input = cmd.playerInput;
+
     auto playerTransform = player.GetTransform();
     auto playerPos = playerTransform.position;
     auto playerYaw = cmd.camYaw;
 
     auto& pController = client.pController;
-    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
+    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, input, &map, TICK_RATE);
     playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
     player.SetTransform(playerTransform);
 
     auto oldWepState = player.weapon;
-    player.weapon = pController.UpdateWeapon(player.weapon, cmd.playerInput, TICK_RATE);
+    player.weapon = pController.UpdateWeapon(player.weapon, input, TICK_RATE);
     logger.LogDebug("Player Ammo " + std::to_string(player.weapon.ammoState.magazine));
 
     if(Entity::HasShot(oldWepState.state, player.weapon.state))
@@ -393,6 +415,9 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     }
 
     logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
+
+    if(input[Entity::Inputs::ACTION])
+        HandleActionCommand(player);
 }
 
 void Server::HandleShootCommand(ShotCommand sc)
@@ -487,6 +512,33 @@ void Server::HandleShootCommand(ShotCommand sc)
     }
 }
 
+void Server::HandleActionCommand(Entity::Player& player)
+{
+    auto blockScale = map.GetBlockScale();
+    for(auto& [pos, goState] : gameObjectStates)
+    {
+        if(!goState.state.isActive)
+            continue;
+
+        auto goPos = Game::Map::ToRealPos(pos, blockScale);
+        auto pPos = player.GetTransform().position;
+        if(Collisions::IsPointInSphere(pPos, goPos, Entity::GameObject::ACTION_AREA))
+        {
+            auto go = map.GetGameObject(pos);
+            player.InteractWith(*go);
+
+            // Inform clients
+            goState.state.isActive = false;
+            goState.respawnTimer.Restart();
+            BroadcastGameObjectState(pos);
+
+            // Broad game object state change
+        }
+    }
+}
+
+// Sending
+
 void Server::SendWorldUpdate()
 {
     // Create snapshot
@@ -579,6 +631,15 @@ void Server::BroadcastRespawn(ENet::PeerId peerId)
     Broadcast(pr);
 }
 
+void Server::BroadcastGameObjectState(glm::ivec3 pos)
+{
+    Networking::Packets::Server::GameObjectState gos;
+    gos.goPos = pos;
+    gos.state = gameObjectStates[pos].state;
+
+    Broadcast(gos);
+}
+
 void Server::SendPacket(ENet::PeerId peerId, Networking::Packet& packet)
 {
     packet.Write();
@@ -603,6 +664,7 @@ void Server::Broadcast(Networking::Packet& packet)
 
 void Server::UpdateWorld()
 {
+    // Player respawns
     for(auto& [id, client] : clients)
     {
         auto& player = client.player;
@@ -615,6 +677,18 @@ void Server::UpdateWorld()
             }
             else
                 client.respawnTime -= TICK_RATE;
+        }
+    }
+
+    // GameObject respawns
+    for(auto& [goPos, goState] : gameObjectStates)
+    {
+        goState.respawnTimer.Update(TICK_RATE);
+        if(goState.respawnTimer.IsDone())
+        {
+            goState.respawnTimer.Restart();
+            goState.state.isActive = true;
+            BroadcastGameObjectState(goPos);
         }
     }
 

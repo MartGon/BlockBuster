@@ -281,4 +281,35 @@ bool Player::IsDead()
     return health.hp <= 0.0f;
 }
 
+// Interaction
+
+void Player::InteractWith(GameObject go)
+{
+    switch (go.type)
+    {
+    case GameObject::Type::WEAPON_CRATE:
+        {
+            auto wepId = std::get<int>(go.properties["Weapon ID"].value);
+            // TODO: Implement weapon crates
+        }
+        break;
+    
+    case GameObject::Type::HEALTHPACK:
+        {
+            health.hp = MAX_HEALTH;
+            health.shield = MAX_SHIELD;
+        }
+        break;
+
+    case GameObject::Type::GRENADES:
+        {
+            // TODO: Refill grenades
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
 

@@ -310,6 +310,17 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         }
         break;
 
+        case Networking::OpcodeServer::OPCODE_SERVER_GAMEOBJET_STATE:
+        {
+            auto gos = packet.To<GameObjectState>();
+            auto goPos = gos->goPos;
+            if(Util::Map::Contains(gameObjectStates, goPos))
+            {
+                gameObjectStates[goPos] = gos->state;
+            }
+        }
+        break;
+
         default:
             break;
     }

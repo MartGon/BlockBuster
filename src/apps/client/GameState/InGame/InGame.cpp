@@ -147,6 +147,9 @@ void InGame::Start()
     auto mapFileName = mapName + ".bbm";
     LoadMap(mapFolder, mapFileName);
 
+    // Gameobjects
+    InitGameObjects();
+
     // Match
     match.SetOnEnterState([this](Match::StateType type){
         this->OnEnterMatchState(type);
@@ -496,7 +499,21 @@ void InGame::HandleSDLEvents()
     }
 }
 
-// Handy
+// World
+
+void InGame::InitGameObjects()
+{
+    auto map = map_.GetMap();
+    auto criteria = [this](glm::ivec3 pos, Entity::GameObject& go)
+    {
+        return go.IsInteractable();
+    };
+    auto goIndices = map->FindGameObjectByCriteria(criteria);
+    for(auto goIndex : goIndices)
+    {
+        gameObjectStates[goIndex] = Entity::GameObject::State{true};
+    }
+}
 
 Entity::Player& InGame::GetLocalPlayer()
 {
@@ -635,7 +652,25 @@ void InGame::DrawScene()
 
 void InGame::DrawGameObjects()
 {
+    auto view = camera_.GetProjViewMat();
+    auto map = map_.GetMap();
+    auto blockScale = map->GetBlockScale();
 
+    for(auto& [pos, state] : gameObjectStates)
+    {
+        if(!state.isActive)
+            continue;
+
+        // TODO: Draw billboard
+
+        auto go = map->GetGameObject(pos);
+        auto rPos = Game::Map::ToRealPos(pos, blockScale);
+        rPos.y -= (blockScale / 2.0f);
+
+        Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
+        auto tMat = view * t.GetTransformMat();
+        modelMgr.DrawGo(go->type, tMat);
+    }
 }
 
 void InGame::DrawModeObjects()
@@ -657,8 +692,11 @@ void InGame::DrawModeObjects()
             {
                 auto color = teamColors[point.capturedBy];
                 auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.0f, 3.0f, 0.0f};
-                auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
+                {
+                    auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
+                    flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                }
             }
         }
         break;
@@ -678,8 +716,11 @@ void InGame::DrawModeObjects()
                 {
                     auto color = teamColors[teamId];
                     auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.f, 5.0f, 0.0f};
-                    auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                    flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                    if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
+                    {
+                        auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
+                        flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                    }
                 }
             }
 

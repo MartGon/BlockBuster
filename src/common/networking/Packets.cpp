@@ -63,6 +63,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_GAME_EVENT:
         packet = std::make_unique<GameEvent>();
         break;
+
+    case OpcodeServer::OPCODE_SERVER_GAMEOBJET_STATE:
+        packet = std::make_unique<GameObjectState>();
+        break;
     
     default:
         break;
@@ -260,6 +264,18 @@ void GameEvent::OnRead(Util::Buffer::Reader& reader)
 void GameEvent::OnWrite()
 {
     buffer.Write(event);
+}
+
+void GameObjectState::OnRead(Util::Buffer::Reader& reader)
+{
+    goPos = reader.Read<glm::ivec3>();
+    state = reader.Read<Entity::GameObject::State>();
+}
+
+void GameObjectState::OnWrite()
+{
+    buffer.Write(goPos);
+    buffer.Write(state);
 }
 
 using namespace Networking::Packets::Client;

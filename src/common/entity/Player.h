@@ -1,5 +1,6 @@
 #pragma once
 
+#include <entity/GameObject.h>
 #include <math/Transform.h>
 #include <entity/Weapon.h>
 #include <util/Timer.h>
@@ -148,6 +149,9 @@ namespace Entity
         void ResetWeaponAmmo(Entity::WeaponTypeID weaponType);
         void ResetHealth();
         bool IsDead();
+        
+        // Interaction
+        void InteractWith(Entity::GameObject gameObject);
 
         // Data
         ID id = 0;

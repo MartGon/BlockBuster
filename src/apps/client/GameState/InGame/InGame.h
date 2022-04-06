@@ -68,6 +68,7 @@ namespace BlockBuster
         void HandleSDLEvents();
 
         // World
+        void InitGameObjects();
         Entity::Player& GetLocalPlayer();
         Entity::ID GetPlayerTeam(Entity::ID playerId);
         World GetWorld();
@@ -154,6 +155,9 @@ namespace BlockBuster
         uint8_t playerId = 0;
         Util::Timer respawnTimer;
         Entity::ID killerId = 0;
+
+        // GameObjects
+        std::unordered_map<glm::ivec3, Entity::GameObject::State> gameObjectStates; 
 
         // Match Making data
         std::string playerUuid;

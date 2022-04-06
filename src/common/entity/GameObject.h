@@ -16,6 +16,14 @@ namespace Entity
     class GameObject
     {
     public:
+
+        static const float ACTION_AREA;
+
+        struct State
+        {
+            bool isActive = true;
+        };
+
         struct Property
         {
             using Value = std::variant<float, int, std::string, bool>;
@@ -57,6 +65,8 @@ namespace Entity
         static const char* objectTypesToString[Type::COUNT];
         static std::vector<Entity::GameObject::PropertyTemplate> GetPropertyTemplate(GameObject::Type type);
         static GameObject Create(GameObject::Type type);
+
+        bool IsInteractable();
 
         Util::Buffer ToBuffer();
         static GameObject FromBuffer(Util::Buffer::Reader& reader);

@@ -16,6 +16,7 @@ Entity::PlayerInput Input::GetPlayerInput(Entity::PlayerInput mask)
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     input[Entity::SHOOT] = mouseState & SDL_BUTTON_LEFT;
     input[Entity::RELOAD] = state[SDL_SCANCODE_R];
+    input[Entity::ACTION] = state[SDL_SCANCODE_E];
 
     input = input & mask;
 
@@ -34,6 +35,7 @@ Entity::PlayerInput Input::GetPlayerInputNumpad(Entity::PlayerInput mask)
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     input[Entity::SHOOT] = mouseState & SDL_BUTTON_LEFT;
     input[Entity::RELOAD] = state[SDL_SCANCODE_R];
+    input[Entity::ACTION] = state[SDL_SCANCODE_E];
 
     input = input & mask;
 

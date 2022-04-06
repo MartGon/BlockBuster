@@ -116,6 +116,7 @@ namespace BlockBuster
         void InitMatch();
         void InitAI();
         void InitMap();
+        void InitGameObjects();
 
         // Networking
         void OnClientJoin(ENet::PeerId peerId);
@@ -126,12 +127,15 @@ namespace BlockBuster
         void HandleClientInput(ENet::PeerId peerId, InputReq pm);
         void HandleClientsInput();
         void HandleShootCommand(ShotCommand sc);
+        void HandleActionCommand(Entity::Player& player);
+
         void SendWorldUpdate();
         void SendScoreboardReport();
         void SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin);
         void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId);
         void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime);
         void BroadcastRespawn(ENet::PeerId peerId);
+        void BroadcastGameObjectState(glm::ivec3 goPos);
         void SendPacket(ENet::PeerId peerId, Networking::Packet& packet);
         void Broadcast(Networking::Packet& packet);
 
@@ -156,6 +160,11 @@ namespace BlockBuster
 
         // World 
         World GetWorld();
+        struct GOState{
+            Entity::GameObject::State state;
+            Util::Timer respawnTimer;
+        };
+        std::unordered_map<glm::ivec3, GOState> gameObjectStates;
 
         // Server params
         Params params;

@@ -35,6 +35,7 @@ namespace Networking
         OPCODE_SERVER_PLAYER_RESPAWN,
         OPCODE_SERVER_SCOREBOARD_REPORT,
         OPCODE_SERVER_GAME_EVENT,
+        OPCODE_SERVER_GAMEOBJET_STATE,
     };
 
     enum OpcodeClient : uint16_t
@@ -305,6 +306,21 @@ namespace Networking
                 void OnWrite() override;
 
                 BlockBuster::Event event;
+            };
+
+            class GameObjectState final : public Packet
+            {
+            public:
+                GameObjectState() : Packet{OpcodeServer::OPCODE_SERVER_GAMEOBJET_STATE, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader& reader) override;
+                void OnWrite() override;
+
+                glm::ivec3 goPos;
+                Entity::GameObject::State state;
             };
         }
 
