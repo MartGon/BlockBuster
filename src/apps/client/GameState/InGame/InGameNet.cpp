@@ -353,6 +353,13 @@ void InGame::HandleGameEvent(Event event)
                         inGameGui.ShowLogMsg("The flag was taken");
                         GetLogger()->LogError("The flag wass taken");
                         flag.carriedBy = flagEvent.playerSubject;
+
+                        // Enable flag model
+                        if(auto flagCarrier = flag.carriedBy)
+                        {
+                            if(Util::Map::Contains(playerModelStateTable, flagCarrier.value()))
+                                playerModelStateTable[flagCarrier.value()].flagCarrying = true;
+                        }
                     }
                     break;
 
@@ -363,6 +370,10 @@ void InGame::HandleGameEvent(Event event)
                         flag.carriedBy.reset();
                         flag.pos = flagEvent.pos;
                         flag.recoverTimer.Restart();
+
+                        // Disable flag model
+                        if(Util::Map::Contains(playerModelStateTable, flagEvent.playerSubject))
+                            playerModelStateTable[flagEvent.playerSubject].flagCarrying = false;
                     }
                     break;
 
@@ -373,6 +384,10 @@ void InGame::HandleGameEvent(Event event)
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
                         flag.recoverTimer.Restart();
+
+                        // Disable flag model
+                        if(Util::Map::Contains(playerModelStateTable, flagEvent.playerSubject))
+                            playerModelStateTable[flagEvent.playerSubject].flagCarrying = false;
                     }
                     break;
 
@@ -404,6 +419,13 @@ void InGame::HandleGameEvent(Event event)
                         flag.pos = flagEvent.pos;
                         flag.recoverTimer.Restart();
                         flag.recoverTimer.Update(flagEvent.elapsed);
+
+                        // Enable flag model
+                        if(auto flagCarrier = flag.carriedBy)
+                        {
+                            if(Util::Map::Contains(playerModelStateTable, flagCarrier.value()))
+                                playerModelStateTable[flagCarrier.value()].flagCarrying = true;
+                        }
                     }
                     break;
                 

@@ -37,7 +37,7 @@ void Player::Draw(const glm::mat4& tMat, uint8_t flags)
     auto armsT = aTransform.GetTransformMat();
     auto apT = armsPivot.GetTransformMat();
     auto atMat = tMat * bodyT * armsT * apT;
-    armsModel->Draw(atMat, Rendering::RenderMgr::NO_FACE_CULLING);
+    armsModel->Draw(atMat);
     glEnable(GL_CULL_FACE);
 }
 
@@ -81,6 +81,12 @@ void Player::SetFacing(float facingAngle)
 void Player::RotateArms(float pitch)
 {
     aTransform.rotation.x = pitch;
+}
+
+void Player::SetFlagActive(bool active, glm::vec4 color)
+{
+    flagModel->enabled = active;
+    flagModel->painting.color = color;
 }
 
 Animation::Clip* Player::GetIdleAnim()
@@ -142,6 +148,13 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
     id = bodyModel->AddSubModel(std::move(headBackSM));
     bodyIds.push_back(id);
 
+    auto flagT = Math::Transform{glm::vec3{0.0f, 0.615f, 1.5f}, glm::vec3{0.0f, 90.0f, 0.0f}, glm::vec3{1.75f, 1.5f, 1.5f}};
+    painting.color = blue;
+    painting.hasAlpha = true;
+    auto flag = Rendering::SubModel{flagT, painting, quadPtr, &shader, false, Rendering::RenderMgr::NO_FACE_CULLING};
+    id = bodyModel->AddSubModel(std::move(flag));
+    flagModel = bodyModel->GetSubModel(id);
+
     // Wheels
         // Back wheel
     auto wheelSlopeT = Math::Transform{glm::vec3{0.0f, -1.0f, 1.0f}, glm::vec3{0.0f}, glm::vec3{1.985f, 1.25f, 2.0f}};
@@ -199,7 +212,7 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
         painting.type = Rendering::PaintingType::TEXTURE;
         painting.hasAlpha = true;
         painting.texture = flashTextureId;
-        auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false};
+        auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false, Rendering::RenderMgr::NO_FACE_CULLING};
         *fid = armsModel->AddSubModel(std::move(flashModel));
     }
 

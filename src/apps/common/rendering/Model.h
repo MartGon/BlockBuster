@@ -8,13 +8,14 @@
 
 namespace Rendering
 {
-    struct  SubModel
+    struct SubModel
     {
         Math::Transform transform;
         Painting painting;
         Rendering::Mesh* mesh;
         GL::Shader* shader = nullptr;
         bool enabled = true;
+        uint8_t renderFlags = 0;
     };
 
     class RenderMgr;

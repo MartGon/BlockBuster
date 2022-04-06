@@ -14,7 +14,7 @@ void Model::Draw(const glm::mat4& tMat, uint8_t flags)
             auto t = tMat  * mMat;
             auto alphaType = submodel.painting.hasAlpha ? RenderMgr::AlphaType::ALPHA_TRANSPARENT : RenderMgr::AlphaType::ALPHA_OPAQUE;
             auto params = RenderMgr::ModelParams{t, submodel};
-            auto drawReq = RenderMgr::DrawReq{RenderMgr::ReqType::MODEL, params, flags};
+            auto drawReq = RenderMgr::DrawReq{RenderMgr::ReqType::MODEL, params, submodel.renderFlags};
             mgr->AddDrawReq(alphaType, drawReq);
         }
     }

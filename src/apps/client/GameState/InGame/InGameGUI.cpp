@@ -11,6 +11,9 @@
 
 #include <util/Container.h>
 
+#include <Event.h>
+
+
 using namespace BlockBuster;
 
 InGameGUI::InGameGUI(InGame& inGame) : inGame{&inGame}
@@ -498,7 +501,7 @@ void InGameGUI::HUD()
     logText.Draw(inGame->textShader, winSize);
 
     // Flag Icon
-    auto teamColor = inGame->GetLocalPlayer().teamId == TeamID::BLUE_TEAM_ID ? inGame->teamColors[TeamID::RED_TEAM_ID] : inGame->teamColors[TeamID::BLUE_TEAM_ID];
+    auto teamColor = GetOppositeColor(inGame->GetLocalPlayer().teamId);
     flagIconImg.SetColor(teamColor);
     flagIconImg.Draw(inGame->imgShader, winSize);
 
@@ -747,6 +750,15 @@ void InGameGUI::ShowLogMsg(std::string msg)
     logAnimPlayer.Restart();
 }
 
+glm::vec4 InGameGUI::GetOppositeColor(Entity::ID playerTeam)
+{
+    auto color = inGame->teamColors[TeamID::BLUE_TEAM_ID];
+    if(playerTeam == TeamID::BLUE_TEAM_ID)
+        color = inGame->teamColors[RED_TEAM_ID];
+
+    return color;
+}
+
 // Private
 
 void InGameGUI::ScoreboardWindow()
@@ -928,28 +940,17 @@ void InGameGUI::DebugWindow()
     {
         if(ImGui::CollapsingHeader("Transform"))
         {
-            auto t = inGame->playerTable[inGame->playerId].GetTransform();
-            inGame->GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
-            modelOffset = t.position;
-            modelScale =  t.scale;
-            modelRot =  t.rotation;
-
-            /*
-            if(ImGui::InputInt("ID", (int*)&playerId))
+            ImGui::InputInt("ID", (int*)&modelId);
+            if(auto sm = inGame->playerAvatar.bodyModel->GetSubModel(modelId))
             {
-                if(auto sm = playerAvatar.armsModel->GetSubModel(modelId))
-                {
-                    auto t = playerTable[playerId].GetTransform();
-                    GetLogger()->LogInfo("Player pos" + glm::to_string(t.position));
-                    modelOffset = t.position;
-                    modelScale =  t.scale;
-                    modelRot =  t.rotation;
-                }
-            }*/
-            ImGui::SliderFloat3("Offset", &modelOffset.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Scale", &modelScale.x, -sliderPrecision, sliderPrecision);
-            ImGui::SliderFloat3("Rotation", &modelRot.x, -sliderPrecision, sliderPrecision);
+                auto& t = sm->transform;
+                ImGui::SliderFloat3("Offset", &t.position.x, -sliderPrecision, sliderPrecision);
+                ImGui::SliderFloat3("Scale", &t.scale.x, -sliderPrecision, sliderPrecision);
+                ImGui::SliderFloat3("Rotation", &t.rotation.x, -sliderPrecision, sliderPrecision);
+            }
+            
             ImGui::InputFloat("Precision", &sliderPrecision);
+
             if(ImGui::Button("Apply"))
             {
             }

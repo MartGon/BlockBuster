@@ -125,6 +125,7 @@ namespace BlockBuster
             float gScale = 1.0f;
             bool leftFlashActive = false;
             bool rightFlashActive = false;
+            bool flagCarrying = false;
         };
         struct ExtraData
         {

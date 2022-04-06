@@ -580,6 +580,8 @@ void InGame::DrawScene()
         playerAvatar.RotateArms(pitch);
         auto lmd = GetLastMoveDir(playerId);
         playerAvatar.SteerWheels(lmd, playerT.rotation.y);
+        auto flagColor = inGameGui.GetOppositeColor(player.teamId);
+        playerAvatar.SetFlagActive(playerState.flagCarrying, flagColor);
 
         // Draw model
         playerT = player.GetRenderTransform();
@@ -677,6 +679,9 @@ void InGame::DrawModeObjects()
             auto captureFlag = static_cast<CaptureFlag*>(match.GetGameMode());
             for(auto& [id, flag] : captureFlag->flags)
             {
+                if(flag.carriedBy.has_value())
+                    continue;
+                
                 Math::Transform t{flag.pos, glm::vec3{0.0f}, glm::vec3{2.0f}};
                 auto tMat = view * t.GetTransformMat();
                 modelMgr.Draw(Entity::GameObject::Type::WEAPON_CRATE, tMat);

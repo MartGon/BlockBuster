@@ -20,11 +20,14 @@ namespace Game::Models
         void SetFlashesActive(bool active);
         void SetFacing(float facingAngle);
         void RotateArms(float pitch);
+        void SetFlagActive(bool active, glm::vec4 color = glm::vec4{1.0f});
         
         Animation::Clip* GetIdleAnim();
         Animation::Clip* GetShootAnim();
         Animation::Clip* GetReloadAnim();
         Animation::Clip* GetDeathAnim();
+
+        Rendering::Model* bodyModel;
 
         Math::Transform armsPivot;
         Math::Transform bTransform;
@@ -36,11 +39,12 @@ namespace Game::Models
         void InitAnimations();
 
         // Models
-        Rendering::Model* bodyModel;
+        
         Rendering::Model* wheelsModel;
         Rendering::Model* armsModel;
         Rendering::SubModel* leftFlash;
         Rendering::SubModel* rightFlash;
+        Rendering::SubModel* flagModel;
 
         // Base Meshes
         Rendering::Mesh* quadPtr = nullptr;

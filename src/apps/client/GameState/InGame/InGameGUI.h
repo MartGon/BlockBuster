@@ -54,6 +54,8 @@ namespace BlockBuster
 
         void ShowLogMsg(std::string msg);
 
+        glm::vec4 GetOppositeColor(Entity::ID playerTeam);
+
     private:
         // PopUps
         enum PopUpState
