@@ -629,6 +629,7 @@ void InGame::DrawScene()
     auto& player = playerTable[playerId];
     auto color = isFFA ? ffaColors[player.teamId] : teamColors[player.teamId];
     fpsAvatar.Draw(proj, color);
+    renderMgr.Render(camera_);
 }
 
 void InGame::DrawModeObjects()
@@ -685,7 +686,7 @@ void InGame::DrawModeObjects()
                 Math::Transform t{flag.pos, glm::vec3{0.0f}, glm::vec3{2.0f}};
                 auto tMat = view * t.GetTransformMat();
                 auto model = static_cast<Rendering::Model*>(modelMgr.GetModel(Game::Models::FLAG_MODEL_ID));
-                
+
                 const auto CLOTH_SM_ID = 1;
                 model->GetSubModel(CLOTH_SM_ID)->painting.color = teamColors[flag.teamId];
                 modelMgr.Draw(Game::Models::FLAG_MODEL_ID, tMat);
