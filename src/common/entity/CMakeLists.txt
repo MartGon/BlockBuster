@@ -6,6 +6,7 @@ SET(SOURCES
     GameMode.cpp
     Player.cpp
     PlayerController.cpp
+    Projectile.cpp
     Weapon.cpp
     GameObject.cpp
     Match.cpp

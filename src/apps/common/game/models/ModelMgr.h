@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rendering/Model.h>
+#include <rendering/Billboard.h>
 #include <rendering/RenderMgr.h>
 #include <animation/Animation.h>
 
@@ -14,6 +15,13 @@ namespace Game::Models
     {
         FLAG_MODEL_ID,
         COUNT
+    };
+
+    // TODO: Implement for billboards
+    enum BillboardID
+    {
+        FLAG_ICON_ID,
+        BILLBOARD_ID_COUNT
     };
 
     class ModelMgr
@@ -44,5 +52,6 @@ namespace Game::Models
 
         Rendering::ModelI* goModels[Entity::GameObject::Type::COUNT];
         Rendering::ModelI* models[ModelID::COUNT];
+        Rendering::Billboard* billboards[BillboardID::BILLBOARD_ID_COUNT];
     };
 }

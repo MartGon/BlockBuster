@@ -2,10 +2,10 @@
 
 #include <math/Transform.h>
 #include <entity/Weapon.h>
+#include <util/Timer.h>
 
 namespace Entity
 {
-    // TODO: Move all of these inside Player class
     // PlayerInput
     enum Inputs
     {
@@ -17,10 +17,10 @@ namespace Entity
         ALT_SHOOT, // Aim
         RELOAD,
         GRENADE,
+        ACTION,
         WEAPON_SWAP_0,
         WEAPON_SWAP_1,
         WEAPON_SWAP_2,
-        WEAPON_SWAP_3,
 
         MAX
     };
@@ -79,6 +79,14 @@ namespace Entity
     {
     public:
 
+        // State
+        enum State
+        {
+            IDLE,
+            WEAPON_SWAPPING
+        };
+
+        // Hitboxes
         enum HitBoxType : uint8_t
         {
             HEAD,
@@ -150,6 +158,8 @@ namespace Entity
         ID teamId = 0;
 
         Weapon weapon;
+        State state = IDLE;
+        Util::Timer weaponSwapTimer; // TODO: Implement weapon swapping
     private:
 
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain

@@ -621,6 +621,7 @@ void InGame::DrawScene()
     skybox.Draw(skyboxShader, camera_.GetViewMat(), camera_.GetProjMat());
 
     // Draw models
+    DrawGameObjects();
     DrawModeObjects();
     renderMgr.Render(camera_);
 
@@ -630,6 +631,11 @@ void InGame::DrawScene()
     auto color = isFFA ? ffaColors[player.teamId] : teamColors[player.teamId];
     fpsAvatar.Draw(proj, color);
     renderMgr.Render(camera_);
+}
+
+void InGame::DrawGameObjects()
+{
+
 }
 
 void InGame::DrawModeObjects()
@@ -671,7 +677,7 @@ void InGame::DrawModeObjects()
                 for(auto pos : fs)
                 {
                     auto color = teamColors[teamId];
-                    auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.0f, 4.0f, 0.0f};
+                    auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.f, 5.0f, 0.0f};
                     auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
                     flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
                 }
