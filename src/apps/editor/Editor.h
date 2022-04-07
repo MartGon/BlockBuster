@@ -4,6 +4,7 @@
 #include <gl/Shader.h>
 #include <gl/VertexArray.h>
 #include <gl/Texture.h>
+#include <gl/Framebuffer.h>
 
 #include <rendering/Camera.h>
 #include <rendering/Mesh.h>
@@ -96,11 +97,13 @@ namespace BlockBuster::Editor
         Util::Result<bool> LoadTexture();
         bool IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName);
         void ResetTexturePalette();
+        void Render();
 
         // World
         void NewProject();
         void SaveProject();
         Util::Result<bool> OpenProject();
+        void TakePicture();
 
         // Editor
         void UpdateEditor();
@@ -185,8 +188,9 @@ namespace BlockBuster::Editor
         Rendering::Camera camera;
         ::App::Client::CameraController cameraController;
 
-        // Textures
-        GL::Texture flashTexture;
+        // Framebuffer;
+        GL::Framebuffer framebuffer;
+        const glm::ivec2 picSize{800, 600};
 
         // Models
         Game::Models::ModelMgr modelMgr;

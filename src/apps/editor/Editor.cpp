@@ -14,6 +14,8 @@
 #include <debug/Debug.h>
 
 #include <imgui/backends/imgui_impl_opengl3.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 
 using namespace BlockBuster::Editor;
 
@@ -48,7 +50,8 @@ void Editor::Start()
     };
     TRY_LOAD(skybox.Load(map, false));
 
-    TRY_LOAD(flashTexture.LoadFromFolder(TEXTURES_DIR, "flash.png"));
+    // Framebuffer
+    framebuffer.Init(picSize);
 
     // Meshes
     cube = Rendering::Primitive::GenerateCube();
@@ -109,21 +112,7 @@ void Editor::Start()
 
 void Editor::Update()
 {
-    // Clear Buffer
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Setup texture arrays
-    project.map.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
-    project.map.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
-
-    // Draw new Map System Cubes
-    project.map.Draw(chunkShader, camera.GetProjViewMat());
-
-        // Draw skybox
-    auto view = camera.GetViewMat();
-    auto proj = camera.GetProjMat();
-    skybox.Draw(skyboxShader, view, proj, true);
+    Render();
     
     if(playerMode)
         UpdatePlayerMode();
@@ -217,6 +206,25 @@ void Editor::ResetTexturePalette()
     gui.SyncGUITextures();
 }
 
+void Editor::Render()
+{
+    // Clear Buffer
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Setup texture arrays
+    project.map.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
+    project.map.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
+
+    // Draw new Map System Cubes
+    project.map.Draw(chunkShader, camera.GetProjViewMat());
+
+        // Draw skybox
+    auto view = camera.GetViewMat();
+    auto proj = camera.GetProjMat();
+    skybox.Draw(skyboxShader, view, proj, true);
+}
+
 // #### World #### \\
 
 void Editor::NewProject()
@@ -270,6 +278,8 @@ void Editor::SaveProject()
     unsaved = false;
 
     RenameMainWindow();
+
+    TakePicture();
 }
 
 Util::Result<bool> Editor::OpenProject()
@@ -317,6 +327,32 @@ Util::Result<bool> Editor::OpenProject()
     
     
     return res;
+}
+
+void Editor::TakePicture()
+{
+    framebuffer.Bind();
+        glViewport(0, 0, picSize.x, picSize.y);
+        Render();
+
+        const auto components = 4;
+        auto data = new GLubyte[components * picSize.x * picSize.y];
+        glReadPixels(0, 0, picSize.x, picSize.y, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    framebuffer.Unbind();
+
+    // Restore view port
+    auto winSize = GetWindowSize();
+    glViewport(0, 0, winSize.x, winSize.y);
+
+    // Write image
+    auto stride = picSize.x * components;
+    auto filePath = mapMgr.GetMapFolder(gui.fileName) / (gui.fileName + ".jpg");
+    stbi_flip_vertically_on_write(true);
+    stbi_write_jpg(filePath.string().c_str(), picSize.x, picSize.y, components, data, 100);
+    stbi_flip_vertically_on_write(false);
+
+
+    delete[] data;
 }
 
 // #### Editor #### \\
