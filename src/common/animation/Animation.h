@@ -70,6 +70,11 @@ namespace Animation
             timer.Pause();
         }
 
+        inline bool IsPaused()
+        {
+            return timer.IsPaused();
+        }
+
         inline void Resume()
         {
             timer.Resume();

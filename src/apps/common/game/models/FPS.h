@@ -16,9 +16,19 @@ namespace Game::Models
 
         void PlayShootAnimation();
         void PlayReloadAnimation(Util::Time::Seconds reloadTime);
+        void PlayZoomAnimation(Util::Time::Seconds aimTime = Util::Time::Seconds{0.5f});
 
-        bool isEnabled = true;
+        inline float GetZoomMod()
+        {
+            return zoomMod;
+        }
+
+        inline bool IsPlayingZoomAnimation()
+        {
+            return !zoomPlayer.IsPaused();
+        }
         
+        bool isEnabled = true;
         Math::Transform idlePivot;
     private:
 
@@ -42,12 +52,15 @@ namespace Game::Models
         Animation::Clip idle;
         Animation::Clip shoot; // TODO: Keep var tracking last shooting arm, alternate arm after each shot. 
         Animation::Clip reload;
+        Animation::Clip zoom;
 
         // Anim Players
         Animation::Player idlePlayer;
         Animation::Player shootPlayer;
+        Animation::Player zoomPlayer;
 
         // Pos
         const Math::Transform transform{glm::vec3{0.0f, -1.25f, -2.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};
+        float zoomMod = 0.0f;
     };
 }

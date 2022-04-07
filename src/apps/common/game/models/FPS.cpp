@@ -39,6 +39,7 @@ void FPS::Update(Util::Time::Seconds deltaTime)
 {
     idlePlayer.Update(deltaTime);
     shootPlayer.Update(deltaTime);
+    zoomPlayer.Update(deltaTime);
 }
 
 void FPS::PlayShootAnimation()
@@ -54,6 +55,12 @@ void FPS::PlayReloadAnimation(Util::Time::Seconds reloadTime)
     shootPlayer.SetClip(&reload);
     shootPlayer.SetClipDuration(reloadTime);
     shootPlayer.Restart();
+}
+
+void FPS::PlayZoomAnimation(Util::Time::Seconds aimTime)
+{
+    zoomPlayer.SetClipDuration(aimTime);
+    zoomPlayer.Restart();
 }
 
 void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
@@ -162,6 +169,23 @@ void FPS::InitAnimations()
     Animation::KeyFrame rf4{rs1, 150};
     reload.keyFrames = {rf1, rf2, rf3, rf4};
 
+            // Zoom animation
+    Animation::Sample zs1{
+        {
+            {"zoom", 0.0f},
+        }
+
+    };
+    Animation::KeyFrame zf1{zs1, 0};    
+    Animation::Sample zs2{
+        {
+            {"zoom", 1.0f},
+        }
+    };
+
+    Animation::KeyFrame zf2{zs2, 30};
+    zoom.keyFrames = {zf1, zf2};
+
     // Set idle clip
     idlePlayer.SetClip(&idle);
     idlePlayer.SetTargetFloat("yPos", &idlePivot.position.y);
@@ -184,4 +208,9 @@ void FPS::InitAnimations()
     // Set reload params
     shootPlayer.SetTargetFloat("yPos", &idlePivot.position.y);
     shootPlayer.SetTargetFloat("pitch", &idlePivot.rotation.x);
+
+    // Set zoom player
+    zoomPlayer.SetClip(&zoom);
+    zoomPlayer.SetTargetFloat("zoom", &zoomMod);
+    zoomPlayer.Pause();
 }
