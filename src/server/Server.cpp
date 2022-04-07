@@ -403,18 +403,20 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, input, &map, TICK_RATE);
     playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
     player.SetTransform(playerTransform);
+    logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
 
-    auto oldWepState = player.weapon;
-    player.weapon = pController.UpdateWeapon(player.weapon, input, TICK_RATE);
-    logger.LogDebug("Player Ammo " + std::to_string(player.weapon.ammoState.magazine));
+    auto oldWepState = player.GetCurrentWeapon();
+    player.GetCurrentWeapon() = pController.UpdateWeapon(player.GetCurrentWeapon(), input, TICK_RATE);
+    logger.LogDebug("Player Ammo " + std::to_string(player.GetCurrentWeapon().ammoState.magazine));
 
-    if(Entity::HasShot(oldWepState.state, player.weapon.state))
+    if(Entity::HasShot(oldWepState.state, player.GetCurrentWeapon().state))
     {
         ShotCommand sc{peerId, player.GetFPSCamPos(), glm::radians(playerTransform.rotation), cmd.fov, cmd.aspectRatio, cmd.renderTime};
         HandleShootCommand(sc);
     }
 
-    logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
+    if(Entity::HasSwapped(oldWepState.state, player.GetCurrentWeapon().state))
+        player.WeaponSwap();
 
     if(input[Entity::Inputs::ACTION])
         HandleActionCommand(player);
@@ -497,7 +499,7 @@ void Server::HandleShootCommand(ShotCommand sc)
             auto colDist = rpc.intersection.GetRayLength(ray);
             if(colDist < bColDist)
             {
-                victim.TakeWeaponDmg(author.weapon, rpc.hitboxType, colDist);
+                victim.TakeWeaponDmg(author.GetCurrentWeapon(), rpc.hitboxType, colDist);
                 OnPlayerTakeDmg(sc.clientId, peerId);
 
                 logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
@@ -532,7 +534,8 @@ void Server::HandleActionCommand(Entity::Player& player)
             goState.respawnTimer.Restart();
             BroadcastGameObjectState(pos);
 
-            // Broad game object state change
+            // Inform player of interaction
+            SendPlayerGameObjectInteraction(player.id, pos);
         }
     }
 }
@@ -627,6 +630,8 @@ void Server::BroadcastRespawn(ENet::PeerId peerId)
     Networking::Packets::Server::PlayerRespawn pr;
     pr.playerId = player.id;
     pr.playerState = player.ExtractState();
+    for(auto i = 0 ; i < Entity::Player::MAX_WEAPONS; i++)
+        pr.weapons[i] = player.weapons[i].weaponTypeId;
 
     Broadcast(pr);
 }
@@ -638,6 +643,14 @@ void Server::BroadcastGameObjectState(glm::ivec3 pos)
     gos.state = gameObjectStates[pos].state;
 
     Broadcast(gos);
+}
+
+void Server::SendPlayerGameObjectInteraction(ENet::PeerId peerId, glm::ivec3 pos)
+{
+    Networking::Packets::Server::PlayerGameObjectInteract pgoi;
+    pgoi.goPos = pos;
+    
+    SendPacket(peerId, pgoi);
 }
 
 void Server::SendPacket(ENet::PeerId peerId, Networking::Packet& packet)
@@ -840,7 +853,9 @@ void Server::SpawnPlayer(ENet::PeerId clientId)
     player.SetTransform(playerTransform);
 
     // Set weapon and health
-    player.ResetWeaponAmmo(Entity::WeaponTypeID::CHEAT_SMG);
+    player.ResetWeapons();
+    player.GetCurrentWeapon() = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::ASSAULT_RIFLE).CreateInstance();
+    player.weapons[1] = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
     player.ResetHealth();
 }
 

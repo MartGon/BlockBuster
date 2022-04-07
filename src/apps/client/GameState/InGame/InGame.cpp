@@ -27,7 +27,7 @@ using namespace ::App::Client;
 glm::vec4 InGame::teamColors[3] = {
     glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}, // BLUE
     glm::vec4{0.8, 0.072f, 0.065f, 1.0f},   // RED
-    Rendering::ColorU8ToFloat(105, 105, 105), // GREY
+    Rendering::ColorU8ToFloat(192, 192, 192), // WHITE // GREY
 };
 
 glm::vec4 InGame::ffaColors[16] = {
@@ -37,7 +37,7 @@ glm::vec4 InGame::ffaColors[16] = {
     Rendering::ColorU8ToFloat(255, 215, 0), // GOLD
 
     Rendering::ColorU8ToFloat(20, 20, 20), // BLACK
-    Rendering::ColorU8ToFloat(192,192,192), // WHITE
+    Rendering::ColorU8ToFloat(192, 192, 192), // WHITE
     Rendering::ColorU8ToFloat(255, 165, 0), // ORANGE
     Rendering::ColorU8ToFloat(128, 0, 128), // PURPLE
 
@@ -491,9 +491,8 @@ void InGame::HandleSDLEvents()
 void InGame::UpdateCamera(Entity::PlayerInput input)
 {
     auto& player = GetLocalPlayer();
-    auto weapon = player.weapon;
-    auto canZoom = weapon.state != Entity::Weapon::State::RELOADING;
-
+    auto weapon = player.GetCurrentWeapon();
+    auto canZoom = weapon.state == Entity::Weapon::State::IDLE || weapon.state == Entity::Weapon::State::SHOOTING;
 
     auto offset = (float)deltaTime.count() * zoomSpeed;
     if(input[Entity::Inputs::ALT_SHOOT] && canZoom)

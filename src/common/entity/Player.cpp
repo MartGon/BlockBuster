@@ -81,6 +81,9 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
         same = same && sameState && sameCd;
     }
 
+    // Cur wep
+    same = same && a.curWep == b.curWep;
+
     return same;
 }
 
@@ -159,6 +162,11 @@ glm::vec3 Entity::GetLastMoveDir(glm::vec3 posA, glm::vec3 posB)
 
 // Player
 
+Player::Player()
+{
+    ResetWeapons();
+}
+
 Math::Transform Player::GetMoveCollisionBox()
 {
     auto mcb = moveCollisionBox;
@@ -202,7 +210,8 @@ Entity::PlayerState Player::ExtractState() const
     s.transform.pos = this->transform.position;
     s.transform.rot = glm::vec2{transform.rotation};
     
-    s.weaponState = weapon;
+    s.weaponState = weapons[curWep];
+    s.curWep = curWep;
 
     return s;
 }
@@ -212,7 +221,9 @@ void Player::ApplyState(Entity::PlayerState s)
     this->transform.position = s.transform.pos;
     this->transform.rotation = glm::vec3{s.transform.rot, 0.0f};
 
-    this->weapon = s.weaponState;
+    curWep = s.curWep;
+    weapons[curWep] = s.weaponState;
+    
 }
 
 // Transforms
@@ -267,8 +278,34 @@ void Player::TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float 
 
 void Player::ResetWeaponAmmo(Entity::WeaponTypeID wepId)
 {
-    weapon = Entity::WeaponMgr::weaponTypes.at(wepId).CreateInstance();
+    auto wepType = WeaponMgr::weaponTypes.at(wepId);
+    weapons[curWep].ammoState = ResetAmmo(wepType.ammoData, wepType.ammoType);
 }
+
+Weapon& Player::GetCurrentWeapon()
+{
+    return weapons[curWep];
+}
+
+uint8_t Player::WeaponSwap()
+{
+    curWep = GetNextWeaponId();
+    return curWep;
+}
+
+uint8_t Player::GetNextWeaponId()
+{
+    return (curWep + 1) % MAX_WEAPONS;
+}
+
+void Player::ResetWeapons()
+{
+    curWep = 0;
+    for(auto i = 0; i < MAX_WEAPONS; i++)
+        weapons[i] = Weapon{WeaponTypeID::NONE};
+}
+
+// Health
 
 void Player::ResetHealth()
 {

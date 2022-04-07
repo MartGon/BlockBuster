@@ -64,8 +64,12 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
         packet = std::make_unique<GameEvent>();
         break;
 
-    case OpcodeServer::OPCODE_SERVER_GAMEOBJET_STATE:
+    case OpcodeServer::OPCODE_SERVER_GAMEOBJECT_STATE:
         packet = std::make_unique<GameObjectState>();
+        break;
+
+    case OpcodeServer::OPCODE_SERVER_PLAYER_GAMEOBJECT_INTERACT:
+        packet = std::make_unique<PlayerGameObjectInteract>();
         break;
     
     default:
@@ -238,12 +242,19 @@ void PlayerRespawn::OnRead(Util::Buffer::Reader& reader)
 {
     playerId = reader.Read<Entity::ID>();
     playerState = reader.Read<Entity::PlayerState>();
+    auto weaponCount = reader.Read<uint8_t>();
+    for(auto i = 0; i < weaponCount; i++)
+        weapons[i] = reader.Read<Entity::WeaponTypeID>();
 }
 
 void PlayerRespawn::OnWrite()
 {
     buffer.Write(playerId);
     buffer.Write(playerState);
+
+    buffer.Write(Entity::Player::MAX_WEAPONS);
+    for(auto i = 0; i < Entity::Player::MAX_WEAPONS; i++)
+        buffer.Write(weapons[i]);
 }
 
 void ScoreboardReport::OnRead(Util::Buffer::Reader& reader)
@@ -276,6 +287,16 @@ void GameObjectState::OnWrite()
 {
     buffer.Write(goPos);
     buffer.Write(state);
+}
+
+void PlayerGameObjectInteract::OnRead(Util::Buffer::Reader& reader)
+{
+    goPos = reader.Read<glm::ivec3>();
+}
+
+void PlayerGameObjectInteract::OnWrite()
+{
+    buffer.Write(goPos);
 }
 
 using namespace Networking::Packets::Client;

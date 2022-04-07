@@ -482,8 +482,8 @@ void InGameGUI::HUD()
     // Dmg animation
     dmgAnimationPlayer.Update(inGame->deltaTime);
     dmgEffectImg.SetScale(winSize);
-    const auto red = glm::vec4{1.0f, 0.0f, 0.0f, dmgAlpha};
-    dmgEffectImg.SetColor(red);
+    const auto color = glm::vec4{effectColor[effectType], dmgAlpha};
+    dmgEffectImg.SetColor(color);
     dmgEffectImg.Draw(inGame->imgShader, winSize);
 
     // Capturing
@@ -553,18 +553,18 @@ void InGameGUI::UpdateAmmo()
     auto& player = inGame->GetLocalPlayer();
     constexpr const int MAX_DISPLAY = 30;
 
-    auto& weapon = Entity::WeaponMgr::weaponTypes.at(player.weapon.weaponTypeId);
+    auto& weapon = Entity::WeaponMgr::weaponTypes.at(player.GetCurrentWeapon().weaponTypeId);
 
     int ammoNum = 0;
     int size = 0;
     if(weapon.ammoType == Entity::AmmoType::AMMO)
     {
-        ammoNum = player.weapon.ammoState.magazine;
+        ammoNum = player.GetCurrentWeapon().ammoState.magazine;
         size = ammoNum;
     }
     else if(weapon.ammoType == Entity::AmmoType::OVERHEAT)
     {
-        ammoNum = std::ceil(player.weapon.ammoState.overheat);
+        ammoNum = std::ceil(player.GetCurrentWeapon().ammoState.overheat);
         constexpr float rate = MAX_DISPLAY / Entity::MAX_OVERHEAT;
         size = ammoNum * rate;
     }
@@ -665,8 +665,9 @@ void InGameGUI::PlayHitMarkerAnim(HitMarkerType type)
     hitMarkerPlayer.Restart();
 }
 
-void InGameGUI::PlayDmgAnim()
+void InGameGUI::PlayScreenEffect(ScreenEffect effect)
 {
+    effectType = effect;
     dmgAnimationPlayer.Restart();
 }
 
@@ -974,7 +975,7 @@ void InGameGUI::DebugWindow()
             }
             if(ImGui::Button("Dmg"))
             {
-                PlayDmgAnim();
+                PlayScreenEffect();
             }
             if(ImGui::Button("Kill"))
             {

@@ -16,7 +16,14 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
             WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.005f}, Util::Time::Seconds{2.0f}, 100.0f, 
             300.0f, 0.0f, 3, 1.5f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 20}
         }
-    }
+    },
+    {
+        WeaponTypeID::ASSAULT_RIFLE, 
+        {
+            WeaponTypeID::ASSAULT_RIFLE, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.025f}, Util::Time::Seconds{1.75f}, 20.0f, 
+            60.0f, 0.0f, 0, 1.5f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 32}
+        },
+    },
 };
 
 // WeaponType
@@ -41,6 +48,16 @@ bool Entity::HasShot(Weapon::State s1, Weapon::State s2)
 bool Entity::HasReloaded(Weapon::State s1, Weapon::State s2)
 {
     return s1 != Weapon::State::RELOADING && s2 == Weapon::State::RELOADING;
+}
+
+bool Entity::HasStartedSwap(Weapon::State s1, Weapon::State s2)
+{
+    return s1 == Weapon::State::IDLE && s2 == Weapon::State::SWAPPING;
+}
+
+bool Entity::HasSwapped(Weapon::State s1, Weapon::State s2)
+{
+    return s1 == Weapon::State::SWAPPING && s2 == Weapon::State::IDLE;
 }
 
 bool Entity::CanShoot(Weapon weapon)

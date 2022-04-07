@@ -55,13 +55,17 @@ void FPS::PlayReloadAnimation(Util::Time::Seconds reloadTime)
     shootPlayer.SetClip(&reload);
     shootPlayer.SetClipDuration(reloadTime);
     shootPlayer.Restart();
+    leftFlash->enabled = false;
+    rightFlash->enabled = false;
 }
 
+/*
 void FPS::PlayZoomAnimation(Util::Time::Seconds aimTime)
 {
     zoomPlayer.SetClipDuration(aimTime);
     zoomPlayer.Restart();
 }
+*/
 
 void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
 {

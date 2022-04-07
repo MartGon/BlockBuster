@@ -43,8 +43,15 @@ namespace BlockBuster
             KILL
         };
 
+        enum ScreenEffect
+        {
+            SCREEN_EFFECT_DMG,
+            SCREEN_EFFECT_HEALING,
+            SCREEN_EFFECT_COUNT
+        };
+
         void PlayHitMarkerAnim(HitMarkerType type);
-        void PlayDmgAnim();
+        void PlayScreenEffect(ScreenEffect effect = ScreenEffect::SCREEN_EFFECT_DMG);
 
         void EnableScore(bool enabled = true);
         void EnableHUD(bool enabled);
@@ -127,6 +134,8 @@ namespace BlockBuster
         bool showHitmarker = false;
         Animation::Player hitMarkerPlayer;
         float dmgAlpha = 0.0f;
+        const glm::ivec3 effectColor[SCREEN_EFFECT_COUNT] = {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}};
+        ScreenEffect effectType = SCREEN_EFFECT_DMG;
         Animation::Clip dmgAnim;
         Animation::Player dmgAnimationPlayer;
 

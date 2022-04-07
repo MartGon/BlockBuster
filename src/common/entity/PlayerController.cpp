@@ -97,6 +97,11 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
                 float mod = weaponType.ammoType == AmmoType::OVERHEAT ? 0.25f + (weapon.ammoState.overheat / 100.f) : 1.0f;
                 weapon.cooldown = weaponType.reloadTime * mod;
             }
+            else if(input[Entity::WEAPON_SWAP_0])
+            {
+                weapon.state = Weapon::State::SWAPPING;
+                weapon.cooldown = weaponType.reloadTime * 0.5f;
+            }
 
             weapon.triggerPressed = input[Entity::SHOOT];
             if(weaponType.ammoType == AmmoType::OVERHEAT && !Entity::HasShot(wepState, weapon.state))        
@@ -134,6 +139,16 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
             if(weapon.cooldown.count() <= 0.0)
             {
                 weapon.ammoState = Entity::ResetAmmo(weaponType.ammoData, weaponType.ammoType);
+                weapon.state = Weapon::State::IDLE;
+            }
+        }
+        break;
+
+        case Weapon::State::SWAPPING:
+        {
+            weapon.cooldown -= deltaTime;
+            if(weapon.cooldown.count() <= 0.0)
+            {
                 weapon.state = Weapon::State::IDLE;
             }
         }

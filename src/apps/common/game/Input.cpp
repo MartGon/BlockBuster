@@ -18,6 +18,7 @@ Entity::PlayerInput Input::GetPlayerInput(Entity::PlayerInput mask)
     input[Entity::ALT_SHOOT] = mouseState & SDL_BUTTON_RMASK;
     input[Entity::RELOAD] = state[SDL_SCANCODE_R];
     input[Entity::ACTION] = state[SDL_SCANCODE_E];
+    input[Entity::WEAPON_SWAP_0] = state[SDL_SCANCODE_Q];
     
     input = input & mask;
 
@@ -38,6 +39,7 @@ Entity::PlayerInput Input::GetPlayerInputNumpad(Entity::PlayerInput mask)
     input[Entity::ALT_SHOOT] = mouseState & SDL_BUTTON_RMASK;
     input[Entity::RELOAD] = state[SDL_SCANCODE_R];
     input[Entity::ACTION] = state[SDL_SCANCODE_E];
+    input[Entity::WEAPON_SWAP_0] = state[SDL_SCANCODE_Q];
 
     input = input & mask;
 

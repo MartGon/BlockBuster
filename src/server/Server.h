@@ -136,6 +136,7 @@ namespace BlockBuster
         void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime);
         void BroadcastRespawn(ENet::PeerId peerId);
         void BroadcastGameObjectState(glm::ivec3 goPos);
+        void SendPlayerGameObjectInteraction(ENet::PeerId peerId, glm::ivec3 goPos);
         void SendPacket(ENet::PeerId peerId, Networking::Packet& packet);
         void Broadcast(Networking::Packet& packet);
 
@@ -179,7 +180,6 @@ namespace BlockBuster
 
         // Simulation
         const Util::Time::Seconds TICK_RATE{0.050};
-        Util::Time::Seconds deltaTime{0};
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
 

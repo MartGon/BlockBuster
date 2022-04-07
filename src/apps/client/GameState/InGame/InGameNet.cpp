@@ -203,7 +203,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             auto& player = GetLocalPlayer();
             player.health = ptd->healthState;
 
-            inGameGui.PlayDmgAnim();
+            inGameGui.PlayScreenEffect();
         }
         break;
 
@@ -262,9 +262,12 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
 
             if(respawn->playerId == playerId)
             {
+                auto& player = GetLocalPlayer();
                 localPlayerStateHistory.PushBack(respawn->playerState);
                 GetLocalPlayer().ApplyState(respawn->playerState);
                 GetLocalPlayer().ResetHealth();
+                for(auto i = 0; i < Entity::Player::MAX_WEAPONS; i++)
+                    player.weapons[i] = Entity::WeaponMgr::weaponTypes.at(respawn->weapons[i]).CreateInstance();
 
                 // Set spawn camera rotation
                 auto camRot = camera_.GetRotationDeg();
@@ -310,13 +313,30 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         }
         break;
 
-        case Networking::OpcodeServer::OPCODE_SERVER_GAMEOBJET_STATE:
+        case Networking::OpcodeServer::OPCODE_SERVER_GAMEOBJECT_STATE:
         {
             auto gos = packet.To<GameObjectState>();
             auto goPos = gos->goPos;
             if(Util::Map::Contains(gameObjectStates, goPos))
             {
                 gameObjectStates[goPos] = gos->state;
+            }
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_GAMEOBJECT_INTERACT:
+        {
+            auto gos = packet.To<PlayerGameObjectInteract>();
+            auto goPos = gos->goPos;
+            
+            if(Util::Map::Contains(gameObjectStates, goPos))
+            {
+                auto& player = GetLocalPlayer();
+                auto go = map_.GetMap()->GetGameObject(goPos);
+                player.InteractWith(*go);
+
+                if(go->type == Entity::GameObject::Type::HEALTHPACK)
+                    inGameGui.PlayScreenEffect(InGameGUI::SCREEN_EFFECT_HEALING);
             }
         }
         break;
@@ -619,6 +639,11 @@ void InGame::SmoothPlayerMovement()
         Util::Time::Seconds elapsed = now - lastPred->time;
         auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
 
+        // Hack fix for weapon swap
+        auto oldState = player.ExtractState();
+        if(Entity::HasSwapped(oldState.weaponState.state, predState.weaponState.state))
+            player.weapons[oldState.curWep].state = Entity::Weapon::State::IDLE;
+
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
         float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
@@ -649,6 +674,18 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
         fpsAvatar.PlayShootAnimation();
     else if(Entity::HasReloaded(a.weaponState.state, nextState.weaponState.state))
         fpsAvatar.PlayReloadAnimation(nextState.weaponState.cooldown);
+    else if(Entity::HasStartedSwap(a.weaponState.state, nextState.weaponState.state))
+        fpsAvatar.PlayReloadAnimation(nextState.weaponState.cooldown);
+
+    if(Entity::HasSwapped(a.weaponState.state, nextState.weaponState.state))
+    {   
+        // Save wep state
+        player.weapons[a.curWep] = nextState.weaponState;
+
+        // Swap weap
+        nextState.curWep = player.WeaponSwap();
+        nextState.weaponState = player.weapons[nextState.curWep];
+    }
 
     return nextState;
 }

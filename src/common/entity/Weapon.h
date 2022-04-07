@@ -13,9 +13,11 @@ namespace Entity
     enum WeaponTypeID : uint8_t
     {
         NONE,
-        SNIPER,
-        RIFLE,
+        ASSAULT_RIFLE,
+        BATTLE_RIFLE,
+        SHOTGUN,
         SMG,
+        SNIPER,
         CHEAT_SMG
     };
     class WeaponMgr
@@ -79,6 +81,7 @@ namespace Entity
             IDLE,
             SHOOTING,
             RELOADING,
+            SWAPPING,
         };
         State state = State::IDLE;
 
@@ -95,6 +98,8 @@ namespace Entity
     // Weapon
     bool HasShot(Weapon::State s1, Weapon::State s2);
     bool HasReloaded(Weapon::State s1, Weapon::State s2);
+    bool HasStartedSwap(Weapon::State s1, Weapon::State s2);
+    bool HasSwapped(Weapon::State s1, Weapon::State s2);
     bool CanShoot(Weapon weapon);
 
     // Ammo

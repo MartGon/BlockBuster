@@ -63,6 +63,7 @@ namespace Entity
 
         Transform transform;
         Weapon weaponState;
+        uint8_t curWep;
     };
     bool operator==(const PlayerState& a, const PlayerState& b);
 
@@ -73,19 +74,14 @@ namespace Entity
     PlayerState::Transform Interpolate(const PlayerState::Transform& a, const PlayerState::Transform& b, float alpha);
 
     PlayerState Interpolate(PlayerState a, PlayerState b, float alpha);
+
     glm::vec3 GetLastMoveDir(glm::vec3 posA, glm::vec3 posB);
 
     using ID = uint8_t;
     class Player
     {
     public:
-
-        // State
-        enum State
-        {
-            IDLE,
-            WEAPON_SWAPPING
-        };
+        Player();
 
         // Hitboxes
         enum HitBoxType : uint8_t
@@ -126,6 +122,8 @@ namespace Entity
 
         static const float MAX_SHIELD;
         static const float MAX_HEALTH;
+        
+        static constexpr uint8_t MAX_WEAPONS = 2;
 
         // Serialization
         PlayerState ExtractState() const;
@@ -139,14 +137,20 @@ namespace Entity
         void SetTransform(Math::Transform transform);
         glm::vec3 GetFPSCamPos() const;
 
-        // Weapons / Health
+        // Weapons
+        void TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance);
+        void ResetWeaponAmmo(Entity::WeaponTypeID weaponType);
+        Weapon& GetCurrentWeapon();
+        uint8_t WeaponSwap();
+        uint8_t GetNextWeaponId();
+        void ResetWeapons();
+
+        // Health
         struct HealthState
         {
             float shield = MAX_SHIELD;
             float hp = MAX_HEALTH;
         };
-        void TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance);
-        void ResetWeaponAmmo(Entity::WeaponTypeID weaponType);
         void ResetHealth();
         bool IsDead();
         
@@ -161,9 +165,8 @@ namespace Entity
 
         ID teamId = 0;
 
-        Weapon weapon;
-        State state = IDLE;
-        Util::Timer weaponSwapTimer; // TODO: Implement weapon swapping
+        Weapon weapons[MAX_WEAPONS];
+        uint8_t curWep = 0;
     private:
 
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain

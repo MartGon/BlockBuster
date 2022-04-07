@@ -35,7 +35,8 @@ namespace Networking
         OPCODE_SERVER_PLAYER_RESPAWN,
         OPCODE_SERVER_SCOREBOARD_REPORT,
         OPCODE_SERVER_GAME_EVENT,
-        OPCODE_SERVER_GAMEOBJET_STATE,
+        OPCODE_SERVER_GAMEOBJECT_STATE,
+        OPCODE_SERVER_PLAYER_GAMEOBJECT_INTERACT,
     };
 
     enum OpcodeClient : uint16_t
@@ -278,6 +279,7 @@ namespace Networking
 
                 Entity::ID playerId;
                 Entity::PlayerState playerState;
+                Entity::WeaponTypeID weapons[Entity::Player::MAX_WEAPONS];
             };
 
             class ScoreboardReport final : public Packet
@@ -311,7 +313,7 @@ namespace Networking
             class GameObjectState final : public Packet
             {
             public:
-                GameObjectState() : Packet{OpcodeServer::OPCODE_SERVER_GAMEOBJET_STATE, ENET_PACKET_FLAG_RELIABLE}
+                GameObjectState() : Packet{OpcodeServer::OPCODE_SERVER_GAMEOBJECT_STATE, ENET_PACKET_FLAG_RELIABLE}
                 {
                     
                 }
@@ -321,6 +323,20 @@ namespace Networking
 
                 glm::ivec3 goPos;
                 Entity::GameObject::State state;
+            };
+
+            class PlayerGameObjectInteract final : public Packet
+            {
+            public:
+                PlayerGameObjectInteract() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_GAMEOBJECT_INTERACT, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader& reader) override;
+                void OnWrite() override;
+
+                glm::ivec3 goPos;
             };
         }
 
