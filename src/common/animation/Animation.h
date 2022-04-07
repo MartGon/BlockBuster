@@ -38,8 +38,8 @@ namespace Animation
 
         inline void SetClip(Clip* clip)
         {
-            if(this->clip)
-               ApplySample(GetClipLastKeyFrame().sample);
+            //if(this->clip)
+               //ApplySample(GetClipLastKeyFrame().sample);
 
             this->clip = clip;
             this->speedMod = 1.0f;

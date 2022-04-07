@@ -48,7 +48,6 @@ void FPS::PlayShootAnimation()
     shootPlayer.Restart();
 }
 
-// TODO: This should take the reload time as param. Adapt the animation's speed accordingly
 void FPS::PlayReloadAnimation(Util::Time::Seconds reloadTime)
 {
     idlePlayer.Pause();
@@ -178,6 +177,8 @@ void FPS::InitAnimations()
     shootPlayer.SetTargetBool("right-flash", &rightFlash->enabled);
     shootPlayer.SetOnDoneCallback([this](){
         this->idlePlayer.Resume();
+        this->leftFlash->enabled = false;
+        this->rightFlash->enabled = false;
     });
 
     // Set reload params
