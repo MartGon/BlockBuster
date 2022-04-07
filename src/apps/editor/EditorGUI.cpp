@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstring>
+#include <regex>
 
 // #### GUI - PopUps #### \\
 
@@ -36,8 +37,20 @@ void EditorGUI::InitPopUps()
         sa->SetPlaceHolder(this->fileName);
     });
     saveAs.SetOnAccept([this](std::string map){
-        this->fileName = map;
-        this->editor->SaveProject(); return true;
+        auto sa = puMgr.GetAs<GUI::EditTextPopUp>(SAVE_AS);
+
+        std::regex validName{"[A-z]*"};
+        std::smatch m;
+        bool isValid = std::regex_match(map, m, validName);
+        if(!isValid)
+            sa->SetErrorText("Map name is not valid");
+        else
+        {
+            this->fileName = map;
+            this->editor->SaveProject();
+        }
+
+        return isValid;
     });
     puMgr.Set(SAVE_AS, std::make_unique<GUI::EditTextPopUp>(saveAs));
 
