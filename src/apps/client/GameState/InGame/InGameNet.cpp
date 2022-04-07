@@ -566,6 +566,8 @@ void InGame::Predict(Entity::PlayerInput playerInput)
             {
                 client_->logger->LogError("Prediction: Error on prediction");
                 client_->logger->LogError("Prediction: Prediction Id " + std::to_string(prediction->inputReq.reqId) + " ACK " + std::to_string(this->lastAck));
+                GetLogger()->LogError("Predicted wepState " + std::to_string(static_cast<int>(pState.weaponState.state)) + 
+                    " Recv wepState " + std::to_string(static_cast<int>(newState.weaponState.state)));
                 auto diff = glm::length(pState.transform.pos - newState.transform.pos);
                 if(diff > 0.005f)
                     client_->logger->LogError("Prediction: D " + std::to_string(diff) + 
@@ -637,12 +639,16 @@ void InGame::SmoothPlayerMovement()
     {
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
+        auto oldState = player.ExtractState();
         auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
 
-        // Hack fix for weapon swap
-        auto oldState = player.ExtractState();
-        if(Entity::HasSwapped(oldState.weaponState.state, predState.weaponState.state))
-            player.weapons[oldState.curWep].state = Entity::Weapon::State::IDLE;
+        // Animation
+        if(Entity::HasShot(oldState.weaponState.state, predState.weaponState.state))
+            fpsAvatar.PlayShootAnimation();
+        else if(Entity::HasReloaded(oldState.weaponState.state, predState.weaponState.state))
+            fpsAvatar.PlayReloadAnimation(predState.weaponState.cooldown);
+        else if(Entity::HasStartedSwap(oldState.weaponState.state, predState.weaponState.state))
+            fpsAvatar.PlayReloadAnimation(predState.weaponState.cooldown);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
@@ -650,6 +656,10 @@ void InGame::SmoothPlayerMovement()
         auto errorCorrection = errorCorrectionDiff * weight;
         predState.transform = predState.transform + errorCorrection;
         player.ApplyState(predState);
+
+        // Hack fix for weapon swap
+        if(Entity::HasSwapped(oldState.weaponState.state, predState.weaponState.state))
+            player.weapons[oldState.curWep].state = Entity::Weapon::State::IDLE;
 
         #ifdef _DEBUG
             auto dist = glm::length(errorCorrection.pos);
@@ -669,13 +679,6 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
 
     nextState.weaponState = pController.UpdateWeapon(a.weaponState, playerInput, deltaTime);
 
-    // Animation
-    if(Entity::HasShot(a.weaponState.state, nextState.weaponState.state))
-        fpsAvatar.PlayShootAnimation();
-    else if(Entity::HasReloaded(a.weaponState.state, nextState.weaponState.state))
-        fpsAvatar.PlayReloadAnimation(nextState.weaponState.cooldown);
-    else if(Entity::HasStartedSwap(a.weaponState.state, nextState.weaponState.state))
-        fpsAvatar.PlayReloadAnimation(nextState.weaponState.cooldown);
 
     if(Entity::HasSwapped(a.weaponState.state, nextState.weaponState.state))
     {   

@@ -223,7 +223,6 @@ void Player::ApplyState(Entity::PlayerState s)
 
     curWep = s.curWep;
     weapons[curWep] = s.weaponState;
-    
 }
 
 // Transforms
