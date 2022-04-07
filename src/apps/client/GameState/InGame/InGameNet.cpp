@@ -593,6 +593,10 @@ void InGame::Predict(Entity::PlayerInput playerInput)
     auto aspectRatio = camera_.GetParam(Rendering::Camera::ASPECT_RATIO);
     InputReq inputReq{cmdId, playerInput, camRot.y, camRot.x, fov, aspectRatio, GetRenderTime()};
 
+    // Apply client side only inputs
+    UpdateCamera(playerInput);
+
+    // Store prediction
     auto now = Util::Time::GetTime();
     Prediction p{inputReq, preState, predState, now};
     predictionHistory_.PushBack(p);

@@ -7,14 +7,14 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
         WeaponTypeID::SNIPER, 
         {
             WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, 0, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
+            300.0f, 0.0f, 0, 3.0f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
         },
     },
     {
         WeaponTypeID::CHEAT_SMG, 
         {
-            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.05f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, 3, 21, 12, AmmoType::OVERHEAT, AmmoTypeData{ .overheatRate = 10.0f}
+            WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::BURST, Util::Time::Seconds{0.05f}, Util::Time::Seconds{2.0f}, 100.0f, 
+            300.0f, 0.0f, 3, 1.5f, 21, 12, AmmoType::OVERHEAT, AmmoTypeData{ .overheatRate = 10.0f}
         }
     }
 };

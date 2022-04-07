@@ -46,12 +46,6 @@ void CameraController::SetMode(CameraMode mode)
     }
 }
 
-
-void CameraController::SetZoom(float zoom)
-{
-    
-}
-
 // Private
 
 void CameraController::UpdateEditorCamera()

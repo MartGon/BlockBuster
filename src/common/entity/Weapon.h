@@ -56,6 +56,7 @@ namespace Entity
         float maxRange; // Damage will be reduced across range. if distance > maxRange => dmg = baseDmg * max(0, (1 - (distance - maxRange) / maxRange));
         float baseSpread; // Size of the crosshair
         uint8_t burstShots; // Amount of shots per burst
+        float zoomLevel;
 
         uint32_t visualId;
         uint32_t soundPackId;

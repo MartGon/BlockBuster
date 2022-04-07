@@ -490,7 +490,16 @@ void InGame::HandleSDLEvents()
 
 void InGame::UpdateCamera(Entity::PlayerInput input)
 {
-    
+    auto& player = GetLocalPlayer();
+    auto weapon = player.weapon;
+    auto canZoom = weapon.state != Entity::Weapon::State::RELOADING;
+    if(input[Entity::Inputs::ALT_SHOOT] && canZoom)
+    {
+        auto wepType = Entity::WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
+        camera_.SetZoom(wepType.zoomLevel);
+    }
+    else if(!input[Entity::Inputs::ALT_SHOOT])
+        camera_.SetZoom(1.0f);
 }
 
 // World

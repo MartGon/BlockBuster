@@ -35,9 +35,6 @@ namespace App::Client
             return mode_;
         }
 
-        void SetZoom(float zoom);
-
-
         float moveSpeed = 0.25f;
         float rotSpeed = glm::radians(1.0f);
         float rotMod = 1.0f;

@@ -7,8 +7,10 @@ const glm::vec3 Rendering::Camera::UP = glm::vec3{0.0f, 1.0f, 0.0f};
 void Rendering::Camera::SetParam(Param param, float value)
 {
     params_[param] = value;
-
-    projMat_ = Math::GetPerspectiveMat(params_[FOV] / zoom, params_[ASPECT_RATIO], params_[NEAR_PLANE], params_[FAR_PLANE]);
+    if(param == FOV)
+        zoom = 1.0f;
+    
+    projMat_ = Math::GetPerspectiveMat(params_[FOV], params_[ASPECT_RATIO], params_[NEAR_PLANE], params_[FAR_PLANE]);
 }
 
 void Rendering::Camera::SetPos(glm::vec3 pos)
