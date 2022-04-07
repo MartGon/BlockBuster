@@ -38,8 +38,8 @@ namespace Animation
 
         inline void SetClip(Clip* clip)
         {
-            //if(this->clip)
-            //   ApplySample(this->clip->keyFrames[GetClipLastFrame()].sample);
+            if(this->clip)
+               ApplySample(GetClipLastKeyFrame().sample);
 
             this->clip = clip;
             this->speedMod = 1.0f;
@@ -104,6 +104,7 @@ namespace Animation
         uint32_t GetKeyFrameIndex(uint32_t curFrame) const;
         void ApplySample(Sample s);
 
+        KeyFrame GetClipLastKeyFrame() const;
         uint32_t GetClipLastFrame() const;
         
         bool isDone = false;

@@ -88,9 +88,14 @@ bool Player::IsDone(uint32_t curFrame)
     return isDone = curFrame >= GetClipLastFrame();
 }
 
+KeyFrame Player::GetClipLastKeyFrame() const
+{
+    return *clip->keyFrames.rbegin();
+}
+
 uint32_t Player::GetClipLastFrame() const
 {   
-    return clip->keyFrames.rbegin()->frame;
+    return GetClipLastKeyFrame().frame;
 }
 
 uint32_t Player::GetKeyFrameIndex(uint32_t curFrame) const
