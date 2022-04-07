@@ -65,6 +65,7 @@ namespace BlockBuster
 
         // Input
         void HandleSDLEvents();
+        void UpdateCamera(Entity::PlayerInput input);
 
         // World
         void InitGameObjects();

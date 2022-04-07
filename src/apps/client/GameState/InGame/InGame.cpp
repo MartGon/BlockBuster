@@ -488,6 +488,11 @@ void InGame::HandleSDLEvents()
     }
 }
 
+void InGame::UpdateCamera(Entity::PlayerInput input)
+{
+    
+}
+
 // World
 
 void InGame::InitGameObjects()

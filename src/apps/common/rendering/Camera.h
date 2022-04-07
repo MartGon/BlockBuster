@@ -23,6 +23,7 @@ namespace Rendering
         void SetRotation(float pitch, float yaw);
         void SetRotationDeg(float pitch, float yaw);
         void SetTarget(glm::vec3 target);
+        void SetZoom(float zoom);
 
         float GetParam(Param param) const;
         glm::vec3 GetPos() const;
@@ -31,6 +32,7 @@ namespace Rendering
         glm::vec3 GetFront() const;
         glm::vec3 GetRight() const;
         glm::vec3 GetUp() const;
+        float GetZoom() const;
 
         glm::mat4 GetProjMat() const;
         glm::mat4 GetViewMat() const;
@@ -42,6 +44,8 @@ namespace Rendering
 
         void UpdateViewMat();
 
+
+        float zoom = 1.0f;
         float params_[MAX] = {glm::radians(45.0f), 16.f/9.f, 0.1f, 100.f};
         glm::vec3 pos_;
         // Pitch (X Axis), Yaw (Y Axis)

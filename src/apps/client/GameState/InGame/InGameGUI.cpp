@@ -980,6 +980,12 @@ void InGameGUI::DebugWindow()
             {
                 PlayHitMarkerAnim(HitMarkerType::KILL);
             }
+
+            auto zoom = inGame->camera_.GetZoom();
+            if(ImGui::SliderFloat("Zoom", &zoom, 0.25, 2.5f))
+            {
+                inGame->camera_.SetZoom(zoom);
+            }
         }
 
         if(ImGui::CollapsingHeader("Audio"))
