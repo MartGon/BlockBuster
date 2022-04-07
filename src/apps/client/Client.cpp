@@ -22,15 +22,39 @@ Client::Client(::App::Configuration config) : AppI{config}
 }
 
 void Client::Start()
-{
+{   
+    // MapMgr
     auto mapsFolder = GetConfigOption("mapsFolder", "./maps");
     mapMgr.SetMapsFolder(mapsFolder);
 
+    // Skybox
+    try{
+        skyboxShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "skyboxVertex.glsl", "skyboxFrag.glsl");
+    }
+    catch(const std::runtime_error& e)
+    {
+        logger->LogCritical(e.what());
+        quit = true;
+        return;
+    }
+
+    texturesDir = GetConfigOption("TexturesDir", TEXTURES_DIR);
+    GL::Cubemap::TextureMap map = {
+        {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
+        {GL::Cubemap::LEFT, texturesDir / "left.jpg"},
+        {GL::Cubemap::TOP, texturesDir / "top.jpg"},
+        {GL::Cubemap::BOTTOM, texturesDir / "bottom.jpg"},
+        {GL::Cubemap::FRONT, texturesDir / "front.jpg"},
+        {GL::Cubemap::BACK, texturesDir / "back.jpg"},
+    };
+    TRY_LOAD(skybox.Load(map, false));
+
+    // MainMenu
     menu = std::make_unique<MainMenu>(this);
     state = menu.get();
     state->Start();
     
-    LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID", "Defu");
+    //LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID", "Defu");
 }
 
 void Client::Shutdown()
@@ -72,8 +96,7 @@ void Client::GoBackToMainMenu(bool onGoing)
     else if(menu->lobby)
         menu->UpdateGame(true);
     
-    // Reset window size
-    menu->Start();
+    menu->ResetWindow();
     state = menu.get();
 }
 

@@ -23,14 +23,22 @@ MainMenu::~MainMenu()
 
 void MainMenu::Start()
 {
+    // GL Features
+    
+
     // Set default name
     popUp.SetTitle("Connecting");
     popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 
-    // Set window properties
-    SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
-    SDL_SetWindowFullscreen(this->client_->window_, 0);
-    client_->SetWindowSize(glm::ivec2{800, 600});
+    // Reset window
+    ResetWindow();
+
+    // Start camera
+    auto winSize = client_->GetWindowSize();
+    camera_.SetPos(glm::vec3{0.0f});
+    camera_.SetTarget(glm::vec3{0.0f, 0.0f, -1.0f});
+    camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
+    camera_.SetParam(Rendering::Camera::Param::FOV, client_->config.window.fov);
 }
 
 void MainMenu::Shutdown()
@@ -716,10 +724,26 @@ void MainMenu::Render()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    DrawSkybox();
     DrawGUI();
 
     // Swap buffers
     SDL_GL_SwapWindow(client_->window_);
+}
+
+void MainMenu::DrawSkybox()
+{
+    auto now = Util::Time::GetTime().time_since_epoch();
+    auto secs = Util::Time::Seconds(now);
+    const auto ROT_SPEED = 0.005f;
+    auto yaw = std::sin(secs.count() * ROT_SPEED) * glm::two_pi<float>();
+    auto rot = camera_.GetRotation();
+    camera_.SetRotation(rot.x, yaw);
+
+    auto view = camera_.GetViewMat();
+    auto proj = camera_.GetProjMat();
+
+    client_->skybox.Draw(client_->skyboxShader, view, proj, true);
 }
 
 void MainMenu::DrawGUI()
@@ -738,6 +762,15 @@ void MainMenu::DrawGUI()
     auto windowSize = client_->GetWindowSize();
     int scissor_box[4] = { 0, 0, windowSize.x, windowSize.y };
     ImGui_ImplOpenGL3_RestoreState(scissor_box);
+}
+
+void MainMenu::ResetWindow()
+{
+    // Set window properties
+    client_->SetMouseGrab(false);
+    SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
+    SDL_SetWindowFullscreen(this->client_->window_, 0);
+    client_->SetWindowSize(glm::ivec2{800, 600});
 }
 
 void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)

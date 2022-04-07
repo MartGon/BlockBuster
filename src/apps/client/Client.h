@@ -10,6 +10,7 @@
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
+#include <rendering/Skybox.h>
 
 #include <entity/PlayerController.h>
 #include <game/Map.h>
@@ -61,7 +62,12 @@ namespace BlockBuster
         // Map Mgr
         MapMgr mapMgr;
 
+        // Skybox
+        GL::Shader skyboxShader;
+        Rendering::Skybox skybox;
+
         // App
+        std::filesystem::path texturesDir;
         bool quit = false;
     };
 }

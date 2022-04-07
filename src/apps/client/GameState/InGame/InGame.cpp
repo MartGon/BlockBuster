@@ -85,7 +85,6 @@ void InGame::Start()
         billboardShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "billboardVertex.glsl", "billboardFrag.glsl");
         textShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "textVertex.glsl", "textFrag.glsl");
         imgShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "imgVertex.glsl", "imgFrag.glsl");
-        skyboxShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "skyboxVertex.glsl", "skyboxFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -96,19 +95,9 @@ void InGame::Start()
 
     // Textures
     renderMgr.Start();
-    std::filesystem::path texturesDir = TEXTURES_DIR;
-    GL::Cubemap::TextureMap map = {
-        {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
-        {GL::Cubemap::LEFT, texturesDir / "left.jpg"},
-        {GL::Cubemap::TOP, texturesDir / "top.jpg"},
-        {GL::Cubemap::BOTTOM, texturesDir / "bottom.jpg"},
-        {GL::Cubemap::FRONT, texturesDir / "front.jpg"},
-        {GL::Cubemap::BACK, texturesDir / "back.jpg"},
-    };
-    TRY_LOAD(skybox.Load(map, false));
 
     auto& texMgr = renderMgr.GetTextureMgr();
-    texMgr.SetDefaultFolder(texturesDir);
+    texMgr.SetDefaultFolder(client_->texturesDir);
     flagIconId = texMgr.LoadFromDefaultFolder("flagIcon.png", true);
 
     // Meshes
@@ -635,7 +624,7 @@ void InGame::DrawScene()
     prevPlayerTable = playerTable;
 
     // Draw skybox
-    skybox.Draw(skyboxShader, camera_.GetViewMat(), camera_.GetProjMat());
+    client_->skybox.Draw(client_->skyboxShader, camera_.GetViewMat(), camera_.GetProjMat());
 
     // Draw models
     DrawGameObjects();

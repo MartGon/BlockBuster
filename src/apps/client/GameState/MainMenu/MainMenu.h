@@ -8,6 +8,8 @@
 #include <gl/Texture.h>
 #include <gl/Shader.h>
 
+#include <rendering/Camera.h>
+
 #include <gui/PopUp.h>
 #include <util/Ring.h>
 #include <http/AsyncClient.h>
@@ -67,7 +69,9 @@ namespace BlockBuster
 
         // Rendering
         void Render();
+        void DrawSkybox();
         void DrawGUI();
+        void ResetWindow();
 
         // GUI
         void SetState(std::unique_ptr<MenuState::Base> menuState_);
@@ -106,5 +110,8 @@ namespace BlockBuster
         std::optional<GameDetails> currentGame;
         MenuState::Lobby* lobby = nullptr;
         bool enteringGame = false;
+
+        // Rendering
+        Rendering::Camera camera_;
     };
 }
