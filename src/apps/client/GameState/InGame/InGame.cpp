@@ -493,19 +493,16 @@ void InGame::UpdateCamera(Entity::PlayerInput input)
     auto& player = GetLocalPlayer();
     auto weapon = player.weapon;
     auto canZoom = weapon.state != Entity::Weapon::State::RELOADING;
-    bool isPlaying = fpsAvatar.IsPlayingZoomAnimation();
 
-    auto zoomMod = fpsAvatar.GetZoomMod();
-    if(input[Entity::Inputs::ALT_SHOOT] && canZoom && !isPlaying)
-    {
-        fpsAvatar.PlayZoomAnimation();
-    }
 
-    if(!input[Entity::Inputs::ALT_SHOOT] || ! canZoom)
-        zoomMod = 1.0f - fpsAvatar.GetZoomMod();
+    auto offset = (float)deltaTime.count() * zoomSpeed;
+    if(input[Entity::Inputs::ALT_SHOOT] && canZoom)
+        zoomMod = std::min(zoomMod + offset, 1.0f);
+    else
+        zoomMod = std::max(zoomMod - offset, 0.0f);
 
     auto wepType = Entity::WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
-    auto zoom = 1.0f + (wepType.zoomLevel - 1.0f) * fpsAvatar.GetZoomMod();
+    auto zoom = 1.0f + (wepType.zoomLevel - 1.0f) * zoomMod;
     camera_.SetZoom(zoom);
 }
 

@@ -75,6 +75,11 @@ namespace Animation
             return timer.IsPaused();
         }
 
+        inline bool IsDone()
+        {
+            return IsDone(GetCurrentFrame());
+        }
+
         inline void Resume()
         {
             timer.Resume();

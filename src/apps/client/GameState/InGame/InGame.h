@@ -155,6 +155,8 @@ namespace BlockBuster
         uint8_t playerId = 0;
         Util::Timer respawnTimer;
         Entity::ID killerId = 0;
+        float zoomMod = 0.0f;
+        const float zoomSpeed = 5.0f;
 
         // GameObjects
         std::unordered_map<glm::ivec3, Entity::GameObject::State> gameObjectStates; 

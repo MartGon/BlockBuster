@@ -15,9 +15,9 @@ void Player::Update(Util::Time::Seconds secs)
     timer.Update(secs);
 
     auto curFrame = GetCurrentFrame();
-    auto index = GetKeyFrameIndex(curFrame);
     if(!IsDone(curFrame))
     {
+        auto index = GetKeyFrameIndex(curFrame);
         auto k1 = clip->keyFrames[index];
         auto k2 = clip->keyFrames[index + 1];
         auto w = Math::GetWeights(k1.frame, k2.frame, curFrame);

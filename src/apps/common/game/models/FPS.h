@@ -16,16 +16,12 @@ namespace Game::Models
 
         void PlayShootAnimation();
         void PlayReloadAnimation(Util::Time::Seconds reloadTime);
-        void PlayZoomAnimation(Util::Time::Seconds aimTime = Util::Time::Seconds{0.5f});
+        // Deprecated. May use later tho
+        // void PlayZoomAnimation(Util::Time::Seconds aimTime = Util::Time::Seconds{0.5f});
 
         inline float GetZoomMod()
         {
             return zoomMod;
-        }
-
-        inline bool IsPlayingZoomAnimation()
-        {
-            return !zoomPlayer.IsPaused();
         }
         
         bool isEnabled = true;
