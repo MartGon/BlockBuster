@@ -62,7 +62,7 @@ namespace Entity
         PlayerState();
 
         Transform transform;
-        Weapon weaponState;
+        Weapon weaponState[2];
         uint8_t curWep;
     };
     bool operator==(const PlayerState& a, const PlayerState& b);

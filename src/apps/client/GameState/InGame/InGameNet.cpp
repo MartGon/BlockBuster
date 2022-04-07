@@ -566,8 +566,8 @@ void InGame::Predict(Entity::PlayerInput playerInput)
             {
                 client_->logger->LogError("Prediction: Error on prediction");
                 client_->logger->LogError("Prediction: Prediction Id " + std::to_string(prediction->inputReq.reqId) + " ACK " + std::to_string(this->lastAck));
-                GetLogger()->LogError("Predicted wepState " + std::to_string(static_cast<int>(pState.weaponState.state)) + 
-                    " Recv wepState " + std::to_string(static_cast<int>(newState.weaponState.state)));
+                /*GetLogger()->LogError("Predicted wepState " + std::to_string(static_cast<int>(pState.weaponState.state)) + 
+                    " Recv wepState " + std::to_string(static_cast<int>(newState.weaponState.state)));*/
                 auto diff = glm::length(pState.transform.pos - newState.transform.pos);
                 if(diff > 0.005f)
                     client_->logger->LogError("Prediction: D " + std::to_string(diff) + 
@@ -643,12 +643,14 @@ void InGame::SmoothPlayerMovement()
         auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
 
         // Animation
-        if(Entity::HasShot(oldState.weaponState.state, predState.weaponState.state))
+        auto oldWepState = oldState.weaponState[oldState.curWep].state;
+        auto nextState = predState.weaponState[predState.curWep].state;
+        if(Entity::HasShot(oldWepState, nextState))
             fpsAvatar.PlayShootAnimation();
-        else if(Entity::HasReloaded(oldState.weaponState.state, predState.weaponState.state))
-            fpsAvatar.PlayReloadAnimation(predState.weaponState.cooldown);
-        else if(Entity::HasStartedSwap(oldState.weaponState.state, predState.weaponState.state))
-            fpsAvatar.PlayReloadAnimation(predState.weaponState.cooldown);
+        else if(Entity::HasReloaded(oldWepState, nextState))
+            fpsAvatar.PlayReloadAnimation(predState.weaponState[predState.curWep].cooldown);
+        else if(Entity::HasStartedSwap(oldWepState, nextState))
+            fpsAvatar.PlayReloadAnimation(predState.weaponState[predState.curWep].cooldown);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
@@ -657,9 +659,11 @@ void InGame::SmoothPlayerMovement()
         predState.transform = predState.transform + errorCorrection;
         player.ApplyState(predState);
 
+        /*
         // Hack fix for weapon swap
         if(Entity::HasSwapped(oldState.weaponState.state, predState.weaponState.state))
             player.weapons[oldState.curWep].state = Entity::Weapon::State::IDLE;
+        */
 
         #ifdef _DEBUG
             auto dist = glm::length(errorCorrection.pos);
@@ -677,17 +681,12 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     nextState.transform.pos = pController.UpdatePosition(a.transform.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
     nextState.transform.rot.y = playerYaw;
 
-    nextState.weaponState = pController.UpdateWeapon(a.weaponState, playerInput, deltaTime);
+    nextState.weaponState[a.curWep] = pController.UpdateWeapon(a.weaponState[a.curWep], playerInput, deltaTime);
 
-
-    if(Entity::HasSwapped(a.weaponState.state, nextState.weaponState.state))
+    if(Entity::HasSwapped(a.weaponState[a.curWep].state, nextState.weaponState[nextState.curWep].state))
     {   
-        // Save wep state
-        player.weapons[a.curWep] = nextState.weaponState;
-
         // Swap weap
         nextState.curWep = player.WeaponSwap();
-        nextState.weaponState = player.weapons[nextState.curWep];
     }
 
     return nextState;
@@ -819,14 +818,14 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
     auto oldState = player.ExtractState();
     auto interpolation = Networking::PlayerSnapshot::Interpolate(state1, state2, alpha);
 
-    if(Entity::HasShot(oldState.weaponState.state, interpolation.wepState))
+    if(Entity::HasShot(oldState.weaponState[oldState.curWep].state, interpolation.wepState))
     {
         auto& modelState = playerModelStateTable.at(playerId);
         modelState.shootPlayer.SetClip(playerAvatar.GetShootAnim());
         modelState.shootPlayer.Restart();
     }
 
-    if(Entity::HasReloaded(oldState.weaponState.state, interpolation.wepState))
+    if(Entity::HasReloaded(oldState.weaponState[oldState.curWep].state, interpolation.wepState))
     {
         auto& modelState = playerModelStateTable.at(playerId);
         modelState.shootPlayer.SetClip(playerAvatar.GetReloadAnim());

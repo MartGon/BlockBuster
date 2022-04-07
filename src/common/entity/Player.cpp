@@ -73,12 +73,15 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
     bool same = a.transform == b.transform;
 
     // Weapon state
-    auto wsA = a.weaponState; auto wsB = b.weaponState;
-    if(wsA.weaponTypeId != WeaponTypeID::NONE)
+    for(auto i = 0; i < 2; i++)
     {
-        bool sameState = wsA.state == wsB.state;
-        bool sameCd = std::abs((wsA.cooldown - wsB.cooldown).count()) < 0.05;
-        same = same && sameState && sameCd;
+        auto wsA = a.weaponState[i]; auto wsB = b.weaponState[i];
+        if(wsA.weaponTypeId != WeaponTypeID::NONE)
+        {
+            bool sameState = wsA.state == wsB.state;
+            bool sameCd = std::abs((wsA.cooldown - wsB.cooldown).count()) < 0.05;
+            same = same && sameState && sameCd;
+        }
     }
 
     // Cur wep
@@ -210,7 +213,8 @@ Entity::PlayerState Player::ExtractState() const
     s.transform.pos = this->transform.position;
     s.transform.rot = glm::vec2{transform.rotation};
     
-    s.weaponState = weapons[curWep];
+    for(auto i = 0; i < 2; i++)
+        s.weaponState[i] = weapons[i];
     s.curWep = curWep;
 
     return s;
@@ -222,7 +226,8 @@ void Player::ApplyState(Entity::PlayerState s)
     this->transform.rotation = glm::vec3{s.transform.rot, 0.0f};
 
     curWep = s.curWep;
-    weapons[curWep] = s.weaponState;
+    for(auto i = 0; i < 2; i++)
+        weapons[i] = s.weaponState[i];
 }
 
 // Transforms

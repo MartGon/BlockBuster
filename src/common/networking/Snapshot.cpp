@@ -8,14 +8,14 @@ PlayerSnapshot PlayerSnapshot::FromPlayerState(Entity::PlayerState playerState)
 {
     PlayerSnapshot ps;
     ps.transform = playerState.transform;
-    ps.wepState = playerState.weaponState.state;
+    ps.wepState = playerState.weaponState[playerState.curWep].state;
     return ps;
 }
 
 Entity::PlayerState PlayerSnapshot::ToPlayerState(Entity::PlayerState ps)
 {
     ps.transform = transform;
-    ps.weaponState.state = wepState;
+    ps.weaponState[ps.curWep].state = wepState;
 
     return ps;
 }
