@@ -120,8 +120,10 @@ namespace BlockBuster
         GUI::Text shieldIcon;
         GUI::Text ammoText;
         GUI::Text ammoNumIcon;
+        GUI::Text grenadeNumText;
         GUI::Image wepIcon;
         GUI::Image altWepIcon;
+        GUI::Image grenadeIcon;
         GUI::Image crosshairImg;
         GUI::Image hitmarkerImg;
         GUI::Image flagIconImg;

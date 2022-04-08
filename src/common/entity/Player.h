@@ -167,6 +167,7 @@ namespace Entity
 
         Weapon weapons[MAX_WEAPONS];
         uint8_t curWep = 0;
+        uint8_t grenades = 0;
     private:
 
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain

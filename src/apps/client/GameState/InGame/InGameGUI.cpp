@@ -35,13 +35,16 @@ void InGameGUI::Start()
     auto& textureMgr = inGame->renderMgr.GetTextureMgr();
     crosshair = textureMgr.LoadFromDefaultFolder("crosshairW.png");
     hitmarker = textureMgr.LoadFromDefaultFolder("hitmarker.png");
+    auto grenadeTexId = textureMgr.LoadFromDefaultFolder("grenade2.png", true);
     glm::u8vec4 white{255, 255, 255, 255};
     dmgTexture = textureMgr.LoadRaw(&white.x, glm::ivec2{1, 1}, GL_RGBA);
 
         // Weapon Icons
     using namespace Entity;
-    wepIcons.Add(textureMgr.LoadFromDefaultFolder(WeaponTypeID::ASSAULT_RIFLE, "assault-rifle.png", true));
-    wepIcons.Add(textureMgr.LoadFromDefaultFolder(WeaponTypeID::SNIPER, "sniper-rifle.png", true));
+    auto arId = textureMgr.LoadFromDefaultFolder("assault-rifle.png", true);
+    wepIcons.Add(WeaponTypeID::ASSAULT_RIFLE, arId);
+    auto srId = textureMgr.LoadFromDefaultFolder("sniper-rifle.png", true);
+    wepIcons.Add(WeaponTypeID::SNIPER, srId);
 
     // Images
     auto winSize = inGame->client_->GetWindowSize();
@@ -61,6 +64,13 @@ void InGameGUI::Start()
     iconSize = altWepIcon.GetSize();
     altWepIcon.SetOffset(-iconSize);
     altWepIcon.SetIsVisible(false);
+
+    grenadeIcon.SetTexture(textureMgr.GetTexture(grenadeTexId));
+    grenadeIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+    grenadeIcon.SetParent(&grenadeNumText);
+    grenadeIcon.SetScale(glm::vec2{0.5f});
+    iconSize = grenadeIcon.GetSize();
+    grenadeIcon.SetOffset(glm::ivec2{-iconSize.x, -7});
 
     crosshairImg.SetTexture(textureMgr.GetTexture(crosshair));
     crosshairImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
@@ -297,6 +307,15 @@ void InGameGUI::InitTexts()
     ammoText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
     ammoText.SetOffset(glm::ivec2{-ammoText.GetSize().x, 0} + glm::ivec2{-5, 0});
 
+    grenadeNumText = pixelFont->CreateText();
+    grenadeNumText.SetText("0");
+    grenadeNumText.SetScale(1.0f);
+    grenadeNumText.SetColor(glm::vec4{0.173f, 0.655f, 0.78f, 0.75f});
+    grenadeNumText.SetParent(&wepIcon);
+    grenadeNumText.SetAnchorPoint(GUI::AnchorPoint::UP_LEFT_CORNER);
+    auto gSize = grenadeNumText.GetSize();
+    grenadeNumText.SetOffset(-gSize + glm::ivec2{-20, -14});
+
     // Score
     midScoreText = pixelFont->CreateText();
     midScoreText.SetText(" - ");
@@ -480,19 +499,25 @@ void InGameGUI::HUD()
 
         // Wep Icon
     auto wepTypeId = player.GetCurrentWeapon().weaponTypeId;
-    wepIcon.SetTexture(textureMgr.GetTexture(wepTypeId));
+    wepIcon.SetTexture(textureMgr.GetTexture(wepIcons.Get(wepTypeId).value()));
     wepIcon.Draw(inGame->imgShader, winSize);
 
         // Alt wep Icon
     wepTypeId = player.weapons[player.GetNextWeaponId()].weaponTypeId;
     if(wepTypeId != Entity::WeaponTypeID::NONE)
     {
-        altWepIcon.SetTexture(textureMgr.GetTexture(wepTypeId));
+        altWepIcon.SetTexture(textureMgr.GetTexture(wepIcons.Get(wepTypeId).value()));
         altWepIcon.SetIsVisible(true);
     }
     else
         altWepIcon.SetIsVisible(false);
     altWepIcon.Draw(inGame->imgShader, winSize);
+
+        // Grenade icon/text
+    grenadeNumText.SetText(std::to_string(player.grenades));
+    grenadeNumText.Draw(inGame->textShader, winSize);
+    grenadeIcon.Draw(inGame->imgShader, winSize);
+
 
     // Score
     midScoreText.Draw(inGame->textShader, winSize);
