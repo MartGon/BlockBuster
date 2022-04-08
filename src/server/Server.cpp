@@ -741,14 +741,16 @@ void Server::UpdateWorld()
 
 bool Server::IsPlayerOutOfBounds(ENet::PeerId peerId)
 {
-    auto& player = clients[peerId].player;
+    bool outOfBounds = false;
 
+    auto& player = clients[peerId].player;
     auto pos = player.GetRenderTransform().position;
 
     // Is in any of the chunks?
     auto blockScale = map.GetBlockScale();
     auto chunkPos = Game::Map::ToChunkIndex(pos, blockScale);
-    bool outOfBounds = !map.HasChunk(chunkPos);
+    if(outOfBounds = !map.HasChunk(chunkPos))
+        return outOfBounds;
 
     // Is in a killbox area
     auto playerPos = Game::Map::ToRealPos(pos);

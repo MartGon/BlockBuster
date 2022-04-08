@@ -99,6 +99,7 @@ void InGame::Start()
     auto& texMgr = renderMgr.GetTextureMgr();
     texMgr.SetDefaultFolder(client_->texturesDir);
     flagIconId = texMgr.LoadFromDefaultFolder("flagIcon.png", true);
+    redCrossId = texMgr.LoadFromDefaultFolder("redCross.png", true);
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
@@ -124,6 +125,10 @@ void InGame::Start()
     flagIcon->painting.type = Rendering::PaintingType::TEXTURE;
     flagIcon->painting.hasAlpha = true;
     flagIcon->painting.texture = flagIconId;
+
+    redCrossIcon = renderMgr.CreateBillboard();
+    redCrossIcon->shader = &billboardShader;
+    redCrossIcon->painting = Rendering::Painting{.type = Rendering::PaintingType::TEXTURE, .hasAlpha = true, .texture = redCrossId};
 
     for(int i = Entity::WeaponTypeID::ASSAULT_RIFLE; i < Entity::WeaponTypeID::COUNT; i++)
     {
@@ -697,15 +702,24 @@ void InGame::DrawGameObjects()
         rPos.y -= (blockScale / 2.0f);
         
         // Billboard icon
+        Rendering::Billboard* icon = nullptr;
+        glm::vec2 scale{1.25f};
         if(go->type == Entity::GameObject::Type::WEAPON_CRATE)
         {
             auto wepId = std::get<int>(go->properties["Weapon ID"].value);
-            if(auto icon = wepIcons.Get(wepId))
-            {
-                auto iconPos = rPos + glm::vec3{0.0f, 1.5f, 0.0f};
-                auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING;
-                icon.value()->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f, 1.125f}, glm::vec4{1.0f}, renderflags);
-            }
+            if(auto ico = wepIcons.Get(wepId))
+                icon = ico.value();
+            scale = glm::vec2{2.f, 1.125f};
+        }
+        else if(go->type == Entity::GameObject::Type::HEALTHPACK)
+            icon = redCrossIcon;
+
+        // Draw Billboard
+        if(icon)
+        {
+            auto iconPos = rPos + glm::vec3{0.0f, 1.5f, 0.0f};
+            auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING;
+            icon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), scale, glm::vec4{1.0f}, renderflags);
         }
 
         // Draw gameObject

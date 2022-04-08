@@ -233,7 +233,9 @@ namespace BlockBuster
 
             // Billboards
         Rendering::TextureID flagIconId;
+        Rendering::TextureID redCrossId;
         Rendering::Billboard* flagIcon;
+        Rendering::Billboard* redCrossIcon;
         Util::Table<Rendering::Billboard*> wepIcons;
 
             // Camera
