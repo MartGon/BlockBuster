@@ -73,6 +73,13 @@ bool Entity::CanShoot(Weapon weapon)
     return canShoot;
 }
 
+void Entity::StartWeaponSwap(Weapon& weapon)
+{
+    auto weaponType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
+    weapon.state = Weapon::State::SWAPPING;
+    weapon.cooldown = weaponType.reloadTime * 0.5f;
+}
+
 // Ammo
 
 Weapon::AmmoState Entity::ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType)

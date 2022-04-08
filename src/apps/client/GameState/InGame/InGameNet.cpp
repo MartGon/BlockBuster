@@ -267,7 +267,8 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 GetLocalPlayer().ApplyState(respawn->playerState);
                 GetLocalPlayer().ResetHealth();
                 for(auto i = 0; i < Entity::Player::MAX_WEAPONS; i++)
-                    player.weapons[i] = Entity::WeaponMgr::weaponTypes.at(respawn->weapons[i]).CreateInstance();
+                    if(respawn->weapons[i] != Entity::WeaponTypeID::NONE)
+                        player.weapons[i] = Entity::WeaponMgr::weaponTypes.at(respawn->weapons[i]).CreateInstance();
 
                 // Set spawn camera rotation
                 auto camRot = camera_.GetRotationDeg();
@@ -337,6 +338,10 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
 
                 if(go->type == Entity::GameObject::Type::HEALTHPACK)
                     inGameGui.PlayScreenEffect(InGameGUI::SCREEN_EFFECT_HEALING);
+                else if(go->type == Entity::GameObject::Type::WEAPON_CRATE)
+                {
+                    fpsAvatar.PlayReloadAnimation(player.GetCurrentWeapon().cooldown);
+                }
             }
         }
         break;
@@ -686,7 +691,8 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     nextState.transform.pos = pController.UpdatePosition(a.transform.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
     nextState.transform.rot.y = playerYaw;
 
-    nextState.weaponState[a.curWep] = pController.UpdateWeapon(a.weaponState[a.curWep], playerInput, deltaTime);
+    auto nextWep = (a.curWep + 1) % Entity::Player::MAX_WEAPONS;
+    nextState.weaponState[a.curWep] = pController.UpdateWeapon(a.weaponState[a.curWep], a.weaponState[nextWep], playerInput, deltaTime);
 
     if(Entity::HasSwapped(a.weaponState[a.curWep].state, nextState.weaponState[nextState.curWep].state))
     {   

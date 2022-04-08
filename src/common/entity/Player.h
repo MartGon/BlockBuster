@@ -144,6 +144,7 @@ namespace Entity
         uint8_t WeaponSwap();
         uint8_t GetNextWeaponId();
         void ResetWeapons();
+        void PickupWeapon(Weapon weapon);
 
         // Health
         struct HealthState

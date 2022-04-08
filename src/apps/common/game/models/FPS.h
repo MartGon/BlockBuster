@@ -16,8 +16,6 @@ namespace Game::Models
 
         void PlayShootAnimation();
         void PlayReloadAnimation(Util::Time::Seconds reloadTime);
-        // Deprecated. May use later tho
-        // void PlayZoomAnimation(Util::Time::Seconds aimTime = Util::Time::Seconds{0.5f});
 
         inline float GetZoomMod()
         {
@@ -48,12 +46,10 @@ namespace Game::Models
         Animation::Clip idle;
         Animation::Clip shoot; // TODO: Keep var tracking last shooting arm, alternate arm after each shot. 
         Animation::Clip reload;
-        Animation::Clip zoom;
 
         // Anim Players
         Animation::Player idlePlayer;
         Animation::Player shootPlayer;
-        Animation::Player zoomPlayer;
 
         // Pos
         const Math::Transform transform{glm::vec3{0.0f, -1.25f, -2.0f}, glm::vec3{0.0f}, glm::vec3{1.0f}};

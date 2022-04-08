@@ -102,6 +102,7 @@ namespace Entity
     bool HasStartedSwap(Weapon::State s1, Weapon::State s2);
     bool HasSwapped(Weapon::State s1, Weapon::State s2);
     bool CanShoot(Weapon weapon);
+    void StartWeaponSwap(Weapon& weapon);
 
     // Ammo
     Weapon::AmmoState ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType);

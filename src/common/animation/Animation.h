@@ -38,10 +38,11 @@ namespace Animation
 
         inline void SetClip(Clip* clip)
         {
-            //if(this->clip)
-               //ApplySample(GetClipLastKeyFrame().sample);
+            if(this->clip)
+                ApplySample(backupSample);
 
             this->clip = clip;
+            backupSample = TakeSample();
             this->speedMod = 1.0f;
         }
 
@@ -113,6 +114,7 @@ namespace Animation
         bool IsDone(uint32_t curFrame);
         uint32_t GetKeyFrameIndex(uint32_t curFrame) const;
         void ApplySample(Sample s);
+        Sample TakeSample();
 
         KeyFrame GetClipLastKeyFrame() const;
         uint32_t GetClipLastFrame() const;
@@ -121,6 +123,8 @@ namespace Animation
         Clip* clip = nullptr;
         Util::Timer timer;
         float speedMod = 1.0f;
+
+        Sample backupSample;
 
         std::function<void()> onDone;
 

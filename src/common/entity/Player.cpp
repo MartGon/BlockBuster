@@ -309,6 +309,14 @@ void Player::ResetWeapons()
         weapons[i] = Weapon{WeaponTypeID::NONE};
 }
 
+void Player::PickupWeapon(Weapon weapon)
+{
+    auto nextWep = GetNextWeaponId();
+    weapons[nextWep] = weapon;
+
+    StartWeaponSwap(GetCurrentWeapon());
+}
+
 // Health
 
 void Player::ResetHealth()
@@ -330,8 +338,9 @@ void Player::InteractWith(GameObject go)
     {
     case GameObject::Type::WEAPON_CRATE:
         {
-            auto wepId = std::get<int>(go.properties["Weapon ID"].value);
-            // TODO: Implement weapon crates
+            auto wepId = static_cast<WeaponTypeID>(std::get<int>(go.properties["Weapon ID"].value));
+            auto weaponType = WeaponMgr::weaponTypes.at(wepId);
+            PickupWeapon(weaponType.CreateInstance());
         }
         break;
     

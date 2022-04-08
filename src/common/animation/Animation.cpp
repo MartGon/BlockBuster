@@ -130,8 +130,27 @@ static void ApplyParams(std::unordered_map<std::string, T*>& targets, std::unord
     }
 }
 
+template<typename T>
+static void ReadParams(std::unordered_map<std::string, T*>& targets, std::unordered_map<std::string, T>& refs)
+{
+    for(auto& [k, value] : targets)
+    {
+        if(value)
+            refs[k] = *value;
+    }
+}
+
 void Player::ApplySample(Sample s1)
 {
     ApplyParams(fTargets, s1.floats);
     ApplyParams(bTargets, s1.bools);
+}
+
+Sample Player::TakeSample()
+{
+    Sample sample;
+    ReadParams(fTargets, sample.floats);
+    ReadParams(bTargets, sample.bools);
+
+    return sample;
 }

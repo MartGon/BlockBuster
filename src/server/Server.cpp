@@ -205,6 +205,15 @@ void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::str
             connectedClients.push_back(id);
     }
 
+    // Send gameObjects state
+    for(auto [goPos, state] : gameObjectStates)
+    {
+        auto gos = std::make_unique<Networking::Packets::Server::GameObjectState>();
+        gos->goPos = goPos;
+        gos->state = gameObjectStates[goPos].state;
+        batch.PushPacket(std::move(gos));
+    }
+
     for(auto& id : connectedClients)
     {
         auto& client = clients[id];
@@ -406,7 +415,8 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
 
     auto oldWepState = player.GetCurrentWeapon();
-    player.GetCurrentWeapon() = pController.UpdateWeapon(player.GetCurrentWeapon(), input, TICK_RATE);
+    auto nextWeapon = player.weapons[player.GetNextWeaponId()];
+    player.GetCurrentWeapon() = pController.UpdateWeapon(player.GetCurrentWeapon(), nextWeapon, input, TICK_RATE);
     logger.LogDebug("Player Ammo " + std::to_string(player.GetCurrentWeapon().ammoState.magazine));
 
     if(Entity::HasShot(oldWepState.state, player.GetCurrentWeapon().state))
@@ -749,8 +759,8 @@ bool Server::IsPlayerOutOfBounds(ENet::PeerId peerId)
     // Is in any of the chunks?
     auto blockScale = map.GetBlockScale();
     auto chunkPos = Game::Map::ToChunkIndex(pos, blockScale);
-    if(outOfBounds = !map.HasChunk(chunkPos))
-        return outOfBounds;
+    if(!map.HasChunk(chunkPos))
+        return true;
 
     // Is in a killbox area
     auto playerPos = Game::Map::ToRealPos(pos);
@@ -767,11 +777,11 @@ bool Server::IsPlayerOutOfBounds(ENet::PeerId peerId)
         box.scale = glm::vec3{scaleX, scaleY, scaleZ} * blockScale;    
         box.position.y += ((box.scale.y) / 2.0f);
 
-        if(outOfBounds = Collisions::IsPointInAABB(playerPos, box))
-            break;
+        if(Collisions::IsPointInAABB(playerPos, box))
+            return true;
     }
 
-    return outOfBounds;
+    return false;
 }
 
 void Server::OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId)
@@ -905,7 +915,7 @@ void Server::SpawnPlayer(ENet::PeerId clientId)
     // Set weapon and health
     player.ResetWeapons();
     player.GetCurrentWeapon() = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::ASSAULT_RIFLE).CreateInstance();
-    player.weapons[1] = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
+    //player.weapons[1] = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
     player.ResetHealth();
 }
 

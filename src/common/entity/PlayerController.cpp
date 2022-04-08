@@ -61,7 +61,7 @@ glm::vec3 Entity::PlayerController::UpdatePosition(glm::vec3 pos, float yaw, Ent
     return transform.position;
 }
 
-Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, Util::Time::Seconds deltaTime)
+Weapon PlayerController::UpdateWeapon(Weapon weapon, Weapon secWeapon, Entity::PlayerInput input, Util::Time::Seconds deltaTime)
 {
     const auto weaponType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
     auto wepState = weapon.state;
@@ -97,10 +97,9 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
                 float mod = weaponType.ammoType == AmmoType::OVERHEAT ? 0.25f + (weapon.ammoState.overheat / 100.f) : 1.0f;
                 weapon.cooldown = weaponType.reloadTime * mod;
             }
-            else if(input[Entity::WEAPON_SWAP_0])
+            else if(input[Entity::WEAPON_SWAP_0] && secWeapon.weaponTypeId != WeaponTypeID::NONE) 
             {
-                weapon.state = Weapon::State::SWAPPING;
-                weapon.cooldown = weaponType.reloadTime * 0.5f;
+                StartWeaponSwap(weapon);
             }
 
             weapon.triggerPressed = input[Entity::SHOOT];
