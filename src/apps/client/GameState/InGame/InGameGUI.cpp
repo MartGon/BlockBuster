@@ -38,8 +38,29 @@ void InGameGUI::Start()
     glm::u8vec4 white{255, 255, 255, 255};
     dmgTexture = textureMgr.LoadRaw(&white.x, glm::ivec2{1, 1}, GL_RGBA);
 
+        // Weapon Icons
+    using namespace Entity;
+    wepIcons.Add(textureMgr.LoadFromDefaultFolder(WeaponTypeID::ASSAULT_RIFLE, "assault-rifle.png", true));
+    wepIcons.Add(textureMgr.LoadFromDefaultFolder(WeaponTypeID::SNIPER, "sniper-rifle.png", true));
+
     // Images
     auto winSize = inGame->client_->GetWindowSize();
+
+    wepIcon.SetTexture(textureMgr.GetTexture(wepIcons.Get(WeaponTypeID::ASSAULT_RIFLE).value()));
+    wepIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
+    wepIcon.SetParent(&ammoNumIcon);
+    wepIcon.SetScale(glm::vec2{0.75f});
+    auto iconSize = wepIcon.GetSize();
+    wepIcon.SetOffset(-iconSize);
+    wepIcon.SetIsVisible(true);
+
+    altWepIcon.SetTexture(textureMgr.GetTexture(wepIcons.Get(WeaponTypeID::ASSAULT_RIFLE).value()));
+    altWepIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
+    altWepIcon.SetParent(&wepIcon);
+    altWepIcon.SetScale(glm::vec2{0.33f});
+    iconSize = altWepIcon.GetSize();
+    altWepIcon.SetOffset(-iconSize);
+    altWepIcon.SetIsVisible(false);
 
     crosshairImg.SetTexture(textureMgr.GetTexture(crosshair));
     crosshairImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
@@ -438,6 +459,8 @@ void InGameGUI::HUD()
 {
     glDisable(GL_DEPTH_TEST);
     auto winSize = inGame->client_->GetWindowSize();
+    auto& textureMgr = inGame->renderMgr.GetTextureMgr();
+    auto& player = inGame->GetLocalPlayer();
 
     UpdateHealth();
     UpdateArmor();
@@ -454,6 +477,22 @@ void InGameGUI::HUD()
     healthIcon.Draw(inGame->textShader, winSize);
     ammoNumIcon.Draw(inGame->textShader, winSize);
     ammoText.Draw(inGame->textShader, winSize);
+
+        // Wep Icon
+    auto wepTypeId = player.GetCurrentWeapon().weaponTypeId;
+    wepIcon.SetTexture(textureMgr.GetTexture(wepTypeId));
+    wepIcon.Draw(inGame->imgShader, winSize);
+
+        // Alt wep Icon
+    wepTypeId = player.weapons[player.GetNextWeaponId()].weaponTypeId;
+    if(wepTypeId != Entity::WeaponTypeID::NONE)
+    {
+        altWepIcon.SetTexture(textureMgr.GetTexture(wepTypeId));
+        altWepIcon.SetIsVisible(true);
+    }
+    else
+        altWepIcon.SetIsVisible(false);
+    altWepIcon.Draw(inGame->imgShader, winSize);
 
     // Score
     midScoreText.Draw(inGame->textShader, winSize);

@@ -8,6 +8,7 @@ SET(SOURCES
     Timer.cpp
     File.cpp
     Zip.cpp
+    Table.cpp
 )
 
 

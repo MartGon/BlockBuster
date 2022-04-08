@@ -8,15 +8,11 @@
 #include <animation/Animation.h>
 
 #include <util/BBTime.h>
-
+#include <util/Table.h>
 #include <gl/Texture.h>
-
 #include <GameState/InGame/InGameFwd.h>
-
 #include <rendering/TextureMgr.h>
-
 #include <entity/Player.h>
-
 #include <mglogger/Logger.h>
 
 namespace BlockBuster
@@ -124,10 +120,15 @@ namespace BlockBuster
         GUI::Text shieldIcon;
         GUI::Text ammoText;
         GUI::Text ammoNumIcon;
+        GUI::Image wepIcon;
+        GUI::Image altWepIcon;
         GUI::Image crosshairImg;
         GUI::Image hitmarkerImg;
         GUI::Image flagIconImg;
         GUI::Image dmgEffectImg;
+
+        // Icons
+        Util::Table<Rendering::TextureID> wepIcons;
 
         // Animations
         Animation::Clip hitmarkerAnim;

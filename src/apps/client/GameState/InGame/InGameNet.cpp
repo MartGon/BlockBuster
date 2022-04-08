@@ -639,18 +639,18 @@ void InGame::SmoothPlayerMovement()
     {
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
-        auto oldState = player.ExtractState();
+        auto oldState = lastPred->origin;
         auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
 
         // Animation
-        auto oldWepState = oldState.weaponState[oldState.curWep].state;
-        auto nextState = predState.weaponState[predState.curWep].state;
-        if(Entity::HasShot(oldWepState, nextState))
+        auto oldWepState = oldState.weaponState[oldState.curWep];
+        auto nextState = predState.weaponState[oldState.curWep];
+        if(Entity::HasShot(oldWepState.state, nextState.state))
             fpsAvatar.PlayShootAnimation();
-        else if(Entity::HasReloaded(oldWepState, nextState))
-            fpsAvatar.PlayReloadAnimation(predState.weaponState[predState.curWep].cooldown);
-        else if(Entity::HasStartedSwap(oldWepState, nextState))
-            fpsAvatar.PlayReloadAnimation(predState.weaponState[predState.curWep].cooldown);
+        else if(Entity::HasReloaded(oldWepState.state, nextState.state))
+            fpsAvatar.PlayReloadAnimation(nextState.cooldown);
+        else if(Entity::HasStartedSwap(oldWepState.state, nextState.state))
+            fpsAvatar.PlayReloadAnimation(nextState.cooldown);
 
         // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
@@ -659,11 +659,13 @@ void InGame::SmoothPlayerMovement()
         predState.transform = predState.transform + errorCorrection;
         player.ApplyState(predState);
 
-        /*
+        
         // Hack fix for weapon swap
-        if(Entity::HasSwapped(oldState.weaponState.state, predState.weaponState.state))
-            player.weapons[oldState.curWep].state = Entity::Weapon::State::IDLE;
-        */
+        if(Entity::HasSwapped(oldWepState.state, nextState.state))
+        {
+            GetLogger()->LogError("Here");
+        }
+        
 
         #ifdef _DEBUG
             auto dist = glm::length(errorCorrection.pos);
