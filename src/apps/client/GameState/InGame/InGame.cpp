@@ -115,12 +115,28 @@ void InGame::Start()
     fpsAvatar.SetMeshes(quad, cube, cylinder);
     fpsAvatar.Start(renderMgr, renderShader, renderShader);
 
+    // UI
+    inGameGui.Start();
+
     // Billboards
     flagIcon = renderMgr.CreateBillboard();
     flagIcon->shader = &billboardShader;
     flagIcon->painting.type = Rendering::PaintingType::TEXTURE;
     flagIcon->painting.hasAlpha = true;
     flagIcon->painting.texture = flagIconId;
+
+    for(int i = Entity::WeaponTypeID::ASSAULT_RIFLE; i < Entity::WeaponTypeID::COUNT; i++)
+    {
+        if(auto texId = inGameGui.wepIcons.Get(i))
+        {
+            auto icon = renderMgr.CreateBillboard();
+            icon->shader = &billboardShader;
+            icon->painting.type = Rendering::PaintingType::TEXTURE;
+            icon->painting.hasAlpha = true;
+            icon->painting.texture = texId.value();
+            wepIcons.Add(i, icon);
+        }
+    }
 
     // Camera
     auto winSize = client_->GetWindowSize();
@@ -143,9 +159,6 @@ void InGame::Start()
     match.SetOnEnterState([this](Match::StateType type){
         this->OnEnterMatchState(type);
     });
-
-    // UI
-    inGameGui.Start();
 
     // Audio
     audioMgr = audioMgr->Get();
@@ -667,12 +680,24 @@ void InGame::DrawGameObjects()
         if(!state.isActive)
             continue;
 
-        // TODO: Draw billboard
-
+        // Calc. Pos
         auto go = map->GetGameObject(pos);
         auto rPos = Game::Map::ToRealPos(pos, blockScale);
         rPos.y -= (blockScale / 2.0f);
+        
+        // Billboard icon
+        if(go->type == Entity::GameObject::Type::WEAPON_CRATE)
+        {
+            auto wepId = std::get<int>(go->properties["Weapon ID"].value);
+            if(auto icon = wepIcons.Get(wepId))
+            {
+                auto iconPos = rPos + glm::vec3{0.0f, 1.5f, 0.0f};
+                auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING;
+                icon.value()->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f, 1.125f}, glm::vec4{1.0f}, renderflags);
+            }
+        }
 
+        // Draw gameObject
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
         auto tMat = view * t.GetTransformMat();
         modelMgr.DrawGo(go->type, tMat);

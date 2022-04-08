@@ -18,7 +18,8 @@ namespace Entity
         SHOTGUN,
         SMG,
         SNIPER,
-        CHEAT_SMG
+        CHEAT_SMG,
+        COUNT
     };
     class WeaponMgr
     {

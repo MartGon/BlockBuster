@@ -23,6 +23,7 @@
 
 #include <util/BBTime.h>
 #include <util/Ring.h>
+#include <util/Table.h>
 
 #include <entity/Player.h>
 #include <entity/PlayerController.h>
@@ -232,6 +233,7 @@ namespace BlockBuster
             // Billboards
         Rendering::TextureID flagIconId;
         Rendering::Billboard* flagIcon;
+        Util::Table<Rendering::Billboard*> wepIcons;
 
             // Camera
         Rendering::Camera camera_;

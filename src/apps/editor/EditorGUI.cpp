@@ -39,7 +39,7 @@ void EditorGUI::InitPopUps()
     saveAs.SetOnAccept([this](std::string map){
         auto sa = puMgr.GetAs<GUI::EditTextPopUp>(SAVE_AS);
 
-        std::regex validName{"[A-z]*"};
+        std::regex validName{"[A-z0-9]*"};
         std::smatch m;
         bool isValid = std::regex_match(map, m, validName);
         if(!isValid)

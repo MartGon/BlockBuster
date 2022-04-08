@@ -20,8 +20,8 @@ std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTem
     {
         GameObject::Type::WEAPON_CRATE, 
         { 
+            {"Respawn Time (s)", GameObject::Property::Type::INT, 180},
             {"Weapon ID", GameObject::Property::Type::INT, 0},
-            {"Respawn Time (s)", GameObject::Property::Type::INT, 180}
         }
     },
     {

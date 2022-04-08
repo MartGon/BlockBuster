@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 #include <optional>
 
 namespace Util
@@ -22,6 +23,15 @@ namespace Util
         {
             map[id] = entry;
             return id;
+        }
+
+        std::vector<ID> GetIDs()
+        {
+            std::vector<ID> ids;
+            for(auto& [id, entry] : map)
+                ids.push_back(id);
+
+            return ids;
         }
 
         std::optional<T> Get(ID id)
