@@ -420,6 +420,9 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 
     if(input[Entity::Inputs::ACTION])
         HandleActionCommand(player);
+
+    if(IsPlayerOutOfBounds(peerId))
+        OnPlayerDeath(peerId, peerId);
 }
 
 void Server::HandleShootCommand(ShotCommand sc)
@@ -736,6 +739,51 @@ void Server::UpdateWorld()
     }
 }
 
+bool Server::IsPlayerOutOfBounds(ENet::PeerId peerId)
+{
+    auto& player = clients[peerId].player;
+
+    auto pos = player.GetRenderTransform().position;
+
+    // Is in any of the chunks?
+    auto blockScale = map.GetBlockScale();
+    auto chunkPos = Game::Map::ToChunkIndex(pos, blockScale);
+    bool outOfBounds = !map.HasChunk(chunkPos);
+
+    // Is in a killbox area
+    auto playerPos = Game::Map::ToRealPos(pos);
+    auto killboxes = map.FindGameObjectByType(Entity::GameObject::KILLBOX);
+    for(auto goPos : killboxes)
+    {
+        auto go = map.GetGameObject(goPos);
+        Math::Transform box;
+
+        box.position = Game::Map::ToRealPos(goPos, blockScale);
+        float scaleX = std::get<float>(go->properties["Scale X"].value);
+        float scaleY = std::get<float>(go->properties["Scale Y"].value);
+        float scaleZ = std::get<float>(go->properties["Scale Z"].value);
+        box.scale = glm::vec3{scaleX, scaleY, scaleZ} * blockScale;    
+        box.position.y += ((box.scale.y) / 2.0f);
+
+        if(outOfBounds = Collisions::IsPointInAABB(playerPos, box))
+            break;
+    }
+
+    return outOfBounds;
+}
+
+void Server::OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId)
+{
+    auto& victim = clients[victimId].player;
+    victim.health.hp = 0.0f;
+    
+    auto gameMode = match.GetGameMode();
+    clients[victimId].respawnTime = gameMode->GetRespawnTime();
+    BroadcastPlayerDied(authorId, victimId, clients[victimId].respawnTime);
+    gameMode->PlayerDeath(authorId, victimId, clients[authorId].player.teamId);
+}
+
+
 void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
 {
     // Sleep until next tick
@@ -870,10 +918,7 @@ void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
     SendPlayerHitConfirm(authorId, victim.id);
     if(victim.IsDead())
     {   
-        auto gameMode = match.GetGameMode();
-        clients[victimId].respawnTime = gameMode->GetRespawnTime();
-        BroadcastPlayerDied(author.id, victim.id, clients[victimId].respawnTime);
-        gameMode->PlayerDeath(author.id, victim.id, author.teamId);
+        OnPlayerDeath(authorId, victimId);
     }
 }
 

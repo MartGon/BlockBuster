@@ -416,7 +416,7 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
         camController_.Update();
 
     // Rellocate camera
-    if(player.IsDead() && Util::Map::Contains(playerTable, killerId))
+    if(player.IsDead() && Util::Map::Contains(playerTable, killerId) && killerId != playerId)
     {
         // Look to killer during death
         auto& killer = playerTable[killerId];
