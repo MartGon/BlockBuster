@@ -21,6 +21,7 @@ void Rendering::Camera::SetPos(glm::vec3 pos)
 
 void Rendering::Camera::SetRotation(float pitch, float yaw)
 {
+    pitch = glm::clamp(pitch, glm::radians(1.0f), glm::radians(179.0f));
     rotation_ = glm::vec2{pitch, yaw};
     UpdateViewMat();
 }

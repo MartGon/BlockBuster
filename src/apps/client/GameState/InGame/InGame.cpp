@@ -518,6 +518,17 @@ void InGame::UpdateCamera(Entity::PlayerInput input)
     camera_.SetZoom(zoom);
 }
 
+void InGame::WeaponRecoil()
+{
+    auto camRot = camera_.GetRotationDeg();
+    auto sideRecoil = Util::Random::Normal(-1.0f, 1.0f);
+    auto strength = Entity::WeaponMgr::weaponTypes.at(GetLocalPlayer().GetCurrentWeapon().weaponTypeId).recoil;
+    auto recoil = glm::vec2{-1.0f, sideRecoil} * strength;
+    auto newRot = camRot + recoil;
+
+    camera_.SetRotationDeg(newRot.x, newRot.y);
+}
+
 // World
 
 void InGame::InitGameObjects()

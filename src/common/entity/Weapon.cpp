@@ -3,27 +3,28 @@
 using namespace Entity;
 
 const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponTypes = {
+    
+    {
+        WeaponTypeID::ASSAULT_RIFLE, 
+        {
+            WeaponTypeID::ASSAULT_RIFLE, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.025f}, Util::Time::Seconds{1.75f}, 20.0f, 
+            60.0f, 0.0f, glm::vec2{0.25f, 0.1f}, 0, 1.5f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 32}
+        },
+    },
     {
         WeaponTypeID::SNIPER, 
         {
             WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, 0, 3.0f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
+            300.0f, 0.0f, glm::vec2{1.0f, 0.f}, 0, 3.0f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
         },
     },
     {
         WeaponTypeID::CHEAT_SMG, 
         {
             WeaponTypeID::CHEAT_SMG, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.005f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, 3, 1.5f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 20}
+            300.0f, 0.0f, glm::vec2{0.0f, 0.f}, 3, 1.5f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 20}
         }
-    },
-    {
-        WeaponTypeID::ASSAULT_RIFLE, 
-        {
-            WeaponTypeID::ASSAULT_RIFLE, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.025f}, Util::Time::Seconds{1.75f}, 20.0f, 
-            60.0f, 0.0f, 0, 1.5f, 21, 12, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 32}
-        },
-    },
+    }
 };
 
 // WeaponType
