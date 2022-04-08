@@ -675,6 +675,7 @@ void InGame::DrawScene()
     // Draw models
     DrawGameObjects();
     DrawModeObjects();
+    DrawProjectiles();
     renderMgr.Render(camera_);
 
     // Draw fpsModel, always rendered last
@@ -810,6 +811,18 @@ void InGame::DrawModeObjects()
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
         auto tMat = view * t.GetTransformMat();
         modelMgr.DrawGo(go->type, tMat);
+    }
+}
+
+void InGame::DrawProjectiles()
+{
+    auto view = camera_.GetProjViewMat();
+
+    for(auto& [id, projectile] : projectiles)
+    {
+        Math::Transform t{projectile.GetPos(), glm::vec3{0.0f}, projectile.GetScale()};
+        auto tMat = view * t.GetTransformMat();
+        modelMgr.Draw(Game::Models::GRENADE_MODEL_ID, tMat);
     }
 }
 

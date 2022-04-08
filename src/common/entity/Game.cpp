@@ -147,3 +147,49 @@ Game::RayPlayerCollision Game::RayCollidesWithPlayerHitbox(Collisions::Ray ray, 
     Game::RayPlayerCollision rpc{collision.intersects, type, collision};
     return rpc;
 }
+
+Collisions::Intersection Game::AABBCollidesBlock(Game::Map::Map* map, Math::Transform aabb)
+{
+    Collisions::Intersection ret{false};
+
+    auto blockScale = map->GetBlockScale();
+    auto blockPos = Game::Map::ToGlobalPos(aabb.position, blockScale);
+    auto as = 3;
+    std::vector<glm::vec3> blocks;
+    for(auto x = -as; x <= as; x++)
+    {
+        for(auto y = -as; y <= as; y++)
+        {
+            for(auto z = -as; z <= as; z++)
+            {
+                glm::ivec3 offset{x, y, z};
+                auto block = blockPos + offset;
+                auto rPos = Game::Map::ToRealPos(block, blockScale);
+                blocks.push_back(rPos);
+            }
+        }
+    }
+
+    auto pos = aabb.position;
+    std::sort(blocks.begin(), blocks.end(), [pos](auto a, auto b){
+        auto ad = glm::length(a - pos);
+        auto bd = glm::length(b - pos);
+        return ad < bd;
+    });
+
+    for(auto rPos : blocks)
+    {
+        auto block = Game::Map::ToGlobalPos(rPos, blockScale);
+        if(!map->IsNullBlock(block))
+        {
+            // TODO: Change check by type
+            auto transform = GetBlockTransform(block, map->GetBlockScale());
+
+            auto collision = Collisions::AABBCollision(aabb.position, aabb.scale, rPos, glm::vec3{blockScale});
+            if(collision.collides)
+                return Collisions::Intersection{collision.collides, collision.normal, collision.offset};
+        }
+    }
+
+    return ret;
+}

@@ -45,6 +45,14 @@ Util::Buffer Snapshot::ToBuffer() const
         buffer.Write(ps);
     }
 
+    // Projectiles
+    buffer.Write<Entity::ID>(projectiles.size());
+    for(auto& [id, p] : projectiles) 
+    {
+        buffer.Write(id);
+        buffer.Write(p);
+    }
+
     return buffer;
 }
 
@@ -61,6 +69,14 @@ Snapshot Snapshot::FromBuffer(Util::Buffer::Reader& reader)
         auto id = reader.Read<Entity::ID>();
         auto playerSnapshot = reader.Read<PlayerSnapshot>();
         s.players[id] = playerSnapshot;
+    }
+
+    auto projectiles = reader.Read<Entity::ID>();
+    for(auto i = 0; i < projectiles; i++)
+    {
+        auto id = reader.Read<Entity::ID>();
+        auto pState = reader.Read<Entity::Projectile::State>();
+        s.projectiles[id] = pState;
     }
 
     return s;

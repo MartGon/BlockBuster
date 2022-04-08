@@ -161,6 +161,23 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             auto s = snapShot->snapShot;           
             snapshotHistory.PushBack(s);
 
+            // Create projectiles
+            for(auto [id, projectile] : s.projectiles)
+            {
+                if(!Util::Map::Contains(projectiles, id))
+                    projectiles[id].ApplyState(projectile);
+            }
+
+            // Remove projectiles
+            std::vector<Entity::ID> toRemove;
+            for(auto [id, projectile] : projectiles)
+            {
+                if(!Util::Map::Contains(s.projectiles, id))
+                    toRemove.push_back(id);
+            }
+            for(auto id : toRemove)
+                projectiles.erase(id);
+
             // Sort by tick. This is only needed if a packet arrives late.
             snapshotHistory.Sort([](Networking::Snapshot a, Networking::Snapshot b)
             {
@@ -765,6 +782,7 @@ void InGame::EntityInterpolation()
             client_->logger->LogDebug("T1 " + std::to_string(t1.count()) + " T2 " + std::to_string(t2.count()));
             client_->logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
 
+            // Player interpolation
             for(auto pair : playerTable)
             { 
                 auto playerId = pair.first;
@@ -777,6 +795,20 @@ void InGame::EntityInterpolation()
 
                 if(canInterpolate)
                     EntityInterpolation(playerId, s1, s2, w1);
+            }
+
+            // Projectile interpolation
+            for(auto& [id, projectile] : projectiles)
+            {
+                bool s1HasData = s1.projectiles.find(id) != s1.projectiles.end();
+                bool s2HasData = s2.projectiles.find(id) != s2.projectiles.end();
+                bool canInterpolate = s1HasData && s2HasData;
+
+                if(canInterpolate)
+                {
+                    Entity::Projectile::State s = Entity::Projectile::State::Interpolate(s1.projectiles[id], s2.projectiles[id], w1);
+                    projectile.ApplyState(s);
+                }
             }
         }
         // We don't have enough data. We need to extrapolate

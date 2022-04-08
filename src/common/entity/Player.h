@@ -124,6 +124,7 @@ namespace Entity
         static const float MAX_HEALTH;
         
         static constexpr uint8_t MAX_WEAPONS = 2;
+        static constexpr uint8_t MAX_GRENADES = 4;
 
         // Serialization
         PlayerState ExtractState() const;

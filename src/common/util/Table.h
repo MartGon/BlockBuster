@@ -19,6 +19,13 @@ namespace Util
             return id;
         }
 
+        ID MoveInto(T entry)
+        {
+            auto id = GetFreeID();
+            map[id] = std::move(entry);
+            return id;
+        }
+
         ID Add(ID id, T entry)
         {
             map[id] = entry;
@@ -41,6 +48,11 @@ namespace Util
                 ret = map[id];
             
             return ret;
+        }
+
+        T& GetRef(ID id)
+        {
+            return map.at(id);
         }
 
     private:

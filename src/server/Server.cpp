@@ -475,6 +475,14 @@ void Server::HandleShootCommand(ShotCommand sc)
     Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
     logger.LogDebug("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
 
+    // TODO: Remove
+    auto p = std::make_unique<Entity::Grenade>();
+    float SPEED = 20.0f;
+    glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
+    p->Launch(ray.origin, ray.GetDir() * SPEED, acceleration);
+    projectiles.MoveInto(std::move(p));
+    // TODO: Until here
+
     // Check collision with block
     auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
     auto bColDist = std::numeric_limits<float>::max();
@@ -562,6 +570,8 @@ void Server::SendWorldUpdate()
 
     Networking::Snapshot s;
     s.serverTick = tickCount;
+
+    // Players
     for(auto& [id, client] : clients)
     {
         auto& player = client.player;
@@ -570,6 +580,15 @@ void Server::SendWorldUpdate()
 
         s.players[player.id] = Networking::PlayerSnapshot::FromPlayerState(player.ExtractState());
     }
+    
+    // Projectiles
+    for(auto& id : projectiles.GetIDs())
+    {
+        auto& projectile = projectiles.GetRef(id);
+        s.projectiles[id] = projectile->ExtractState();
+    }
+
+    // Save snapshot
     history.PushBack(s);
 
     // Send snapshot with acks
@@ -715,6 +734,24 @@ void Server::UpdateWorld()
             goState.respawnTimer.Restart();
             goState.state.isActive = true;
             BroadcastGameObjectState(goPos);
+        }
+    }
+
+    // Projectiles
+    auto pIds = projectiles.GetIDs();
+    for(auto id : pIds)
+    {
+        auto& projectile = projectiles.GetRef(id);
+        projectile->Update(TICK_RATE);
+        
+        Math::Transform t{projectile->GetPos(), glm::vec3{0.0f}, projectile->GetScale()};
+        auto collision = Game::AABBCollidesBlock(&map, t);
+        if(collision.collides)
+        {
+            logger.LogError("Surface normal " + glm::to_string(collision.normal));
+            logger.LogError("Offset " + glm::to_string(collision.offset));
+            projectile->OnCollide(collision.normal);
+            projectile->SetPos(t.position + collision.offset);
         }
     }
 

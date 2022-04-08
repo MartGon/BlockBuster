@@ -35,6 +35,14 @@ namespace Collisions
     glm::vec3 ToWorldSpace(glm::vec3 vec, glm::mat4 modelMat);
     glm::vec3 NormalToWorldSpace(glm::vec3 normal, glm::mat4 modelMat);
 
+    // General
+    struct Intersection
+    {
+        bool collides;
+        glm::vec3 normal;
+        glm::vec3 offset;
+    };
+
     // AABB
     struct AABBIntersection
     {

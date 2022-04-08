@@ -12,6 +12,7 @@
 #include <util/BBTime.h>
 #include <util/Random.h>
 #include <util/Ring.h>
+#include <util/Table.h>
 
 #include <collisions/Collisions.h>
 
@@ -22,6 +23,7 @@
 #include <entity/PlayerController.h>
 #include <entity/Map.h>
 #include <entity/Match.h>
+#include <entity/Projectile.h>
 
 #include <http/AsyncClient.h>
 
@@ -168,6 +170,7 @@ namespace BlockBuster
             Util::Timer respawnTimer;
         };
         std::unordered_map<glm::ivec3, GOState> gameObjectStates;
+        Util::Table<std::unique_ptr<Entity::Projectile>> projectiles;
 
         // Server params
         Params params;

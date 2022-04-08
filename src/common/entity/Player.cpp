@@ -353,7 +353,7 @@ void Player::InteractWith(GameObject go)
 
     case GameObject::Type::GRENADES:
         {
-            // TODO: Refill grenades
+            grenades = std::max(grenades + 2, 4);
         }
         break;
 

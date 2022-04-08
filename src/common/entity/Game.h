@@ -24,4 +24,6 @@ namespace Game
     };
     RayPlayerCollision RayCollidesWithPlayer(Collisions::Ray ray, glm::vec3 playerPos, float playerYaw, glm::vec3 lastMoveDir);
     RayPlayerCollision RayCollidesWithPlayerHitbox(Collisions::Ray ray, glm::vec3 playerPos, float playerYaw, Entity::Player::HitBoxType type);
+
+    Collisions::Intersection AABBCollidesBlock(Game::Map::Map* map, Math::Transform aabb);
 }

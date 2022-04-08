@@ -150,15 +150,7 @@ void MatchState::OnWrite()
 
 void WorldUpdate::OnRead(Util::Buffer::Reader& reader)
 {
-    snapShot.serverTick = reader.Read<uint32_t>();
-
-    auto len = reader.Read<std::uint8_t>();
-    for(auto i = 0; i < len; i++)
-    {
-        auto id = reader.Read<Entity::ID>();
-        auto playerState = reader.Read<PlayerSnapshot>();
-        snapShot.players.insert({id, playerState});
-    }
+    snapShot = Snapshot::FromBuffer(reader);
 }
 
 void WorldUpdate::OnWrite()

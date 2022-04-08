@@ -14,6 +14,7 @@ namespace Game::Models
     enum ModelID
     {
         FLAG_MODEL_ID,
+        GRENADE_MODEL_ID,
         COUNT
     };
 

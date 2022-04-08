@@ -105,6 +105,7 @@ namespace BlockBuster
         void DrawScene();
         void DrawGameObjects();
         void DrawModeObjects();
+        void DrawProjectiles();
         void DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box);
         void DrawGUI();
         void Render();
@@ -161,7 +162,8 @@ namespace BlockBuster
         const float zoomSpeed = 5.0f;
 
         // GameObjects
-        std::unordered_map<glm::ivec3, Entity::GameObject::State> gameObjectStates; 
+        std::unordered_map<glm::ivec3, Entity::GameObject::State> gameObjectStates;
+        std::unordered_map<Entity::ID, Entity::Projectile> projectiles;
 
         // Match Making data
         std::string playerUuid;

@@ -4,6 +4,7 @@
 
 #include <entity/Player.h>
 #include <entity/Weapon.h>
+#include <entity/Projectile.h>
 
 #include <util/Buffer.h>
 
@@ -24,6 +25,7 @@ namespace Networking
     {
         uint32_t serverTick = 0;
         std::unordered_map<Entity::ID, PlayerSnapshot> players;
+        std::unordered_map<Entity::ID, Entity::Projectile::State> projectiles;
 
         Util::Buffer ToBuffer() const;
         static Snapshot FromBuffer(Util::Buffer::Reader& reader);

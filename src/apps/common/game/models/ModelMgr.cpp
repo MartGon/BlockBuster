@@ -172,6 +172,23 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 
     models[FLAG_MODEL_ID] = flag;
 
+    // Greanade
+    auto grenade = renderMgr.CreateModel();    
+    float scale = 0.3f;
+    painting.color = Rendering::ColorU8ToFloat(78, 79, 71);
+
+    auto t = Math::Transform{glm::vec3{0.0f, scale / 2.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 0.95f, 1.0f} * scale};
+    auto leftFrag = Rendering::SubModel{t, painting, &sphere, &shader};
+    grenade->AddSubModel(std::move(leftFrag));
+
+    painting.color = Rendering::ColorU8ToFloat(46, 40, 40, 255);
+    auto topScale = 0.15f;
+    auto leftTop = Math::Transform{t.position + glm::vec3{0.0f, scale, 0.0f}, glm::vec3{0.0f}, glm::vec3{0.85f, 2.0f, 0.85f} * topScale};
+    auto leftFragTop = Rendering::SubModel{leftTop, painting, &cylinder, &shader};    
+    grenade->AddSubModel(std::move(leftFragTop));
+
+    models[GRENADE_MODEL_ID] = grenade;
+
 }
 
 Log::Logger* ModelMgr::GetLogger()
