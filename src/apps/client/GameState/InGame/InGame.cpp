@@ -436,6 +436,11 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
         playerState.deathPlayer.Update(deltaTime);
         playerState.shootPlayer.Update(deltaTime);
     }
+
+    if(auto lastPred = predictionHistory_.Back())
+    {
+        UpdateCamera(lastPred->inputReq.playerInput);
+    }
 }
 
 // Exit

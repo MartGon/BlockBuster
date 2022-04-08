@@ -184,7 +184,7 @@ namespace BlockBuster
         Util::Ring<Networking::Snapshot, 30> history;
 
         // Simulation
-        const Util::Time::Seconds TICK_RATE{0.050};
+        const Util::Time::Seconds TICK_RATE{0.033};
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
 
