@@ -43,6 +43,11 @@ void FPS::Update(Util::Time::Seconds deltaTime)
 
 void FPS::PlayShootAnimation()
 {
+    // HACK Reset pitch and pos, in case it was reloading
+    idlePivot.rotation.x = 0.0f;
+    idlePlayer.Play();
+    idlePlayer.Update(Util::Time::Seconds{0.0f});
+
     idlePlayer.Pause();
     shootPlayer.SetClip(&shoot);
     shootPlayer.Restart();
@@ -51,9 +56,11 @@ void FPS::PlayShootAnimation()
 void FPS::PlayReloadAnimation(Util::Time::Seconds reloadTime)
 {
     idlePlayer.Pause();
+
     shootPlayer.SetClip(&reload);
     shootPlayer.SetClipDuration(reloadTime);
     shootPlayer.Restart();
+
     leftFlash->enabled = false;
     rightFlash->enabled = false;
 }

@@ -258,5 +258,8 @@ namespace BlockBuster
         // Config
         GameOptions gameOptions;
         bool exit = false;
+
+        // TODO: Remove
+        glm::vec2 iconScale{1.0f};
     };
 }

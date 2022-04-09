@@ -1020,6 +1020,8 @@ void InGameGUI::DebugWindow()
             
             ImGui::InputFloat("Precision", &sliderPrecision);
 
+            ImGui::SliderFloat2("Icon scale", &inGame->iconScale.x, -sliderPrecision, sliderPrecision);
+
             if(ImGui::Button("Apply"))
             {
             }

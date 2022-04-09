@@ -480,7 +480,7 @@ void Server::HandleShootCommand(ShotCommand sc)
     float SPEED = 20.0f;
     glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
     p->Launch(ray.origin, ray.GetDir() * SPEED, acceleration);
-    projectiles.MoveInto(std::move(p));
+    //projectiles.MoveInto(std::move(p));
     // TODO: Until here
 
     // Check collision with block

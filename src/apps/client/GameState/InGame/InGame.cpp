@@ -715,7 +715,7 @@ void InGame::DrawGameObjects()
             auto wepId = std::get<int>(go->properties["Weapon ID"].value);
             if(auto ico = wepIcons.Get(wepId))
                 icon = ico.value();
-            scale = glm::vec2{2.f, 1.125f};
+            scale = glm::vec2{3.14f, 1.0f};
         }
         else if(go->type == Entity::GameObject::Type::HEALTHPACK)
             icon = redCrossIcon;

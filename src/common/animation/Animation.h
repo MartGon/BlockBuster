@@ -38,12 +38,13 @@ namespace Animation
 
         inline void SetClip(Clip* clip)
         {
-            if(this->clip)
-                ApplySample(backupSample);
-
             this->clip = clip;
-            backupSample = TakeSample();
             this->speedMod = 1.0f;
+        }
+
+        inline Clip* GetClip()
+        {
+            return this->clip;
         }
 
         inline void SetTargetFloat(std::string key, float* target)
