@@ -61,6 +61,11 @@ bool Entity::HasSwapped(Weapon::State s1, Weapon::State s2)
     return s1 == Weapon::State::SWAPPING && s2 == Weapon::State::IDLE;
 }
 
+bool Entity::HasPickedUp(Weapon::State s1, Weapon::State s2)
+{
+    return s1 != Weapon::State::PICKING_UP && s2 == Weapon::State::PICKING_UP;
+}
+
 bool Entity::CanShoot(Weapon weapon)
 {
     auto wepType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
@@ -78,6 +83,13 @@ void Entity::StartWeaponSwap(Weapon& weapon)
     auto weaponType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
     weapon.state = Weapon::State::SWAPPING;
     weapon.cooldown = weaponType.reloadTime * 0.5f;
+}
+
+void Entity::StartPickingWeapon(Weapon& weapon)
+{
+    auto weaponType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
+    weapon.state = Weapon::State::PICKING_UP;
+    weapon.cooldown = weaponType.reloadTime * 0.75f;
 }
 
 // Ammo

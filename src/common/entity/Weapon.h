@@ -83,6 +83,7 @@ namespace Entity
             SHOOTING,
             RELOADING,
             SWAPPING,
+            PICKING_UP
         };
         State state = State::IDLE;
 
@@ -101,8 +102,10 @@ namespace Entity
     bool HasReloaded(Weapon::State s1, Weapon::State s2);
     bool HasStartedSwap(Weapon::State s1, Weapon::State s2);
     bool HasSwapped(Weapon::State s1, Weapon::State s2);
+    bool HasPickedUp(Weapon::State s1, Weapon::State s2);
     bool CanShoot(Weapon weapon);
     void StartWeaponSwap(Weapon& weapon);
+    void StartPickingWeapon(Weapon& weapon);
 
     // Ammo
     Weapon::AmmoState ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType);

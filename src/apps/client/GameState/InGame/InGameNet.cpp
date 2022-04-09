@@ -664,14 +664,15 @@ void InGame::SmoothPlayerMovement()
         // Animation
         auto oldWepState = oldState.weaponState[oldState.curWep];
         auto nextState = predState.weaponState[oldState.curWep];
+        
         if(Entity::HasShot(oldWepState.state, nextState.state))
         {
             fpsAvatar.PlayShootAnimation();
             WeaponRecoil();
         }
-        else if(Entity::HasReloaded(oldWepState.state, nextState.state))
-            fpsAvatar.PlayReloadAnimation(nextState.cooldown);
-        else if(Entity::HasStartedSwap(oldWepState.state, nextState.state))
+        bool playReloadAnim = Entity::HasReloaded(oldWepState.state, nextState.state) || Entity::HasStartedSwap(oldWepState.state, nextState.state) ||
+            Entity::HasPickedUp(oldWepState.state, nextState.state);
+        if(playReloadAnim)
             fpsAvatar.PlayReloadAnimation(nextState.cooldown);
 
         // Prediction Error correction

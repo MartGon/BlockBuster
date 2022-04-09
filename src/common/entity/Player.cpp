@@ -311,10 +311,17 @@ void Player::ResetWeapons()
 
 void Player::PickupWeapon(Weapon weapon)
 {
-    auto nextWep = GetNextWeaponId();
-    weapons[nextWep] = weapon;
+    StartPickingWeapon(weapon);
 
-    StartWeaponSwap(GetCurrentWeapon());
+    auto nextWepId = GetNextWeaponId();
+    auto nextWep = weapons[nextWepId];
+    if(nextWep.weaponTypeId == WeaponTypeID::NONE)
+    {
+        weapons[nextWepId] = weapon;
+        curWep = nextWepId;
+    }
+    else
+        weapons[curWep] = weapon;
 }
 
 // Health

@@ -144,6 +144,7 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Weapon secWeapon, Entity::P
         break;
 
         case Weapon::State::SWAPPING:
+        case Weapon::State::PICKING_UP:
         {
             weapon.cooldown -= deltaTime;
             if(weapon.cooldown.count() <= 0.0)
