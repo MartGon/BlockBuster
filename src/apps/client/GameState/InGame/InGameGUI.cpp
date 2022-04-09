@@ -753,6 +753,13 @@ void InGameGUI::EnableHUD(bool enabled)
     ammoNumIcon.SetIsVisible(enabled);
     ammoText.SetIsVisible(enabled);
 
+    wepIcon.SetIsVisible(enabled);
+    altWepIcon.SetIsVisible(enabled);
+    grenadeIcon.SetIsVisible(enabled);
+    grenadeNumText.SetIsVisible(enabled);
+
+    flagIconImg.SetIsVisible(enabled);
+
     crosshairImg.SetIsVisible(enabled);
     hitmarkerImg.SetIsVisible(enabled);
     dmgEffectImg.SetIsVisible(enabled);
