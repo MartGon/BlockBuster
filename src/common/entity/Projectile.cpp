@@ -1,5 +1,7 @@
 #include <Projectile.h>
 
+#include <util/Random.h>
+
 using namespace Entity;
 
 Projectile::State Projectile::State::Interpolate(Projectile::State a, Projectile::State b, float alpha)
@@ -38,7 +40,8 @@ void Projectile::Launch(Entity::ID playerId, glm::vec3 pos, glm::vec3 iVelocity,
     this->pos = pos;
     this->acceleration = acceleration;
     this->velocity = iVelocity;
-    this->torque = glm::vec3{360.0f, 0.0f, 0.0f};
+    auto lapsSecs = Util::Random::Normal(0.0f, 2.0f);
+    this->torque = glm::vec3{360.0f * lapsSecs, 0.0f, 0.0f};
 
     OnLaunch();
 }
