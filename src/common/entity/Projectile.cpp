@@ -6,6 +6,7 @@ Projectile::State Projectile::State::Interpolate(Projectile::State a, Projectile
 {
     Projectile::State ret;
     ret.pos = a.pos * alpha + b.pos * (1.0f - alpha);
+    ret.pitch = a.pitch * alpha + b.pitch * (1.0f - alpha);
 
     return ret;
 }
@@ -15,6 +16,7 @@ Projectile::State Projectile::ExtractState()
     Projectile::State s;
 
     s.pos = pos;
+    s.pitch = rotation.x;
 
     return s;
 }
@@ -22,6 +24,7 @@ Projectile::State Projectile::ExtractState()
 void Projectile::ApplyState(Projectile::State s)
 {
     pos = s.pos;
+    rotation = glm::vec3{s.pitch, 0.0f, 0.0f};
 }
 
 void Projectile::SetScale(glm::vec3 scale)
@@ -35,6 +38,7 @@ void Projectile::Launch(Entity::ID playerId, glm::vec3 pos, glm::vec3 iVelocity,
     this->pos = pos;
     this->acceleration = acceleration;
     this->velocity = iVelocity;
+    this->torque = glm::vec3{360.0f, 0.0f, 0.0f};
 
     OnLaunch();
 }
@@ -46,6 +50,8 @@ void Projectile::Update(Util::Time::Seconds deltaTime)
 
     auto displacement = velocity * dT;
     pos += displacement;
+
+    rotation += torque * dT;
 
     OnUpdate(deltaTime);
 }

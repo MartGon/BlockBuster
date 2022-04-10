@@ -825,7 +825,7 @@ void InGame::DrawProjectiles()
 
     for(auto& [id, projectile] : projectiles)
     {
-        Math::Transform t{projectile.GetPos(), glm::vec3{0.0f}, projectile.GetScale()};
+        Math::Transform t{projectile.GetPos(), projectile.GetRotation(), projectile.GetScale()};
         auto tMat = view * t.GetTransformMat();
         modelMgr.Draw(Game::Models::GRENADE_MODEL_ID, tMat);
     }

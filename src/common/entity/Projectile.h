@@ -14,6 +14,7 @@ namespace Entity
         struct State
         {
             glm::vec3 pos;
+            float pitch;
 
             static State Interpolate(State a, State b, float alpha);
         };
@@ -39,6 +40,11 @@ namespace Entity
         inline void SetPos(glm::vec3 pos)
         {
             this->pos = pos;
+        }
+
+        inline glm::vec3 GetRotation() const
+        {
+            return rotation;
         }
 
         inline glm::vec3 GetScale() const
@@ -76,6 +82,9 @@ namespace Entity
         glm::vec3 pos{0.0f};
         glm::vec3 velocity{0.0f};
         glm::vec3 acceleration{0.0f};
+
+        glm::vec3 torque{0.0f};
+        glm::vec3 rotation{0.0f};
 
         Entity::ID playerId;
         float radius = 8.0f;
