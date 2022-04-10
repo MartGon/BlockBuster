@@ -385,7 +385,7 @@ void Player::InteractWith(GameObject go)
 
     case GameObject::Type::GRENADES:
         {
-            grenades = std::max(grenades + 2, 4);
+            grenades = std::min(grenades + 2, 4);
         }
         break;
 

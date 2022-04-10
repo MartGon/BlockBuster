@@ -145,6 +145,7 @@ namespace BlockBuster
 
         // Simulation
         void UpdateWorld();
+        void UpdateProjectiles();
         bool IsPlayerOutOfBounds(ENet::PeerId peerId);
         void OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId);
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);

@@ -753,46 +753,7 @@ void Server::UpdateWorld()
         }
     }
 
-    // Projectiles
-    auto pIds = projectiles.GetIDs();
-    std::vector<uint16_t> idsToRemove;
-    for(auto id : pIds)
-    {
-        auto& projectile = projectiles.GetRef(id);
-        projectile->Update(TICK_RATE);
-        
-        Math::Transform t{projectile->GetPos(), glm::vec3{0.0f}, projectile->GetScale()};
-        auto collision = Game::AABBCollidesBlock(&map, t);
-        if(collision.collides)
-        {
-            logger.LogError("Surface normal " + glm::to_string(collision.normal));
-            logger.LogError("Offset " + glm::to_string(collision.offset));
-            projectile->OnCollide(collision.normal);
-            projectile->SetPos(t.position + collision.offset);
-        }
-
-        // Apply dmg to players
-        if(projectile->HasDenotaded())
-        {
-            auto& author = clients[projectile->GetAuthor()].player;
-            auto radius = projectile->GetRadius();
-            for(auto& [id, client] : clients)
-            {
-                auto& victim = client.player;
-                auto victimPos = victim.GetTransform().position;
-                if(auto collision = Collisions::PointInSphere(victimPos, projectile->GetPos(), radius))
-                {
-                    bool doDmg = victim.teamId != author.teamId || author.id == victim.id; // Different team or player
-                    auto dmg = Entity::GetDistanceDmgMod(projectile->GetRadius() * 0.5f, collision.distance) * projectile->GetDmg();
-                    victim.TakeDmg(dmg);
-                    OnPlayerTakeDmg(author.id, victim.id);
-                }
-            }
-            idsToRemove.push_back(id);
-        }
-    }
-    for(auto id : idsToRemove)
-        projectiles.Remove(id);
+    UpdateProjectiles();
 
     // Send broad events
     auto gameMode = match.GetGameMode();
@@ -823,6 +784,57 @@ void Server::UpdateWorld()
             SendPacket(id, batch);
         }
     }
+}
+
+void Server::UpdateProjectiles()
+{
+     // Projectiles
+    auto pIds = projectiles.GetIDs();
+    std::vector<uint16_t> idsToRemove;
+    for(auto id : pIds)
+    {
+        auto& projectile = projectiles.GetRef(id);
+        projectile->Update(TICK_RATE);
+        
+        Math::Transform t{projectile->GetPos(), glm::vec3{0.0f}, projectile->GetScale()};
+        auto collision = Game::AABBCollidesBlock(&map, t);
+        if(collision.collides)
+        {
+            logger.LogError("Surface normal " + glm::to_string(collision.normal));
+            logger.LogError("Offset " + glm::to_string(collision.offset));
+            projectile->OnCollide(collision.normal);
+            projectile->SetPos(t.position + collision.offset);
+        }
+
+        // Apply dmg to players
+        if(projectile->HasDenotaded())
+        {
+            if(Util::Map::Contains(clients, projectile->GetAuthor()))
+            {
+                auto& author = clients[projectile->GetAuthor()].player;
+                auto radius = projectile->GetRadius();
+                for(auto& [id, client] : clients)
+                {
+                    auto& victim = client.player;
+
+                    if(victim.IsDead())
+                        continue;
+
+                    auto victimPos = victim.GetTransform().position;
+                    if(auto collision = Collisions::PointInSphere(victimPos, projectile->GetPos(), radius))
+                    {
+                        bool doDmg = victim.teamId != author.teamId || author.id == victim.id; // Different team or player
+                        auto dmg = Entity::GetDistanceDmgMod(projectile->GetRadius() * 0.5f, collision.distance) * projectile->GetDmg();
+                        victim.TakeDmg(dmg);
+                        OnPlayerTakeDmg(author.id, victim.id);
+                    }
+                }
+            }
+            idsToRemove.push_back(id);
+        }
+    }
+    for(auto id : idsToRemove)
+        projectiles.Remove(id);
 }
 
 bool Server::IsPlayerOutOfBounds(ENet::PeerId peerId)

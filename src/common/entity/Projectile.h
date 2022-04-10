@@ -14,7 +14,7 @@ namespace Entity
         struct State
         {
             glm::vec3 pos;
-            float pitch;
+            glm::vec2 rotation;
 
             static State Interpolate(State a, State b, float alpha);
         };

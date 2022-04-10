@@ -8,7 +8,7 @@ Projectile::State Projectile::State::Interpolate(Projectile::State a, Projectile
 {
     Projectile::State ret;
     ret.pos = a.pos * alpha + b.pos * (1.0f - alpha);
-    ret.pitch = a.pitch * alpha + b.pitch * (1.0f - alpha);
+    ret.rotation = a.rotation * alpha + b.rotation * (1.0f - alpha);
 
     return ret;
 }
@@ -18,7 +18,7 @@ Projectile::State Projectile::ExtractState()
     Projectile::State s;
 
     s.pos = pos;
-    s.pitch = rotation.x;
+    s.rotation = glm::vec2{rotation.x, rotation.z};
 
     return s;
 }
@@ -26,7 +26,7 @@ Projectile::State Projectile::ExtractState()
 void Projectile::ApplyState(Projectile::State s)
 {
     pos = s.pos;
-    rotation = glm::vec3{s.pitch, 0.0f, 0.0f};
+    rotation = glm::vec3{s.rotation.x, 0.0f, s.rotation.y};
 }
 
 void Projectile::SetScale(glm::vec3 scale)
@@ -40,8 +40,11 @@ void Projectile::Launch(Entity::ID playerId, glm::vec3 pos, glm::vec3 iVelocity,
     this->pos = pos;
     this->acceleration = acceleration;
     this->velocity = iVelocity;
-    auto lapsSecs = Util::Random::Normal(0.0f, 2.0f);
-    this->torque = glm::vec3{360.0f * lapsSecs, 0.0f, 0.0f};
+
+    auto proj = glm::normalize(glm::vec2{velocity.x, velocity.z});
+    auto lapsSecs = Util::Random::Normal(0.5f, 1.5f);
+    auto rotSpeed = 360.0f * lapsSecs;
+    this->torque = glm::vec3{rotSpeed * proj.y, 0.0f, rotSpeed * proj.x};
 
     OnLaunch();
 }
