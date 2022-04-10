@@ -431,6 +431,9 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     if(input[Entity::Inputs::ACTION])
         HandleActionCommand(player);
 
+    if(input[Entity::Inputs::GRENADE])
+        HandleGrenadeCommand(peerId);
+
     if(IsPlayerOutOfBounds(peerId))
         OnPlayerDeath(peerId, peerId);
 }
@@ -474,14 +477,6 @@ void Server::HandleShootCommand(ShotCommand sc)
     // Get Ray
     Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
     logger.LogDebug("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
-
-    // TODO: Remove
-    auto p = std::make_unique<Entity::Grenade>();
-    float SPEED = 20.0f;
-    glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
-    p->Launch(ray.origin, ray.GetDir() * SPEED, acceleration);
-    //projectiles.MoveInto(std::move(p));
-    // TODO: Until here
 
     // Check collision with block
     auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
@@ -558,6 +553,27 @@ void Server::HandleActionCommand(Entity::Player& player)
             // Inform player of interaction
             SendPlayerGameObjectInteraction(player.id, pos);
         }
+    }
+}
+
+void Server::HandleGrenadeCommand(ENet::PeerId peerId)
+{
+    auto& player = clients[peerId].player;
+    auto& weapon = player.GetCurrentWeapon();
+
+    if(weapon.state == Entity::Weapon::State::IDLE && player.HasGrenades())
+    {
+        player.ThrowGrenade();
+
+        auto origin = player.GetFPSCamPos();
+        auto rotation = player.GetTransform().rotation;
+        auto dir = Math::GetFront(glm::radians(glm::vec2{rotation}));
+
+        auto p = std::make_unique<Entity::Grenade>();
+        float SPEED = 20.0f;
+        glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
+        p->Launch(player.id, origin, dir * SPEED, acceleration);
+        projectiles.MoveInto(std::move(p));
     }
 }
 
@@ -739,6 +755,7 @@ void Server::UpdateWorld()
 
     // Projectiles
     auto pIds = projectiles.GetIDs();
+    std::vector<uint16_t> idsToRemove;
     for(auto id : pIds)
     {
         auto& projectile = projectiles.GetRef(id);
@@ -753,7 +770,29 @@ void Server::UpdateWorld()
             projectile->OnCollide(collision.normal);
             projectile->SetPos(t.position + collision.offset);
         }
+
+        // Apply dmg to players
+        if(projectile->HasDenotaded())
+        {
+            auto& author = clients[projectile->GetAuthor()].player;
+            auto radius = projectile->GetRadius();
+            for(auto& [id, client] : clients)
+            {
+                auto& victim = client.player;
+                auto victimPos = victim.GetTransform().position;
+                if(auto collision = Collisions::PointInSphere(victimPos, projectile->GetPos(), radius))
+                {
+                    bool doDmg = victim.teamId != author.teamId || author.id == victim.id; // Different team or player
+                    auto dmg = Entity::GetDistanceDmgMod(projectile->GetRadius() * 0.5f, collision.distance) * projectile->GetDmg();
+                    victim.TakeDmg(dmg);
+                    OnPlayerTakeDmg(author.id, victim.id);
+                }
+            }
+            idsToRemove.push_back(id);
+        }
     }
+    for(auto id : idsToRemove)
+        projectiles.Remove(id);
 
     // Send broad events
     auto gameMode = match.GetGameMode();
@@ -954,6 +993,7 @@ void Server::SpawnPlayer(ENet::PeerId clientId)
     player.GetCurrentWeapon() = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::ASSAULT_RIFLE).CreateInstance();
     //player.weapons[1] = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
     player.ResetHealth();
+    player.grenades = 2;
 }
 
 void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)

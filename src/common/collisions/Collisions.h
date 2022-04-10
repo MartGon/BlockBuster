@@ -70,4 +70,16 @@ namespace Collisions
     // Points
     bool IsPointInAABB(glm::vec3 point, Math::Transform transformAABB);
     bool IsPointInSphere(glm::vec3 point, glm::vec3 center, float scale);
+    struct SpherePointCollision
+    {
+        bool collides;
+        glm::vec3 dist;
+        float distance;
+
+        operator bool() const
+        {
+            return collides;
+        }
+    };
+    SpherePointCollision PointInSphere(glm::vec3 point ,glm::vec3 center, float scale);
 };

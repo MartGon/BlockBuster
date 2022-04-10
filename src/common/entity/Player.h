@@ -64,6 +64,7 @@ namespace Entity
         Transform transform;
         Weapon weaponState[2];
         uint8_t curWep;
+        uint8_t grenades;
     };
     bool operator==(const PlayerState& a, const PlayerState& b);
 
@@ -125,6 +126,7 @@ namespace Entity
         
         static constexpr uint8_t MAX_WEAPONS = 2;
         static constexpr uint8_t MAX_GRENADES = 4;
+        static constexpr Util::Time::Seconds GRENADE_THROW_CD{0.25f};
 
         // Serialization
         PlayerState ExtractState() const;
@@ -140,12 +142,17 @@ namespace Entity
 
         // Weapons
         void TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance);
+        void TakeDmg(float dmg);
         void ResetWeaponAmmo(Entity::WeaponTypeID weaponType);
         Weapon& GetCurrentWeapon();
         uint8_t WeaponSwap();
         uint8_t GetNextWeaponId();
         void ResetWeapons();
         void PickupWeapon(Weapon weapon);
+
+        // Greandes
+        bool HasGrenades();
+        void ThrowGrenade();
 
         // Health
         struct HealthState

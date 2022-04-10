@@ -1,5 +1,7 @@
 #include <Weapon.h>
 
+#include <Player.h>
+
 using namespace Entity;
 
 const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponTypes = {
@@ -66,6 +68,11 @@ bool Entity::HasPickedUp(Weapon::State s1, Weapon::State s2)
     return s1 != Weapon::State::PICKING_UP && s2 == Weapon::State::PICKING_UP;
 }
 
+bool Entity::HasGrenadeThrow(Weapon::State s1, Weapon::State s2)
+{
+    return s1 != Weapon::State::GRENADE_THROWING && s2 == Weapon::State::GRENADE_THROWING;
+}
+
 bool Entity::CanShoot(Weapon weapon)
 {
     auto wepType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
@@ -90,6 +97,12 @@ void Entity::StartPickingWeapon(Weapon& weapon)
     auto weaponType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
     weapon.state = Weapon::State::PICKING_UP;
     weapon.cooldown = weaponType.reloadTime * 0.75f;
+}
+
+void Entity::StartGrenadeThrow(Weapon& weapon)
+{
+    weapon.state = Weapon::State::GRENADE_THROWING;
+    weapon.cooldown = Entity::Player::GRENADE_THROW_CD;
 }
 
 // Ammo
@@ -177,6 +190,11 @@ bool Entity::IsMagFull(Weapon::AmmoState ammoState, AmmoTypeData ammoData, AmmoT
 float Entity::GetDistanceDmgMod(Entity::WeaponType wepType, float distance)
 {
     auto range = wepType.maxRange;
+    return GetDistanceDmgMod(range, distance);
+}
+
+float Entity::GetDistanceDmgMod(float range, float distance)
+{
     float mod = distance <= range ? 1.0f : range / distance;
 
     return mod;

@@ -87,6 +87,9 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
     // Cur wep
     same = same && a.curWep == b.curWep;
 
+    // Grenades
+    same = same && a.grenades == b.grenades;
+
     return same;
 }
 
@@ -217,6 +220,8 @@ Entity::PlayerState Player::ExtractState() const
         s.weaponState[i] = weapons[i];
     s.curWep = curWep;
 
+    s.grenades = grenades;
+
     return s;
 }
 
@@ -228,6 +233,8 @@ void Player::ApplyState(Entity::PlayerState s)
     curWep = s.curWep;
     for(auto i = 0; i < 2; i++)
         weapons[i] = s.weaponState[i];
+
+    grenades = s.grenades;
 }
 
 // Transforms
@@ -264,6 +271,11 @@ void Player::TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float 
     auto dmgMod = GetDmgMod(hitboxType) * GetDistanceDmgMod(weaponType, distance);
     auto dmg = weaponType.baseDmg * dmgMod;
 
+    TakeDmg(dmg);
+}
+
+void Player::TakeDmg(float dmg)
+{
     auto& shield = health.shield;
     auto& health = this->health.hp;
 
@@ -322,6 +334,19 @@ void Player::PickupWeapon(Weapon weapon)
     }
     else
         weapons[curWep] = weapon;
+}
+
+// Grenades
+
+bool Player::HasGrenades()
+{
+    return grenades > 0;
+}
+
+void Player::ThrowGrenade()
+{
+    Entity::StartGrenadeThrow(GetCurrentWeapon());
+    grenades = std::max(grenades - 1, 0);
 }
 
 // Health

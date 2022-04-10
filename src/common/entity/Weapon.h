@@ -83,7 +83,8 @@ namespace Entity
             SHOOTING,
             RELOADING,
             SWAPPING,
-            PICKING_UP
+            PICKING_UP,
+            GRENADE_THROWING
         };
         State state = State::IDLE;
 
@@ -103,9 +104,12 @@ namespace Entity
     bool HasStartedSwap(Weapon::State s1, Weapon::State s2);
     bool HasSwapped(Weapon::State s1, Weapon::State s2);
     bool HasPickedUp(Weapon::State s1, Weapon::State s2);
+    bool HasGrenadeThrow(Weapon::State s1, Weapon::State s2);
+
     bool CanShoot(Weapon weapon);
     void StartWeaponSwap(Weapon& weapon);
     void StartPickingWeapon(Weapon& weapon);
+    void StartGrenadeThrow(Weapon& weapon);
 
     // Ammo
     Weapon::AmmoState ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType);
@@ -115,4 +119,5 @@ namespace Entity
 
     // Dmg
     float GetDistanceDmgMod(WeaponType weaponType, float distance);
+    float GetDistanceDmgMod(float range, float distance);
 }

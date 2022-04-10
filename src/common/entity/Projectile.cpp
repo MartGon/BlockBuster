@@ -29,11 +29,14 @@ void Projectile::SetScale(glm::vec3 scale)
     this->scale = scale;
 }
 
-void Projectile::Launch(glm::vec3 pos, glm::vec3 iVelocity, glm::vec3 acceleration)
+void Projectile::Launch(Entity::ID playerId, glm::vec3 pos, glm::vec3 iVelocity, glm::vec3 acceleration)
 {
+    this->playerId = playerId;
     this->pos = pos;
     this->acceleration = acceleration;
     this->velocity = iVelocity;
+
+    OnLaunch();
 }
 
 void Projectile::Update(Util::Time::Seconds deltaTime)
@@ -43,11 +46,27 @@ void Projectile::Update(Util::Time::Seconds deltaTime)
 
     auto displacement = velocity * dT;
     pos += displacement;
+
+    OnUpdate(deltaTime);
 }
 
 // Grenade
 
+void Grenade::OnLaunch()
+{
+    timer.SetDuration(timerDuration);
+    timer.Start();
+}
+
 void Grenade::OnCollide(glm::vec3 surfaceNormal)
 {
     velocity = glm::reflect(velocity, surfaceNormal);
+    velocity = velocity * 0.66f;
+}
+
+void Grenade::OnUpdate(Util::Time::Seconds secs)
+{
+    timer.Update(secs);
+    if(timer.IsDone())
+        detonated = true;
 }

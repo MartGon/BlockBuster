@@ -359,6 +359,14 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 {
                     fpsAvatar.PlayReloadAnimation(player.GetCurrentWeapon().cooldown);
                 }
+                else if(go->type == Entity::GameObject::Type::GRENADES)
+                {
+                    if(auto pred = predictionHistory_.Back())
+                    {
+                        pred->origin.grenades = player.grenades;
+                        pred->dest.grenades = player.grenades;
+                    }
+                }
             }
         }
         break;
@@ -671,7 +679,7 @@ void InGame::SmoothPlayerMovement()
             WeaponRecoil();
         }
         bool playReloadAnim = Entity::HasReloaded(oldWepState.state, nextState.state) || Entity::HasStartedSwap(oldWepState.state, nextState.state) ||
-            Entity::HasPickedUp(oldWepState.state, nextState.state);
+            Entity::HasPickedUp(oldWepState.state, nextState.state) || Entity::HasGrenadeThrow(oldWepState.state, nextState.state);
         if(playReloadAnim)
             fpsAvatar.PlayReloadAnimation(nextState.cooldown);
 
@@ -713,6 +721,12 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
     {   
         // Swap weap
         nextState.curWep = player.WeaponSwap();
+    }
+
+    if(playerInput[Entity::GRENADE] && a.weaponState[a.curWep].state == Entity::Weapon::State::IDLE && a.grenades > 0)
+    {
+        Entity::StartGrenadeThrow(nextState.weaponState[a.curWep]);
+        nextState.grenades = std::max(nextState.grenades - 1, 0);
     }
 
     return nextState;

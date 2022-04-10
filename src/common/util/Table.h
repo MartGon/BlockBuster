@@ -55,6 +55,11 @@ namespace Util
             return map.at(id);
         }
 
+        void Remove(ID id)
+        {
+            map.erase(id);
+        }
+
     private:
         
         ID GetFreeID()

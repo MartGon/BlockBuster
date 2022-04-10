@@ -272,3 +272,10 @@ bool Collisions::IsPointInSphere(glm::vec3 point, glm::vec3 center, float scale)
     auto distance = glm::length(point - center);
     return distance <= scale;
 }
+
+SpherePointCollision Collisions::PointInSphere(glm::vec3 point, glm::vec3 center, float scale)
+{
+    auto dist = point - center;
+    auto distance = glm::length(dist);
+    return SpherePointCollision{distance <= scale, dist, distance};
+}

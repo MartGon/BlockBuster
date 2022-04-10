@@ -130,6 +130,7 @@ namespace BlockBuster
         void HandleClientsInput();
         void HandleShootCommand(ShotCommand sc);
         void HandleActionCommand(Entity::Player& player);
+        void HandleGrenadeCommand(ENet::PeerId peerId);
 
         void SendWorldUpdate();
         void SendScoreboardReport();
