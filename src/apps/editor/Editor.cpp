@@ -30,6 +30,7 @@ void Editor::Start()
         paintShader = GL::Shader::FromFolder(sf, "paintVertex.glsl", "paintFrag.glsl");
         chunkShader = GL::Shader::FromFolder(sf, "chunkVertex.glsl", "chunkFrag.glsl");
         skyboxShader = GL::Shader::FromFolder(sf, "skyboxVertex.glsl", "skyboxFrag.glsl");
+        billboardShader = GL::Shader::FromFolder(sf, "billboardVertex.glsl", "billboardFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -50,6 +51,10 @@ void Editor::Start()
     };
     TRY_LOAD(skybox.Load(map, false));
 
+    renderMgr.Start();
+    auto& texMgr = renderMgr.GetTextureMgr();
+    texMgr.SetDefaultFolder(texturesDir);
+
     // Framebuffer
     framebuffer.Init(picSize);
 
@@ -59,7 +64,7 @@ void Editor::Start()
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
 
     // Models
-    modelMgr.Start(renderMgr, renderShader);
+    modelMgr.Start(renderMgr, renderShader, billboardShader);
 
     respawnModel.SetMeshes(cylinder, slope);
     respawnModel.Start(renderMgr, renderShader);
@@ -497,6 +502,19 @@ void Editor::UpdateEditor()
             
             DrawCursor(t);
         }
+
+        // Icon
+        auto iconPos = rPos + glm::vec3{0.0f, 1.5f, 0.0f};
+        auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING;
+        glm::vec2 scale{1.25f};
+        if(go->type == Entity::GameObject::Type::WEAPON_CRATE)
+        {
+            auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go->properties["Weapon ID"].value));
+            scale = glm::vec2{3.14f, 1.0f};
+            modelMgr.DrawWepBillboard(wepId, view, iconPos, camera.GetRight(), camera.GetUp(), scale, glm::vec4{1.0f}, renderflags);
+        }
+        else if(go->type == Entity::GameObject::Type::HEALTHPACK)
+            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, view, iconPos, camera.GetRight(), camera.GetUp(), scale, glm::vec4{1.0f}, renderflags);
     }
 
     // Draw Cursor

@@ -3,11 +3,15 @@
 #include <rendering/Model.h>
 #include <rendering/Billboard.h>
 #include <rendering/RenderMgr.h>
+
 #include <animation/Animation.h>
 
 #include <entity/GameObject.h>
+#include <entity/Weapon.h>
 
 #include <game/ServiceLocator.h>
+
+#include <util/Table.h>
 
 namespace Game::Models
 {
@@ -18,17 +22,17 @@ namespace Game::Models
         COUNT
     };
 
-    // TODO: Implement for billboards
     enum BillboardID
     {
         FLAG_ICON_ID,
+        RED_CROSS_ICON_ID,
         BILLBOARD_ID_COUNT
     };
 
     class ModelMgr
     {
     public:
-        void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
+        void Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& bbShader);
 
         void DrawGo(Entity::GameObject::Type goType, const glm::mat4& tMat);
         void SetGoModel(Entity::GameObject::Type type, Rendering::ModelI* model);
@@ -36,6 +40,14 @@ namespace Game::Models
         void Draw(ModelID modelId, const glm::mat4& tMat);
         //void SetGoModel(Entity::GameObject::Type type, Rendering::ModelI* model);
         Rendering::ModelI* GetModel(ModelID model);
+
+        void DrawBillboard(BillboardID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, 
+            glm::vec3 cameraUp, glm::vec2 scale, glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = 0);
+        GL::Texture* GetIconTex(BillboardID id);
+
+        void DrawWepBillboard(Entity::WeaponTypeID wepId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, 
+            glm::vec3 cameraUp, glm::vec2 scale, glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = 0);
+        GL::Texture* GetWepIconTex(Entity::WeaponTypeID wepId);
 
         // Base Meshes
         Rendering::Mesh quad;
@@ -47,12 +59,17 @@ namespace Game::Models
     private:
         void InitGoModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
         void InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader);
+        void InitBillboards(Rendering::RenderMgr& renderMgr, GL::Shader& bbShader);
         Log::Logger* GetLogger();
-
-        GL::Texture crateTexture;
 
         Rendering::ModelI* goModels[Entity::GameObject::Type::COUNT];
         Rendering::ModelI* models[ModelID::COUNT];
         Rendering::Billboard* billboards[BillboardID::BILLBOARD_ID_COUNT];
+
+        Util::Table<Rendering::TextureID> iconTextures;
+        Util::Table<Rendering::TextureID> wepIconsTex;
+        Util::Table<Rendering::Billboard*> wepIcons;
+
+        Rendering::RenderMgr* renderMgr;
     };
 }

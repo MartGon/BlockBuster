@@ -8,7 +8,7 @@
 using namespace Game::Models;
 using namespace Entity;
 
-void ModelMgr::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
+void ModelMgr::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& bbShader)
 {
     quad = Rendering::Primitive::GenerateQuad();
     sphere = Rendering::Primitive::GenerateSphere(1.0f);
@@ -16,8 +16,11 @@ void ModelMgr::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     cube = Rendering::Primitive::GenerateCube();
     slope = Rendering::Primitive::GenerateSlope();
 
+    this->renderMgr = &renderMgr;
+
     InitGoModels(renderMgr, shader);
     InitModels(renderMgr, shader);
+    InitBillboards(renderMgr, bbShader);
 }
 
 void ModelMgr::DrawGo(GameObject::Type goType, const glm::mat4& tMat)
@@ -44,6 +47,38 @@ Rendering::ModelI* ModelMgr::GetModel(ModelID modelId)
         ret = models[modelId];
 
     return ret;
+}
+
+void ModelMgr::DrawBillboard(BillboardID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, 
+    glm::vec3 cameraUp, glm::vec2 scale, glm::vec4 colorMod, uint8_t flags)
+{
+    if(auto bb = billboards[bbId])
+        bb->Draw(projView, pos, cameraRight, cameraUp, scale, colorMod, flags);
+}
+
+GL::Texture* ModelMgr::GetIconTex(BillboardID id)
+{
+    GL::Texture* tex = nullptr;
+    if(auto bbid = iconTextures.Get(id))
+        tex = renderMgr->GetTextureMgr().GetTexture(bbid.value());
+
+    return tex;
+}
+
+void ModelMgr::DrawWepBillboard(Entity::WeaponTypeID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, 
+    glm::vec3 cameraUp, glm::vec2 scale, glm::vec4 colorMod, uint8_t flags)
+{
+    if(auto wepBb = wepIcons.Get(bbId))
+        wepBb.value()->Draw(projView, pos, cameraRight, cameraUp, scale, colorMod, flags);
+}
+
+GL::Texture* ModelMgr::GetWepIconTex(Entity::WeaponTypeID wepId)
+{
+    GL::Texture* tex = nullptr;
+    if(auto tid = wepIconsTex.Get(wepId))
+        tex = renderMgr->GetTextureMgr().GetTexture(tid.value());
+
+    return tex;
 }
 
 void ModelMgr::InitGoModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
@@ -189,6 +224,52 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 
     models[GRENADE_MODEL_ID] = grenade;
 
+}
+
+void ModelMgr::InitBillboards(Rendering::RenderMgr& renderMgr, GL::Shader& bbShader)
+{
+    // Textures
+    auto& texMgr = renderMgr.GetTextureMgr();
+    auto flagIconId = texMgr.LoadFromDefaultFolder("flagIcon.png", true);
+    auto redCrossId = texMgr.LoadFromDefaultFolder("redCross.png", true);
+    iconTextures.Add(FLAG_ICON_ID, flagIconId);
+    iconTextures.Add(RED_CROSS_ICON_ID, redCrossId);
+    
+        // Weapon Icons
+    using namespace Entity;
+    auto arId = texMgr.LoadFromDefaultFolder("assault-rifle.png", true);
+    auto srId = texMgr.LoadFromDefaultFolder("sniper-rifle.png", true);
+    wepIconsTex.Add(WeaponTypeID::ASSAULT_RIFLE, arId);
+    wepIconsTex.Add(WeaponTypeID::SNIPER, srId);
+
+    // Billboards
+
+        // Flag Icon
+    auto flagIcon = renderMgr.CreateBillboard();
+    flagIcon->shader = &bbShader;
+    flagIcon->painting.type = Rendering::PaintingType::TEXTURE;
+    flagIcon->painting.hasAlpha = true;
+    flagIcon->painting.texture = flagIconId;
+    billboards[FLAG_ICON_ID] = flagIcon;
+
+        // Red Cross
+    auto redCrossIcon = renderMgr.CreateBillboard();
+    redCrossIcon->shader = &bbShader;
+    redCrossIcon->painting = Rendering::Painting{.type = Rendering::PaintingType::TEXTURE, .hasAlpha = true, .texture = redCrossId};
+    billboards[RED_CROSS_ICON_ID] = redCrossIcon;
+
+    for(int i = Entity::WeaponTypeID::ASSAULT_RIFLE; i < Entity::WeaponTypeID::COUNT; i++)
+    {
+        if(auto texId = wepIconsTex.Get(i))
+        {
+            auto icon = renderMgr.CreateBillboard();
+            icon->shader = &bbShader;
+            icon->painting.type = Rendering::PaintingType::TEXTURE;
+            icon->painting.hasAlpha = true;
+            icon->painting.texture = texId.value();
+            wepIcons.Add(i, icon);
+        }
+    }
 }
 
 Log::Logger* ModelMgr::GetLogger()

@@ -180,6 +180,7 @@ namespace BlockBuster::Editor
         GL::Shader chunkShader;
         GL::Shader quadShader;
         GL::Shader skyboxShader;
+        GL::Shader billboardShader;
 
         Rendering::Mesh cube;
         Rendering::Mesh slope;

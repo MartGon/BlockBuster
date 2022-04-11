@@ -129,9 +129,6 @@ namespace BlockBuster
         GUI::Image flagIconImg;
         GUI::Image dmgEffectImg;
 
-        // Icons
-        Util::Table<Rendering::TextureID> wepIcons;
-
         // Animations
         Animation::Clip hitmarkerAnim;
         bool showHitmarker = false;

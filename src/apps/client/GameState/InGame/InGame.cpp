@@ -95,11 +95,8 @@ void InGame::Start()
 
     // Textures
     renderMgr.Start();
-
     auto& texMgr = renderMgr.GetTextureMgr();
     texMgr.SetDefaultFolder(client_->texturesDir);
-    flagIconId = texMgr.LoadFromDefaultFolder("flagIcon.png", true);
-    redCrossId = texMgr.LoadFromDefaultFolder("redCross.png", true);
 
     // Meshes
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
@@ -109,39 +106,14 @@ void InGame::Start()
     slope = Rendering::Primitive::GenerateSlope();
 
     // Models
-    modelMgr.Start(renderMgr, renderShader);
+    modelMgr.Start(renderMgr, renderShader, billboardShader);
     playerAvatar.SetMeshes(quad, cube, cylinder, slope);
     playerAvatar.Start(renderMgr, renderShader, renderShader);
-
     fpsAvatar.SetMeshes(quad, cube, cylinder);
     fpsAvatar.Start(renderMgr, renderShader, renderShader);
 
     // UI
     inGameGui.Start();
-
-    // Billboards
-    flagIcon = renderMgr.CreateBillboard();
-    flagIcon->shader = &billboardShader;
-    flagIcon->painting.type = Rendering::PaintingType::TEXTURE;
-    flagIcon->painting.hasAlpha = true;
-    flagIcon->painting.texture = flagIconId;
-
-    redCrossIcon = renderMgr.CreateBillboard();
-    redCrossIcon->shader = &billboardShader;
-    redCrossIcon->painting = Rendering::Painting{.type = Rendering::PaintingType::TEXTURE, .hasAlpha = true, .texture = redCrossId};
-
-    for(int i = Entity::WeaponTypeID::ASSAULT_RIFLE; i < Entity::WeaponTypeID::COUNT; i++)
-    {
-        if(auto texId = inGameGui.wepIcons.Get(i))
-        {
-            auto icon = renderMgr.CreateBillboard();
-            icon->shader = &billboardShader;
-            icon->painting.type = Rendering::PaintingType::TEXTURE;
-            icon->painting.hasAlpha = true;
-            icon->painting.texture = texId.value();
-            wepIcons.Add(i, icon);
-        }
-    }
 
     // Camera
     auto winSize = client_->GetWindowSize();
@@ -702,31 +674,23 @@ void InGame::DrawGameObjects()
         if(!state.isActive)
             continue;
 
-        // Calc. Pos
+        // Calc. Pos and flags
         auto go = map->GetGameObject(pos);
         auto rPos = Game::Map::ToRealPos(pos, blockScale);
         rPos.y -= (blockScale / 2.0f);
         
         // Billboard icon
-        Rendering::Billboard* icon = nullptr;
+        auto iconPos = rPos + glm::vec3{0.0f, 1.5f, 0.0f};
+        auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING;
         glm::vec2 scale{1.25f};
         if(go->type == Entity::GameObject::Type::WEAPON_CRATE)
         {
-            auto wepId = std::get<int>(go->properties["Weapon ID"].value);
-            if(auto ico = wepIcons.Get(wepId))
-                icon = ico.value();
+            auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go->properties["Weapon ID"].value));
             scale = glm::vec2{3.14f, 1.0f};
+            modelMgr.DrawWepBillboard(wepId, view, iconPos, camera_.GetRight(), camera_.GetUp(), scale, glm::vec4{1.0f}, renderflags);
         }
         else if(go->type == Entity::GameObject::Type::HEALTHPACK)
-            icon = redCrossIcon;
-
-        // Draw Billboard
-        if(icon)
-        {
-            auto iconPos = rPos + glm::vec3{0.0f, 1.5f, 0.0f};
-            auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING;
-            icon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), scale, glm::vec4{1.0f}, renderflags);
-        }
+            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), scale, glm::vec4{1.0f}, renderflags);
 
         // Draw gameObject
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
@@ -757,7 +721,7 @@ void InGame::DrawModeObjects()
                 if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
                 {
                     auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                    flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                    modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
                 }
             }
         }
@@ -781,7 +745,7 @@ void InGame::DrawModeObjects()
                     if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
                     {
                         auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                        flagIcon->Draw(view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                        modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
                     }
                 }
             }

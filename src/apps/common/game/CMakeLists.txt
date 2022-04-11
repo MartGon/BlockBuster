@@ -11,6 +11,7 @@ SET(SOURCES
     MapMgr.cpp
 
     models/Player.cpp
+    models/Explosion.cpp
     models/FPS.cpp
     models/Respawn.cpp
     models/ModelMgr.cpp
