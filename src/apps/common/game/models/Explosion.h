@@ -49,8 +49,8 @@ namespace Game::Models
 
         static constexpr float CENTER_OFFSET_MEAN = 0.0f;
         static constexpr float CENTER_OFFSET_SD = 0.5f;
-        static constexpr int PARTICLE_MEAN = 3;
-        static constexpr int PARTICLE_SD = 1;
+        static constexpr int PARTICLE_MEAN = 10;
+        static constexpr int PARTICLE_SD = 4;
 
         void Draw(glm::mat4 projView, glm::vec3 camRight, glm::vec3 camUp);
         void Update(Util::Time::Seconds deltaTime);

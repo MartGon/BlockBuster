@@ -32,4 +32,7 @@ void main()
     float lifetime = (36.0f - frameId) / 36.0f;
     fragColor = fragColor * explosionColor * brightFactor * lifetime;
     fragColor = min(vec4(1.0), fragColor);
+
+    if(fragColor.w < 0.1)
+        discard;
 }

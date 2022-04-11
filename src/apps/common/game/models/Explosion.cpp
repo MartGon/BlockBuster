@@ -12,7 +12,7 @@ ExplosionParticle::ExplosionParticle(Rendering::Billboard* expBillboard, Animati
     expPlayer.SetClip(clip);
     expPlayer.SetTargetInt("frame", &frameId);
     expPlayer.Play();
-    //expPlayer.Update(Util::Time::Seconds{2.0f} * startPercent);
+    expPlayer.Update(Util::Time::Seconds{2.0f} * startPercent);
 }
 
 void ExplosionParticle::Draw(glm::mat4 projView, glm::vec3 camRight, glm::vec3 camUp)
@@ -30,7 +30,7 @@ void ExplosionParticle::Update(Util::Time::Seconds deltaTime)
 
 Explosion::Explosion(Rendering::Billboard* billboard, Animation::Clip* clip, glm::vec3 center)
 {
-    int particleNum = std::max(Util::Random::Normal<float>(PARTICLE_MEAN, PARTICLE_SD), 20.0f);
+    int particleNum = std::max(Util::Random::Normal<float>(PARTICLE_MEAN, PARTICLE_SD), 6.0f);
     particles.reserve(particleNum);
     for(auto i = 0; i < particleNum; i++)
     {
@@ -40,7 +40,7 @@ Explosion::Explosion(Rendering::Billboard* billboard, Animation::Clip* clip, glm
         auto expCenter = center + glm::vec3{x, y, z};
 
         auto rot = Util::Random::Uniform(0, glm::two_pi<float>());
-        auto startPercent = Util::Random::Uniform(0.0f, 0.5f);
+        auto startPercent = Util::Random::Uniform(0.0f, 0.25f);
         auto scale = Util::Random::Normal(4.0f, 2.0f);
         
         particles.emplace_back(billboard, clip, expCenter, rot, scale, startPercent);

@@ -46,6 +46,8 @@ void RenderMgr::Render(const Rendering::Camera& camera)
     });
     
     DrawList(&opaqueReq);
+
+    // Remove duplicate depths
     DrawList(&transparentReq);
     
     glClear(GL_DEPTH_BUFFER_BIT);
