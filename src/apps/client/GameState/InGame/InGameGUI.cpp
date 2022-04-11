@@ -1054,6 +1054,13 @@ void InGameGUI::DebugWindow()
             {
                 inGame->camera_.SetZoom(zoom);
             }
+
+            ImGui::ColorPicker4("Exp Color", &inGame->expColor.x);
+            if(ImGui::Button("Create explosion"))
+            {
+                auto& player = inGame->GetLocalPlayer();
+                inGame->explosionMgr.CreateExplosion(glm::vec3{0.0f, 10.0f, 0.0f});
+            }
         }
 
         if(ImGui::CollapsingHeader("Audio"))

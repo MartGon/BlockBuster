@@ -49,11 +49,11 @@ Rendering::ModelI* ModelMgr::GetModel(ModelID modelId)
     return ret;
 }
 
-void ModelMgr::DrawBillboard(BillboardID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, 
-    glm::vec3 cameraUp, glm::vec2 scale, glm::vec4 colorMod, uint8_t flags)
+void ModelMgr::DrawBillboard(BillboardID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, glm::vec3 cameraUp, 
+    float rot, glm::vec2 scale, glm::vec4 colorMod, uint8_t flags)
 {
     if(auto bb = billboards[bbId])
-        bb->Draw(projView, pos, cameraRight, cameraUp, scale, colorMod, flags);
+        bb->Draw(projView, pos, cameraRight, cameraUp, rot, scale, colorMod, flags);
 }
 
 GL::Texture* ModelMgr::GetIconTex(BillboardID id)
@@ -65,11 +65,11 @@ GL::Texture* ModelMgr::GetIconTex(BillboardID id)
     return tex;
 }
 
-void ModelMgr::DrawWepBillboard(Entity::WeaponTypeID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, 
-    glm::vec3 cameraUp, glm::vec2 scale, glm::vec4 colorMod, uint8_t flags)
+void ModelMgr::DrawWepBillboard(Entity::WeaponTypeID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, glm::vec3 cameraUp, 
+    float rot, glm::vec2 scale, glm::vec4 colorMod, uint8_t flags)
 {
     if(auto wepBb = wepIcons.Get(bbId))
-        wepBb.value()->Draw(projView, pos, cameraRight, cameraUp, scale, colorMod, flags);
+        wepBb.value()->Draw(projView, pos, cameraRight, cameraUp, rot, scale, colorMod, flags);
 }
 
 GL::Texture* ModelMgr::GetWepIconTex(Entity::WeaponTypeID wepId)
@@ -258,6 +258,7 @@ void ModelMgr::InitBillboards(Rendering::RenderMgr& renderMgr, GL::Shader& bbSha
     redCrossIcon->painting = Rendering::Painting{.type = Rendering::PaintingType::TEXTURE, .hasAlpha = true, .texture = redCrossId};
     billboards[RED_CROSS_ICON_ID] = redCrossIcon;
 
+    // Weapons
     for(int i = Entity::WeaponTypeID::ASSAULT_RIFLE; i < Entity::WeaponTypeID::COUNT; i++)
     {
         if(auto texId = wepIconsTex.Get(i))

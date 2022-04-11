@@ -22,7 +22,8 @@ namespace Rendering
         Painting painting;
         GL::Shader* shader;
 
-        void Draw(glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, glm::vec3 cameraUp, glm::vec2 scale, glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = 0);
+        void Draw(glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, glm::vec3 cameraUp, float rot = 0.0f, glm::vec2 scale = glm::vec2{1.0f},
+            glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = 0, int frameId = 0);
 
     private:
         Billboard();

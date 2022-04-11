@@ -14,6 +14,7 @@ namespace Animation
     {
         std::unordered_map<std::string, float> floats;
         std::unordered_map<std::string, bool> bools;
+        std::unordered_map<std::string, int> ints;
     };
 
     Sample Interpolate(Sample s1, Sample s2, float alpha);
@@ -55,6 +56,11 @@ namespace Animation
         inline void SetTargetBool(std::string key, bool* target)
         {
             bTargets[key] = target;
+        }
+
+        inline void SetTargetInt(std::string key, int* target)
+        {
+            iTargets[key] = target;
         }
 
         inline void SetOnDoneCallback(std::function<void()> onDone)
@@ -129,6 +135,7 @@ namespace Animation
 
         std::function<void()> onDone;
 
+        std::unordered_map<std::string, int*> iTargets;
         std::unordered_map<std::string, float*> fTargets;
         std::unordered_map<std::string, bool*> bTargets;
     };

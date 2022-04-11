@@ -42,7 +42,7 @@ void Projectile::Launch(Entity::ID playerId, glm::vec3 pos, glm::vec3 iVelocity,
     this->velocity = iVelocity;
 
     auto proj = glm::normalize(glm::vec2{velocity.x, velocity.z});
-    auto lapsSecs = Util::Random::Normal(0.5f, 1.5f);
+    auto lapsSecs = Util::Random::Normal(1.5f, 0.5f);
     auto rotSpeed = 360.0f * lapsSecs;
     this->torque = glm::vec3{rotSpeed * proj.y, 0.0f, rotSpeed * proj.x};
 

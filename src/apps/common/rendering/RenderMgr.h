@@ -5,6 +5,8 @@
 #include <Camera.h>
 #include <TextureMgr.h>
 
+#include <map>
+
 namespace Rendering
 {
     class RenderMgr
@@ -56,9 +58,11 @@ namespace Rendering
             glm::vec3 pos;
             glm::vec3 cameraRight;
             glm::vec3 cameraUp;
+            float rot;
             glm::vec2 scale;
             glm::vec4 colorMod;
             Rendering::Billboard* billboard;
+            int frameId;
         };
 
         struct DrawReq
@@ -72,7 +76,7 @@ namespace Rendering
 
             uint8_t renderFlags = RenderFlags::NONE;
 
-            float GetDepth();
+            float GetDepth(glm::vec3 camPos);
         };
 
         void AddDrawReq(AlphaType type, DrawReq dr);

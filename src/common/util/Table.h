@@ -19,10 +19,10 @@ namespace Util
             return id;
         }
 
-        ID MoveInto(T entry)
+        ID MoveInto(T&& entry)
         {
             auto id = GetFreeID();
-            map[id] = std::move(entry);
+            map.insert({id, std::move(entry)});
             return id;
         }
 
@@ -45,7 +45,7 @@ namespace Util
         {
             std::optional<T> ret;
             if(map.find(id) != map.end())
-                ret = map[id];
+                ret = map.at(id);
             
             return ret;
         }

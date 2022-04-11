@@ -30,6 +30,7 @@ namespace GL
         void SetUniformVec3(const std::string& name, const glm::vec3& vec);
         void SetUniformVec4(const std::string& name, const glm::vec4& vec);
         void SetUniformInt(const std::string& name, int a);
+        void SetUniformFloat(const std::string& name, float a);
 
     private:
 

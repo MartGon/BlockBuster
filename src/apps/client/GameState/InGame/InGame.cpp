@@ -83,6 +83,7 @@ void InGame::Start()
         renderShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "renderVertex.glsl", "renderFrag.glsl");
         chunkShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
         billboardShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "billboardVertex.glsl", "billboardFrag.glsl");
+        expShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "expVertex.glsl", "expFrag.glsl");
         textShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "textVertex.glsl", "textFrag.glsl");
         imgShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "imgVertex.glsl", "imgFrag.glsl");
     }
@@ -111,6 +112,7 @@ void InGame::Start()
     playerAvatar.Start(renderMgr, renderShader, renderShader);
     fpsAvatar.SetMeshes(quad, cube, cylinder);
     fpsAvatar.Start(renderMgr, renderShader, renderShader);
+    explosionMgr.Start(renderMgr, expShader);
 
     // UI
     inGameGui.Start();
@@ -408,6 +410,7 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
         playerState.deathPlayer.Update(deltaTime);
         playerState.shootPlayer.Update(deltaTime);
     }
+    explosionMgr.Update(deltaTime);
 
     if(auto lastPred = predictionHistory_.Back())
     {
@@ -653,6 +656,7 @@ void InGame::DrawScene()
     DrawGameObjects();
     DrawModeObjects();
     DrawProjectiles();
+    explosionMgr.DrawExplosions(view, camera_.GetRight(), camera_.GetUp());
     renderMgr.Render(camera_);
 
     // Draw fpsModel, always rendered last
@@ -687,10 +691,10 @@ void InGame::DrawGameObjects()
         {
             auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go->properties["Weapon ID"].value));
             scale = glm::vec2{3.14f, 1.0f};
-            modelMgr.DrawWepBillboard(wepId, view, iconPos, camera_.GetRight(), camera_.GetUp(), scale, glm::vec4{1.0f}, renderflags);
+            modelMgr.DrawWepBillboard(wepId, view, iconPos, camera_.GetRight(), camera_.GetUp(), 3.14f, scale, glm::vec4{1.0f}, renderflags);
         }
         else if(go->type == Entity::GameObject::Type::HEALTHPACK)
-            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), scale, glm::vec4{1.0f}, renderflags);
+            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, scale, glm::vec4{1.0f}, renderflags);
 
         // Draw gameObject
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
@@ -721,7 +725,7 @@ void InGame::DrawModeObjects()
                 if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
                 {
                     auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                    modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                    //modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
                 }
             }
         }
@@ -745,7 +749,7 @@ void InGame::DrawModeObjects()
                     if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
                     {
                         auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                        modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                        modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, glm::vec2{2.f}, color, renderflags);
                     }
                 }
             }

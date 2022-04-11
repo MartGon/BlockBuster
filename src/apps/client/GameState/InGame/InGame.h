@@ -20,6 +20,7 @@
 #include <game/models/Player.h>
 #include <game/models/FPS.h>
 #include <game/models/ModelMgr.h>
+#include <game/models/Explosion.h>
 
 #include <util/BBTime.h>
 #include <util/Ring.h>
@@ -218,6 +219,7 @@ namespace BlockBuster
         GL::Shader renderShader;
         GL::Shader chunkShader;
         GL::Shader billboardShader;
+        GL::Shader expShader;
         GL::Shader textShader;
         GL::Shader imgShader;
 
@@ -232,6 +234,8 @@ namespace BlockBuster
         Game::Models::ModelMgr modelMgr;
         Game::Models::Player playerAvatar;
         Game::Models::FPS fpsAvatar;
+        Game::Models::ExplosionMgr explosionMgr;
+        glm::vec4 expColor;
 
             // Camera
         Rendering::Camera camera_;

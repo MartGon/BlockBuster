@@ -83,6 +83,13 @@ void GL::Shader::SetUniformInt(const std::string& name, int a)
     glUniform1i(location, a);
 }
 
+void GL::Shader::SetUniformFloat(const std::string& name, float a)
+{
+    Use();
+    auto location = GetCachedLoc(name);
+    glUniform1f(location, a);
+}
+
 // Private
 
 GLint GL::Shader::GetCachedLoc(const std::string& name)

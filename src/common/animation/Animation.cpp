@@ -54,7 +54,6 @@ void Player::SetClipDuration(Util::Time::Seconds secs)
 Sample Animation::Interpolate(Sample s1, Sample s2, float alpha)
 {
     Sample s;
-
     // Interpolate floats
     for(auto [k, f] : s1.floats)
     {  
@@ -68,8 +67,18 @@ Sample Animation::Interpolate(Sample s1, Sample s2, float alpha)
         }
     }
 
-    // Use s1 bools
-    s.bools = s1.bools;
+    // Interpolate ints
+    for(auto [k, i] : s1.ints)
+    {  
+        auto i1 = i;
+        if(s2.ints.find(k) != s2.ints.end())
+        {
+            auto i2 = s2.ints[k];
+            auto val = Math::Interpolate(i1, i2, alpha);
+
+            s.ints[k] = val;
+        }
+    }
 
     return s;
 }
@@ -124,8 +133,9 @@ static void ApplyParams(std::unordered_map<std::string, T*>& targets, std::unord
     {
         if(refs.find(k) != refs.end())
         {
+            auto temp = refs[k];
             if(value)
-                *value = refs[k];
+                *value = temp;
         }
     }
 }
@@ -144,6 +154,7 @@ void Player::ApplySample(Sample s1)
 {
     ApplyParams(fTargets, s1.floats);
     ApplyParams(bTargets, s1.bools);
+    ApplyParams(iTargets, s1.ints);
 }
 
 Sample Player::TakeSample()
@@ -151,6 +162,7 @@ Sample Player::TakeSample()
     Sample sample;
     ReadParams(fTargets, sample.floats);
     ReadParams(bTargets, sample.bools);
+    ReadParams(iTargets, sample.ints);
 
     return sample;
 }

@@ -42,7 +42,7 @@ void RenderMgr::Render(const Rendering::Camera& camera)
 {
     std::sort(transparentReq.begin(), transparentReq.end(), [&camera](auto a, auto b){
 
-        return a.GetDepth() > b.GetDepth();
+        return a.GetDepth(camera.GetPos()) > b.GetDepth(camera.GetPos());
     });
     
     DrawList(&opaqueReq);
@@ -83,9 +83,12 @@ void RenderMgr::DrawList(std::vector<DrawReq>* list)
             billboard->shader->SetUniformVec3("center", params.pos);
             billboard->shader->SetUniformVec3("camRight", params.cameraRight);
             billboard->shader->SetUniformVec3("camUp", params.cameraUp);
+            billboard->shader->SetUniformFloat("rot", params.rot);
             billboard->shader->SetUniformVec2("scale", params.scale);
             billboard->shader->SetUniformVec4("colorMod", params.colorMod);
             billboard->shader->SetUniformMat4("projView", params.projView);
+
+            billboard->shader->SetUniformInt("frameId", params.frameId);
 
             billboard->shader->SetUniformInt("textureType", billboard->painting.type);
             if(billboard->painting.type == PaintingType::TEXTURE)
@@ -114,13 +117,13 @@ void RenderMgr::AddDrawReq(AlphaType alphaType, DrawReq dr)
     }
 }
 
-float RenderMgr::DrawReq::GetDepth()
+float RenderMgr::DrawReq::GetDepth(glm::vec3 camPos)
 {
     float depth = 0;
     if(reqType == ReqType::MODEL)
-        depth = modelParams.t[3].z;
+        depth = glm::length(camPos - glm::vec3{modelParams.t[3]});
     else if(reqType == ReqType::BILLBOARD)
-        depth = billboardParams.pos.z;
+        depth = glm::length(camPos - billboardParams.pos);
 
     return depth;
 }
