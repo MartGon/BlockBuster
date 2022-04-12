@@ -74,6 +74,7 @@ namespace BlockBuster
         void InitGameObjects();
         Entity::Player& GetLocalPlayer();
         Entity::ID GetPlayerTeam(Entity::ID playerId);
+        void OnGrenadeExplode(Entity::Projectile& grenade);
         World GetWorld();
 
         // Networking

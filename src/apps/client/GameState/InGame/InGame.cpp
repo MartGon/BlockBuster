@@ -497,7 +497,7 @@ void InGame::UpdateCamera(Entity::PlayerInput input)
 void InGame::WeaponRecoil()
 {
     auto camRot = camera_.GetRotationDeg();
-    auto sideRecoil = Util::Random::Normal(-1.0f, 1.0f);
+    auto sideRecoil = Util::Random::Normal(0.0f, 1.0f);
     auto strength = Entity::WeaponMgr::weaponTypes.at(GetLocalPlayer().GetCurrentWeapon().weaponTypeId).recoil;
     auto recoil = glm::vec2{-1.0f, sideRecoil} * strength;
     auto newRot = camRot + recoil;
@@ -534,6 +534,13 @@ Entity::ID InGame::GetPlayerTeam(Entity::ID playerId)
         teamId = score->teamId;
 
     return teamId;
+}
+
+void InGame::OnGrenadeExplode(Entity::Projectile& grenade)
+{
+    explosionMgr.CreateExplosion(grenade.GetPos());
+
+    // TODO: Play sound effect
 }
 
 World InGame::GetWorld()
@@ -682,7 +689,7 @@ void InGame::DrawGameObjects()
         {
             auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go->properties["Weapon ID"].value));
             scale = glm::vec2{3.14f, 1.0f};
-            modelMgr.DrawWepBillboard(wepId, view, iconPos, camera_.GetRight(), camera_.GetUp(), 3.14f, scale, glm::vec4{1.0f}, renderflags);
+            modelMgr.DrawWepBillboard(wepId, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, scale, glm::vec4{1.0f}, renderflags);
         }
         else if(go->type == Entity::GameObject::Type::HEALTHPACK)
             modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, scale, glm::vec4{1.0f}, renderflags);

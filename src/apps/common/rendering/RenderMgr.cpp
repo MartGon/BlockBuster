@@ -46,8 +46,6 @@ void RenderMgr::Render(const Rendering::Camera& camera)
     });
     
     DrawList(&opaqueReq);
-
-    // Remove duplicate depths
     DrawList(&transparentReq);
     
     glClear(GL_DEPTH_BUFFER_BIT);
@@ -124,7 +122,7 @@ float RenderMgr::DrawReq::GetDepth(glm::vec3 camPos)
     float depth = 0;
     if(reqType == ReqType::MODEL)
     // TODO: Review this
-        depth = glm::length(camPos - glm::vec3{modelParams.t[3]});
+        depth = modelParams.t[3].z;
     else if(reqType == ReqType::BILLBOARD)
         depth = glm::length(camPos - billboardParams.pos);
 

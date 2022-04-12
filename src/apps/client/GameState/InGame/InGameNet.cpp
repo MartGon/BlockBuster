@@ -173,9 +173,12 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             for(auto [id, projectile] : projectiles)
             {
                 if(!Util::Map::Contains(s.projectiles, id))
+                {
                     toRemove.push_back(id);
+                    OnGrenadeExplode(projectile);
+                }
             }
-            for(auto id : toRemove)
+            for(auto id : toRemove)   
                 projectiles.erase(id);
 
             // Sort by tick. This is only needed if a packet arrives late.
