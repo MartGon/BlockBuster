@@ -99,18 +99,11 @@ void InGame::Start()
     auto& texMgr = renderMgr.GetTextureMgr();
     texMgr.SetDefaultFolder(client_->texturesDir);
 
-    // Meshes
-    cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
-    sphere = Rendering::Primitive::GenerateSphere(1.0f);
-    quad = Rendering::Primitive::GenerateQuad();
-    cube = Rendering::Primitive::GenerateCube();
-    slope = Rendering::Primitive::GenerateSlope();
-
     // Models
     modelMgr.Start(renderMgr, renderShader, billboardShader);
-    playerAvatar.SetMeshes(quad, cube, cylinder, slope);
+    playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
     playerAvatar.Start(renderMgr, renderShader, renderShader);
-    fpsAvatar.SetMeshes(quad, cube, cylinder);
+    fpsAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder);
     fpsAvatar.Start(renderMgr, renderShader, renderShader);
     explosionMgr.Start(renderMgr, expShader);
 
@@ -448,8 +441,6 @@ void InGame::HandleSDLEvents()
             Exit();
             break;
         case SDL_KEYDOWN:
-            if(e.key.keysym.sym == SDLK_f)
-                drawMode = drawMode == GL_FILL ? GL_LINE : GL_FILL;
             if(e.key.keysym.sym == SDLK_p)
             {
                 using namespace ::App::Client;
@@ -803,7 +794,7 @@ void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)
 {
     auto mat = viewProjMat * box.GetTransformMat();
     renderShader.SetUniformMat4("transform", mat);
-    cube.Draw(renderShader, glm::vec4{1.0f}, GL_LINE);
+    modelMgr.cube.Draw(renderShader, glm::vec4{1.0f}, GL_LINE);
 }
 
 // Audio

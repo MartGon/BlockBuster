@@ -223,23 +223,14 @@ namespace BlockBuster
         GL::Shader textShader;
         GL::Shader imgShader;
 
-            // Meshes
-        Rendering::Mesh quad;
-        Rendering::Mesh cylinder;
-        Rendering::Mesh sphere;
-        Rendering::Mesh cube;
-        Rendering::Mesh slope;
-
             // Models
         Game::Models::ModelMgr modelMgr;
         Game::Models::Player playerAvatar;
         Game::Models::FPS fpsAvatar;
         Game::Models::ExplosionMgr explosionMgr;
-        glm::vec4 expColor;
 
             // Camera
         Rendering::Camera camera_;
-        int drawMode = GL_FILL;
         ::App::Client::CameraController camController_;
 
         // GUI
@@ -255,8 +246,5 @@ namespace BlockBuster
         // Config
         GameOptions gameOptions;
         bool exit = false;
-
-        // TODO: Remove
-        glm::vec2 iconScale{1.0f};
     };
 }

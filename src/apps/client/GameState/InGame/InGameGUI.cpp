@@ -1021,8 +1021,6 @@ void InGameGUI::DebugWindow()
             
             ImGui::InputFloat("Precision", &sliderPrecision);
 
-            ImGui::SliderFloat2("Icon scale", &inGame->iconScale.x, -sliderPrecision, sliderPrecision);
-
             if(ImGui::Button("Apply"))
             {
             }
@@ -1055,7 +1053,6 @@ void InGameGUI::DebugWindow()
                 inGame->camera_.SetZoom(zoom);
             }
 
-            ImGui::ColorPicker4("Exp Color", &inGame->expColor.x);
             if(ImGui::Button("Create explosion"))
             {
                 auto& player = inGame->GetLocalPlayer();
