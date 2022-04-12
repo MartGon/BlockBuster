@@ -102,8 +102,9 @@ RayIntersection Collisions::RaySlopeIntersection(Ray modelRay, glm::vec3 boxSize
         auto nearPoint = modelRay.origin + rayDir * aabbIntersect.ts.x;
         auto farPoint = modelRay.origin + rayDir * aabbIntersect.ts.y;
 
-        auto nearInt = RaySlopeIntersectionCheckPoint(nearPoint);
+        bool frontFace = false;
         auto farInt = RaySlopeIntersectionCheckPoint(farPoint);
+        auto nearInt = RaySlopeIntersectionCheckPoint(nearPoint);
         intersection.intersects = nearInt || farInt;
     }
 
