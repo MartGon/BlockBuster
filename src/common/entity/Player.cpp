@@ -13,7 +13,7 @@ const Player::HitBox Player::sHitbox = {
 };
 
 // Dmg mod
-const float Player::dmgMod[Player::HitBoxType::MAX] = {1.25f, 1.0f, 0.75f};
+const float Player::dmgMod[Player::HitBoxType::MAX] = {1.5f, 1.0f, 0.75f};
 
 // Player move collision boxes
 const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f, 4.5f, 2.0f}};

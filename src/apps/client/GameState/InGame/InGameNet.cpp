@@ -674,7 +674,7 @@ void InGame::SmoothPlayerMovement()
 
         // Animation
         auto oldWepState = oldState.weaponState[oldState.curWep];
-        auto nextState = predState.weaponState[oldState.curWep];
+        auto nextState = lastPred->dest.weaponState[oldState.curWep];
         
         if(Entity::HasShot(oldWepState.state, nextState.state))
         {

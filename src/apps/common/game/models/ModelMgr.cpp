@@ -237,10 +237,12 @@ void ModelMgr::InitBillboards(Rendering::RenderMgr& renderMgr, GL::Shader& bbSha
     
         // Weapon Icons
     using namespace Entity;
-    auto arId = texMgr.LoadFromDefaultFolder("assault-rifle.png", true);
-    auto srId = texMgr.LoadFromDefaultFolder("sniper-rifle.png", true);
-    wepIconsTex.Add(WeaponTypeID::ASSAULT_RIFLE, arId);
-    wepIconsTex.Add(WeaponTypeID::SNIPER, srId);
+    for(int i = WeaponTypeID::ASSAULT_RIFLE; i < WeaponTypeID::CHEAT_SMG; i++)
+    {
+        auto filename = "weapon-icon-" + std::to_string(i) + ".png";
+        auto id = texMgr.LoadFromDefaultFolder(filename, true);
+        wepIconsTex.Add(i, id);
+    }
 
     // Billboards
 

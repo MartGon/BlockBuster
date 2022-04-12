@@ -740,7 +740,7 @@ void InGame::DrawModeObjects()
                 if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
                 {
                     auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                    //modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), glm::vec2{2.f}, color, renderflags);
+                    modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, glm::vec2{2.f}, color, renderflags);
                 }
             }
         }

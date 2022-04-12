@@ -33,7 +33,6 @@ void InGameGUI::Start()
     
     // Textures
     auto& textureMgr = inGame->renderMgr.GetTextureMgr();
-    crosshair = textureMgr.LoadFromDefaultFolder("crosshairW.png");
     hitmarker = textureMgr.LoadFromDefaultFolder("hitmarker.png");
     grenadeTexId = textureMgr.LoadFromDefaultFolder("grenade2.png", true);
     glm::u8vec4 white{255, 255, 255, 255};
@@ -82,7 +81,7 @@ void InGameGUI::Start()
     iconSize = grenadeIcon.GetSize();
     grenadeIcon.SetOffset(glm::ivec2{-iconSize.x, -7});
 
-    crosshairImg.SetTexture(textureMgr.GetTexture(crosshair));
+    crosshairImg.SetTexture(textureMgr.GetTexture(crosshairTextures.Get(Entity::WeaponTypeID::ASSAULT_RIFLE).value()));
     crosshairImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
     crosshairImg.SetSize(glm::ivec2{75});
     crosshairImg.SetOffset(- crosshairImg.GetSize() / 2);

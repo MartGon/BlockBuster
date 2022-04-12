@@ -14,7 +14,7 @@ Entity::PlayerInput Input::GetPlayerInput(Entity::PlayerInput mask)
     input[Entity::MOVE_DOWN] = state[SDL_SCANCODE_S];
 
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
-    input[Entity::SHOOT] = mouseState & SDL_BUTTON_LMASK;
+    input[Entity::SHOOT] = mouseState & SDL_BUTTON_LMASK || state[SDL_SCANCODE_G];
     input[Entity::ALT_SHOOT] = mouseState & SDL_BUTTON_RMASK;
     input[Entity::RELOAD] = state[SDL_SCANCODE_R];
     input[Entity::ACTION] = state[SDL_SCANCODE_E];

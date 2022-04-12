@@ -111,7 +111,6 @@ namespace BlockBuster
         GUI::PopUpMgr<PopUpState::MAX> puMgr;
 
         // Textures
-        Rendering::TextureID crosshair;
         Rendering::TextureID hitmarker;
         Rendering::TextureID dmgTexture;
         Rendering::TextureID grenadeTexId;

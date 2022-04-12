@@ -116,7 +116,7 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Weapon secWeapon, Entity::P
             if(weapon.cooldown.count() <= 0.0)
             {
                 // Force reload when MAX_OVERHEAT is reached
-                if(weaponType.ammoType == AmmoType::OVERHEAT && weapon.ammoState.overheat == MAX_OVERHEAT)
+                if(weaponType.ammoType == AmmoType::OVERHEAT && weapon.ammoState.overheat >= MAX_OVERHEAT)
                 {
                     weapon.state = Weapon::State::RELOADING;
                     weapon.cooldown = weaponType.reloadTime * 2.0f;

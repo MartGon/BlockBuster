@@ -513,9 +513,10 @@ void Server::HandleShootCommand(ShotCommand sc)
         if(rpc.collides)
         {
             auto colDist = rpc.intersection.GetRayLength(ray);
-            if(colDist < bColDist)
+            auto& weapon = author.GetCurrentWeapon();
+            if(colDist < bColDist && colDist <= Entity::GetMaxEffectiveRange(weapon.weaponTypeId))
             {
-                victim.TakeWeaponDmg(author.GetCurrentWeapon(), rpc.hitboxType, colDist);
+                victim.TakeWeaponDmg(weapon, rpc.hitboxType, colDist);
                 OnPlayerTakeDmg(sc.clientId, peerId);
 
                 logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));

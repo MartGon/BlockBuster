@@ -9,15 +9,36 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
     {
         WeaponTypeID::ASSAULT_RIFLE, 
         {
-            WeaponTypeID::ASSAULT_RIFLE, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.025f}, Util::Time::Seconds{1.75f}, 20.0f, 
-            60.0f, 0.0f, glm::vec2{0.25f, 0.1f}, 0, 1.5f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 32}
+            WeaponTypeID::ASSAULT_RIFLE, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.05f}, Util::Time::Seconds{1.5f}, 20.0f, 
+            60.0f, 0.0f, glm::vec2{0.35f, 0.1f}, 0, 1.5f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 32}
+        },
+    },
+    {
+        WeaponTypeID::BATTLE_RIFLE, 
+        {
+            WeaponTypeID::BATTLE_RIFLE, WeaponType::FiringMode::BURST, Util::Time::Seconds{0.075f}, Util::Time::Seconds{1.75f}, 25.0f, 
+            120.0f, 0.0f, glm::vec2{0.15f, 0.1f}, 3, 2.0f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 27}
+        },
+    },
+    {
+        WeaponTypeID::SHOTGUN, 
+        {
+            WeaponTypeID::SHOTGUN, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.5f}, 400.0f, 
+            6.0f, 0.0f, glm::vec2{3.0f, 0.0f}, 0, 1.0f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
         },
     },
     {
         WeaponTypeID::SNIPER, 
         {
-            WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.0f}, 100.0f, 
-            300.0f, 0.0f, glm::vec2{1.0f, 0.f}, 0, 3.0f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
+            WeaponTypeID::SNIPER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.0f}, 275.0f, 
+            300.0f, 0.0f, glm::vec2{2.0f, 0.f}, 0, 3.0f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 4}
+        },
+    },
+    {
+        WeaponTypeID::SMG, 
+        {
+            WeaponTypeID::SMG, WeaponType::FiringMode::AUTO, Util::Time::Seconds{0.025f}, Util::Time::Seconds{1.25f}, 15.0f, 
+            40.0f, 0.0f, glm::vec2{0.45f, 0.1f}, 0, 1.25f, AmmoType::OVERHEAT, AmmoTypeData{ .overheatRate = 2.5f}
         },
     },
     {
@@ -198,4 +219,15 @@ float Entity::GetDistanceDmgMod(float range, float distance)
     float mod = distance <= range ? 1.0f : range / distance;
 
     return mod;
+}
+
+float Entity::GetMaxEffectiveRange(Entity::WeaponTypeID wepTypeId)
+{
+    auto weaponType = WeaponMgr::weaponTypes.at(wepTypeId);
+    return GetMaxEffectiveRange(weaponType);
+}
+
+float Entity::GetMaxEffectiveRange(Entity::WeaponType wepType)
+{
+    return wepType.maxRange * 4.0f;
 }

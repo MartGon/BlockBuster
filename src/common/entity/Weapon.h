@@ -120,4 +120,6 @@ namespace Entity
     // Dmg
     float GetDistanceDmgMod(WeaponType weaponType, float distance);
     float GetDistanceDmgMod(float range, float distance);
+    float GetMaxEffectiveRange(WeaponTypeID wepTypeId);
+    float GetMaxEffectiveRange(WeaponType weaponType);
 }
