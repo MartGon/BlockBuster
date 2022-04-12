@@ -557,6 +557,24 @@ void InGame::OnLocalPlayerShot()
     audioMgr->SetSourceAudio(playerSource, audioId);
     audioMgr->SetSourceTransform(playerSource, player.GetRenderTransform().position);
     audioMgr->PlaySource(playerSource);
+
+    auto projViewMat = camera_.GetProjViewMat();
+    Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
+    auto collision = Game::CastRayFirst(map_.GetMap(), ray, map_.GetBlockScale());
+    if(collision.intersection.intersects)
+    {
+        auto colPoint = collision.intersection.colPoint;
+        auto normal = collision.intersection.normal;
+
+        auto up = Rendering::Camera::UP;        
+        if(abs(normal.y) == 1.0f)
+            up = glm::vec3{0.0f, 0.0f, 1.0f};
+
+        auto orientation = glm::lookAt(glm::vec3{0.0f}, normal, up);
+        auto translate = glm::translate(glm::mat4{1.0f}, colPoint + (normal * 0.05f));
+        auto mat = translate * orientation;
+        decalTransforms.PushBack(mat);
+    }
 }
 
 World InGame::GetWorld()
@@ -670,6 +688,7 @@ void InGame::DrawScene()
     DrawGameObjects();
     DrawModeObjects();
     DrawProjectiles();
+    DrawDecals();
     explosionMgr.DrawExplosions(view, camera_.GetRight(), camera_.GetUp());
     renderMgr.Render(camera_);
 
@@ -810,6 +829,19 @@ void InGame::DrawProjectiles()
         Math::Transform t{projectile.GetPos(), projectile.GetRotation(), projectile.GetScale()};
         auto tMat = view * t.GetTransformMat();
         modelMgr.Draw(Game::Models::GRENADE_MODEL_ID, tMat);
+    }
+}
+
+void InGame::DrawDecals()
+{
+    auto view = camera_.GetProjViewMat();
+
+    auto size = decalTransforms.GetSize();
+    for(auto i = 0; i < size; i++)
+    {
+        auto decalMat = decalTransforms.At(i).value();
+        auto mat = view * decalMat;
+        modelMgr.Draw(Game::Models::DECAL_MODEL_ID, mat);
     }
 }
 

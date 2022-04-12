@@ -94,7 +94,7 @@ bool RaySlopeIntersectionCheckPoint(glm::vec3 point)
 RayIntersection Collisions::RaySlopeIntersection(Ray modelRay, glm::vec3 boxSize)
 {
     auto aabbIntersect = Collisions::RayAABBIntersection(modelRay, boxSize);
-    RayIntersection intersection{false, aabbIntersect.ts, aabbIntersect.normal};
+    RayIntersection intersection{false, aabbIntersect.ts, aabbIntersect.normal, aabbIntersect.colPoint};
     if(aabbIntersect.intersects)
     {
         auto rayDir = modelRay.GetDir();

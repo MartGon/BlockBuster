@@ -19,6 +19,7 @@ namespace Game::Models
     {
         FLAG_MODEL_ID,
         GRENADE_MODEL_ID,
+        DECAL_MODEL_ID,
         COUNT
     };
 
@@ -26,7 +27,7 @@ namespace Game::Models
     {
         FLAG_ICON_ID,
         RED_CROSS_ICON_ID,
-        BILLBOARD_ID_COUNT
+        BILLBOARD_ID_COUNT,
     };
 
     class ModelMgr
@@ -65,10 +66,12 @@ namespace Game::Models
         Rendering::ModelI* goModels[Entity::GameObject::Type::COUNT];
         Rendering::ModelI* models[ModelID::COUNT];
         Rendering::Billboard* billboards[BillboardID::BILLBOARD_ID_COUNT];
+        Util::Table<Rendering::Billboard*> wepIcons;
 
+        Util::Table<Rendering::TextureID> modelTextures;
         Util::Table<Rendering::TextureID> iconTextures;
         Util::Table<Rendering::TextureID> wepIconsTex;
-        Util::Table<Rendering::Billboard*> wepIcons;
+        
 
         Rendering::RenderMgr* renderMgr;
     };

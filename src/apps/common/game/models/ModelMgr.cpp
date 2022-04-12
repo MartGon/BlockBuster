@@ -181,6 +181,11 @@ void ModelMgr::InitGoModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 
 void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 {
+    // Textures
+    auto& texMgr = renderMgr.GetTextureMgr();
+    auto decalId = texMgr.LoadFromDefaultFolder("decal.png", true);
+    modelTextures.Add(DECAL_MODEL_ID, decalId);
+
     // Colors
     Rendering::Painting painting;
     const auto red = glm::vec4{0.8f, 0.1f, 0.1f, 1.f};
@@ -223,6 +228,14 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     grenade->AddSubModel(std::move(leftFragTop));
 
     models[GRENADE_MODEL_ID] = grenade;
+
+    // Decal
+    auto decal = renderMgr.CreateModel();
+    painting = Rendering::Painting{.type = Rendering::PaintingType::TEXTURE, .hasAlpha = true, .texture = decalId};
+    auto decalSm = Rendering::SubModel{Math::Transform{glm::vec3{0.0f}, glm::vec3{0.0f}, glm::vec3{0.5f}}, painting, &quad, &shader, true, Rendering::RenderMgr::NO_FACE_CULLING};
+    decal->AddSubModel(std::move(decalSm));
+
+    models[DECAL_MODEL_ID] = decal;
 
 }
 
