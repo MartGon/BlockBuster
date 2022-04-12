@@ -195,7 +195,6 @@ ID AudioMgr::CreateSource()
     alGenSources(1, &source.handle);
     SetSourceParams(source);
 
-    alSourcef(source.handle, AL_REFERENCE_DISTANCE, refDistance);
     alSourcei(source.handle, AL_SOURCE_RELATIVE, AL_FALSE);
     
     auto id = GetFreeId(sources);
@@ -225,6 +224,20 @@ void AudioMgr::SetSourceParams(ID sourceId, glm::vec3 pos, float orientation, bo
 void AudioMgr::SetSourceParams(ID sourceId, AudioSource::Params params)
 {
     SetSourceParams(sourceId, params.pos, params.orientation, params.looping, params.relDistance, params.gain, params.pitch, params.velocity);
+}
+
+void AudioMgr::SetSourceTransform(ID sourceId, glm::vec3 pos, float orientation)
+{
+    if(!Util::Map::Contains(sources, sourceId))
+        return;
+
+    auto& src = sources[sourceId];
+    auto& params = src.params;
+
+    params.pos = pos;
+    params.orientation = orientation;
+
+    SetSourceParams(src);
 }
 
 void AudioMgr::SetSourceAudio(ID srcId, ID audioFile)
@@ -280,8 +293,6 @@ ID AudioMgr::CreateStreamSource()
     SetSourceParams(source);
 
     alGenBuffers(BUFFERS_NUM, sSource.streamBuffers);
-
-    alSourcef(source.handle, AL_REFERENCE_DISTANCE, refDistance);
     alSourcei(source.handle, AL_SOURCE_RELATIVE, AL_FALSE);
     
     auto id = GetFreeId(streamSources);

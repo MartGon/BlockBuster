@@ -541,7 +541,7 @@ void InGame::OnGrenadeExplode(Entity::Projectile& grenade)
 
     // Play sound effect
     auto source = grenadeSources.Get();
-    audioMgr->SetSourceParams(source, pos);
+    audioMgr->SetSourceTransform(source, pos);
     audioMgr->PlaySource(source);
 }
 
@@ -555,7 +555,7 @@ void InGame::OnLocalPlayerShot()
     
     auto audioId = gallery.GetWepSoundID(weapon.weaponTypeId);
     audioMgr->SetSourceAudio(playerSource, audioId);
-    audioMgr->SetSourceParams(playerSource, player.GetRenderTransform().position);
+    audioMgr->SetSourceTransform(playerSource, player.GetRenderTransform().position);
     audioMgr->PlaySource(playerSource);
 }
 
@@ -851,6 +851,7 @@ void InGame::InitAudio()
         grenadeSources.Get() = sourceId;
 
         audioMgr->SetSourceAudio(sourceId, gallery.GetSoundId(SoundID::GRENADE_SOUND_ID));
+        audioMgr->SetSourceParams(sourceId, glm::vec3{0.0f}, 0.0f, false, 8.0f, 2.25f);
     }
 }
 

@@ -35,7 +35,7 @@ namespace Audio
             glm::vec3 pos = glm::vec3{0.0f};
             glm::vec3 velocity = glm::vec3{0.0f};
             bool looping = false;
-            float relDistance = 1.0f;
+            float relDistance = 8.0f;
         } params;
     };
 
@@ -83,6 +83,7 @@ namespace Audio
         ID CreateSource();
         void SetSourceParams(ID sourceId, glm::vec3 pos, float orientation = 0.0f, bool looping = false, float relDistance = 1.0f, float gain = 1.0f , float pitch = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
         void SetSourceParams(ID sourceId, AudioSource::Params params);
+        void SetSourceTransform(ID sourceId, glm::vec3 pos, float orientation = 0.0f);
         void SetSourceAudio(ID source, ID audioFile);
         std::optional<AudioSource::Params> GetSourceParams(ID srcId);
         void PlaySource(ID srcId);
@@ -161,7 +162,6 @@ namespace Audio
 
         // General params
         bool enabled = true;
-        float refDistance = 2.0f;
 
         AudioMgr();
     };

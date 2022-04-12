@@ -1134,11 +1134,12 @@ void InGameGUI::DebugWindow()
             ImGui::Text("Audio");
             ImGui::Separator();
 
-            auto params = inGame->audioMgr->GetSourceParams(inGame->playerSource);
-            if(ImGui::SliderFloat("Gain", &params->gain, 0.0f, 1.0f))
-                inGame->audioMgr->SetSourceParams(inGame->playerSource, *params);
-            if(ImGui::SliderFloat("RelDistance", &params->relDistance, 0.0f, 10.f))
-                inGame->audioMgr->SetSourceParams(inGame->playerSource, *params);
+            auto source = inGame->grenadeSources.Get();
+            auto params = inGame->audioMgr->GetSourceParams(source);
+            if(ImGui::SliderFloat("Gain", &params->gain, 0.0f, 5.0f))
+                inGame->audioMgr->SetSourceParams(source, *params);
+            if(ImGui::SliderFloat("RelDistance", &params->relDistance, 0.0f, 25.f))
+                inGame->audioMgr->SetSourceParams(source, *params);
 
             if(ImGui::Button("Play audio"))
             {
