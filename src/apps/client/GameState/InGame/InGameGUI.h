@@ -115,6 +115,7 @@ namespace BlockBuster
         Rendering::TextureID hitmarker;
         Rendering::TextureID dmgTexture;
         Rendering::TextureID grenadeTexId;
+        Util::Table<Rendering::TextureID> crosshairTextures;
 
         // HUD
         GUI::Text healthIcon;

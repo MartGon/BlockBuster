@@ -693,14 +693,6 @@ void InGame::SmoothPlayerMovement()
         predState.transform = predState.transform + errorCorrection;
         player.ApplyState(predState);
 
-        
-        // Hack fix for weapon swap
-        if(Entity::HasSwapped(oldWepState.state, nextState.state))
-        {
-            GetLogger()->LogError("Here");
-        }
-        
-
         #ifdef _DEBUG
             auto dist = glm::length(errorCorrection.pos);
             if(dist > 0.005)

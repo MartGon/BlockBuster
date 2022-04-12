@@ -39,6 +39,14 @@ void InGameGUI::Start()
     glm::u8vec4 white{255, 255, 255, 255};
     dmgTexture = textureMgr.LoadRaw(&white.x, glm::ivec2{1, 1}, GL_RGBA);
 
+        // Crosshairs
+    for(int i = Entity::WeaponTypeID::ASSAULT_RIFLE; i < Entity::WeaponTypeID::CHEAT_SMG; i++)
+    {
+        auto filename = "crosshair-" + std::to_string(i) + "-w.png";
+        auto texId = textureMgr.LoadFromDefaultFolder(filename);
+        crosshairTextures.Add(i, texId);
+    }
+
     // Images
     auto winSize = inGame->client_->GetWindowSize();
 
@@ -515,10 +523,10 @@ void InGameGUI::HUD()
     wepIcon.Draw(inGame->imgShader, winSize);
 
         // Alt wep Icon
-    wepTypeId = player.weapons[player.GetNextWeaponId()].weaponTypeId;
+    auto nextWepTypeId = player.weapons[player.GetNextWeaponId()].weaponTypeId;
     if(wepTypeId != Entity::WeaponTypeID::NONE)
     {
-        altWepIcon.SetTexture(inGame->modelMgr.GetWepIconTex(wepTypeId));
+        altWepIcon.SetTexture(inGame->modelMgr.GetWepIconTex(nextWepTypeId));
         altWepIcon.SetIsVisible(true);
     }
     else
@@ -549,6 +557,11 @@ void InGameGUI::HUD()
     hitMarkerPlayer.Update(inGame->deltaTime);
 
     // Croshair
+    if(auto texId = crosshairTextures.Get(wepTypeId))
+    {
+        crosshairImg.SetTexture(textureMgr.GetTexture(texId.value()));
+        crosshairImg.SetSize(glm::ivec2{75});
+    }
     crosshairImg.Draw(inGame->imgShader, winSize);
 
     // You've been killed
