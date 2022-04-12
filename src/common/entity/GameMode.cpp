@@ -38,7 +38,10 @@ void GameMode::PlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID kill
 {
     if(auto score = scoreBoard.GetPlayerScore(killer))
     {
-        score->kills++;
+        if(killer != victim)
+            score->kills++;
+        else
+            score->kills--;
         scoreBoard.SetPlayerScore(score.value());
     }
 

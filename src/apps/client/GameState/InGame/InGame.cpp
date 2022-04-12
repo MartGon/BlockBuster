@@ -263,6 +263,23 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
     match.Update(GetWorld(), deltaTime);
     if(match.GetState() == Match::ON_GOING)
         UpdateGameMode();
+
+    // Check for gameObjects use range
+    bool enabled = false;
+    auto pPos = GetLocalPlayer().GetRenderTransform().position;
+    for(auto [goPos, state] : gameObjectStates)
+    {
+        auto rPos = Game::Map::ToRealPos(goPos, map_.GetBlockScale());
+        if(state.isActive && Collisions::IsPointInSphere(pPos, rPos, Entity::GameObject::ACTION_AREA))
+        {
+            auto go = map_.GetMap()->GetGameObject(goPos);
+            inGameGui.EnableActionText(*go);
+            enabled = true;
+            break;
+        }
+    }
+    if(!enabled)
+        inGameGui.DisableActionText();
 }
 
 void InGame::OnEnterMatchState(Match::StateType type)

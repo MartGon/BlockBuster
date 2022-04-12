@@ -883,7 +883,6 @@ void Server::OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId)
     gameMode->PlayerDeath(authorId, victimId, clients[authorId].player.teamId);
 }
 
-
 void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
 {
     // Sleep until next tick
@@ -929,7 +928,7 @@ void Server::SendServerNotification(ServerEvent::Notification notification)
 }
 
 // Match
-const float Server::MIN_SPAWN_ENEMY_DISTANCE = 5.0f; // In Blocks
+const float Server::MIN_SPAWN_ENEMY_DISTANCE = 6.0f; // In Blocks
 
 // This should get a random spawn point from a list of valid ones
 // A valid spawn point is one which doesn't have an enemy in X distance
@@ -1032,7 +1031,6 @@ std::vector<Entity::Player> Server::GetPlayers() const
 
     return players;
 }
-
 
 // World
 

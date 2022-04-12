@@ -12,8 +12,8 @@ namespace BlockBuster
         Entity::ID playerId;
         Entity::ID teamId;
         std::string name;
-        uint32_t kills;
-        uint32_t score;
+        int kills;
+        int score;
         uint32_t deaths;
 
         Util::Buffer ToBuffer();
@@ -23,7 +23,7 @@ namespace BlockBuster
     struct TeamScore
     {
         Entity::ID teamId;
-        uint32_t score;
+        int score;
     };
 
     class Scoreboard

@@ -49,6 +49,8 @@ namespace BlockBuster
         void PlayHitMarkerAnim(HitMarkerType type);
         void PlayScreenEffect(ScreenEffect effect = ScreenEffect::SCREEN_EFFECT_DMG);
 
+        void EnableActionText(Entity::GameObject& go);
+        void DisableActionText();
         void EnableScore(bool enabled = true);
         void EnableHUD(bool enabled);
         void EnableWinnerText(bool enabled);
@@ -112,6 +114,7 @@ namespace BlockBuster
         Rendering::TextureID crosshair;
         Rendering::TextureID hitmarker;
         Rendering::TextureID dmgTexture;
+        Rendering::TextureID grenadeTexId;
 
         // HUD
         GUI::Text healthIcon;
@@ -121,6 +124,7 @@ namespace BlockBuster
         GUI::Text ammoText;
         GUI::Text ammoNumIcon;
         GUI::Text grenadeNumText;
+        GUI::Text actionText;
         GUI::Image wepIcon;
         GUI::Image altWepIcon;
         GUI::Image grenadeIcon;
@@ -128,6 +132,7 @@ namespace BlockBuster
         GUI::Image hitmarkerImg;
         GUI::Image flagIconImg;
         GUI::Image dmgEffectImg;
+        GUI::Image actionImg;
 
         // Animations
         Animation::Clip hitmarkerAnim;

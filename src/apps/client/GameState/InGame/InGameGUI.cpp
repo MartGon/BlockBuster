@@ -35,7 +35,7 @@ void InGameGUI::Start()
     auto& textureMgr = inGame->renderMgr.GetTextureMgr();
     crosshair = textureMgr.LoadFromDefaultFolder("crosshairW.png");
     hitmarker = textureMgr.LoadFromDefaultFolder("hitmarker.png");
-    auto grenadeTexId = textureMgr.LoadFromDefaultFolder("grenade2.png", true);
+    grenadeTexId = textureMgr.LoadFromDefaultFolder("grenade2.png", true);
     glm::u8vec4 white{255, 255, 255, 255};
     dmgTexture = textureMgr.LoadRaw(&white.x, glm::ivec2{1, 1}, GL_RGBA);
 
@@ -58,6 +58,14 @@ void InGameGUI::Start()
     iconSize = altWepIcon.GetSize();
     altWepIcon.SetOffset(-iconSize);
     altWepIcon.SetIsVisible(false);
+
+    actionImg.SetTexture(textureMgr.GetTexture(grenadeTexId));
+    actionImg.SetParent(&altWepIcon);
+    actionImg.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
+    actionImg.SetScale(glm::vec2{0.5f});
+    iconSize = actionImg.GetSize();
+    actionImg.SetOffset(-iconSize);
+    actionImg.SetIsVisible(true);
 
     grenadeIcon.SetTexture(textureMgr.GetTexture(grenadeTexId));
     grenadeIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
@@ -310,6 +318,16 @@ void InGameGUI::InitTexts()
     auto gSize = grenadeNumText.GetSize();
     grenadeNumText.SetOffset(-gSize + glm::ivec2{-20, -14});
 
+    actionText = pixelFont->CreateText();
+    actionText.SetText("Press E to use ");
+    actionText.SetScale(1.0f);
+    actionText.SetColor(glm::vec4{0.173f, 0.655f, 0.78f, 0.75f});
+    actionText.SetParent(&actionImg);
+    actionText.SetAnchorPoint(GUI::AnchorPoint::CENTER_LEFT);
+    auto asize = actionText.GetSize();
+    actionText.SetOffset(glm::ivec2{-asize.x, -asize.y / 2});
+    actionText.SetIsVisible(true);
+
     // Score
     midScoreText = pixelFont->CreateText();
     midScoreText.SetText(" - ");
@@ -512,6 +530,9 @@ void InGameGUI::HUD()
     grenadeNumText.Draw(inGame->textShader, winSize);
     grenadeIcon.Draw(inGame->imgShader, winSize);
 
+        // Action text
+    actionImg.Draw(inGame->imgShader, winSize);
+    actionText.Draw(inGame->textShader, winSize);
 
     // Score
     midScoreText.Draw(inGame->textShader, winSize);
@@ -729,6 +750,39 @@ void InGameGUI::PlayScreenEffect(ScreenEffect effect)
     dmgAnimationPlayer.Restart();
 }
 
+void InGameGUI::EnableActionText(Entity::GameObject& go)
+{
+    using namespace Entity;
+    auto& textureMgr = inGame->renderMgr.GetTextureMgr();
+    if(go.type == GameObject::Type::GRENADES)
+    {
+        actionImg.SetTexture(textureMgr.GetTexture(grenadeTexId));
+        actionImg.SetScale(glm::vec2{0.5f, 0.5f});
+    }
+    else if(go.type == GameObject::Type::HEALTHPACK)
+    {
+        actionImg.SetTexture(inGame->modelMgr.GetIconTex(Game::Models::RED_CROSS_ICON_ID));
+        actionImg.SetSize(glm::ivec2{35, 35});
+    }
+    else if(go.type == GameObject::Type::WEAPON_CRATE)
+    {
+        auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go.properties["Weapon ID"].value));
+        actionImg.SetTexture(inGame->modelMgr.GetWepIconTex(wepId));
+        actionImg.SetScale(glm::vec2{0.33f});
+    }
+    auto size = actionImg.GetSize();
+    actionImg.SetOffset(-size);
+
+    actionImg.SetIsVisible(true);
+    actionText.SetIsVisible(true);
+}
+
+void InGameGUI::DisableActionText()
+{
+    actionImg.SetIsVisible(false);
+    actionText.SetIsVisible(false);
+}
+
 void InGameGUI::EnableScore(bool enabled)
 {
     leftScoreText.SetIsVisible(enabled);
@@ -766,6 +820,9 @@ void InGameGUI::EnableHUD(bool enabled)
     killText.SetIsVisible(enabled);
     respawnTimeText.SetIsVisible(enabled);
     countdownText.SetIsVisible(enabled);
+
+    if(!enabled)
+        DisableActionText();
 }
 
 void InGameGUI::EnableWinnerText(bool enabled)
