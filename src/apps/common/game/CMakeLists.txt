@@ -15,6 +15,8 @@ SET(SOURCES
     models/FPS.cpp
     models/Respawn.cpp
     models/ModelMgr.cpp
+
+    sound/Gallery.cpp
 )
 
 
@@ -32,6 +34,7 @@ target_link_libraries(Game
     Animation
     Math
     Entity
+    Audio
 
     Log
 )
@@ -39,6 +42,7 @@ target_include_directories(Game PUBLIC include
     ${OPENGL_INCLUDE_DIR}  
     ${GLAD_INCLUDE_DIR} 
     ${DEPS_FOLDER} 
+    ${DEPS_FOLDER}/openal-soft/include
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${SDL2_INCLUDE_DIRS}
 )

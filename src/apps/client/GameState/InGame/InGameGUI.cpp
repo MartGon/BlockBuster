@@ -1134,15 +1134,15 @@ void InGameGUI::DebugWindow()
             ImGui::Text("Audio");
             ImGui::Separator();
 
-            auto params = inGame->audioMgr->GetSourceParams(0);
+            auto params = inGame->audioMgr->GetSourceParams(inGame->playerSource);
             if(ImGui::SliderFloat("Gain", &params->gain, 0.0f, 1.0f))
-                inGame->audioMgr->SetSourceParams(0, *params);
-            if(ImGui::SliderFloat3("Pos", &params->pos.x, 0.0f, 1000.0f))
-                inGame->audioMgr->SetSourceParams(0, *params);
+                inGame->audioMgr->SetSourceParams(inGame->playerSource, *params);
+            if(ImGui::SliderFloat("RelDistance", &params->relDistance, 0.0f, 10.f))
+                inGame->audioMgr->SetSourceParams(inGame->playerSource, *params);
 
             if(ImGui::Button("Play audio"))
             {
-                inGame->audioMgr->PlaySource(0);
+                inGame->audioMgr->PlayStreamSource(inGame->soundtrackSource);
             }
         }
 

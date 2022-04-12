@@ -94,7 +94,7 @@ void AudioMgr::Update()
 
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAVOrNull(ID id, std::filesystem::path path)
 {
-    std::pair<ID, LoadWAVError> ret = {0, LoadWAVError::NO_ERR};
+    std::pair<ID, LoadWAVError> ret = {NULL_AUDIO_ID, LoadWAVError::NO_ERR};
     auto res = LoadStaticWAV(id, path);
     if(res.isOk())
         ret.first = res.unwrap();
@@ -107,7 +107,7 @@ std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAVOrNull(ID id, std::
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAVOrNull(std::filesystem::path path)
 {
     auto id = GetFreeId(staticFiles);
-    return LoadStaticWAVOrNull(id++, path);
+    return LoadStaticWAVOrNull(id, path);
 }
 
 Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAV(std::filesystem::path path)
@@ -145,7 +145,7 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAV(ID id, std::filesyste
 
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAVOrNull(ID id, std::filesystem::path path)
 {
-    std::pair<ID, LoadWAVError> ret = {0, LoadWAVError::NO_ERR};
+    std::pair<ID, LoadWAVError> ret = {NULL_AUDIO_ID, LoadWAVError::NO_ERR};
     auto res = LoadStreamedWAV(id, path);
     if(res.isOk())
         ret.first = res.unwrap();
@@ -158,7 +158,7 @@ std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAVOrNull(ID id, std
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAVOrNull(std::filesystem::path path)
 {
     auto id = GetFreeId(streamedFiles);
-    return LoadStreamedWAVOrNull(id++, path);
+    return LoadStreamedWAVOrNull(id, path);
 }
 
 Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAV(std::filesystem::path path)
@@ -174,7 +174,7 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStreamedWAV(ID id, std::filesys
     {
         File sfile = res.unwrap();
 
-        assertm(!Util::Map::Contains(staticFiles, id), "A streamed WAV file with that id already exists");
+        assertm(!Util::Map::Contains(streamedFiles, id), "A streamed WAV file with that id already exists");
 
         // Import file
         streamedFiles[id] = std::move(sfile);
@@ -204,7 +204,7 @@ ID AudioMgr::CreateSource()
     return id;
 }
 
-void AudioMgr::SetSourceParams(ID sourceId, glm::vec3 pos, float orientation, bool looping, float gain, float pitch, glm::vec3 velocity)
+void AudioMgr::SetSourceParams(ID sourceId, glm::vec3 pos, float orientation, bool looping, float relDistance, float gain, float pitch, glm::vec3 velocity)
 {
     if(Util::Map::Contains(sources, sourceId))
     {
@@ -216,6 +216,7 @@ void AudioMgr::SetSourceParams(ID sourceId, glm::vec3 pos, float orientation, bo
         params.gain = gain;
         params.pitch = pitch;
         params.velocity = velocity;
+        params.relDistance = relDistance;
 
         SetSourceParams(source);
     }
@@ -223,12 +224,12 @@ void AudioMgr::SetSourceParams(ID sourceId, glm::vec3 pos, float orientation, bo
 
 void AudioMgr::SetSourceParams(ID sourceId, AudioSource::Params params)
 {
-    SetSourceParams(sourceId, params.pos, params.orientation, params.looping, params.gain, params.pitch, params.velocity);
+    SetSourceParams(sourceId, params.pos, params.orientation, params.looping, params.relDistance, params.gain, params.pitch, params.velocity);
 }
 
 void AudioMgr::SetSourceAudio(ID srcId, ID audioFile)
 {
-    if(Util::Map::Contains(sources, srcId) && Util::Map::Contains(staticFiles, audioFile))
+    if(Util::Map::Contains(sources, srcId) && Util::Map::Contains(staticFiles, audioFile) && !IsSourcePlaying(srcId))
     {
         auto& src = sources[srcId];
         src.audioId = audioFile;
@@ -252,6 +253,21 @@ void AudioMgr::PlaySource(ID srcId)
         auto& source = sources[srcId];
         alSourcePlay(source.handle);
     }
+}
+
+bool AudioMgr::IsSourcePlaying(ID srcId)
+{
+    bool isPlaying = false;
+    
+    if(Util::Map::Contains(sources, srcId))
+    {
+        auto& source = sources[srcId];
+        ALenum state;
+        alGetSourcei(source.handle, AL_SOURCE_STATE, &state);        
+        isPlaying = state == AL_PLAYING;    
+    }
+    
+    return isPlaying;
 }
 
     // Audio Sources - Streamed
@@ -306,20 +322,23 @@ void AudioMgr::PlayStreamSource(ID streamSrcId)
     if(Util::Map::Contains(streamSources, streamSrcId))
     {        
         auto& sSource = streamSources[streamSrcId];
-        if(auto audio = GetStreamFile(sSource.source.audioId))
+        if(!sSource.isPlaying)
         {
-            for(auto i = 0; i < Audio::BUFFERS_NUM; ++i)
+            if(auto audio = GetStreamFile(sSource.source.audioId))
             {
-                auto offset = i * BUFFER_SIZE;
-                alBufferData(sSource.streamBuffers[i], audio->format, audio->wavBuffer + offset, BUFFER_SIZE, audio->audioSpec.freq);
+                for(auto i = 0; i < Audio::BUFFERS_NUM; ++i)
+                {
+                    auto offset = i * BUFFER_SIZE;
+                    alBufferData(sSource.streamBuffers[i], audio->format, audio->wavBuffer + offset, BUFFER_SIZE, audio->audioSpec.freq);
+                }
+
+                sSource.cursor = BUFFERS_NUM * BUFFER_SIZE;
+
+                auto& source = sSource.source;
+                alSourceQueueBuffers(source.handle, BUFFERS_NUM, sSource.streamBuffers);
+                alSourcePlay(source.handle);
+                sSource.isPlaying = true;
             }
-
-            sSource.cursor = BUFFERS_NUM * BUFFER_SIZE;
-
-            auto& source = sSource.source;
-            alSourceQueueBuffers(source.handle, BUFFERS_NUM, sSource.streamBuffers);
-            alSourcePlay(source.handle);
-            sSource.isPlaying = true;
         }
     }
 }
@@ -442,6 +461,7 @@ void AudioMgr::SetSourceParams(AudioSource source)
     alSourcefv(source.handle, AL_ORIENTATION, ori);
     alSource3f(source.handle, AL_VELOCITY, params.velocity.x, params.velocity.y, params.velocity.z);
     alSourcei(source.handle, AL_LOOPING, params.looping);
+    alSourcef(source.handle, AL_REFERENCE_DISTANCE, params.relDistance);
 }
 
 void AudioMgr::SetSourceAudio(AudioSource source, ID audioId)

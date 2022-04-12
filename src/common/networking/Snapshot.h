@@ -14,6 +14,7 @@ namespace Networking
     {
         Entity::PlayerState::Transform transform;
         Entity::Weapon::State wepState;
+        Entity::WeaponTypeID weaponId;
 
         static PlayerSnapshot FromPlayerState(Entity::PlayerState playerState);
         Entity::PlayerState ToPlayerState(Entity::PlayerState playerState);

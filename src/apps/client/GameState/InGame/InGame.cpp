@@ -133,26 +133,7 @@ void InGame::Start()
     });
 
     // Audio
-    audioMgr = audioMgr->Get();
-    audioMgr->Init();
-
-    std::filesystem::path soundTrackPath = "/home/defu/Projects/BlockBuster/resources/audio/Soundtrack.wav";
-    auto [id, err] = audioMgr->LoadStreamedWAVOrNull(soundTrackPath);
-    if(err != Audio::AudioMgr::LoadWAVError::NO_ERR)
-        GetLogger()->LogError("Could not find audio file" + soundTrackPath.string() + ". Err: " + std::to_string(err));
-
-    auto srcId = audioMgr->CreateStreamSource();
-    Audio::AudioSource::Params audioParams;
-    audioMgr->SetStreamSourceParams(srcId, audioParams);
-    audioMgr->SetStreamSourceAudio(srcId, id);
-    audioMgr->PlayStreamSource(srcId);
-
-    // Positional audio needs to be mono. Stereo is pre-computed.
-    std::filesystem::path audioPath = "/home/defu/Projects/BlockBuster/resources/audio/tone.wav";
-    auto [staticId, error] = audioMgr->LoadStaticWAVOrNull(audioPath);
-
-    auto sSource = audioMgr->CreateSource();
-    audioMgr->SetSourceAudio(sSource, staticId);
+    InitAudio();
 
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
@@ -555,9 +536,27 @@ Entity::ID InGame::GetPlayerTeam(Entity::ID playerId)
 
 void InGame::OnGrenadeExplode(Entity::Projectile& grenade)
 {
-    explosionMgr.CreateExplosion(grenade.GetPos());
+    auto pos = grenade.GetPos();
+    explosionMgr.CreateExplosion(pos);
 
-    // TODO: Play sound effect
+    // Play sound effect
+    auto source = grenadeSources.Get();
+    audioMgr->SetSourceParams(source, pos);
+    audioMgr->PlaySource(source);
+}
+
+void InGame::OnLocalPlayerShot()
+{
+    fpsAvatar.PlayShootAnimation();    
+    WeaponRecoil();
+
+    auto& player = GetLocalPlayer();
+    auto& weapon = player.GetCurrentWeapon();
+    
+    auto audioId = gallery.GetWepSoundID(weapon.weaponTypeId);
+    audioMgr->SetSourceAudio(playerSource, audioId);
+    audioMgr->SetSourceParams(playerSource, player.GetRenderTransform().position);
+    audioMgr->PlaySource(playerSource);
 }
 
 World InGame::GetWorld()
@@ -823,12 +822,45 @@ void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)
 
 // Audio
 
+void InGame::InitAudio()
+{
+    using namespace Game::Sound;
+
+    // Set up gallery
+    audioMgr = audioMgr->Get();
+    audioMgr->Init();
+    std::filesystem::path audioFolder = "/home/defu/Projects/BlockBuster/resources/audio";
+    gallery.SetDefaultFolder(audioFolder);
+    gallery.Start();
+
+    // Play Spawn Theme
+    soundtrackSource = audioMgr->CreateStreamSource();
+    Audio::AudioSource::Params audioParams;
+    audioParams.gain = 0.5f;
+    audioMgr->SetStreamSourceParams(soundtrackSource, audioParams);
+    audioMgr->SetStreamSourceAudio(soundtrackSource, gallery.GetMusicId(MusicID::SPAWN_THEME_ID));
+    audioMgr->PlayStreamSource(soundtrackSource);
+
+    // Player source
+    playerSource = audioMgr->CreateSource();
+
+    // Set grenade sources
+    for(auto i = 0; i < grenadeSources.GetSize(); i++)
+    {
+        auto sourceId = audioMgr->CreateSource();
+        grenadeSources.Get() = sourceId;
+
+        audioMgr->SetSourceAudio(sourceId, gallery.GetSoundId(SoundID::GRENADE_SOUND_ID));
+    }
+}
+
 void InGame::UpdateAudio()
 {
     audioMgr->SetListenerParams(camera_.GetPos(), camera_.GetRotation().y);
     audioMgr->Update();
 }
 
+// Map
 // TODO: Redundancy with Project::Load
 void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
 {

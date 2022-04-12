@@ -25,6 +25,7 @@
 #include <util/BBTime.h>
 #include <util/Ring.h>
 #include <util/Table.h>
+#include <util/Pool.h>
 
 #include <entity/Player.h>
 #include <entity/PlayerController.h>
@@ -35,6 +36,7 @@
 #include <networking/Packets.h>
 
 #include <audio/Audio.h>
+#include <game/sound/Gallery.h>
 
 #include <GameState/InGame/InGameGUI.h>
 
@@ -75,6 +77,7 @@ namespace BlockBuster
         Entity::Player& GetLocalPlayer();
         Entity::ID GetPlayerTeam(Entity::ID playerId);
         void OnGrenadeExplode(Entity::Projectile& grenade);
+        void OnLocalPlayerShot();
         World GetWorld();
 
         // Networking
@@ -113,6 +116,7 @@ namespace BlockBuster
         void Render();
 
         // Audio
+        void InitAudio();
         void UpdateAudio();
 
         // Map
@@ -239,6 +243,10 @@ namespace BlockBuster
 
         // Audio
         Audio::AudioMgr* audioMgr = nullptr;
+        Game::Sound::Gallery gallery;
+        Util::Pool<Audio::ID, 4> grenadeSources;
+        Audio::ID soundtrackSource;
+        Audio::ID playerSource;
 
         // Scene
         std::string mapName;

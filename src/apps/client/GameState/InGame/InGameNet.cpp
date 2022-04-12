@@ -45,6 +45,10 @@ void InGame::OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::Pl
     ps.shootPlayer.SetTargetFloat("zPos", &ps.armsPivot.position.z);
     ps.shootPlayer.SetTargetBool("left-flash", &ps.leftFlashActive);
     ps.shootPlayer.SetTargetBool("right-flash", &ps.rightFlashActive);
+    ps.shootPlayer.SetOnDoneCallback([this, playerId](){
+        this->playerModelStateTable[playerId].leftFlashActive = false;
+        this->playerModelStateTable[playerId].rightFlashActive = false;
+    });
 
     ps.shootPlayer.SetTargetFloat("yPos", &ps.armsPivot.position.y);
     ps.shootPlayer.SetTargetFloat("pitch", &ps.armsPivot.rotation.x);
@@ -677,10 +681,8 @@ void InGame::SmoothPlayerMovement()
         auto nextState = lastPred->dest.weaponState[oldState.curWep];
         
         if(Entity::HasShot(oldWepState.state, nextState.state))
-        {
-            fpsAvatar.PlayShootAnimation();
-            WeaponRecoil();
-        }
+            OnLocalPlayerShot();
+        
         bool playReloadAnim = Entity::HasReloaded(oldWepState.state, nextState.state) || Entity::HasStartedSwap(oldWepState.state, nextState.state) ||
             Entity::HasPickedUp(oldWepState.state, nextState.state) || Entity::HasGrenadeThrow(oldWepState.state, nextState.state);
         if(playReloadAnim)
