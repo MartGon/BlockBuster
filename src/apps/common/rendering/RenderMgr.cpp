@@ -121,7 +121,6 @@ float RenderMgr::DrawReq::GetDepth(glm::vec3 camPos)
 {
     float depth = 0;
     if(reqType == ReqType::MODEL)
-    // TODO: Review this
         depth = modelParams.t[3].z;
     else if(reqType == ReqType::BILLBOARD)
         depth = glm::length(camPos - billboardParams.pos);

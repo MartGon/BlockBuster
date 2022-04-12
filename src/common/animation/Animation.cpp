@@ -80,6 +80,9 @@ Sample Animation::Interpolate(Sample s1, Sample s2, float alpha)
         }
     }
 
+    // Use s1 bools
+    s.bools = s1.bools;
+
     return s;
 }
 
