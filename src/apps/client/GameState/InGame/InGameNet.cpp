@@ -671,27 +671,13 @@ void InGame::SmoothPlayerMovement()
     auto lastPred = predictionHistory_.Back();
     if(lastPred)
     {
+        // Prediction Error correction
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
-        auto oldState = lastPred->origin;
-        auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
-
-        // Animation
-        auto oldWepState = oldState.weaponState[oldState.curWep];
-        auto nextState = lastPred->dest.weaponState[oldState.curWep];
-        
-        if(Entity::HasShot(oldWepState.state, nextState.state))
-            OnLocalPlayerShot();
-        
-        bool playReloadAnim = Entity::HasReloaded(oldWepState.state, nextState.state) || Entity::HasStartedSwap(oldWepState.state, nextState.state) ||
-            Entity::HasPickedUp(oldWepState.state, nextState.state) || Entity::HasGrenadeThrow(oldWepState.state, nextState.state);
-        if(playReloadAnim)
-            fpsAvatar.PlayReloadAnimation(nextState.cooldown);
-
-        // Prediction Error correction
         Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
         float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
         auto errorCorrection = errorCorrectionDiff * weight;
+        auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
         predState.transform = predState.transform + errorCorrection;
         player.ApplyState(predState);
 
@@ -700,6 +686,26 @@ void InGame::SmoothPlayerMovement()
             if(dist > 0.005)
                 client_->logger->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
         #endif
+
+        if(lastPred->inputReq.reqId != lastRenderedPred)
+        {
+            // Animation
+            auto oldState = lastPred->origin;
+            auto renderState = GetLocalPlayer().ExtractState();
+            auto oldWepState = oldState.weaponState[oldState.curWep];
+            auto renderWepState = renderState.weaponState[oldState.curWep];
+            auto nextWepState = lastPred->dest.weaponState[oldState.curWep];
+            
+            if(Entity::HasShot(oldWepState.state, nextWepState.state))
+                OnLocalPlayerShot();
+            
+            bool playReloadAnim = Entity::HasReloaded(oldWepState.state, nextWepState.state) || Entity::HasStartedSwap(oldWepState.state, nextWepState.state) ||
+                Entity::HasPickedUp(oldWepState.state, nextWepState.state) || Entity::HasGrenadeThrow(oldWepState.state, nextWepState.state);
+            if(playReloadAnim)
+                fpsAvatar.PlayReloadAnimation(nextWepState.cooldown);
+            
+            lastRenderedPred = lastPred->inputReq.reqId;
+        }
     }
 }
 

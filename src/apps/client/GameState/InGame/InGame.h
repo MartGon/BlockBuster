@@ -208,6 +208,7 @@ namespace BlockBuster
         Util::Ring<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
+        uint32_t lastRenderedPred = 0;
 
         const Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0};
         Entity::PlayerState::Transform errorCorrectionDiff;

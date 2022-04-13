@@ -72,7 +72,7 @@ void InGameGUI::Start()
     actionImg.SetScale(glm::vec2{0.5f});
     iconSize = actionImg.GetSize();
     actionImg.SetOffset(-iconSize);
-    actionImg.SetIsVisible(true);
+    actionImg.SetIsVisible(false);
 
     grenadeIcon.SetTexture(textureMgr.GetTexture(grenadeTexId));
     grenadeIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
@@ -333,7 +333,7 @@ void InGameGUI::InitTexts()
     actionText.SetAnchorPoint(GUI::AnchorPoint::CENTER_LEFT);
     auto asize = actionText.GetSize();
     actionText.SetOffset(glm::ivec2{-asize.x, -asize.y / 2});
-    actionText.SetIsVisible(true);
+    actionText.SetIsVisible(false);
 
     // Score
     midScoreText = pixelFont->CreateText();

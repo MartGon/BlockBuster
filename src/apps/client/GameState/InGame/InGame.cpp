@@ -547,9 +547,6 @@ void InGame::OnGrenadeExplode(Entity::Projectile& grenade)
 
 void InGame::OnLocalPlayerShot()
 {
-    fpsAvatar.PlayShootAnimation();    
-    WeaponRecoil();
-
     auto& player = GetLocalPlayer();
     auto& weapon = player.GetCurrentWeapon();
     
@@ -575,6 +572,9 @@ void InGame::OnLocalPlayerShot()
         auto mat = translate * orientation;
         decalTransforms.PushBack(mat);
     }
+
+    fpsAvatar.PlayShootAnimation(); 
+    WeaponRecoil();
 }
 
 World InGame::GetWorld()
