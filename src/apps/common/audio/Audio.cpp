@@ -397,12 +397,26 @@ void AudioMgr::UpdateStreamedAudio(StreamAudioSource& sSource)
 
 void AudioMgr::SetListenerParams(glm::vec3 pos, float orientation, float gain, glm::vec3 vel)
 {
+    this->pos = pos;
+    this->orientation = orientation;
+    this->gain = gain;
+
     alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
     glm::vec3 rot = glm::vec3{glm::cos(orientation), 0.0f, glm::sin(orientation)};
     ALfloat ori[]={rot.x, rot.y, rot.z, 0.0, 1.0, 0.0};
     alListenerfv(AL_ORIENTATION, ori);
     alListenerf(AL_GAIN, gain);
     alListener3f(AL_VELOCITY, vel.x, vel.y, vel.z);
+}
+
+void AudioMgr::SetListenerTransform(glm::vec3 pos, float orientation)
+{
+    SetListenerParams(pos, orientation, this->gain);
+}
+
+void AudioMgr::SetListenerGain(float gain)
+{
+    SetListenerParams(this->pos, this->orientation, gain);
 }
 
 // Private

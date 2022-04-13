@@ -889,7 +889,7 @@ void InGame::InitAudio()
 
 void InGame::UpdateAudio()
 {
-    audioMgr->SetListenerParams(camera_.GetPos(), camera_.GetRotation().y);
+    audioMgr->SetListenerTransform(camera_.GetPos(), camera_.GetRotation().y);
     audioMgr->Update();
 }
 
@@ -943,5 +943,6 @@ void InGame::ApplyGameOptions(GameOptions options)
 
     // Apply changes
     camController_.rotMod = gameOptions.sensitivity;
-    // TODO: Apply sound
+
+    audioMgr->SetListenerGain((float)options.audioGeneral / 100.0f);
 }

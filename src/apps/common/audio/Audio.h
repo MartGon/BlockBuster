@@ -98,6 +98,8 @@ namespace Audio
 
         // Listener
         void SetListenerParams(glm::vec3 pos, float orientation = 0.0f, float gain = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
+        void SetListenerTransform(glm::vec3 pos, float orientation = 0.0f);
+        void SetListenerGain(float gain);
 
         // Config
         inline void SetEnabled(bool enabled)
@@ -159,6 +161,11 @@ namespace Audio
         // Files
         std::unordered_map<ID, StaticFile> staticFiles;
         std::unordered_map<ID, File> streamedFiles;
+
+        // Listener
+        glm::vec3 pos{0.0f};
+        float orientation = 0.0f;
+        float gain = 1.0f;
 
         // General params
         bool enabled = true;
