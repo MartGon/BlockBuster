@@ -105,7 +105,7 @@ namespace BlockBuster
             std::string serverKey;
         };
 
-        Server(Params params, MMServer mserver);
+        Server(Params params, MMServer mserver, Util::Time::Seconds tickRate);
 
         void Start();
         void Run();
@@ -186,7 +186,7 @@ namespace BlockBuster
         Util::Ring<Networking::Snapshot, 30> history;
 
         // Simulation
-        const Util::Time::Seconds TICK_RATE{0.033};
+        Util::Time::Seconds TICK_RATE{0.033};
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
 

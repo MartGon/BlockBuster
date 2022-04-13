@@ -7,6 +7,8 @@
 
 #include <util/BBTime.h>
 
+#include <Projectile.h>
+
 namespace Entity
 {
     class Weapon;
@@ -20,6 +22,7 @@ namespace Entity
         SHOTGUN,
         SMG,
         SNIPER,
+        GRENADE_LAUNCHER,
         CHEAT_SMG,
         COUNT
     };
@@ -52,6 +55,12 @@ namespace Entity
             BURST,
             AUTO,
         };
+
+        enum class ShotType : uint8_t
+        {
+            HITSCAN,
+            PROJECTILE,
+        };
         
         WeaponTypeID id;
         FiringMode firingMode;
@@ -63,9 +72,12 @@ namespace Entity
         glm::vec2 recoil;
         uint8_t burstShots; // Amount of shots per burst
         float zoomLevel;
-
+        
         AmmoType ammoType;
         AmmoTypeData ammoData;
+
+        ShotType shotType;
+        Projectile::Type type;
 
         Weapon CreateInstance() const;
     };
@@ -97,6 +109,9 @@ namespace Entity
         bool triggerPressed = false;
         uint8_t burstCount = 0;
     };
+
+    // WeaponType
+    WeaponType GetWeaponType(WeaponTypeID id);
 
     // Weapon
     bool HasShot(Weapon::State s1, Weapon::State s2);

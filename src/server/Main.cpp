@@ -2,6 +2,8 @@
 
 #include <argparse/argparse.hpp>
 
+#include <util/BBTime.h>
+
 #include <Logger.h>
 
 int main(int argc, char** argv)
@@ -20,6 +22,7 @@ int main(int argc, char** argv)
     ap.add_argument("-mmk", "--match-making-key");
 
     ap.add_argument("-v", "--verbosity").default_value<uint8_t>(static_cast<uint8_t>(Log::Verbosity::VERBOSITY_ERROR)).scan<'u', uint8_t>();
+    ap.add_argument("-t", "--tickrate").default_value<float>(0.033).scan<'f', float>();
 
     try {
         ap.parse_args(argc, argv);
@@ -36,7 +39,9 @@ int main(int argc, char** argv)
     auto maxPlayers = ap.get<uint8_t>("--max-players");
     auto startingPlayers = ap.get<uint8_t>("--starting-players");
     auto gameMode = ap.get<std::string>("--gamemode");
+
     auto verbosity = static_cast<Log::Verbosity>(ap.get<uint8_t>("--verbosity"));
+    auto tickRate = Util::Time::Seconds{ap.get<float>("--tickrate")};
 
     auto mmAddress = ap.get<std::string>("--match-making-address");
     auto mmPort = ap.get<uint16_t>("--match-making-port");
@@ -61,12 +66,14 @@ int main(int argc, char** argv)
     std::cout << "Match Making game id: " << mmGameId << '\n';
     std::cout << "Match Making game key: " << mmKey << '\n';
 
+    std::cout << "Tick rate is " << tickRate.count() << "\n";
+
     using namespace BlockBuster;
 
     Server::Params params{address, port, maxPlayers, startingPlayers, map, gameMode, verbosity};
     Server::MMServer mmServer{mmAddress, mmPort, mmGameId, mmKey};
 
-    Server server{params, mmServer};
+    Server server{params, mmServer, tickRate};
     server.Start();
     server.Run();
 

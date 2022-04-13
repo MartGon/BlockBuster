@@ -3,13 +3,20 @@
 #include <math/Transform.h>
 #include <util/BBTime.h>
 #include <util/Timer.h>
-#include <entity/Player.h>
 
 namespace Entity
 {
+    using ID = uint8_t;
     class Projectile
     {
     public:
+
+        enum Type : uint8_t
+        {
+            NONE,
+            GRENADE,
+            COUNT
+        };
 
         struct State
         {

@@ -10,6 +10,7 @@ namespace Util
 
         T& Get()
         {
+            AdvanceIndex();
             return array[index];
         }
 
@@ -20,7 +21,7 @@ namespace Util
     
     private:
 
-        int AdvanceIndex()
+        void AdvanceIndex()
         {
             index = (index + 1) % size;
         }

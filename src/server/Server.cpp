@@ -8,7 +8,7 @@
 using namespace BlockBuster;
 using namespace Networking::Packets::Client;
 
-Server::Server(Params params, MMServer mmServer) : params{params}, mmServer{mmServer}, 
+Server::Server(Params params, MMServer mmServer, Util::Time::Seconds tickRate) : params{params}, mmServer{mmServer}, TICK_RATE{tickRate},
     asyncClient{mmServer.address, mmServer.port}
 {
 
@@ -478,56 +478,71 @@ void Server::HandleShootCommand(ShotCommand sc)
     Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
     logger.LogDebug("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
 
-    // Check collision with block
-    auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
-    auto bColDist = std::numeric_limits<float>::max();
-    if(bCol.intersection.intersects)
-        bColDist = bCol.intersection.GetRayLength(ray);
-
-    // Check collision with players. This allows collaterals
     auto& author = clients[sc.clientId].player;
-    for(auto& [peerId, client] : clients)
+    auto& weapon = author.GetCurrentWeapon();
+    auto wepType = Entity::GetWeaponType(weapon.weaponTypeId);
+
+    // Hit scan
+    if(wepType.shotType == Entity::WeaponType::ShotType::HITSCAN)
     {
-        if(peerId == sc.clientId)
-            continue;
+        // Check collision with block
+        auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
+        auto bColDist = std::numeric_limits<float>::max();
+        if(bCol.intersection.intersects)
+            bColDist = bCol.intersection.GetRayLength(ray);
 
-        // No Friendly fire or dmg to dead units
-        auto& victim = client.player;
-        if(victim.IsDead() || victim.teamId == author.teamId)
-            continue;
-
-        auto playerId = victim.id;
-        bool s1HasData = s1.players.find(playerId) != s1.players.end();
-        bool s2HasData = s2.players.find(playerId) != s2.players.end();
-
-        if(!s1HasData || !s2HasData)
-            continue;
-
-        // Calculate player pos that client views
-        auto ps1 = s1.players.at(playerId);
-        auto ps2 = s2.players.at(playerId);
-        auto smoothState = Networking::PlayerSnapshot::Interpolate(ps1, ps2, alpha);
-
-        auto lastMoveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
-        auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.transform.pos, smoothState.transform.rot.y, lastMoveDir);
-        if(rpc.collides)
+        // Check collision with players. This allows collaterals
+        for(auto& [peerId, client] : clients)
         {
-            auto colDist = rpc.intersection.GetRayLength(ray);
-            auto& weapon = author.GetCurrentWeapon();
-            if(colDist < bColDist && colDist <= Entity::GetMaxEffectiveRange(weapon.weaponTypeId))
-            {
-                victim.TakeWeaponDmg(weapon, rpc.hitboxType, colDist);
-                OnPlayerTakeDmg(sc.clientId, peerId);
+            if(peerId == sc.clientId)
+                continue;
 
-                logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
-                logger.LogDebug("Victim's shield " + std::to_string(victim.health.shield) + " Victim health " + std::to_string(victim.health.hp));
+            // No Friendly fire or dmg to dead units
+            auto& victim = client.player;
+            if(victim.IsDead() || victim.teamId == author.teamId)
+                continue;
+
+            auto playerId = victim.id;
+            bool s1HasData = s1.players.find(playerId) != s1.players.end();
+            bool s2HasData = s2.players.find(playerId) != s2.players.end();
+
+            if(!s1HasData || !s2HasData)
+                continue;
+
+            // Calculate player pos that client views
+            auto ps1 = s1.players.at(playerId);
+            auto ps2 = s2.players.at(playerId);
+            auto smoothState = Networking::PlayerSnapshot::Interpolate(ps1, ps2, alpha);
+
+            auto lastMoveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
+            auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.transform.pos, smoothState.transform.rot.y, lastMoveDir);
+            if(rpc.collides)
+            {
+                auto colDist = rpc.intersection.GetRayLength(ray);
+                
+                if(colDist < bColDist && colDist <= Entity::GetMaxEffectiveRange(weapon.weaponTypeId))
+                {
+                    victim.TakeWeaponDmg(weapon, rpc.hitboxType, colDist);
+                    OnPlayerTakeDmg(sc.clientId, peerId);
+
+                    logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
+                    logger.LogDebug("Victim's shield " + std::to_string(victim.health.shield) + " Victim health " + std::to_string(victim.health.hp));
+                }
+                else
+                    logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit block " + glm::to_string(bCol.pos));
             }
             else
-                logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit block " + glm::to_string(bCol.pos));
+                logger.LogDebug("Shot from player " + std::to_string(author.id) + " has NOT hit player " + std::to_string(peerId));
+            //logger.LogInfo("Player was at " + glm::to_string(smoothState.transform.pos));
         }
-        else
-            logger.LogDebug("Shot from player " + std::to_string(author.id) + " has NOT hit player " + std::to_string(peerId));
-        //logger.LogInfo("Player was at " + glm::to_string(smoothState.transform.pos));
+    }
+    else if(wepType.shotType == Entity::WeaponType::ShotType::PROJECTILE)
+    {
+        auto p = std::make_unique<Entity::Grenade>();
+        float SPEED = 20.0f;
+        glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
+        p->Launch(author.id, ray.origin, ray.GetDir() * SPEED, acceleration);
+        projectiles.MoveInto(std::move(p));
     }
 }
 
