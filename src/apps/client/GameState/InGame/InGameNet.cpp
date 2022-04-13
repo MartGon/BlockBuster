@@ -884,13 +884,21 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
         auto& modelState = playerModelStateTable.at(playerId);
         modelState.shootPlayer.SetClip(playerAvatar.GetShootAnim());
         modelState.shootPlayer.Restart();
+
+        // HACK Reset pitch, in case it was reloading
+        modelState.armsPivot.rotation.x = 0.0f;
+        modelState.armsPivot.position.y = 0.0f;
     }
 
-    if(Entity::HasReloaded(oldState.weaponState[oldState.curWep].state, interpolation.wepState))
+    if(Entity::HasReloaded(oldState.weaponState[oldState.curWep].state, interpolation.wepState) ||
+        Entity::HasStartedSwap(oldState.weaponState[oldState.curWep].state, interpolation.wepState))
     {
         auto& modelState = playerModelStateTable.at(playerId);
         modelState.shootPlayer.SetClip(playerAvatar.GetReloadAnim());
         modelState.shootPlayer.Restart();
+
+        modelState.leftFlashActive = false;
+        modelState.rightFlashActive = false;
     }
 
     auto newState = interpolation.ToPlayerState(oldState);

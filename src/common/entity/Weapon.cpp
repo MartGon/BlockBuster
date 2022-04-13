@@ -76,7 +76,7 @@ bool Entity::HasReloaded(Weapon::State s1, Weapon::State s2)
 
 bool Entity::HasStartedSwap(Weapon::State s1, Weapon::State s2)
 {
-    return s1 == Weapon::State::IDLE && s2 == Weapon::State::SWAPPING;
+    return s1 != Weapon::State::SWAPPING && s2 == Weapon::State::SWAPPING;
 }
 
 bool Entity::HasSwapped(Weapon::State s1, Weapon::State s2)
