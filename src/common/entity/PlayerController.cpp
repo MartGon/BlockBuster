@@ -159,6 +159,38 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Weapon secWeapon, Entity::P
     return weapon;
 }
 
+Player::HealthState PlayerController::UpdateShield(Player::HealthState healthState, Util::Timer& dmgTimer, Util::Time::Seconds deltaTime)
+{
+    switch (healthState.shieldState)
+    {
+    case Player::SHIELD_STATE_IDLE:
+        
+        break;
+    
+    case Player::SHIELD_STATE_DAMAGED:
+        dmgTimer.Update(deltaTime);
+        if(dmgTimer.IsDone())
+            healthState.shieldState = Player::SHIELD_STATE_REGENERATING;
+        break;
+    
+    case Player::SHIELD_STATE_REGENERATING:
+    {
+        auto increase = Player::SHIELD_PER_SEC * (float)deltaTime.count();
+        healthState.shield = std::min(healthState.shield + increase, Player::MAX_SHIELD);
+        if(healthState.shield == Player::MAX_SHIELD)
+            healthState.shieldState = Player::SHIELD_STATE_IDLE;
+    }
+        break;
+
+    default:
+        break;
+    }
+
+    return healthState;
+}
+
+// Collisions
+
 struct Intersection
 {
     Game::Block block;

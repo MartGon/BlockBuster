@@ -228,6 +228,8 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             player.health = ptd->healthState;
             lastDmgOrigin = ptd->origin;
 
+            player.TakeDmg(0.0f);
+
             inGameGui.PlayScreenEffect();
         }
         break;

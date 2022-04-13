@@ -155,12 +155,22 @@ namespace Entity
         void ThrowGrenade();
 
         // Health
+        enum ShieldState
+        {
+            SHIELD_STATE_IDLE,
+            SHIELD_STATE_DAMAGED,
+            SHIELD_STATE_REGENERATING,
+        };
+        constexpr static float SHIELD_PER_SEC = 60.0f;
+        constexpr static Util::Time::Seconds TIME_TO_START_REGEN{5.0f};
         struct HealthState
         {
             float shield = MAX_SHIELD;
             float hp = MAX_HEALTH;
+            ShieldState shieldState = SHIELD_STATE_IDLE;
         };
         void ResetHealth();
+        bool IsShieldFull();
         bool IsDead();
         
         // Interaction
@@ -171,6 +181,7 @@ namespace Entity
 
         // Health
         HealthState health;
+        Util::Timer dmgTimer{TIME_TO_START_REGEN};
 
         ID teamId = 0;
 

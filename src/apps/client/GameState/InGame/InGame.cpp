@@ -374,6 +374,8 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     SmoothPlayerMovement();
 
     auto& player = GetLocalPlayer();
+    // Update shield
+    player.health = pController.UpdateShield(player.health, player.dmgTimer, deltaTime);
 
     // Set camera in player
     auto camMode = camController_.GetMode();

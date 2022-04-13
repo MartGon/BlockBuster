@@ -19,6 +19,7 @@ namespace Entity
 
         glm::vec3 UpdatePosition(glm::vec3 pos, float yaw, Entity::PlayerInput input, Game::Map::Map* map, Util::Time::Seconds deltaTime);
         Weapon UpdateWeapon(Weapon weapon, Weapon secWeapon, Entity::PlayerInput input, Util::Time::Seconds deltaTime);
+        Player::HealthState UpdateShield(Player::HealthState healthState, Util::Timer& dmgTimer, Util::Time::Seconds deltaTime);
 
         Math::Transform GetECB();
         Math::Transform GetGCB();

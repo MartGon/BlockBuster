@@ -290,6 +290,9 @@ void Player::TakeDmg(float dmg)
         else
             health = 0.0f;
     }
+
+    this->health.shieldState = SHIELD_STATE_DAMAGED;
+    dmgTimer.Restart();
 }
 
 void Player::ResetWeaponAmmo(Entity::WeaponTypeID wepId)
@@ -355,6 +358,11 @@ void Player::ResetHealth()
 {
     health.hp = MAX_HEALTH;
     health.shield = MAX_SHIELD;
+}
+
+bool Player::IsShieldFull()
+{
+    return health.shield >= MAX_SHIELD;
 }
 
 bool Player::IsDead()

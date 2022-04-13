@@ -740,6 +740,11 @@ void Server::UpdateWorld()
             else
                 client.respawnTime -= TICK_RATE;
         }
+        else if(!player.IsShieldFull())
+        {
+            auto& pController = client.pController;
+            player.health = pController.UpdateShield(player.health, player.dmgTimer, TICK_RATE);
+        }
     }
 
     // GameObject respawns
