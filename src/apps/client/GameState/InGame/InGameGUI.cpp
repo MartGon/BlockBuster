@@ -35,6 +35,7 @@ void InGameGUI::Start()
     auto& textureMgr = inGame->renderMgr.GetTextureMgr();
     hitmarker = textureMgr.LoadFromDefaultFolder("hitmarker.png");
     grenadeTexId = textureMgr.LoadFromDefaultFolder("grenade2.png", true);
+    dmgArrowId = textureMgr.LoadFromDefaultFolder("arrow.png");
     glm::u8vec4 white{255, 255, 255, 255};
     dmgTexture = textureMgr.LoadRaw(&white.x, glm::ivec2{1, 1}, GL_RGBA);
 
@@ -102,6 +103,11 @@ void InGameGUI::Start()
 
     dmgEffectImg.SetTexture(textureMgr.GetTexture(dmgTexture));
     dmgEffectImg.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+
+    dmgArrowImg.SetTexture(textureMgr.GetTexture(dmgArrowId));
+    dmgArrowImg.SetAnchorPoint(GUI::AnchorPoint::CENTER);
+    dmgArrowImg.SetSize(glm::ivec2{26, 64});
+    dmgArrowImg.SetOffset(glm::ivec2{winSize.x * 0.1f, -32});
 
     // Animations
     InitAnimations();
@@ -491,6 +497,11 @@ void InGameGUI::InitAnimations()
     logAnim.keyFrames = {lf1, lf2};
     logAnimPlayer.SetClip(&logAnim);
     logAnimPlayer.SetTargetFloat("alpha", &logAlpha);
+
+    // Dmg arrow
+    dmgArrowAnimationPlayer.SetClip(&logAnim);
+    dmgArrowAnimationPlayer.SetTargetFloat("alpha", &dmgArrowAlpha);
+    dmgArrowAnimationPlayer.SetSpeed(2.0f);
 }
 
 void InGameGUI::HUD()
@@ -576,6 +587,22 @@ void InGameGUI::HUD()
     const auto color = glm::vec4{effectColor[effectType], dmgAlpha};
     dmgEffectImg.SetColor(color);
     dmgEffectImg.Draw(inGame->imgShader, winSize);
+
+        // Dmg arrow
+    dmgArrowAnimationPlayer.Update(inGame->deltaTime);
+    auto view = inGame->camera_.GetViewMat();
+    glm::vec3 dmgOrigin = view * glm::vec4{inGame->lastDmgOrigin, 1.0f};
+    auto dmgOrigin2d = glm::vec2{dmgOrigin.x, dmgOrigin.z};
+    
+    auto dir = glm::normalize(dmgOrigin2d); dir.y = -dir.y;
+    auto pos = dir * (glm::vec2{winSize} * 0.1f);
+    glm::vec2 arrowSize = dmgArrowImg.GetSize();
+    auto angle = glm::atan(dir.y, dir.x);
+    dmgArrowImg.SetRot(angle);
+    dmgArrowImg.SetOffset(pos - arrowSize / 2.0f);
+    auto arrowColor = glm::vec4{1.0f, 0.0f, 0.0f, dmgArrowAlpha};
+    dmgArrowImg.SetColor(arrowColor);
+    dmgArrowImg.Draw(inGame->imgShader, winSize);
 
     // Capturing
     auto size = capturingText.GetSize();
@@ -760,6 +787,10 @@ void InGameGUI::PlayScreenEffect(ScreenEffect effect)
 {
     effectType = effect;
     dmgAnimationPlayer.Restart();
+    if(effectType == ScreenEffect::SCREEN_EFFECT_DMG)
+    {
+        dmgArrowAnimationPlayer.Restart();
+    }
 }
 
 void InGameGUI::EnableActionText(Entity::GameObject& go)

@@ -114,6 +114,7 @@ namespace BlockBuster
         Rendering::TextureID hitmarker;
         Rendering::TextureID dmgTexture;
         Rendering::TextureID grenadeTexId;
+        Rendering::TextureID dmgArrowId;
         Util::Table<Rendering::TextureID> crosshairTextures;
 
         // HUD
@@ -132,6 +133,7 @@ namespace BlockBuster
         GUI::Image hitmarkerImg;
         GUI::Image flagIconImg;
         GUI::Image dmgEffectImg;
+        GUI::Image dmgArrowImg;
         GUI::Image actionImg;
 
         // Animations
@@ -139,10 +141,12 @@ namespace BlockBuster
         bool showHitmarker = false;
         Animation::Player hitMarkerPlayer;
         float dmgAlpha = 0.0f;
+        float dmgArrowAlpha = 0.0f;
         const glm::ivec3 effectColor[SCREEN_EFFECT_COUNT] = {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}};
         ScreenEffect effectType = SCREEN_EFFECT_DMG;
         Animation::Clip dmgAnim;
         Animation::Player dmgAnimationPlayer;
+        Animation::Player dmgArrowAnimationPlayer;
 
         // Score
         GUI::Text leftScoreText;

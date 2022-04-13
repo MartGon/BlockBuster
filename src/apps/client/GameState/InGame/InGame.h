@@ -165,6 +165,7 @@ namespace BlockBuster
         uint8_t playerId = 0;
         Util::Timer respawnTimer;
         Entity::ID killerId = 0;
+        glm::vec3 lastDmgOrigin{0.0f};
         float zoomMod = 0.0f;
         const float zoomSpeed = 5.0f;
 

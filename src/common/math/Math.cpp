@@ -10,6 +10,14 @@ glm::vec3 Math::RotateVec3(const glm::mat4& rotMat, glm::vec3 offset)
     return glm::round(rotMat * glm::vec4{offset, 1.0f});
 }
 
+glm::vec2 Math::RotateVec2(const glm::vec2& vec, float radians)
+{
+    glm::vec2 ret;
+    ret.x = glm::cos(radians) * vec.x - glm::sin(radians) * vec.y;
+    ret.y = glm::sin(radians) * vec.x + glm::cos(radians) * vec.y;
+    return ret;
+}
+
 bool Math::AreSame(float a, float b, float threshold)
 {
     return std::abs(a - b) < threshold;

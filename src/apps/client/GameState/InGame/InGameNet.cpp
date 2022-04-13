@@ -226,6 +226,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
 
             auto& player = GetLocalPlayer();
             player.health = ptd->healthState;
+            lastDmgOrigin = ptd->origin;
 
             inGameGui.PlayScreenEffect();
         }
