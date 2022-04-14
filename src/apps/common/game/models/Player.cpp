@@ -8,9 +8,9 @@
 
 using namespace Game::Models;
 
-void Player::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
+void Player::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& billboardShader)
 {
-    InitModel(renderMgr, shader, quadShader);
+    InitModel(renderMgr, shader, billboardShader);
     InitAnimations();
 }
 
@@ -32,13 +32,15 @@ void Player::Draw(const glm::mat4& tMat, uint8_t flags)
     auto wtMat = tMat * wheelsT;
     wheelsModel->Draw(wtMat);
 
-    // Draw arms. Disable culling for muzzle flash quad
-    glDisable(GL_CULL_FACE);
     auto armsT = aTransform.GetTransformMat();
     auto apT = armsPivot.GetTransformMat();
     auto atMat = tMat * bodyT * armsT * apT;
     armsModel->Draw(atMat);
-    glEnable(GL_CULL_FACE);
+}
+
+void Player::DrawName()
+{
+    
 }
 
 void Player::SetColor(glm::vec4 color)
@@ -111,12 +113,13 @@ Animation::Clip* Player::GetDeathAnim()
     return &death;
 }
 
-void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
+void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& billboardShader)
 {
     // Get model handlers
     bodyModel = renderMgr.CreateModel();
     wheelsModel = renderMgr.CreateModel();
     armsModel = renderMgr.CreateModel();
+    nameBillboard = renderMgr.CreateBillboard();
 
     // Textures
     std::string textureName = "flash.png";
@@ -219,12 +222,12 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
         painting.type = Rendering::PaintingType::TEXTURE;
         painting.hasAlpha = true;
         painting.texture = flashTextureId;
-        auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false, Rendering::RenderMgr::NO_FACE_CULLING};
+        auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &shader, false, Rendering::RenderMgr::NO_FACE_CULLING};
         *fid = armsModel->AddSubModel(std::move(flashModel));
 
         auto altFlashT = Math::Transform{glm::vec3{(float)i * 1.35f, 0.0f, -4.f}, glm::vec3{0.0f, 90.0f, 0.0f}, glm::vec3{3.0f}};
         painting.texture = altFlashTextureId;
-        auto altFlashModel = Rendering::SubModel{altFlashT, painting, quadPtr, &quadShader, false, Rendering::RenderMgr::NO_FACE_CULLING};
+        auto altFlashModel = Rendering::SubModel{altFlashT, painting, quadPtr, &shader, false, Rendering::RenderMgr::NO_FACE_CULLING};
         *altFid = armsModel->AddSubModel(std::move(altFlashModel));
     }
 
@@ -232,6 +235,10 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
     rightFlash = armsModel->GetSubModel(rightId);
     leftAltFlash = armsModel->GetSubModel(altLeftId);
     rightAltFlash = armsModel->GetSubModel(altRightId);
+
+    // Name quad
+    nameBillboard->shader = &billboardShader;
+    painting = Rendering::Painting{.type = Rendering::PaintingType::COLOR, .hasAlpha = true, .color = lightBlue};
 }
 
 void Player::InitAnimations()

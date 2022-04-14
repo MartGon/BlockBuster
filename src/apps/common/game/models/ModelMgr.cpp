@@ -49,11 +49,11 @@ Rendering::ModelI* ModelMgr::GetModel(ModelID modelId)
     return ret;
 }
 
-void ModelMgr::DrawBillboard(BillboardID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, glm::vec3 cameraUp, 
+void ModelMgr::DrawBillboard(BillboardID bbId, glm::vec3 pos,
     float rot, glm::vec2 scale, glm::vec4 colorMod, uint8_t flags)
 {
     if(auto bb = billboards[bbId])
-        bb->Draw(projView, pos, cameraRight, cameraUp, rot, scale, colorMod, flags);
+        bb->Draw(pos, rot, scale, colorMod, flags);
 }
 
 GL::Texture* ModelMgr::GetIconTex(BillboardID id)
@@ -65,11 +65,11 @@ GL::Texture* ModelMgr::GetIconTex(BillboardID id)
     return tex;
 }
 
-void ModelMgr::DrawWepBillboard(Entity::WeaponTypeID bbId, glm::mat4 projView, glm::vec3 pos, glm::vec3 cameraRight, glm::vec3 cameraUp, 
+void ModelMgr::DrawWepBillboard(Entity::WeaponTypeID bbId, glm::vec3 pos,
     float rot, glm::vec2 scale, glm::vec4 colorMod, uint8_t flags)
 {
     if(auto wepBb = wepIcons.Get(bbId))
-        wepBb.value()->Draw(projView, pos, cameraRight, cameraUp, rot, scale, colorMod, flags);
+        wepBb.value()->Draw(pos, rot, scale, colorMod, flags);
 }
 
 GL::Texture* ModelMgr::GetWepIconTex(Entity::WeaponTypeID wepId)

@@ -511,10 +511,10 @@ void Editor::UpdateEditor()
         {
             auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go->properties["Weapon ID"].value));
             scale = glm::vec2{3.14f, 1.0f};
-            modelMgr.DrawWepBillboard(wepId, view, iconPos, camera.GetRight(), camera.GetUp(), 0.0f, scale, glm::vec4{1.0f}, renderflags);
+            modelMgr.DrawWepBillboard(wepId, iconPos, 0.0f, scale, glm::vec4{1.0f}, renderflags);
         }
         else if(go->type == Entity::GameObject::Type::HEALTHPACK)
-            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, view, iconPos, camera.GetRight(), camera.GetUp(), 0.0f, scale, glm::vec4{1.0f}, renderflags);
+            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, iconPos, 0.0f, scale, glm::vec4{1.0f}, renderflags);
     }
 
     // Draw Cursor

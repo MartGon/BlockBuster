@@ -15,10 +15,10 @@ ExplosionParticle::ExplosionParticle(Rendering::Billboard* expBillboard, Animati
     expPlayer.Update(Util::Time::Seconds{2.0f} * startPercent);
 }
 
-void ExplosionParticle::Draw(glm::mat4 projView, glm::vec3 camRight, glm::vec3 camUp)
+void ExplosionParticle::Draw()
 {
     if(!isDone)
-        expBillboard->Draw(projView, pos, camRight, camUp, rot, glm::vec2{scale}, glm::vec4{1.0f}, Rendering::RenderMgr::NO_FACE_CULLING, frameId);
+        expBillboard->Draw(pos, rot, glm::vec2{scale}, glm::vec4{1.0f}, Rendering::RenderMgr::NO_FACE_CULLING, frameId);
 }
 
 void ExplosionParticle::Update(Util::Time::Seconds deltaTime)
@@ -47,10 +47,10 @@ Explosion::Explosion(Rendering::Billboard* billboard, Animation::Clip* clip, glm
     }
 }
 
-void Explosion::Draw(glm::mat4 projView, glm::vec3 camRight, glm::vec3 camUp)
+void Explosion::Draw()
 {
     for(auto& particle : particles)
-        particle.Draw(projView, camRight, camUp);
+        particle.Draw();
 }
 
 void Explosion::Update(Util::Time::Seconds secs)
@@ -120,11 +120,11 @@ void ExplosionMgr::Update(Util::Time::Seconds deltaTime)
         explosions.Remove(id);
 }
 
-void ExplosionMgr::DrawExplosions(glm::mat4 projView, glm::vec3 camRight, glm::vec3 camUp)
+void ExplosionMgr::DrawExplosions()
 {
     for(auto id : explosions.GetIDs())
     {
         auto& explosion = explosions.GetRef(id);
-        explosion.Draw(projView, camRight, camUp);
+        explosion.Draw();
     }
 }

@@ -19,7 +19,7 @@ namespace Game::Models
         ExplosionParticle(ExplosionParticle&&) = default;
         ExplosionParticle& operator=(ExplosionParticle&&) = default;
 
-        void Draw(glm::mat4 projView, glm::vec3 camRight, glm::vec3 camUp);
+        void Draw();
         void Update(Util::Time::Seconds deltaTime);
         inline bool IsDone()
         {
@@ -52,7 +52,7 @@ namespace Game::Models
         static constexpr int PARTICLE_MEAN = 10;
         static constexpr int PARTICLE_SD = 4;
 
-        void Draw(glm::mat4 projView, glm::vec3 camRight, glm::vec3 camUp);
+        void Draw();
         void Update(Util::Time::Seconds deltaTime);
         bool IsOver();
 
@@ -69,7 +69,7 @@ namespace Game::Models
         void CreateExplosion(glm::vec3 center);
         void Update(Util::Time::Seconds deltaTime);
 
-        void DrawExplosions(glm::mat4 projView, glm::vec3 camRight, glm::vec3 camUp);
+        void DrawExplosions();
 
     private:
         Rendering::Billboard* expBillboard;

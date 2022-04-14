@@ -691,7 +691,7 @@ void InGame::DrawScene()
     DrawModeObjects();
     DrawProjectiles();
     DrawDecals();
-    explosionMgr.DrawExplosions(view, camera_.GetRight(), camera_.GetUp());
+    explosionMgr.DrawExplosions();
     renderMgr.Render(camera_);
 
     // Draw fpsModel, always rendered last
@@ -726,10 +726,10 @@ void InGame::DrawGameObjects()
         {
             auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go->properties["Weapon ID"].value));
             scale = glm::vec2{3.14f, 1.0f};
-            modelMgr.DrawWepBillboard(wepId, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, scale, glm::vec4{1.0f}, renderflags);
+            modelMgr.DrawWepBillboard(wepId, iconPos, 0.0f, scale, glm::vec4{1.0f}, renderflags);
         }
         else if(go->type == Entity::GameObject::Type::HEALTHPACK)
-            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, scale, glm::vec4{1.0f}, renderflags);
+            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, iconPos, 0.0f, scale, glm::vec4{1.0f}, renderflags);
 
         // Draw gameObject
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
@@ -760,7 +760,7 @@ void InGame::DrawModeObjects()
                 if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
                 {
                     auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                    modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, glm::vec2{2.f}, color, renderflags);
+                    modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, iconPos, 0.0f, glm::vec2{2.f}, color, renderflags);
                 }
             }
         }
@@ -784,7 +784,7 @@ void InGame::DrawModeObjects()
                     if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
                     {
                         auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
-                        modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, view, iconPos, camera_.GetRight(), camera_.GetUp(), 0.0f, glm::vec2{2.f}, color, renderflags);
+                        modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, iconPos, 0.0f, glm::vec2{2.f}, color, renderflags);
                     }
                 }
             }

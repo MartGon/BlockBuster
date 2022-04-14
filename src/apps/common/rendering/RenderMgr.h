@@ -54,10 +54,7 @@ namespace Rendering
 
         struct BillboardParams
         {
-            glm::mat4 projView;
             glm::vec3 pos;
-            glm::vec3 cameraRight;
-            glm::vec3 cameraUp;
             float rot;
             glm::vec2 scale;
             glm::vec4 colorMod;
@@ -80,7 +77,7 @@ namespace Rendering
         };
 
         void AddDrawReq(AlphaType type, DrawReq dr);
-        void DrawList(std::vector<DrawReq>* list);
+        void DrawList(std::vector<DrawReq>* list, const Rendering::Camera& camera);
 
         TextureMgr textureMgr;
         std::vector<Model*> models;

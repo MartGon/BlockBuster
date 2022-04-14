@@ -45,17 +45,17 @@ void RenderMgr::Render(const Rendering::Camera& camera)
         return a.GetDepth(camera.GetPos()) > b.GetDepth(camera.GetPos());
     });
     
-    DrawList(&opaqueReq);
-    DrawList(&transparentReq);
+    DrawList(&opaqueReq, camera);
+    DrawList(&transparentReq, camera);
     
     glClear(GL_DEPTH_BUFFER_BIT);
-    DrawList(&ignoreDepthReqs);
+    DrawList(&ignoreDepthReqs, camera);
     opaqueReq.clear();
     transparentReq.clear();
     ignoreDepthReqs.clear();
 }
 
-void RenderMgr::DrawList(std::vector<DrawReq>* list)
+void RenderMgr::DrawList(std::vector<DrawReq>* list, const Rendering::Camera& camera)
 {
     for(auto drawReq : *list)
     {
@@ -81,12 +81,12 @@ void RenderMgr::DrawList(std::vector<DrawReq>* list)
             auto params = drawReq.billboardParams;
             auto billboard = params.billboard;
             billboard->shader->SetUniformVec3("center", params.pos);
-            billboard->shader->SetUniformVec3("camRight", params.cameraRight);
-            billboard->shader->SetUniformVec3("camUp", params.cameraUp);
+            billboard->shader->SetUniformVec3("camRight", camera.GetRight());
+            billboard->shader->SetUniformVec3("camUp", camera.GetUp());
             billboard->shader->SetUniformFloat("rot", params.rot);
             billboard->shader->SetUniformVec2("scale", params.scale);
             billboard->shader->SetUniformVec4("colorMod", params.colorMod);
-            billboard->shader->SetUniformMat4("projView", params.projView);
+            billboard->shader->SetUniformMat4("projView", camera.GetProjViewMat());
 
             billboard->shader->SetUniformInt("frameId", params.frameId);
 
