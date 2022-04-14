@@ -23,7 +23,7 @@ namespace Rendering
         GL::Shader* shader;
 
         void Draw(glm::vec3 pos, float rot = 0.0f, glm::vec2 scale = glm::vec2{1.0f},
-            glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = 0, int frameId = 0);
+            glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = 1 /*NO_FACE_CULLING*/, int frameId = 0);
 
     private:
         Billboard();

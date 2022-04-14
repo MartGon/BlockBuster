@@ -52,6 +52,20 @@ void InGame::OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::Pl
 
     ps.shootPlayer.SetTargetFloat("yPos", &ps.armsPivot.position.y);
     ps.shootPlayer.SetTargetFloat("pitch", &ps.armsPivot.rotation.x);
+
+    // Set up player buffer and name billboard
+    ExtraData ed;
+
+    ed.frameBuffer.Init(glm::ivec2{320, 180});
+    auto& texMgr = renderMgr.GetTextureMgr();
+    auto texId = texMgr.Handle(ed.frameBuffer.GetTexHandle(), ed.frameBuffer.GetTextureSize(), GL_RGBA);
+
+    ed.nameBillboard = renderMgr.CreateBillboard();
+    ed.nameBillboard->shader = &billboardShader;
+    auto painting = Rendering::Painting{.type = Rendering::PaintingType::TEXTURE, .hasAlpha = true, .texture = texId};
+    ed.nameBillboard->painting = painting;
+
+    playersExtraData[playerId] = std::move(ed);
 }
 
 void InGame::OnPlayerLeave(Entity::ID playerId)
@@ -59,6 +73,7 @@ void InGame::OnPlayerLeave(Entity::ID playerId)
     playerTable.erase(playerId);
     prevPlayerTable.erase(playerId);
     playerModelStateTable.erase(playerId);
+    playersExtraData.erase(playerId);
 }
 
 void InGame::OnConnectToServer(ENet::PeerId id)

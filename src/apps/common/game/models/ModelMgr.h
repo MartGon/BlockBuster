@@ -42,10 +42,12 @@ namespace Game::Models
         //void SetGoModel(Entity::GameObject::Type type, Rendering::ModelI* model);
         Rendering::ModelI* GetModel(ModelID model);
 
-        void DrawBillboard(BillboardID bbId, glm::vec3 pos, float rot, glm::vec2 scale, glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = 0);
+        void DrawBillboard(BillboardID bbId, glm::vec3 pos, float rot, glm::vec2 scale, 
+            glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = Rendering::RenderMgr::NO_FACE_CULLING);
         GL::Texture* GetIconTex(BillboardID id);
 
-        void DrawWepBillboard(Entity::WeaponTypeID wepId, glm::vec3 pos, float rot, glm::vec2 scale, glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = 0);
+        void DrawWepBillboard(Entity::WeaponTypeID wepId, glm::vec3 pos, float rot, glm::vec2 scale, 
+            glm::vec4 colorMod = glm::vec4{1.0f}, uint8_t flags = Rendering::RenderMgr::NO_FACE_CULLING);
         GL::Texture* GetWepIconTex(Entity::WeaponTypeID wepId);
 
         // Base Meshes

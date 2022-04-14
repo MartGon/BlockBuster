@@ -8,7 +8,7 @@ using namespace GL;
 
 Framebuffer::~Framebuffer()
 {
-    glDeleteTextures(1, &texture);
+    //glDeleteTextures(1, &texture);
     glDeleteFramebuffers(1, &fbo);
     glDeleteRenderbuffers(1, &rbo);
 }
@@ -40,6 +40,9 @@ void Framebuffer::Init(glm::ivec2 winSize)
 {
     if(loaded)
         return;
+
+    // Set size
+    this->size = winSize;
 
     // Framebuffer
     glGenFramebuffers(1, &fbo);

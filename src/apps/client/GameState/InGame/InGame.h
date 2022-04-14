@@ -6,6 +6,7 @@
 #include <gl/Shader.h>
 #include <gl/VertexArray.h>
 #include <gl/Texture.h>
+#include <gl/Framebuffer.h>
 
 #include <rendering/Camera.h>
 #include <rendering/Mesh.h>
@@ -112,8 +113,8 @@ namespace BlockBuster
         void DrawModeObjects();
         void DrawProjectiles();
         void DrawDecals();
+        void DrawPlayerName(Entity::ID playerId);
         void DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box);
-        void DrawGUI();
         void Render();
 
         // Audio
@@ -141,7 +142,8 @@ namespace BlockBuster
         };
         struct ExtraData
         {
-            
+            Rendering::Billboard* nameBillboard = nullptr;
+            GL::Framebuffer frameBuffer;
         };
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerTable;
@@ -160,6 +162,7 @@ namespace BlockBuster
         };
         static glm::vec4 teamColors[3];
         static glm::vec4 ffaColors[16];
+        GUI::Text nameText;
 
         // Local player
         uint8_t playerId = 0;

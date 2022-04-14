@@ -4,6 +4,10 @@
 
 #include <iostream>
 
+GL::Texture::Texture(unsigned int handle, glm::ivec2 dimensions, int format) : handle_{handle}, dimensions_{dimensions}, format_{format}
+{
+    
+}
 
 GL::Texture::Texture()
 {

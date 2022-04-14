@@ -13,6 +13,7 @@ namespace GL
     {
     public:
         Texture();
+        Texture(unsigned int handle, glm::ivec2 dimensions, int format);
         ~Texture();
 
         Texture(const Texture& other) = delete;

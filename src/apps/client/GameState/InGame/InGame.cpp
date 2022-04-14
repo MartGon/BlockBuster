@@ -102,13 +102,14 @@ void InGame::Start()
     // Models
     modelMgr.Start(renderMgr, renderShader, billboardShader);
     playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
-    playerAvatar.Start(renderMgr, renderShader, renderShader);
+    playerAvatar.Start(renderMgr, renderShader, billboardShader);
     fpsAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder);
     fpsAvatar.Start(renderMgr, renderShader, renderShader);
     explosionMgr.Start(renderMgr, expShader);
 
     // UI
     inGameGui.Start();
+    nameText = inGameGui.pixelFont->CreateText();
 
     // Camera
     auto winSize = client_->GetWindowSize();
@@ -657,6 +658,9 @@ void InGame::DrawScene()
         auto color = isFFA ? ffaColors[player.teamId] : teamColors[player.teamId];
         playerAvatar.SetColor(color);
         playerAvatar.Draw(transform);
+        
+        // Draw playerName
+        DrawPlayerName(playerId);
 
     #ifdef _DEBUG
         // Draw player move collision box
@@ -844,6 +848,44 @@ void InGame::DrawDecals()
         auto decalMat = decalTransforms.At(i).value();
         auto mat = view * decalMat;
         modelMgr.Draw(Game::Models::DECAL_MODEL_ID, mat);
+    }
+}
+
+void InGame::DrawPlayerName(Entity::ID playerId)
+{
+    if(auto mode = match.GetGameMode())
+    {
+        auto& scoreBoard = mode->GetScoreboard();
+        if(auto ps = scoreBoard.GetPlayerScore(playerId))
+        {
+            nameText.SetText(ps->name);
+
+            // Render to texture
+            auto& ed = playersExtraData[playerId];
+            
+            ed.frameBuffer.Bind();
+                auto texSize = ed.frameBuffer.GetTextureSize();
+                glViewport(0, 0, texSize.x, texSize.y);
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                nameText.SetAnchorPoint(GUI::AnchorPoint::CENTER);
+                nameText.SetColor(glm::vec4{1.0f});
+                nameText.SetScale(2.0f);
+                auto size = nameText.GetSize();
+                nameText.SetOffset(-size / 2);
+                nameText.Draw(textShader, ed.frameBuffer.GetTextureSize());
+            ed.frameBuffer.Unbind();
+
+            auto winSize = client_->GetWindowSize();
+            glViewport(0, 0, winSize.x, winSize.y);
+
+            // Draw name billboard
+            auto& player = playerTable[playerId];
+            auto pPos = player.GetRenderTransform().position;
+            auto bPos = pPos + glm::vec3{0.0f, 2.0f, 0.0f};
+            if(ed.nameBillboard)
+                ed.nameBillboard->Draw(bPos, 0.0f, glm::vec2{1.6f, 0.9f} * 2.0f, glm::vec4{1.0f});
+        }
     }
 }
 

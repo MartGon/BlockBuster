@@ -38,11 +38,6 @@ void Player::Draw(const glm::mat4& tMat, uint8_t flags)
     armsModel->Draw(atMat);
 }
 
-void Player::DrawName()
-{
-    
-}
-
 void Player::SetColor(glm::vec4 color)
 {
     for(auto id : bodyIds)
@@ -235,10 +230,6 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
     rightFlash = armsModel->GetSubModel(rightId);
     leftAltFlash = armsModel->GetSubModel(altLeftId);
     rightAltFlash = armsModel->GetSubModel(altRightId);
-
-    // Name quad
-    nameBillboard->shader = &billboardShader;
-    painting = Rendering::Painting{.type = Rendering::PaintingType::COLOR, .hasAlpha = true, .color = lightBlue};
 }
 
 void Player::InitAnimations()
