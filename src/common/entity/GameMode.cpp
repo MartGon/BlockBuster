@@ -6,7 +6,9 @@
 
 using namespace BlockBuster;
 
-const std::string BlockBuster::GameMode::typeStrings[GameMode::Type::COUNT] = {"Free for All", "Team DeathMatch", "Domination", "Capture the Flag"};
+const std::string BlockBuster::GameMode::typeStrings[GameMode::Type::COUNT] = {
+    "", "Free for All", "Team DeathMatch", "Domination", "Capture the Flag"
+    };
 const std::unordered_map<std::string, GameMode::Type> GameMode::stringTypes = {
     {"Free for All", GameMode::Type::FREE_FOR_ALL}, 
     {"Team DeathMatch", GameMode::Type::TEAM_DEATHMATCH}, 
