@@ -252,8 +252,9 @@ void Lobby::OnEnter()
     if(!mapMgr.HasMap(mapName))
     {
         mainMenu_->GetLogger()->LogError("Need to download map " + mapName);
-        mainMenu_->DownloadMap(mapName);
     }
+    // TODO: Always download. This is to avoid comparing local/server map version
+    mainMenu_->DownloadMap(mapName);
 
     OnGameInfoUpdate();
     mainMenu_->GetMapPicture(mapName);
