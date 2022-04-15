@@ -579,6 +579,8 @@ void InGameGUI::HUD()
     respawnTimeText.Draw(inGame->textShader, winSize);
 
     // Countdown
+    auto ccSize = countdownText.GetSize();
+    countdownText.SetOffset(glm::ivec2{-ccSize.x / 2, ccSize.y});
     countdownText.Draw(inGame->textShader, winSize);
 
     // Dmg animation
@@ -743,12 +745,13 @@ void InGameGUI::UpdateRespawnText()
 
 void InGameGUI::UpdateCountdownText()
 {
-    auto countdownTime = inGame->match.GetTimeLeft();
-    int seconds = std::ceil(countdownTime.count());
-    std::string text = std::to_string(seconds);
-    countdownText.SetText(text);
-    auto size = countdownText.GetSize();
-    countdownText.SetOffset(glm::ivec2{-size.x / 2, size.y});
+    if(inGame->match.GetState() == Match::StateType::STARTING)
+    {
+        auto countdownTime = inGame->match.GetTimeLeft();
+        int seconds = std::ceil(countdownTime.count());
+        std::string text = std::to_string(seconds);
+        countdownText.SetText(text);
+    }
 }
 
 void InGameGUI::UpdateGameTimeText()
@@ -848,6 +851,8 @@ void InGameGUI::EnableHUD(bool enabled)
     altWepIcon.SetIsVisible(enabled);
     grenadeIcon.SetIsVisible(enabled);
     grenadeNumText.SetIsVisible(enabled);
+    actionText.SetIsVisible(enabled);
+    actionImg.SetIsVisible(enabled);
 
     flagIconImg.SetIsVisible(enabled);
 

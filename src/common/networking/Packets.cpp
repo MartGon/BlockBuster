@@ -127,7 +127,7 @@ void Welcome::OnRead(Util::Buffer::Reader& reader)
     teamId = reader.Read<Entity::ID>();
     tickRate = reader.Read<double>();
     mode = reader.Read<BlockBuster::GameMode::Type>();
-    buffer.Write(mode);
+    startingPlayers = reader.Read<uint8_t>();
 }
 
 void Welcome::OnWrite()
@@ -136,6 +136,7 @@ void Welcome::OnWrite()
     buffer.Write(teamId);
     buffer.Write(tickRate);
     buffer.Write(mode);
+    buffer.Write(startingPlayers);
 }
 
 void MatchState::OnRead(Util::Buffer::Reader& reader)

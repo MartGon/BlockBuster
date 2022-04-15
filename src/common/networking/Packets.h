@@ -147,6 +147,7 @@ namespace Networking
                 Entity::ID playerId;
                 Entity::ID teamId;
                 double tickRate;
+                uint8_t startingPlayers;
                 BlockBuster::GameMode::Type mode;
             };
 

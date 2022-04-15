@@ -4,10 +4,11 @@ using namespace BlockBuster;
 
 // Match
 
-void Match::Start(World world, GameMode::Type gameMode)
+void Match::Start(World world, GameMode::Type gameMode, uint8_t startingPlayers)
 {
     this->gameMode = CreateGameMode(gameMode);
     this->gameMode->Start(world);
+    this->startingPlayers = startingPlayers;
     timer.Start();
 }
 
@@ -16,6 +17,18 @@ void Match::Update(World world, Util::Time::Seconds deltaTime)
     switch (state)
     {
     case WAITING_FOR_PLAYERS:
+        {
+            timer.Update(deltaTime);
+            if(timer.IsDone() || world.players.size() == startingPlayers)
+            {
+                timer.SetDuration(startingTime);
+                timer.Restart();
+                
+                EnterState(STARTING);
+            }
+        }
+        break;
+    case STARTING:
         timer.Update(deltaTime);
         if(timer.IsDone())
         {
@@ -30,7 +43,7 @@ void Match::Update(World world, Util::Time::Seconds deltaTime)
         timer.Update(deltaTime);
         if(gameMode->IsGameOver() || timer.IsDone())
         {   
-            timer.SetDuration(waitTime);
+            timer.SetDuration(scoreboardTime);
             timer.Start();
             EnterState(ENDING);
         }

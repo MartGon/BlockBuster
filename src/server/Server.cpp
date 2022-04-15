@@ -101,7 +101,7 @@ void Server::InitMatch()
     InitMap();
     InitGameObjects();
     auto mode = GameMode::stringTypes.at(params.mode);
-    match.Start(GetWorld(), mode);
+    match.Start(GetWorld(), mode, params.startingPlayers);
 }
 
 void Server::InitAI()
@@ -189,6 +189,7 @@ void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::str
     welcome->teamId = teamId;
     welcome->tickRate = TICK_RATE.count();
     welcome->mode = match.GetGameMode()->GetType();
+    welcome->startingPlayers = params.startingPlayers;
     logger.LogError("Game mode sent is " + std::to_string(welcome->mode));
     batch.PushPacket(std::move(welcome));
 

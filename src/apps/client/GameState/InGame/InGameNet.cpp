@@ -141,7 +141,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             playerTable[playerId] = player;
             prevPlayerTable[playerId] = player;
 
-            this->match.Start(GetWorld(), welcome->mode);
+            this->match.Start(GetWorld(), welcome->mode, welcome->startingPlayers);
         }
         break;
 
@@ -153,6 +153,11 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             this->match.ApplyState(ms->state);
 
             if(matchState == Match::StateType::WAITING_FOR_PLAYERS)
+            {
+                inGameGui.countdownText.SetText("Waiting for players");
+                inGameGui.countdownText.SetIsVisible(true);
+            }
+            else if(matchState == Match::StateType::STARTING)
                 inGameGui.countdownText.SetIsVisible(true);
             else if(matchState == Match::StateType::ON_GOING)
             {

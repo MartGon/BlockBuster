@@ -24,6 +24,7 @@ namespace BlockBuster
         enum StateType
         {
             WAITING_FOR_PLAYERS,
+            STARTING,
             ON_GOING,
             ENDING,
             ENDED
@@ -81,17 +82,20 @@ namespace BlockBuster
             this->onEnterState = onEnterState;
         }
 
-        void Start(World world, GameMode::Type type);
+        void Start(World world, GameMode::Type type, uint8_t startingPlayers);
         void Update(World world, Util::Time::Seconds deltaTime);
 
     private:
 
         void EnterState(StateType type);
 
+        uint8_t startingPlayers = 1;
         std::unique_ptr<GameMode> gameMode;
         StateType state = WAITING_FOR_PLAYERS;
 
-        const Util::Time::Seconds waitTime{15.0f};
+        const Util::Time::Seconds scoreboardTime{5.0f};
+        const Util::Time::Seconds startingTime{15.0f};
+        const Util::Time::Seconds waitTime{60.0f};
         Util::Timer timer{waitTime};
 
         std::function<void(StateType type)> onEnterState;
