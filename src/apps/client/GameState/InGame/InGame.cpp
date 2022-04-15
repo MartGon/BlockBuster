@@ -180,6 +180,9 @@ void InGame::Start()
 
     exit = !connected;
     client_->logger->Flush();
+
+    // Apply options after initialization
+    ApplyGameOptions(gameOptions);
 }
 
 void InGame::Update()
@@ -266,17 +269,44 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 
 void InGame::OnEnterMatchState(Match::StateType type)
 {
+    auto mode = match.GetGameMode();
     switch (type)
     {
+    case Match::StateType::STARTING:
+        {
+            auto sound = Game::Sound::ANNOUNCER_SOUND_MODE_FFA;
+            if(mode->GetType() == GameMode::Type::CAPTURE_THE_FLAG)
+                sound = Game::Sound::ANNOUNCER_SOUND_MODE_CAPTURE_THE_FLAG;
+            else if(mode->GetType() == GameMode::Type::DOMINATION)
+                sound = Game::Sound::ANNOUNCER_SOUND_MODE_DOMINATION;
+            else if(mode->GetType() == GameMode::Type::TEAM_DEATHMATCH)
+                sound = Game::Sound::ANNOUNCER_SOUND_MODE_TEAM_DEATHMATCH;
+
+            PlayAnnouncerAudio(sound);
+        }
+        break;
     case Match::StateType::ON_GOING:
-        inGameGui.countdownText.SetIsVisible(false);
-        inGameGui.gameTimeText.SetIsVisible(true);
-        inGameGui.EnableScore();
+        {
+            inGameGui.countdownText.SetIsVisible(false);
+            inGameGui.gameTimeText.SetIsVisible(true);
+            inGameGui.EnableScore();
+        }
         break;
     
     case Match::StateType::ENDING:
-        inGameGui.EnableWinnerText(true);
-        predictionHistory_.Clear();
+        {
+            inGameGui.EnableWinnerText(true);
+
+            auto scoreBoard = mode->GetScoreboard();
+            auto winner = scoreBoard.GetWinner().value();
+            if(mode->GetType() != GameMode::Type::FREE_FOR_ALL)
+            {
+                auto sound = winner.teamId == BLUE_TEAM_ID ? Game::Sound::ANNOUNCER_SOUND_BLUE_TEAM_WINS : Game::Sound::ANNOUNCER_SOUND_RED_TEAM_WINS;
+                PlayAnnouncerAudio(sound);
+            }
+
+            predictionHistory_.Clear();
+        }
         break;
 
     case Match::StateType::ENDED:
@@ -375,6 +405,7 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     SmoothPlayerMovement();
 
     auto& player = GetLocalPlayer();
+
     // Update shield
     player.health = pController.UpdateShield(player.health, player.dmgTimer, deltaTime);
 
@@ -388,15 +419,6 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     else
         camController_.Update();
 
-    // Rellocate camera
-    if(player.IsDead() && Util::Map::Contains(playerTable, killerId) && killerId != playerId)
-    {
-        // Look to killer during death
-        auto& killer = playerTable[killerId];
-        auto pos = killer.GetRenderTransform().position;
-        camera_.SetTarget(pos);
-    }
-
     // Update animations
     fpsAvatar.Update(deltaTime);
     for(auto& [playerId, playerState] : playerModelStateTable)
@@ -406,10 +428,15 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     }
     explosionMgr.Update(deltaTime);
 
+    // Update camera
     if(auto lastPred = predictionHistory_.Back())
     {
         UpdateCamera(lastPred->inputReq.playerInput);
     }
+
+    // Update announcer pos
+    auto pPos = player.GetRenderTransform().position;
+    audioMgr->SetSourceTransform(announcerSource, pPos);
 }
 
 // Exit
@@ -480,6 +507,7 @@ void InGame::HandleSDLEvents()
 
 void InGame::UpdateCamera(Entity::PlayerInput input)
 {
+    // Zoom
     auto& player = GetLocalPlayer();
     auto weapon = player.GetCurrentWeapon();
     auto canZoom = weapon.state == Entity::Weapon::State::IDLE || weapon.state == Entity::Weapon::State::SHOOTING;
@@ -493,6 +521,15 @@ void InGame::UpdateCamera(Entity::PlayerInput input)
     auto wepType = Entity::WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
     auto zoom = 1.0f + (wepType.zoomLevel - 1.0f) * zoomMod;
     camera_.SetZoom(zoom);
+
+    // Rellocate camera
+    if(player.IsDead() && Util::Map::Contains(playerTable, killerId) && killerId != playerId)
+    {
+        // Look to killer during death
+        auto& killer = playerTable[killerId];
+        auto pos = killer.GetRenderTransform().position;
+        camera_.SetTarget(pos);
+    }
 }
 
 void InGame::WeaponRecoil()
@@ -939,12 +976,22 @@ void InGame::InitAudio()
         audioMgr->SetSourceAudio(sourceId, gallery.GetSoundId(SoundID::GRENADE_SOUND_ID));
         audioMgr->SetSourceParams(sourceId, glm::vec3{0.0f}, 0.0f, false, 8.0f, 2.25f);
     }
+
+    // Announcer source
+    announcerSource = audioMgr->CreateSource();
 }
 
 void InGame::UpdateAudio()
 {
     audioMgr->SetListenerTransform(camera_.GetPos(), camera_.GetRotation().y);
     audioMgr->Update();
+}
+
+void InGame::PlayAnnouncerAudio(Game::Sound::AnnouncerSoundID asid)
+{
+    auto audioId = gallery.GetAnnouncerSoundId(asid);
+    audioMgr->SetSourceAudio(announcerSource, audioId);
+    audioMgr->PlaySource(announcerSource);
 }
 
 // Map
@@ -981,6 +1028,7 @@ void InGame::LoadGameOptions()
     gameOptions.sensitivity= std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
     gameOptions.audioEnabled = std::atoi(client_->GetConfigOption("audioEnabled", "1").c_str());
     gameOptions.audioGeneral = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioGeneral","100").c_str())));
+    gameOptions.audioAnnouncer = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioAnnouncer","100").c_str())));
 }
 
 void InGame::WriteGameOptions()
@@ -988,6 +1036,7 @@ void InGame::WriteGameOptions()
     client_->config.options["Sensitivity"] = std::to_string(gameOptions.sensitivity);
     client_->config.options["audioEnabled"] = std::to_string(gameOptions.audioEnabled);
     client_->config.options["audioGeneral"] = std::to_string(gameOptions.audioGeneral);
+    client_->config.options["audioAnnouncer"] = std::to_string(gameOptions.audioAnnouncer);
 }
 
 void InGame::ApplyGameOptions(GameOptions options)
@@ -999,4 +1048,6 @@ void InGame::ApplyGameOptions(GameOptions options)
     camController_.rotMod = gameOptions.sensitivity;
 
     audioMgr->SetListenerGain((float)options.audioGeneral / 100.0f);
+    auto announcerGain = (float)options.audioAnnouncer / 100.0f;
+    audioMgr->SetSourceParams(announcerSource, glm::vec3{0.0f}, 0.0f, false, 1.0f, announcerGain);
 }

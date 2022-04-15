@@ -266,6 +266,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_DIED:
         {
             auto ptd = packet.To<PlayerDied>();
+            auto& player = GetLocalPlayer();
             auto& killer = playerTable[ptd->killerId];
             auto& victim = playerTable[ptd->victimId];
 
@@ -300,6 +301,13 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
 
             match.GetGameMode()->PlayerDeath(ptd->killerId, ptd->killerId, killer.teamId);
             GetLogger()->LogError("Player died");
+
+            if(killer.teamId == player.teamId && killerId != playerId)
+            {
+                auto audioId = (uint32_t)Game::Sound::ANNOUNCER_SOUND_ENEMY_KILLED_0 + Util::Random::Uniform(0u, 1u);
+                if(audioId >= Game::Sound::ANNOUNCER_SOUND_ENEMY_KILLED_0 && audioId <= Game::Sound::ANNOUNCER_SOUND_ENEMY_KILLED_1)
+                    PlayAnnouncerAudio((Game::Sound::AnnouncerSoundID)audioId);
+            }
         }
         break;
 
@@ -423,6 +431,11 @@ void InGame::HandleGameEvent(Event event)
                     auto& pointState = domination->pointsState[pointCaptured.pos];
                     pointState.capturedBy = pointCaptured.capturedBy;
                     pointState.timeLeft.Restart();
+
+                    if(pointState.capturedBy == GetLocalPlayer().teamId)
+                        PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_CAPTURE_POINT_TAKEN);
+                    else
+                        PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_CAPTURE_POINT_LOST);
                 }
             }
         }
@@ -442,7 +455,9 @@ void InGame::HandleGameEvent(Event event)
                 case FLAG_TAKEN:
                     {
                         inGameGui.ShowLogMsg("The flag was taken");
-                        GetLogger()->LogError("The flag wass taken");
+                        PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_TAKEN);
+                        GetLogger()->LogInfo("The flag wass taken");
+
                         flag.carriedBy = flagEvent.playerSubject;
 
                         // Enable flag model
@@ -457,7 +472,9 @@ void InGame::HandleGameEvent(Event event)
                 case FLAG_DROPPED:
                     {
                         inGameGui.ShowLogMsg("The flag was dropped");
-                        GetLogger()->LogError("The flag wass dropped");
+                        PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_DROPPED);
+                        GetLogger()->LogInfo("The flag wass dropped");
+
                         flag.carriedBy.reset();
                         flag.pos = flagEvent.pos;
                         flag.recoverTimer.Restart();
@@ -471,7 +488,9 @@ void InGame::HandleGameEvent(Event event)
                 case FLAG_CAPTURED:
                     {
                         inGameGui.ShowLogMsg("The flag was captured");
+                        PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_CAPTURED);
                         GetLogger()->LogError("The flag wass captured");
+
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
                         flag.recoverTimer.Restart();
@@ -485,7 +504,9 @@ void InGame::HandleGameEvent(Event event)
                 case FLAG_RECOVERED:
                     {
                         inGameGui.ShowLogMsg("The flag was recovered");
+                        PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_RECOVERED);
                         GetLogger()->LogError("The flag wass recovered");
+
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
                         flag.recoverTimer.Restart();
@@ -495,7 +516,9 @@ void InGame::HandleGameEvent(Event event)
                 case FLAG_RESET:
                     {
                         inGameGui.ShowLogMsg("The flag was reset");
+                        PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_RESET);
                         GetLogger()->LogError("The flag wass reset");
+
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
                         flag.recoverTimer.Restart();

@@ -120,6 +120,7 @@ namespace BlockBuster
         // Audio
         void InitAudio();
         void UpdateAudio();
+        void PlayAnnouncerAudio(Game::Sound::AnnouncerSoundID asid);
 
         // Map
         void LoadMap(std::filesystem::path mapFolder, std::string fileName);
@@ -255,6 +256,7 @@ namespace BlockBuster
         Util::Pool<Audio::ID, 4> grenadeSources;
         Audio::ID soundtrackSource;
         Audio::ID playerSource;
+        Audio::ID announcerSource;
 
         // Scene
         std::string mapName;

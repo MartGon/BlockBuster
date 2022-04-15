@@ -7,6 +7,8 @@
 
 #include <debug/Debug.h>
 
+#include <AL/alext.h>
+
 using namespace Audio;
 
 std::unique_ptr<Audio::AudioMgr> AudioMgr::audioMgr_;
@@ -435,8 +437,10 @@ Result<AudioMgr::File, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::filesystem
         auto audioSpec = file.audioSpec;
         if(audioSpec.channels == 1 && audioSpec.format == AUDIO_U8)
             format = AL_FORMAT_MONO8;
-        else if(audioSpec.channels == 1 && (audioSpec.format == AUDIO_U16 || audioSpec.format == AUDIO_S16LSB))
+        else if(audioSpec.channels == 1 && (audioSpec.format == AUDIO_U16 || audioSpec.format == AUDIO_S16LSB || audioSpec.format == AUDIO_S16MSB))
             format = AL_FORMAT_MONO16;
+        else if(audioSpec.channels == 1 && audioSpec.format == AUDIO_F32)
+            format = AL_MONO32F_SOFT;
         else if(audioSpec.channels == 2 && audioSpec.format == AUDIO_U8)
             format = AL_FORMAT_STEREO8;
         else if(audioSpec.channels == 2 && audioSpec.format == AUDIO_U16)
