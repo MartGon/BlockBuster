@@ -866,23 +866,33 @@ void InGame::DrawPlayerName(Entity::ID playerId)
             ed.frameBuffer.Bind();
                 auto texSize = ed.frameBuffer.GetTextureSize();
                 glViewport(0, 0, texSize.x, texSize.y);
-                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                nameText.SetAnchorPoint(GUI::AnchorPoint::CENTER);
+
+                nameText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
                 nameText.SetColor(glm::vec4{1.0f});
-                nameText.SetScale(2.0f);
+                nameText.SetScale(1.25f);
                 auto size = nameText.GetSize();
-                nameText.SetOffset(-size / 2);
-                nameText.Draw(textShader, ed.frameBuffer.GetTextureSize());
+                nameText.SetOffset(glm::ivec2{texSize.x / 2 - size.x / 2, 0});
+                nameText.Draw(textShader, texSize);
+
+                auto& player = playerTable[playerId];
+                auto enemyWepId = player.GetCurrentWeapon().weaponTypeId;
+                auto tex = modelMgr.GetWepIconTex(enemyWepId);
+                wepImage.SetAnchorPoint(GUI::AnchorPoint::CENTER_UP);
+                wepImage.SetTexture(tex);
+                wepImage.SetParent(&nameText);
+                auto wepSize = wepImage.GetSize();
+                wepImage.SetOffset(glm::ivec2{-wepSize.x / 2, 5});
+                wepImage.Draw(imgShader, texSize);
             ed.frameBuffer.Unbind();
 
             auto winSize = client_->GetWindowSize();
             glViewport(0, 0, winSize.x, winSize.y);
 
             // Draw name billboard
-            auto& player = playerTable[playerId];
             auto pPos = player.GetRenderTransform().position;
-            auto bPos = pPos + glm::vec3{0.0f, 2.0f, 0.0f};
+            auto bPos = pPos + glm::vec3{0.0f, 2.75f, 0.0f};
             if(ed.nameBillboard)
                 ed.nameBillboard->Draw(bPos, 0.0f, glm::vec2{1.6f, 0.9f} * 2.0f, glm::vec4{1.0f});
         }

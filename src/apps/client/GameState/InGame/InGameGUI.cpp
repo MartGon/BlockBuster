@@ -54,15 +54,15 @@ void InGameGUI::Start()
     wepIcon.SetTexture(inGame->modelMgr.GetWepIconTex(WeaponTypeID::ASSAULT_RIFLE));
     wepIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
     wepIcon.SetParent(&ammoNumIcon);
-    wepIcon.SetScale(glm::vec2{0.75f});
+    wepIcon.SetSize(glm::vec2{220, 70} * 0.75f);
     auto iconSize = wepIcon.GetSize();
     wepIcon.SetOffset(-iconSize);
     wepIcon.SetIsVisible(true);
 
-    altWepIcon.SetTexture(inGame->modelMgr.GetWepIconTex(WeaponTypeID::SNIPER));
+    altWepIcon.SetTexture(inGame->modelMgr.GetWepIconTex(WeaponTypeID::ASSAULT_RIFLE));
     altWepIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_RIGHT_CORNER);
     altWepIcon.SetParent(&wepIcon);
-    altWepIcon.SetScale(glm::vec2{0.33f});
+    altWepIcon.SetSize(glm::vec2{220, 70} * 0.33f);
     iconSize = altWepIcon.GetSize();
     altWepIcon.SetOffset(-iconSize);
     altWepIcon.SetIsVisible(false);
@@ -534,7 +534,7 @@ void InGameGUI::HUD()
 
         // Alt wep Icon
     auto nextWepTypeId = player.weapons[player.GetNextWeaponId()].weaponTypeId;
-    if(wepTypeId != Entity::WeaponTypeID::NONE)
+    if(nextWepTypeId != Entity::WeaponTypeID::NONE)
     {
         altWepIcon.SetTexture(inGame->modelMgr.GetWepIconTex(nextWepTypeId));
         altWepIcon.SetIsVisible(true);

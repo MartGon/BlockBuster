@@ -163,6 +163,7 @@ namespace BlockBuster
         static glm::vec4 teamColors[3];
         static glm::vec4 ffaColors[16];
         GUI::Text nameText;
+        GUI::Image wepImage;
 
         // Local player
         uint8_t playerId = 0;

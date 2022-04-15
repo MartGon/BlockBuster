@@ -72,7 +72,6 @@ namespace Game::Models
         Util::Table<Rendering::TextureID> iconTextures;
         Util::Table<Rendering::TextureID> wepIconsTex;
         
-
         Rendering::RenderMgr* renderMgr;
     };
 }
