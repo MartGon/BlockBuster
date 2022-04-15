@@ -154,7 +154,6 @@ namespace BlockBuster
         void SendServerNotification(ServerEvent::Notification event);
 
         // Spawns 
-        // TODO: Should move these to their class/module
         static const float MIN_SPAWN_ENEMY_DISTANCE;
         glm::ivec3 FindSpawnPoint(Entity::Player player);
         glm::vec3 ToSpawnPos(glm::ivec3 spawnPoint);
