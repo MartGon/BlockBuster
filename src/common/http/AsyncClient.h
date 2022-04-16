@@ -22,6 +22,7 @@ namespace HTTP
         {
 
         }
+        AsyncClient() = default;
         ~AsyncClient()
         {
             if(waitThreads)
@@ -52,13 +53,24 @@ namespace HTTP
             waitThreads = false;
         }
 
-        void Request(const std::string& path, const std::string& body, RespHandler respHandler, ErrHandler errHandler);
-        void HandleResponses();
+        inline void SetAddress(std::string address, uint16_t port)
+        {
+            this->address = address;
+            this->port = port;
+        }
+
+        inline std::pair<std::string, uint16_t> GetAddress()
+        {
+            return {address, port};
+        }
 
         inline bool IsConnecting()
         {
             return connecting.load();
         }
+
+        void Request(const std::string& path, const std::string& body, RespHandler respHandler, ErrHandler errHandler);
+        void HandleResponses();
 
     private:
 

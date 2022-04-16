@@ -23,9 +23,6 @@ MainMenu::~MainMenu()
 
 void MainMenu::Start()
 {
-    // GL Features
-    
-
     // Set default name
     popUp.SetTitle("Connecting");
     popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
@@ -39,6 +36,11 @@ void MainMenu::Start()
     camera_.SetTarget(glm::vec3{0.0f, 0.0f, -1.0f});
     camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, client_->config.window.fov);
+
+    // Set matchmaking address and port
+    auto address = client_->GetConfigOption("MatchMakingServerAddress", "127.0.0.1");
+    uint16_t port = std::atoi(client_->GetConfigOption("MatchMakinServerPort", "3030").c_str());
+    httpClient.SetAddress(address, port);
 }
 
 void MainMenu::Shutdown()
@@ -48,6 +50,10 @@ void MainMenu::Shutdown()
         LeaveGame();
 
     httpClient.Close();
+
+    // Write config
+    client_->config.options["MatchMakingServerAddress"] = httpClient.GetAddress().first;
+    client_->config.options["MatchMakinServerPort"] = std::to_string(httpClient.GetAddress().second);
 }
 
 void MainMenu::Update()

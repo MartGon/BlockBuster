@@ -1051,7 +1051,7 @@ void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
 
 void InGame::LoadGameOptions()
 {
-    gameOptions.sensitivity= std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
+    gameOptions.sensitivity = std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
     gameOptions.audioEnabled = std::atoi(client_->GetConfigOption("audioEnabled", "1").c_str());
     gameOptions.audioGeneral = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioGeneral","100").c_str())));
     gameOptions.audioAnnouncer = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioAnnouncer","100").c_str())));
