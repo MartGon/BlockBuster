@@ -24,7 +24,7 @@ namespace Entity
         Math::Transform GetECB();
         Math::Transform GetGCB();
 
-        float speed = 5.f;
+        float speed = 8.0f;
         float gravitySpeed = -12.0f; // -24.0f
     private:
 
