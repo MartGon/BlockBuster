@@ -79,6 +79,7 @@ namespace BlockBuster
         Entity::ID GetPlayerTeam(Entity::ID playerId);
         void OnGrenadeExplode(Entity::Projectile& grenade);
         void OnLocalPlayerShot();
+        void OnLocalPlayerReload();
         World GetWorld();
 
         // Networking
@@ -256,6 +257,7 @@ namespace BlockBuster
         Util::Pool<Audio::ID, 4> grenadeSources;
         Audio::ID soundtrackSource;
         Audio::ID playerSource;
+        Audio::ID playerReloadSource;
         Audio::ID announcerSource;
 
         // Scene

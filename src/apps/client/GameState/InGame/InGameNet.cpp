@@ -293,7 +293,6 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             else
             {
                 playerModelStateTable[ptd->victimId].deathPlayer.Restart();
-
             }
 
             if(ptd->killerId == playerId)
@@ -745,7 +744,11 @@ void InGame::SmoothPlayerMovement()
             if(Entity::HasShot(oldWepState.state, nextWepState.state))
                 OnLocalPlayerShot();
             
-            bool playReloadAnim = Entity::HasReloaded(oldWepState.state, nextWepState.state) || Entity::HasStartedSwap(oldWepState.state, nextWepState.state) ||
+            bool hasReloaded = Entity::HasReloaded(oldWepState.state, nextWepState.state);
+            if(hasReloaded)
+                OnLocalPlayerReload();
+                
+            bool playReloadAnim = hasReloaded || Entity::HasStartedSwap(oldWepState.state, nextWepState.state) ||
                 Entity::HasPickedUp(oldWepState.state, nextWepState.state) || Entity::HasGrenadeThrow(oldWepState.state, nextWepState.state);
             if(playReloadAnim)
                 fpsAvatar.PlayReloadAnimation(nextWepState.cooldown);

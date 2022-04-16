@@ -24,6 +24,10 @@ void Gallery::Start()
         auto filename = "weapon-shot-" + std::to_string(i) + ".wav";
         auto audioId = LoadStaticAudio(filename);
         wepSoundIds.Add(i, audioId);
+
+        filename = "weapon-reload-" + std::to_string(i) + ".wav";
+        audioId = LoadStaticAudio(filename);
+        wepReloadSoundIds.Add(i, audioId);
     }
 
     // Announcer sounds
@@ -53,38 +57,27 @@ void Gallery::Start()
 
 Audio::ID Gallery::GetSoundId(SoundID soundId)
 {
-    auto ret = Audio::AudioMgr::NULL_AUDIO_ID;
-    if(auto audioId = soundIds.Get(soundId))
-        ret = audioId.value();
-
-    return ret;
+    return GetAudio(soundIds, soundId);
 }
 
 Audio::ID Gallery::GetMusicId(MusicID musicId)
 {
-    auto ret = Audio::AudioMgr::NULL_AUDIO_ID;
-    if(auto audioId = musicIds.Get(musicId))
-        ret = audioId.value();
-
-    return ret;
+    return GetAudio(musicIds, musicId);
 }
 
 Audio::ID Gallery::GetAnnouncerSoundId(AnnouncerSoundID asid)
 {
-    auto ret = Audio::AudioMgr::NULL_AUDIO_ID;
-    if(auto audioId = announcerIds.Get(asid))
-        ret = audioId.value();
-
-    return ret;
+    return GetAudio(announcerIds, asid);
 }
 
 Audio::ID Gallery::GetWepSoundID(Entity::WeaponTypeID wepId)
 {
-    auto ret = Audio::AudioMgr::NULL_AUDIO_ID;
-    if(auto audioId = wepSoundIds.Get(wepId))
-        ret = audioId.value();
+    return GetAudio(wepSoundIds, wepId);
+}
 
-    return ret;
+Audio::ID Gallery::GetWepReloadSoundId(Entity::WeaponTypeID wepId)
+{
+    return GetAudio(wepReloadSoundIds, wepId);
 }
 
 // Private
@@ -111,4 +104,13 @@ Audio::ID Gallery::LoadStreamedAudio(std::filesystem::path filePath)
         App::ServiceLocator::GetLogger()->LogError("Could not load streamed audio file: " + fullpath.string());
 
     return res.first;
+}
+
+Audio::ID Gallery::GetAudio(Util::Table<Audio::ID>& table, Util::Table<Audio::ID>::ID id)
+{
+    auto ret = Audio::AudioMgr::NULL_AUDIO_ID;
+    if(auto audioId = table.Get(id))
+        ret = audioId.value();
+
+    return ret;
 }

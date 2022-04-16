@@ -437,6 +437,10 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     // Update announcer pos
     auto pPos = player.GetRenderTransform().position;
     audioMgr->SetSourceTransform(announcerSource, pPos);
+
+    // Update player source pos
+    audioMgr->SetSourceTransform(playerSource, pPos);
+    audioMgr->SetSourceTransform(playerReloadSource, pPos);
 }
 
 // Exit
@@ -615,6 +619,15 @@ void InGame::OnLocalPlayerShot()
 
     fpsAvatar.PlayShootAnimation(); 
     WeaponRecoil();
+}
+
+void InGame::OnLocalPlayerReload()
+{
+    auto& player = GetLocalPlayer();
+    auto weapon = player.GetCurrentWeapon();
+    auto audioId = gallery.GetWepReloadSoundId(weapon.weaponTypeId);
+    audioMgr->SetSourceAudio(playerReloadSource, audioId);
+    audioMgr->PlaySource(playerReloadSource);
 }
 
 World InGame::GetWorld()
@@ -966,6 +979,7 @@ void InGame::InitAudio()
 
     // Player source
     playerSource = audioMgr->CreateSource();
+    playerReloadSource = audioMgr->CreateSource();
 
     // Set grenade sources
     for(auto i = 0; i < grenadeSources.GetSize(); i++)

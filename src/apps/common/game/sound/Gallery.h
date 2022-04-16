@@ -59,16 +59,20 @@ namespace Game::Sound
         Audio::ID GetMusicId(MusicID musicId);
         Audio::ID GetAnnouncerSoundId(AnnouncerSoundID asid);
         Audio::ID GetWepSoundID(Entity::WeaponTypeID wepId);
+        Audio::ID GetWepReloadSoundId(Entity::WeaponTypeID wepId);
 
     private:
 
         Audio::ID LoadStaticAudio(std::filesystem::path filePath);
         Audio::ID LoadStreamedAudio(std::filesystem::path filePath);
+        Audio::ID GetAudio(Util::Table<Audio::ID>& table, Util::Table<Audio::ID>::ID id);
 
         std::filesystem::path defaultFolder;
         Util::Table<Audio::ID> soundIds;
         Util::Table<Audio::ID> musicIds;
         Util::Table<Audio::ID> announcerIds;
+
         Util::Table<Audio::ID> wepSoundIds;
+        Util::Table<Audio::ID> wepReloadSoundIds;
     };
 }
