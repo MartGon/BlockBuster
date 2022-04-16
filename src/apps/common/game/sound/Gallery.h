@@ -10,6 +10,8 @@ namespace Game::Sound
 {
     enum SoundID{
         GRENADE_SOUND_ID,
+        BULLET_HIT_METAL_1,
+        BULLET_HIT_METAL_2,
         SOUND_ID_COUNT
     };
 

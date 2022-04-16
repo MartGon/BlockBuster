@@ -14,6 +14,14 @@ void Gallery::Start()
     auto grenadeId = LoadStaticAudio("grenade.wav");
     soundIds.Add(GRENADE_SOUND_ID, grenadeId);
 
+    for(auto i = 1; i < 3; i++)
+    {
+        auto filename = "hit-metal-" + std::to_string(i) + ".wav";
+        auto soundId = LoadStaticAudio(filename);
+        auto id = GRENADE_SOUND_ID + i;
+        soundIds.Add(id, soundId);
+    }
+
     // Music 
     auto spawnId = LoadStreamedAudio("soundtrack.wav");
     musicIds.Add(SPAWN_THEME_ID, spawnId);

@@ -65,6 +65,10 @@ void InGame::OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::Pl
     auto painting = Rendering::Painting{.type = Rendering::PaintingType::TEXTURE, .hasAlpha = true, .texture = texId};
     ed.nameBillboard->painting = painting;
 
+    // Set up player audio sources
+    ed.dmgSourceId = audioMgr->CreateSource();
+    ed.shootSourceId = audioMgr->CreateSource();
+
     playersExtraData[playerId] = std::move(ed);
 }
 
@@ -259,6 +263,16 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             auto ptd = packet.To<PlayerHitConfirm>();
             client_->logger->LogInfo("Enemy player was hit!");
 
+            // Play sound effect
+            if(Util::Map::Contains(playersExtraData, ptd->victimId))
+            {
+                auto& ed = playersExtraData[ptd->victimId];
+                auto soundId = Util::Random::Uniform(0u, 1u) + Game::Sound::BULLET_HIT_METAL_1;
+                auto audioId = gallery.GetSoundId((Game::Sound::SoundID)soundId);
+                audioMgr->SetSourceAudio(ed.dmgSourceId, audioId);
+                audioMgr->PlaySource(ed.dmgSourceId);
+            }
+
             inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::DMG);
         }
         break;
@@ -292,6 +306,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             }
             else
             {
+                // Play death animation
                 playerModelStateTable[ptd->victimId].deathPlayer.Restart();
             }
 
@@ -301,7 +316,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             match.GetGameMode()->PlayerDeath(ptd->killerId, ptd->killerId, killer.teamId);
             GetLogger()->LogError("Player died");
 
-            if(killer.teamId == player.teamId && killerId != playerId)
+            if(killer.teamId == player.teamId && ptd->killerId != playerId)
             {
                 auto audioId = (uint32_t)Game::Sound::ANNOUNCER_SOUND_ENEMY_KILLED_0 + Util::Random::Uniform(0u, 1u);
                 if(audioId >= Game::Sound::ANNOUNCER_SOUND_ENEMY_KILLED_0 && audioId <= Game::Sound::ANNOUNCER_SOUND_ENEMY_KILLED_1)
@@ -747,7 +762,7 @@ void InGame::SmoothPlayerMovement()
             bool hasReloaded = Entity::HasReloaded(oldWepState.state, nextWepState.state);
             if(hasReloaded)
                 OnLocalPlayerReload();
-                
+
             bool playReloadAnim = hasReloaded || Entity::HasStartedSwap(oldWepState.state, nextWepState.state) ||
                 Entity::HasPickedUp(oldWepState.state, nextWepState.state) || Entity::HasGrenadeThrow(oldWepState.state, nextWepState.state);
             if(playReloadAnim)
@@ -934,6 +949,12 @@ void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot
         // HACK Reset pitch, in case it was reloading
         modelState.armsPivot.rotation.x = 0.0f;
         modelState.armsPivot.position.y = 0.0f;
+
+        // Play audio effect
+        auto& ed = playersExtraData[playerId];
+        auto audioId = gallery.GetWepSoundID(oldState.weaponState->weaponTypeId);
+        audioMgr->SetSourceAudio(ed.shootSourceId, audioId);
+        audioMgr->PlaySource(ed.shootSourceId);
     }
 
     if(Entity::HasReloaded(oldState.weaponState[oldState.curWep].state, interpolation.wepState) ||

@@ -146,6 +146,9 @@ namespace BlockBuster
         {
             Rendering::Billboard* nameBillboard = nullptr;
             GL::Framebuffer frameBuffer;
+
+            Audio::ID shootSourceId;
+            Audio::ID dmgSourceId;
         };
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerTable;

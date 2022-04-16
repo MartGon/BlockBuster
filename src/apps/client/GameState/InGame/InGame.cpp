@@ -407,7 +407,8 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     auto& player = GetLocalPlayer();
 
     // Update shield
-    player.health = pController.UpdateShield(player.health, player.dmgTimer, deltaTime);
+    if(!player.IsDead())
+        player.health = pController.UpdateShield(player.health, player.dmgTimer, deltaTime);
 
     // Set camera in player
     auto camMode = camController_.GetMode();
@@ -430,9 +431,18 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
 
     // Update camera
     if(auto lastPred = predictionHistory_.Back())
-    {
         UpdateCamera(lastPred->inputReq.playerInput);
+
+    // Rellocate camera
+    if(player.IsDead() && Util::Map::Contains(playerTable, killerId) && killerId != playerId)
+    {
+        // Look to killer during death
+        auto& killer = playerTable[killerId];
+        auto pos = killer.GetRenderTransform().position;
+        camera_.SetTarget(pos);
     }
+
+    // AUDIO
 
     // Update announcer pos
     auto pPos = player.GetRenderTransform().position;
@@ -441,6 +451,14 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     // Update player source pos
     audioMgr->SetSourceTransform(playerSource, pPos);
     audioMgr->SetSourceTransform(playerReloadSource, pPos);
+    
+    // Update players source Pos
+    for(auto& [id, ed] : playersExtraData)
+    {
+        auto pPos = playerTable[id].GetRenderTransform().position;
+        audioMgr->SetSourceTransform(ed.dmgSourceId, pPos);
+        audioMgr->SetSourceTransform(ed.shootSourceId, pPos);
+    }
 }
 
 // Exit
@@ -525,15 +543,6 @@ void InGame::UpdateCamera(Entity::PlayerInput input)
     auto wepType = Entity::WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
     auto zoom = 1.0f + (wepType.zoomLevel - 1.0f) * zoomMod;
     camera_.SetZoom(zoom);
-
-    // Rellocate camera
-    if(player.IsDead() && Util::Map::Contains(playerTable, killerId) && killerId != playerId)
-    {
-        // Look to killer during death
-        auto& killer = playerTable[killerId];
-        auto pos = killer.GetRenderTransform().position;
-        camera_.SetTarget(pos);
-    }
 }
 
 void InGame::WeaponRecoil()
@@ -903,6 +912,10 @@ void InGame::DrawDecals()
 
 void InGame::DrawPlayerName(Entity::ID playerId)
 {
+    auto& player = playerTable[playerId];
+    if(player.IsDead())
+        return;
+
     if(auto mode = match.GetGameMode())
     {
         auto& scoreBoard = mode->GetScoreboard();
@@ -926,7 +939,6 @@ void InGame::DrawPlayerName(Entity::ID playerId)
                 nameText.SetOffset(glm::ivec2{texSize.x / 2 - size.x / 2, 0});
                 nameText.Draw(textShader, texSize);
 
-                auto& player = playerTable[playerId];
                 auto enemyWepId = player.GetCurrentWeapon().weaponTypeId;
                 auto tex = modelMgr.GetWepIconTex(enemyWepId);
                 wepImage.SetAnchorPoint(GUI::AnchorPoint::CENTER_UP);
