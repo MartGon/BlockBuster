@@ -618,10 +618,16 @@ void MainMenu::GetMapPicture(std::string mapName)
 
 void MainMenu::UploadMap(std::string mapName, std::string password)
 {
+    // Write map version
+    // TODO: This could be done in editor, by hashing the map binary file, or something
+    auto version = Util::Random::RandomString(16);
+    client_->mapMgr.WriteMapVersion(mapName, version);
+
     // Payload
     nlohmann::json body;
     body["map_name"] = mapName;
     body["password"] = password;
+    body["map_version"] = version;
         
     auto mapFile = client_->mapMgr.GetMapFile(mapName);
     auto res = Game::Map::Map::LoadFromFile(mapFile);

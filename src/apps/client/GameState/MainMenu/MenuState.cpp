@@ -248,13 +248,16 @@ void Lobby::OnEnter()
     mainMenu_->lobby = this;
 
     auto& mapMgr = mainMenu_->GetMapMgr();
+
     auto mapName = mainMenu_->currentGame->game.map;
-    if(!mapMgr.HasMap(mapName))
+    auto serverVersion = mainMenu_->currentGame->game.map_version;
+
+    bool hasMap = mapMgr.HasMap(mapName);
+    if(!hasMap || mapMgr.ReadMapVersion(mapName) != serverVersion)
     {
         mainMenu_->GetLogger()->LogError("Need to download map " + mapName);
+        mainMenu_->DownloadMap(mapName);
     }
-    // TODO: Always download. This is to avoid comparing local/server map version
-    mainMenu_->DownloadMap(mapName);
 
     OnGameInfoUpdate();
     mainMenu_->GetMapPicture(mapName);

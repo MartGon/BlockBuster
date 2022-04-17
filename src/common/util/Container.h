@@ -13,7 +13,7 @@ namespace Util::Vector
         if(!vec.empty())
         {
             uint32_t max = vec.size() - 1;
-            auto index = Util::Random::Uniform(0, max);
+            auto index = Util::Random::Uniform(0u, max);
             res = &vec[index];
         }
 

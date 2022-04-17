@@ -39,7 +39,7 @@ Explosion::Explosion(Rendering::Billboard* billboard, Animation::Clip* clip, glm
         auto z = Util::Random::Normal<float>(CENTER_OFFSET_MEAN, CENTER_OFFSET_SD);
         auto expCenter = center + glm::vec3{x, y, z};
 
-        auto rot = Util::Random::Uniform(0, glm::two_pi<float>());
+        auto rot = Util::Random::Uniform(0.0f, glm::two_pi<float>());
         auto startPercent = Util::Random::Uniform(0.0f, 0.25f);
         auto scale = Util::Random::Normal(4.0f, 2.0f);
         

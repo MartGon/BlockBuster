@@ -25,6 +25,9 @@ namespace BlockBuster
         std::filesystem::path GetMapFile(const std::string& mapName);
         std::vector<std::filesystem::path> GetLocalMaps();
 
+        void WriteMapVersion(const std::string& map, const std::string& version);
+        std::string ReadMapVersion(const std::string& map);
+
     private:
         std::filesystem::path mapsFolder;
     };
