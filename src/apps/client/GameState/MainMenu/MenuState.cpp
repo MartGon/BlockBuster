@@ -123,6 +123,7 @@ void ServerBrowser::Update()
         if(ImGui::Button("Create Game"))
         {
             mainMenu_->GetAvailableMaps();
+            mainMenu_->SetState(std::make_unique<MenuState::CreateGame>(mainMenu_));
         }
 
         ImGui::SameLine();
@@ -245,20 +246,33 @@ void CreateGame::SelectMap(MapInfo a)
 
 void Lobby::OnEnter()
 {
-    mainMenu_->lobby = this;
+    // Get maps, in case we becom host
+    mainMenu_->GetAvailableMaps();
 
-    auto& mapMgr = mainMenu_->GetMapMgr();
+    // Int strings
+    gameName = mainMenu_->currentGame->game.name;
+    mode = mainMenu_->currentGame->game.mode;
+    gameName.resize(32);
 
     auto mapName = mainMenu_->currentGame->game.map;
-    auto serverVersion = mainMenu_->currentGame->game.map_version;
+    // Init map info
+    for(auto map : mainMenu_->availableMaps)
+    {
+        if(map.mapName == mapName)
+            this->mapInfo = map;
+    }
 
-    bool hasMap = mapMgr.HasMap(mapName);
-    if(!hasMap || mapMgr.ReadMapVersion(mapName) != serverVersion)
+    // Set lobby
+    mainMenu_->lobby = this;
+
+    // Do we download map?
+    if(mainMenu_->ShouldDownloadMap(mapName))
     {
         mainMenu_->GetLogger()->LogError("Need to download map " + mapName);
         mainMenu_->DownloadMap(mapName);
     }
 
+    // Start
     OnGameInfoUpdate();
     mainMenu_->GetMapPicture(mapName);
     mainMenu_->UpdateGame();
@@ -271,6 +285,14 @@ void Lobby::OnExit()
 
 void Lobby::OnGameInfoUpdate()
 {
+    auto mapName = mainMenu_->currentGame->game.map;
+    mode = mainMenu_->currentGame->game.mode;
+    for(auto map : mainMenu_->availableMaps)
+    {
+        if(map.mapName == mapName)
+            this->mapInfo = map;
+    }
+
     auto chatData = mainMenu_->currentGame->game.chat;
     char* chatPtr = this->chat;
     for(auto it = chatData.begin(); it != chatData.end(); it++)
@@ -290,7 +312,7 @@ void Lobby::Update()
     auto displaySize = ImGui::GetIO().DisplaySize;
     
     // Size
-    auto windowSize = ImVec2{displaySize.x * 0.7f, displaySize.y * 0.75f};
+    auto windowSize = ImVec2{displaySize.x * 0.85f, displaySize.y * 0.75f};
     ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
 
     // Centered
@@ -325,12 +347,11 @@ void Lobby::Update()
             ImGui::TableNextColumn();
             auto playerTableFlags = ImGuiTableFlags_None | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg;
             auto playerTableSize = ImVec2{leftColSize * 0.975f, layoutSize.y * 0.5f};
-            if(ImGui::BeginTable("Player List", 3, playerTableFlags, playerTableSize))
+            if(ImGui::BeginTable("Player List", 2, playerTableFlags, playerTableSize))
             {   
                 float lvlSize = 0.1f * playerTableSize.x;
                 float readySize = 0.3f * playerTableSize.x;
                 float playerNameSize = playerTableSize.x - lvlSize - readySize;
-                ImGui::TableSetupColumn("Lvl", colFlags, lvlSize);
                 ImGui::TableSetupColumn("Player Name", colFlags, playerNameSize);
                 ImGui::TableSetupColumn("Status", colFlags, readySize);
                 ImGui::TableSetupScrollFreeze(0, 1); // Freeze first row;
@@ -340,10 +361,6 @@ void Lobby::Update()
                 // Print player's info
                 for(auto playerInfo : mainMenu_->currentGame->playersInfo)
                 {
-                    // Lvl Col
-                    ImGui::TableNextColumn();
-                    ImGui::Text("25");
-
                     ImGui::TableNextColumn();
                     ImGui::Text("%s", playerInfo.playerName.c_str());
 
@@ -398,40 +415,73 @@ void Lobby::Update()
             ImGui::PopItemWidth();
 
             // Map Info
+            bool isHost = IsPlayerHost();
+            bool changes = false;
+
             ImGui::TableNextColumn();
             ImGui::Text("Game Info");
+
             auto gitFlags = ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV;
             ImVec2 gitSize{layoutSize.x - leftColSize, 0};
-            if(ImGui::BeginTable("Game Info", 2, gitFlags, gitSize))
+            if(ImGui::BeginTable("Game Info", 1, gitFlags, gitSize))
             {
+                if(!isHost)
+                    ImGui::PushDisabled();
 
+                // Game's Name
+                auto inputTextFlags = !isHost ? ImGuiInputTextFlags_ReadOnly : ImGuiInputTextFlags_None;
                 ImGui::TableNextColumn();
-                ImGui::Text("%s", "Name");
+                ImGui::InputText("Name", gameName.data(), gameName.size(), inputTextFlags);
+                ImGui::SameLine();
+                changes = ImGui::Button("OK");
 
+                // Game's Map
                 ImGui::TableNextColumn();
-                ImGui::Text("%s", gameInfo.name.c_str());
+                auto comboFlags = ImGuiComboFlags_None;
+                if(ImGui::BeginCombo("Map", mapInfo.mapName.c_str(), comboFlags))
+                {   
+                    for(auto availMap : mainMenu_->availableMaps)
+                    {
+                        bool selected = availMap.mapName == this->mapInfo.mapName;
+                        if(ImGui::Selectable(availMap.mapName.c_str(), selected))
+                        {
+                            SelectMap(availMap);
+                            changes |= true;
+                        }
+                    }
+                    ImGui::EndCombo();
+                };
 
+                // Game's Mode
                 ImGui::TableNextColumn();
-                ImGui::Text("%s", "Map");
+                if(ImGui::BeginCombo("Mode", mode.c_str(), comboFlags))
+                {
+                    for(auto gameMode : mapInfo.supportedGamemodes)
+                    {
+                        bool selected = gameMode == this->mode;
+                        if(ImGui::Selectable(gameMode.c_str(), selected))
+                        {
+                            this->mode = gameMode;
+                            changes |= true;
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
 
+                // Max players
                 ImGui::TableNextColumn();
-                ImGui::Text("%s", gameInfo.map.c_str());
+                int players = gameInfo.maxPlayers;
+                ImGui::SliderInt("Max Players", &players, 2, 16, "%d", ImGuiInputTextFlags_ReadOnly);
 
-                ImGui::TableNextColumn();
-                ImGui::Text("%s", "Mode");
-
-                ImGui::TableNextColumn();
-                ImGui::Text("%s", gameInfo.mode.c_str());
-
-                ImGui::TableNextColumn();
-                ImGui::Text("%s", "Max Players");
-
-                ImGui::TableNextColumn();
-                ImGui::Text("%i", gameInfo.maxPlayers);
+                if(!isHost)
+                    ImGui::PopDisabled();
 
                 ImGui::TableNextColumn();
                 ImGui::EndTable();
             }
+
+            if(changes)
+                mainMenu_->EditGame(gameName, mapInfo.mapName, mode);
 
             // Ready button
             if(IsGameOnGoing())
@@ -444,7 +494,7 @@ void Lobby::Update()
                 ImGui::PopDisabled();
 
             // Start Game Button
-            bool disabled = IsGameInLobby() && (!IsPlayerHost() || !IsEveryoneReady());
+            bool disabled = IsGameInLobby() && (!isHost || !IsEveryoneReady());
             if(disabled)
                 ImGui::PushDisabled();
 
@@ -504,6 +554,15 @@ bool Lobby::IsGameOnGoing()
 bool Lobby::IsGameInLobby()
 {
     return mainMenu_->currentGame->game.state == "InLobby";
+}
+
+void Lobby::SelectMap(MapInfo a)
+{
+    this->mapInfo = a;
+    if(!a.supportedGamemodes.empty())
+        this->mode = a.supportedGamemodes[0];
+    
+    mainMenu_->GetMapPicture(a.mapName);
 }
 
 // #### UPLOAD MAP #### \\

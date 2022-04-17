@@ -54,6 +54,7 @@ namespace BlockBuster
         void ListGames();
         void JoinGame(std::string gameId);
         void CreateGame(std::string name, std::string map, std::string mode, uint8_t max_players);
+        void EditGame(std::string name, std::string map, std::string mode);
         void GetAvailableMaps();
         void LeaveGame();
         void ToggleReady();
@@ -79,6 +80,7 @@ namespace BlockBuster
         // Handy 
         void LaunchGame();
         MapMgr& GetMapMgr();
+        bool ShouldDownloadMap(std::string map);
 
         //#### Data Members ####\\
         // Rest Service

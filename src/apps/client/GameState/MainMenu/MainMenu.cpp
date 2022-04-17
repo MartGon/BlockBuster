@@ -243,6 +243,53 @@ void MainMenu::CreateGame(std::string name, std::string map, std::string mode, u
     httpClient.Request("/create_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
+
+void MainMenu::EditGame(std::string name, std::string map, std::string mode)
+{
+    // Create request body
+    nlohmann::json body;
+    body["player_id"] = userId;
+    body["game_id"] = currentGame->game.id;
+    body["name"] = name;
+    body["map"] = map;
+    body["mode"] = mode;
+
+    auto onSuccess = [this, name](httplib::Response& res)
+    {   
+        if(res.status == 200)
+        {
+            auto body = nlohmann::json::parse(res.body);
+            auto gameDetails = GameDetails::FromJson(body);
+
+            // Set current game
+            currentGame = gameDetails;
+        }
+        else
+        {
+            popUp.SetVisible(true);
+            popUp.SetText(res.body);
+            popUp.SetTitle("Error");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
+        }
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+    httpClient.Request("/edit_game", nlohmann::to_string(body), onSuccess, onError);
+}
+
 void MainMenu::GetAvailableMaps()
 {
     GetLogger()->LogInfo("Getting available maps ");
@@ -269,7 +316,7 @@ void MainMenu::GetAvailableMaps()
             this->availableMaps.push_back(mapInfo);
         }
 
-        SetState(std::make_unique<MenuState::CreateGame>(this));
+        //SetState(std::make_unique<MenuState::CreateGame>(this));
 
         popUp.SetVisible(false);
     };
@@ -390,22 +437,35 @@ void MainMenu::UpdateGame(bool forced)
         if(lobby)
             lobby->updatePending = false;
             
-        GetLogger()->LogInfo("[Update Game]Result " + res.body);
+        GetLogger()->LogDebug("[Update Game]Result " + res.body);
 
         if(res.status == 200)
         {
-            GetLogger()->LogInfo("Succesfully updated game");
+            GetLogger()->LogDebug("Succesfully updated game");
             auto body = nlohmann::json::parse(res.body);
             auto gameDetails = GameDetails::FromJson(body);
 
             // Check if we are still in lobby. Keep updating in that case
             if(lobby)
             {
-                auto oldState = currentGame->game.state;
-
+                auto oldGameInfo = currentGame->game;
                 // Set current game
                 currentGame = gameDetails;
 
+                // On map change
+                auto mapName = currentGame->game.map;
+                if(mapName != oldGameInfo.map)
+                {
+                    if(ShouldDownloadMap(mapName))
+                    {
+                        GetLogger()->LogWarning("Need to download map " + mapName);
+                        DownloadMap(mapName);
+                    }
+                    GetMapPicture(mapName);
+                }
+
+                // Check game start
+                auto oldState = oldGameInfo.state;
                 if(currentGame->game.state == "InGame" && oldState == "InLobby")
                 {
                     LaunchGame();
@@ -809,4 +869,13 @@ void MainMenu::LaunchGame()
 MapMgr& MainMenu::GetMapMgr()
 {
     return client_->mapMgr;
+}
+
+bool MainMenu::ShouldDownloadMap(std::string map)
+{
+    auto& mapMgr = GetMapMgr();
+    auto serverVersion = currentGame->game.map_version;
+
+    bool hasMap = mapMgr.HasMap(map);
+    return !hasMap || mapMgr.ReadMapVersion(map) != serverVersion;
 }
