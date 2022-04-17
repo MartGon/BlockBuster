@@ -260,9 +260,6 @@ void MainMenu::EditGame(std::string name, std::string map, std::string mode)
         {
             auto body = nlohmann::json::parse(res.body);
             auto gameDetails = GameDetails::FromJson(body);
-
-            // Set current game
-            currentGame = gameDetails;
         }
         else
         {
