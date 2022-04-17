@@ -180,7 +180,7 @@ namespace BlockBuster
 
         // GameObjects
         std::unordered_map<glm::ivec3, Entity::GameObject::State> gameObjectStates;
-        std::unordered_map<Entity::ID, Entity::Projectile> projectiles;
+        std::unordered_map<Entity::ID, std::unique_ptr<Entity::Projectile>> projectiles;
         Util::Ring<glm::mat4, 20> decalTransforms;
 
         // Match Making data

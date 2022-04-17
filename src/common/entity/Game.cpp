@@ -148,6 +148,28 @@ Game::RayPlayerCollision Game::RayCollidesWithPlayerHitbox(Collisions::Ray ray, 
     return rpc;
 }
 
+Collisions::AABBIntersection Game::AABBCollidesWithPlayer(Math::Transform aabb, glm::vec3 playerPos, float playerYaw, glm::vec3 lastMoveDir)
+{
+    using HitBoxType = Entity::Player::HitBoxType;
+
+    Collisions::AABBIntersection intersect;
+    for(uint8_t i = HitBoxType::HEAD; i < HitBoxType::MAX; i++)
+    {
+        auto rot = i == HitBoxType::WHEELS ? Entity::Player::GetWheelsRotation(lastMoveDir, playerYaw ) : playerYaw;
+        auto hbt = static_cast<HitBoxType>(i);
+        auto playerHitbox = Entity::Player::GetHitBox();
+        auto t = playerHitbox[i];
+        t.position += playerPos;
+        t.rotation.y = playerYaw;
+        
+        intersect = Collisions::AABBCollision(aabb.position, aabb.scale, t.position, t.scale);
+        if(intersect.collides)
+            return intersect;
+    }
+
+    return intersect;
+}
+
 Collisions::Intersection Game::AABBCollidesBlock(Game::Map::Map* map, Math::Transform aabb)
 {
     Collisions::Intersection ret{false};

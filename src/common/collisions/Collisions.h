@@ -50,6 +50,11 @@ namespace Collisions
         bool intersects;
         glm::vec3 offset;
         glm::vec3 normal;
+
+        operator bool() const
+        {
+            return collides;
+        }
     };
 
     AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB);
@@ -62,6 +67,11 @@ namespace Collisions
         bool intersects;
         glm::vec3 offset;
         glm::vec3 normal;
+
+        operator bool() const
+        {
+            return collides;
+        }
     };
 
     AABBSlopeIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f);

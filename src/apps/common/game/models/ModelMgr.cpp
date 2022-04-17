@@ -237,6 +237,46 @@ void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
 
     models[DECAL_MODEL_ID] = decal;
 
+    // Rocket
+    auto rocket = renderMgr.CreateModel();
+    auto rScale = 0.1f;
+    painting.hasAlpha = false;
+    painting.type = Rendering::PaintingType::COLOR;
+    painting.color = Rendering::ColorU8ToFloat(255, 255, 255);
+
+        // Cylinder
+    auto cylT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{1.0f, 2.0f, 1.0f} * rScale};
+    auto csm = Rendering::SubModel{cylT, painting, &cylinder, &shader};
+    rocket->AddSubModel(std::move(csm));
+
+        // Sphere
+    auto sphereT = Math::Transform{glm::vec3{0.0f, cylT.scale.y / 2.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{0.98f, 0.9f, 0.98f} * rScale};
+    painting.color = Rendering::ColorU8ToFloat(255, 0, 0);
+    auto sSM = Rendering::SubModel{sphereT, painting, &sphere, &shader};
+    rocket->AddSubModel(std::move(sSM));
+
+        // Left Slope
+    auto lSlopeT = Math::Transform{glm::vec3{0.0f, -cylT.scale.y / 4.025f, 1.125f * rScale}, glm::vec3{0.0f}, glm::vec3{rScale}};
+    painting.color = Rendering::ColorU8ToFloat(0, 0, 255);
+    auto lssm = Rendering::SubModel{lSlopeT, painting, &slope, &shader};
+    rocket->AddSubModel(std::move(lssm));
+
+        // Right Slope
+    auto rSlopeT = Math::Transform{glm::vec3{0.0f, -cylT.scale.y / 4.025f, -1.125f * rScale} , glm::vec3{0.0f, 180.0f, 0.0f}, glm::vec3{rScale}};
+    auto rssm = Rendering::SubModel{rSlopeT, painting, &slope, &shader};
+    rocket->AddSubModel(std::move(rssm));
+
+        // Front Slope
+    auto fSlopeT = Math::Transform{glm::vec3{1.125f * rScale, -cylT.scale.y / 4.025f, 0}, glm::vec3{0.0f, 90.0f, 0.0f}, glm::vec3{rScale}};
+    auto fssm = Rendering::SubModel{fSlopeT, painting, &slope, &shader};
+    rocket->AddSubModel(std::move(fssm));
+
+        // Back Slope
+    auto bSlopeT = Math::Transform{glm::vec3{-1.125f * rScale, -cylT.scale.y / 4.025f, 0}, glm::vec3{0.0f, 270.0f, 0.0f}, glm::vec3{rScale}};
+    auto bssm = Rendering::SubModel{bSlopeT, painting, &slope, &shader};
+    rocket->AddSubModel(std::move(bssm));
+
+    models[ROCKET_MODEL_ID] = rocket;
 }
 
 void ModelMgr::InitBillboards(Rendering::RenderMgr& renderMgr, GL::Shader& bbShader)

@@ -1113,7 +1113,7 @@ void InGameGUI::DebugWindow()
         if(ImGui::CollapsingHeader("Transform"))
         {
             ImGui::InputInt("ID", (int*)&modelId);
-            auto model = static_cast<Rendering::Model*>(inGame->modelMgr.GetModel(Game::Models::FLAG_MODEL_ID));
+            auto model = static_cast<Rendering::Model*>(inGame->modelMgr.GetModel(Game::Models::ROCKET_MODEL_ID));
             if(model)
             {
                 if(auto sm = model->GetSubModel(modelId))

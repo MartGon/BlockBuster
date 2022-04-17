@@ -904,9 +904,29 @@ void InGame::DrawProjectiles()
 
     for(auto& [id, projectile] : projectiles)
     {
-        Math::Transform t{projectile.GetPos(), projectile.GetRotation(), projectile.GetScale()};
-        auto tMat = view * t.GetTransformMat();
-        modelMgr.Draw(Game::Models::GRENADE_MODEL_ID, tMat);
+        Math::Transform t{projectile->GetPos(), projectile->GetRotation(), glm::vec3{1.0f}};
+        
+        auto type = projectile->GetType();
+        if(type == Entity::Projectile::GRENADE)
+        {
+            auto tMat = view * t.GetTransformMat();
+            modelMgr.Draw(Game::Models::GRENADE_MODEL_ID, tMat);
+        }
+        else if(type == Entity::Projectile::ROCKET)
+        {
+            auto translation = glm::translate(glm::mat4{1.0f}, projectile->GetPos());
+            auto dir = glm::normalize(projectile->GetVelocity());
+            auto lookPoint = t.position - dir;
+            auto rotation = glm::inverse(glm::lookAt(t.position, lookPoint, glm::vec3{0.0f, 1.0f, 0.0f})) 
+                * glm::rotate(glm::mat4{1.0f}, glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+            rotation = glm::mat4{glm::mat3{rotation}};
+            auto tMat = translation * rotation;
+            tMat = view * tMat;
+            modelMgr.Draw(Game::Models::ROCKET_MODEL_ID, tMat);
+        }
+
+        t.scale = projectile->GetScale();
+        DrawCollisionBox(view, t);
     }
 }
 

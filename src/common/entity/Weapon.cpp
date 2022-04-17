@@ -44,8 +44,15 @@ const std::unordered_map<WeaponTypeID, WeaponType> Entity::WeaponMgr::weaponType
     {
         WeaponTypeID::GRENADE_LAUNCHER, 
         {
-            WeaponTypeID::GRENADE_LAUNCHER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.25f}, Util::Time::Seconds{1.25f}, 15.0f, 
+            WeaponTypeID::GRENADE_LAUNCHER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.25f}, Util::Time::Seconds{1.5f}, 15.0f, 
             40.0f, 0.0f, glm::vec2{0.45f, 0.1f}, 0, 1.25f, AmmoType::AMMO, AmmoTypeData{ .magazineSize = 12}, WeaponType::ShotType::PROJECTILE, Projectile::Type::GRENADE
+        },
+    },
+    {
+        WeaponTypeID::ROCKET_LAUNCHER, 
+        {
+            WeaponTypeID::ROCKET_LAUNCHER, WeaponType::FiringMode::SEMI_AUTO, Util::Time::Seconds{0.5f}, Util::Time::Seconds{2.0f}, 15.0f, 
+            40.0f, 0.0f, glm::vec2{0.45f, 0.1f}, 0, 1.5f, AmmoType::OVERHEAT, AmmoTypeData{ .overheatRate = 50.0f}, WeaponType::ShotType::PROJECTILE, Projectile::Type::ROCKET
         },
     },
     {

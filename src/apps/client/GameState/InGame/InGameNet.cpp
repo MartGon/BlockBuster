@@ -181,17 +181,23 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             for(auto [id, projectile] : s.projectiles)
             {
                 if(!Util::Map::Contains(projectiles, id))
-                    projectiles[id].ApplyState(projectile);
+                {
+                    if(projectile.type == Entity::Projectile::ROCKET)
+                        projectiles[id] = std::make_unique<Entity::Rocket>();
+                    else if(projectile.type == Entity::Projectile::GRENADE)
+                        projectiles[id] = std::make_unique<Entity::Grenade>();
+                    projectiles[id]->ApplyState(projectile);
+                }
             }
 
             // Remove projectiles
             std::vector<Entity::ID> toRemove;
-            for(auto [id, projectile] : projectiles)
+            for(auto& [id, projectile] : projectiles)
             {
                 if(!Util::Map::Contains(s.projectiles, id))
                 {
                     toRemove.push_back(id);
-                    OnGrenadeExplode(projectile);
+                    OnGrenadeExplode(*projectile.get());
                 }
             }
             for(auto id : toRemove)   
@@ -876,7 +882,7 @@ void InGame::EntityInterpolation()
                 if(canInterpolate)
                 {
                     Entity::Projectile::State s = Entity::Projectile::State::Interpolate(s1.projectiles[id], s2.projectiles[id], w1);
-                    projectile.ApplyState(s);
+                    projectile->ApplyState(s);
                 }
             }
         }

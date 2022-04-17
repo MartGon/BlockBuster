@@ -23,6 +23,7 @@ namespace Entity
         SMG,
         SNIPER,
         GRENADE_LAUNCHER,
+        ROCKET_LAUNCHER,
         CHEAT_SMG,
         COUNT
     };
@@ -77,7 +78,7 @@ namespace Entity
         AmmoTypeData ammoData;
 
         ShotType shotType;
-        Projectile::Type type;
+        Projectile::Type projType;
 
         Weapon CreateInstance() const;
     };

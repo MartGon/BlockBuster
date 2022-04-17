@@ -20,6 +20,7 @@ namespace Game::Models
         FLAG_MODEL_ID,
         GRENADE_MODEL_ID,
         DECAL_MODEL_ID,
+        ROCKET_MODEL_ID,
         COUNT
     };
 

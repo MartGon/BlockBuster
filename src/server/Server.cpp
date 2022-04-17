@@ -539,10 +539,17 @@ void Server::HandleShootCommand(ShotCommand sc)
     }
     else if(wepType.shotType == Entity::WeaponType::ShotType::PROJECTILE)
     {
-        auto p = std::make_unique<Entity::Grenade>();
+        std::unique_ptr<Entity::Projectile> p;
+        if(wepType.projType == Entity::Projectile::GRENADE)
+            p = std::make_unique<Entity::Grenade>();
+        else if(wepType.projType == Entity::Projectile::ROCKET)
+            p = std::make_unique<Entity::Rocket>();
+
         float SPEED = 20.0f;
         glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
-        p->Launch(author.id, ray.origin, ray.GetDir() * SPEED, acceleration);
+        auto scaler = p->GetType() == Entity::Projectile::ROCKET ? 3.0f : 1.2f;
+        auto launchPos = ray.origin + ray.GetDir() * (p->GetScale().x * scaler);
+        p->Launch(author.id, launchPos, ray.GetDir() * SPEED, acceleration);
         projectiles.MoveInto(std::move(p));
     }
 }
@@ -589,7 +596,8 @@ void Server::HandleGrenadeCommand(ENet::PeerId peerId)
         auto p = std::make_unique<Entity::Grenade>();
         float SPEED = 20.0f;
         glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
-        p->Launch(player.id, origin, dir * SPEED, acceleration);
+        auto launchPos = origin + dir * p->GetScale().x * 1.1f;
+        p->Launch(player.id, launchPos, dir * SPEED, acceleration);
         projectiles.MoveInto(std::move(p));
     }
 }
@@ -826,6 +834,28 @@ void Server::UpdateProjectiles()
             logger.LogError("Offset " + glm::to_string(collision.offset));
             projectile->OnCollide(collision.normal);
             projectile->SetPos(t.position + collision.offset);
+        }
+
+        // TODO: Check collision with players;
+        for(auto& [id, client] : clients)
+        {
+            auto& player = client.player;
+            auto playerT = player.GetRenderTransform();
+            
+            auto s1 = history.At(-2);
+            auto s2 = history.At(-1);
+            if(s1.has_value() && s2.has_value())
+            {
+                if(Util::Map::Contains(s1->players, player.id) && Util::Map::Contains(s2->players, player.id))
+                {
+                    auto lastMoveDir = Entity::GetLastMoveDir(s1->players[player.id].transform.pos, s2->players[player.id].transform.pos);
+                    if(auto collision = Game::AABBCollidesWithPlayer(t, playerT.position, playerT.rotation.y, lastMoveDir))
+                    {
+                        projectile->OnCollide(collision.normal);
+                        projectile->SetPos(t.position + collision.offset);
+                    }
+                }
+            }
         }
 
         // Apply dmg to players
