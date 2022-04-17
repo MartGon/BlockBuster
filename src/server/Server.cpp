@@ -839,7 +839,7 @@ void Server::UpdateProjectiles()
                 {
                     auto& victim = client.player;
 
-                    if(victim.IsDead())
+                    if(victim.IsDead() || (victim.teamId == author.teamId && victim.id != author.id))
                         continue;
 
                     auto victimPos = victim.GetTransform().position;

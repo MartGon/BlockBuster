@@ -272,6 +272,13 @@ void InGame::OnEnterMatchState(Match::StateType type)
     auto mode = match.GetGameMode();
     switch (type)
     {
+    case Match::StateType::WAITING_FOR_PLAYERS:
+        {
+            inGameGui.countdownText.SetText("Waiting for players");
+            inGameGui.countdownText.SetIsVisible(true);
+        }
+        break;
+
     case Match::StateType::STARTING:
         {
             auto sound = Game::Sound::ANNOUNCER_SOUND_MODE_FFA;
@@ -282,7 +289,11 @@ void InGame::OnEnterMatchState(Match::StateType type)
             else if(mode->GetType() == GameMode::Type::TEAM_DEATHMATCH)
                 sound = Game::Sound::ANNOUNCER_SOUND_MODE_TEAM_DEATHMATCH;
 
+            audioMgr->PlayStreamSource(soundtrackSource);
             PlayAnnouncerAudio(sound);
+
+            // GUI
+            inGameGui.countdownText.SetIsVisible(true);
         }
         break;
     case Match::StateType::ON_GOING:
@@ -290,6 +301,8 @@ void InGame::OnEnterMatchState(Match::StateType type)
             inGameGui.countdownText.SetIsVisible(false);
             inGameGui.gameTimeText.SetIsVisible(true);
             inGameGui.EnableScore();
+
+            audioMgr->PlayStreamSource(soundtrackSource);
         }
         break;
     
@@ -987,7 +1000,6 @@ void InGame::InitAudio()
     audioParams.gain = 0.5f;
     audioMgr->SetStreamSourceParams(soundtrackSource, audioParams);
     audioMgr->SetStreamSourceAudio(soundtrackSource, gallery.GetMusicId(MusicID::SPAWN_THEME_ID));
-    audioMgr->PlayStreamSource(soundtrackSource);
 
     // Player source
     playerSource = audioMgr->CreateSource();

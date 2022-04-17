@@ -447,7 +447,7 @@ void InGameGUI::InitTexts()
     logText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
     logText.SetScale(0.75f);
     logText.SetOffset(glm::ivec2{0, -logText.GetSize().y} + glm::ivec2{0, -10});
-    logText.SetIsVisible(true);
+    logText.SetIsVisible(false);
 
 }
 

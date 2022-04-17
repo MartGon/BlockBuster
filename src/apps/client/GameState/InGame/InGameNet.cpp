@@ -155,19 +155,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             auto matchState = ms->state.state;
             // Set server params
             this->match.ApplyState(ms->state);
-
-            if(matchState == Match::StateType::WAITING_FOR_PLAYERS)
-            {
-                inGameGui.countdownText.SetText("Waiting for players");
-                inGameGui.countdownText.SetIsVisible(true);
-            }
-            else if(matchState == Match::StateType::STARTING)
-                inGameGui.countdownText.SetIsVisible(true);
-            else if(matchState == Match::StateType::ON_GOING)
-            {
-                inGameGui.gameTimeText.SetIsVisible(true);
-                inGameGui.EnableScore();
-            }
+            OnEnterMatchState(this->match.GetState());
         }
         break;
 
@@ -328,6 +316,8 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_RESPAWN:
         {
             auto respawn = packet.To<PlayerRespawn>();
+            auto& player = playerTable[respawn->playerId];
+            player.health.hp = Entity::Player::MAX_HEALTH;
 
             if(respawn->playerId == playerId)
             {
