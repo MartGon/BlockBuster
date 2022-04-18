@@ -1,10 +1,29 @@
 #pragma once
 
+#include <rendering/TextureMgr.h>
+
 #include <Camera.h>
 #include <collisions/Collisions.h>
 
 namespace Rendering
 {
+    enum PaintingType
+    {
+        TEXTURE = 1,
+        COLOR,
+    };
+
+    struct Painting
+    {
+        PaintingType type;
+        bool hasAlpha = false;
+        union
+        {
+            glm::vec4 color;
+            TextureID texture;
+        };
+    };
+
     Collisions::Ray ScreenToWorldRay(const Rendering::Camera& camera, glm::vec<2, int> screenPos, glm::vec<2, int> screenSize);
 
     constexpr glm::u8vec4 FloatColorToUint8(glm::vec4 color) {

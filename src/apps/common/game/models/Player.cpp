@@ -8,9 +8,9 @@
 
 using namespace Game::Models;
 
-void Player::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
+void Player::Start(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& billboardShader)
 {
-    InitModel(renderMgr, shader, quadShader);
+    InitModel(renderMgr, shader, billboardShader);
     InitAnimations();
 }
 
@@ -32,13 +32,10 @@ void Player::Draw(const glm::mat4& tMat, uint8_t flags)
     auto wtMat = tMat * wheelsT;
     wheelsModel->Draw(wtMat);
 
-    // Draw arms. Disable culling for muzzle flash quad
-    glDisable(GL_CULL_FACE);
     auto armsT = aTransform.GetTransformMat();
     auto apT = armsPivot.GetTransformMat();
     auto atMat = tMat * bodyT * armsT * apT;
-    armsModel->Draw(atMat, Rendering::RenderMgr::NO_FACE_CULLING);
-    glEnable(GL_CULL_FACE);
+    armsModel->Draw(atMat);
 }
 
 void Player::SetColor(glm::vec4 color)
@@ -71,6 +68,8 @@ void Player::SetFlashesActive(bool active)
 {
     leftFlash->enabled = active;
     rightFlash->enabled = active;
+    leftAltFlash->enabled = active;
+    rightAltFlash->enabled = active;
 }
 
 void Player::SetFacing(float facingAngle)
@@ -81,6 +80,12 @@ void Player::SetFacing(float facingAngle)
 void Player::RotateArms(float pitch)
 {
     aTransform.rotation.x = pitch;
+}
+
+void Player::SetFlagActive(bool active, glm::vec4 color)
+{
+    flagModel->enabled = active;
+    flagModel->painting.color = color;
 }
 
 Animation::Clip* Player::GetIdleAnim()
@@ -103,16 +108,19 @@ Animation::Clip* Player::GetDeathAnim()
     return &death;
 }
 
-void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
+void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& billboardShader)
 {
     // Get model handlers
     bodyModel = renderMgr.CreateModel();
     wheelsModel = renderMgr.CreateModel();
     armsModel = renderMgr.CreateModel();
+    nameBillboard = renderMgr.CreateBillboard();
 
     // Textures
     std::string textureName = "flash.png";
+    std::string altTextureName = "flashAlt.png";
     auto flashTextureId = renderMgr.GetTextureMgr().LoadFromDefaultFolder(textureName);
+    auto altFlashTextureId = renderMgr.GetTextureMgr().LoadFromDefaultFolder(altTextureName);
 
     // Upper Body
     auto bodyT = Math::Transform{glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f}};
@@ -141,6 +149,13 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
     auto headBackSM = Rendering::SubModel{headBackT, painting, slopePtr, &shader};
     id = bodyModel->AddSubModel(std::move(headBackSM));
     bodyIds.push_back(id);
+
+    auto flagT = Math::Transform{glm::vec3{0.0f, 0.615f, 1.5f}, glm::vec3{0.0f, 90.0f, 0.0f}, glm::vec3{1.75f, 1.5f, 1.5f}};
+    painting.color = blue;
+    painting.hasAlpha = true;
+    auto flag = Rendering::SubModel{flagT, painting, quadPtr, &shader, false, Rendering::RenderMgr::NO_FACE_CULLING};
+    id = bodyModel->AddSubModel(std::move(flag));
+    flagModel = bodyModel->GetSubModel(id);
 
     // Wheels
         // Back wheel
@@ -177,10 +192,13 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
     // Weapon
     auto leftId = 0;
     auto rightId = 0;
+    auto altLeftId = 0;
+    auto altRightId = 0;
     for(int i = -1; i < 2; i += 2)
     {
         bool isLeft = i == -1;
         auto fid = isLeft ? &leftId : &rightId;
+        auto altFid = isLeft ? &altLeftId : &altRightId;
 
         auto armT = Math::Transform{glm::vec3{(float)i * 1.375f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.75}};
         painting.type = Rendering::PaintingType::COLOR;
@@ -199,12 +217,19 @@ void Player::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::
         painting.type = Rendering::PaintingType::TEXTURE;
         painting.hasAlpha = true;
         painting.texture = flashTextureId;
-        auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &quadShader, false};
+        auto flashModel = Rendering::SubModel{flashT, painting, quadPtr, &shader, false, Rendering::RenderMgr::NO_FACE_CULLING};
         *fid = armsModel->AddSubModel(std::move(flashModel));
+
+        auto altFlashT = Math::Transform{glm::vec3{(float)i * 1.35f, 0.0f, -4.f}, glm::vec3{0.0f, 90.0f, 0.0f}, glm::vec3{3.0f}};
+        painting.texture = altFlashTextureId;
+        auto altFlashModel = Rendering::SubModel{altFlashT, painting, quadPtr, &shader, false, Rendering::RenderMgr::NO_FACE_CULLING};
+        *altFid = armsModel->AddSubModel(std::move(altFlashModel));
     }
 
     leftFlash = armsModel->GetSubModel(leftId);
     rightFlash = armsModel->GetSubModel(rightId);
+    leftAltFlash = armsModel->GetSubModel(altLeftId);
+    rightAltFlash = armsModel->GetSubModel(altRightId);
 }
 
 void Player::InitAnimations()

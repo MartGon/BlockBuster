@@ -35,6 +35,7 @@ namespace Audio
             glm::vec3 pos = glm::vec3{0.0f};
             glm::vec3 velocity = glm::vec3{0.0f};
             bool looping = false;
+            float relDistance = 8.0f;
         } params;
     };
 
@@ -52,6 +53,8 @@ namespace Audio
     public:
         ~AudioMgr();
 
+
+        static constexpr int NULL_AUDIO_ID = 0;
         static AudioMgr* Get();
 
         void Init();
@@ -78,11 +81,13 @@ namespace Audio
 
             // Static
         ID CreateSource();
-        void SetSourceParams(ID sourceId, glm::vec3 pos, float orientation = 0.0f, bool looping = false, float gain = 1.0f , float pitch = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
+        void SetSourceParams(ID sourceId, glm::vec3 pos, float orientation = 0.0f, bool looping = false, float relDistance = 1.0f, float gain = 1.0f , float pitch = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
         void SetSourceParams(ID sourceId, AudioSource::Params params);
+        void SetSourceTransform(ID sourceId, glm::vec3 pos, float orientation = 0.0f);
         void SetSourceAudio(ID source, ID audioFile);
         std::optional<AudioSource::Params> GetSourceParams(ID srcId);
         void PlaySource(ID srcId);
+        bool IsSourcePlaying(ID source);
 
             // Streamed
         ID CreateStreamSource();
@@ -93,6 +98,8 @@ namespace Audio
 
         // Listener
         void SetListenerParams(glm::vec3 pos, float orientation = 0.0f, float gain = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
+        void SetListenerTransform(glm::vec3 pos, float orientation = 0.0f);
+        void SetListenerGain(float gain);
 
         // Config
         inline void SetEnabled(bool enabled)
@@ -104,7 +111,6 @@ namespace Audio
         {
             return this->enabled;
         }
-
     private:
 
         // Files
@@ -136,7 +142,7 @@ namespace Audio
         template <typename T>
         ID GetFreeId(const std::unordered_map<ID, T>& map)
         {
-            for(ID id = 0; id < std::numeric_limits<ID>::max(); id++)
+            for(ID id = 1; id < std::numeric_limits<ID>::max(); id++)
                 if(map.find(id) == map.end())
                     return id;
 
@@ -156,9 +162,13 @@ namespace Audio
         std::unordered_map<ID, StaticFile> staticFiles;
         std::unordered_map<ID, File> streamedFiles;
 
+        // Listener
+        glm::vec3 pos{0.0f};
+        float orientation = 0.0f;
+        float gain = 1.0f;
+
         // General params
         bool enabled = true;
-        float refDistance = 1.0f;
 
         AudioMgr();
     };

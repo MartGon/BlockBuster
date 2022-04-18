@@ -14,6 +14,7 @@ namespace Animation
     {
         std::unordered_map<std::string, float> floats;
         std::unordered_map<std::string, bool> bools;
+        std::unordered_map<std::string, int> ints;
     };
 
     Sample Interpolate(Sample s1, Sample s2, float alpha);
@@ -42,6 +43,11 @@ namespace Animation
             this->speedMod = 1.0f;
         }
 
+        inline Clip* GetClip()
+        {
+            return this->clip;
+        }
+
         inline void SetTargetFloat(std::string key, float* target)
         {
             fTargets[key] = target;
@@ -50,6 +56,11 @@ namespace Animation
         inline void SetTargetBool(std::string key, bool* target)
         {
             bTargets[key] = target;
+        }
+
+        inline void SetTargetInt(std::string key, int* target)
+        {
+            iTargets[key] = target;
         }
 
         inline void SetOnDoneCallback(std::function<void()> onDone)
@@ -67,6 +78,16 @@ namespace Animation
             timer.Pause();
         }
 
+        inline bool IsPaused()
+        {
+            return timer.IsPaused();
+        }
+
+        inline bool IsDone()
+        {
+            return IsDone(GetCurrentFrame());
+        }
+
         inline void Resume()
         {
             timer.Resume();
@@ -81,7 +102,12 @@ namespace Animation
         {
             isDone = false;
             timer.Reset();
-            timer.Pause();
+        }
+
+        void Restart()
+        {
+            isDone = false;
+            timer.Restart();
         }
         
         void Update(Util::Time::Seconds secs);
@@ -95,7 +121,9 @@ namespace Animation
         bool IsDone(uint32_t curFrame);
         uint32_t GetKeyFrameIndex(uint32_t curFrame) const;
         void ApplySample(Sample s);
+        Sample TakeSample();
 
+        KeyFrame GetClipLastKeyFrame() const;
         uint32_t GetClipLastFrame() const;
         
         bool isDone = false;
@@ -103,8 +131,11 @@ namespace Animation
         Util::Timer timer;
         float speedMod = 1.0f;
 
+        Sample backupSample;
+
         std::function<void()> onDone;
 
+        std::unordered_map<std::string, int*> iTargets;
         std::unordered_map<std::string, float*> fTargets;
         std::unordered_map<std::string, bool*> bTargets;
     };

@@ -24,7 +24,6 @@ namespace BlockBuster::Editor
             UNSAVED_WARNING,
             VIDEO_SETTINGS,
             GO_TO_BLOCK,
-            SET_TEXTURE_FOLDER, // TODO: Remove. No longer needed
             ARE_YOU_SURE,
             MAX
         };

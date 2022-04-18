@@ -24,31 +24,32 @@
 using namespace BlockBuster;
 using namespace ::App::Client;
 
-glm::vec4 teamColors[2] = {
+glm::vec4 InGame::teamColors[3] = {
     glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}, // BLUE
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f}   // RED
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},   // RED
+    Rendering::ColorU8ToFloat(192, 192, 192), // WHITE // GREY
 };
 
-glm::vec4 ffaColors[16] = {
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},  // RED
+glm::vec4 InGame::ffaColors[16] = {
     glm::vec4{0.065f, 0.072f, 0.8f, 1.0f}, // BLUE
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},  // RED
+    Rendering::ColorU8ToFloat(0, 100, 0), // DARK GREEN
+    Rendering::ColorU8ToFloat(255, 215, 0), // GOLD
 
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    Rendering::ColorU8ToFloat(20, 20, 20), // BLACK
+    Rendering::ColorU8ToFloat(192, 192, 192), // WHITE
+    Rendering::ColorU8ToFloat(255, 165, 0), // ORANGE
+    Rendering::ColorU8ToFloat(128, 0, 128), // PURPLE
 
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    Rendering::ColorU8ToFloat(165, 42, 42), // BROWN
+    Rendering::ColorU8ToFloat(0, 255, 0), // LIME
+    Rendering::ColorU8ToFloat(0, 255, 255), // CYAN
+    Rendering::ColorU8ToFloat(255, 20, 147), // PINK
 
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
-    glm::vec4{0.065f, 0.072f, 0.8f, 1.0f},
-    glm::vec4{0.8, 0.072f, 0.065f, 1.0f},
+    Rendering::ColorU8ToFloat(105, 105, 105), // GREY
+    Rendering::ColorU8ToFloat(255, 0, 255), // MAGENTA
+    Rendering::ColorU8ToFloat(188, 143, 143), // ROSY BROWN
+    Rendering::ColorU8ToFloat(127, 255, 212), // AQUA MARINE
 };
 
 InGame::InGame(Client* client, std::string serverDomain, uint16_t serverPort, std::string map, std::string playerUuid, std::string playerName) : 
@@ -79,12 +80,12 @@ void InGame::Start()
     // Shaders
     // Load shaders
     try{
-        shader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "simpleVertex.glsl", "simpleFrag.glsl");
+        renderShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "renderVertex.glsl", "renderFrag.glsl");
         chunkShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "chunkVertex.glsl", "chunkFrag.glsl");
-        quadShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "quadVertex.glsl", "quadFrag.glsl");
+        billboardShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "billboardVertex.glsl", "billboardFrag.glsl");
+        expShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "expVertex.glsl", "expFrag.glsl");
         textShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "textVertex.glsl", "textFrag.glsl");
         imgShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "imgVertex.glsl", "imgFrag.glsl");
-        skyboxShader = GL::Shader::FromFolder(client_->config.openGL.shadersFolder, "skyboxVertex.glsl", "skyboxFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -95,31 +96,20 @@ void InGame::Start()
 
     // Textures
     renderMgr.Start();
-    std::filesystem::path texturesDir = TEXTURES_DIR;
-    GL::Cubemap::TextureMap map = {
-        {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
-        {GL::Cubemap::LEFT, texturesDir / "left.jpg"},
-        {GL::Cubemap::TOP, texturesDir / "top.jpg"},
-        {GL::Cubemap::BOTTOM, texturesDir / "bottom.jpg"},
-        {GL::Cubemap::FRONT, texturesDir / "front.jpg"},
-        {GL::Cubemap::BACK, texturesDir / "back.jpg"},
-    };
-    TRY_LOAD(skybox.Load(map, false));
-    renderMgr.GetTextureMgr().SetDefaultFolder(texturesDir);
-
-    // Meshes
-    cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
-    sphere = Rendering::Primitive::GenerateSphere(1.0f);
-    quad = Rendering::Primitive::GenerateQuad();
-    cube = Rendering::Primitive::GenerateCube();
-    slope = Rendering::Primitive::GenerateSlope();
+    auto& texMgr = renderMgr.GetTextureMgr();
+    texMgr.SetDefaultFolder(client_->texturesDir);
 
     // Models
-    playerAvatar.SetMeshes(quad, cube, cylinder, slope);
-    playerAvatar.Start(renderMgr, shader, quadShader);
+    modelMgr.Start(renderMgr, renderShader, billboardShader);
+    playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
+    playerAvatar.Start(renderMgr, renderShader, billboardShader);
+    fpsAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder);
+    fpsAvatar.Start(renderMgr, renderShader, renderShader);
+    explosionMgr.Start(renderMgr, expShader);
 
-    fpsAvatar.SetMeshes(quad, cube, cylinder);
-    fpsAvatar.Start(renderMgr, shader, quadShader);
+    // UI
+    inGameGui.Start();
+    nameText = inGameGui.pixelFont->CreateText();
 
     // Camera
     auto winSize = client_->GetWindowSize();
@@ -128,43 +118,25 @@ void InGame::Start()
     camController_ = ::App::Client::CameraController{&camera_, {client_->window_, client_->io_}, ::App::Client::CameraMode::EDITOR};
     auto sensitivity = std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
     camController_.rotMod = sensitivity;
-    //camController_.SetMode(::App::Client::CameraMode::FPS);
+    #ifndef _DEBUG
+        camController_.SetMode(::App::Client::CameraMode::FPS);
+    #endif
 
     // Map
     auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
     auto mapFileName = mapName + ".bbm";
-    //LoadMap("/home/seix/Other/Repos/BlockBuster/resources/maps/Alpha2.bbm");
     LoadMap(mapFolder, mapFileName);
+
+    // Gameobjects
+    InitGameObjects();
 
     // Match
     match.SetOnEnterState([this](Match::StateType type){
         this->OnEnterMatchState(type);
     });
 
-    // UI
-    inGameGui.Start();
-
     // Audio
-    audioMgr = audioMgr->Get();
-    audioMgr->Init();
-
-    std::filesystem::path soundTrackPath = "/home/defu/Projects/BlockBuster/resources/audio/Soundtrack.wav";
-    auto [id, err] = audioMgr->LoadStreamedWAVOrNull(soundTrackPath);
-    if(err != Audio::AudioMgr::LoadWAVError::NO_ERR)
-        GetLogger()->LogError("Could not find audio file" + soundTrackPath.string() + ". Err: " + std::to_string(err));
-
-    auto srcId = audioMgr->CreateStreamSource();
-    Audio::AudioSource::Params audioParams;
-    audioMgr->SetStreamSourceParams(srcId, audioParams);
-    audioMgr->SetStreamSourceAudio(srcId, id);
-    audioMgr->PlayStreamSource(srcId);
-
-    // Positional audio needs to be mono. Stereo is pre-computed.
-    std::filesystem::path audioPath = "/home/defu/Projects/BlockBuster/resources/audio/tone.wav";
-    auto [staticId, error] = audioMgr->LoadStaticWAVOrNull(audioPath);
-
-    auto sSource = audioMgr->CreateSource();
-    audioMgr->SetSourceAudio(sSource, staticId);
+    InitAudio();
 
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
@@ -176,9 +148,23 @@ void InGame::Start()
     {
         this->OnRecvPacket(id, channel, std::move(ePacket));
     });
+    host.SetOnDisconnectCallback([this](auto id){
+        if(this->match.GetState() != Match::ENDED && this->match.GetState() != Match::ENDING)
+        {
+            this->Exit();
+            auto menu = this->client_->menu.get();
+            menu->popUp.SetTitle("Connection error");
+            menu->popUp.SetText("Disconnected from Server");
+            menu->popUp.SetCloseable(true);
+            menu->popUp.SetButtonVisible(true);
+            menu->popUp.SetButtonCallback([menu](){
+                menu->popUp.SetButtonVisible(false);
+            });
+        }
+    });
     host.Connect(serverAddress);
 
-    client_->logger->LogInfo("Connecting to server at " + serverAddress.GetHostIP() + ":" + std::to_string(serverAddress.GetPort()));
+    GetLogger()->LogInfo("Connecting to server at " + serverAddress.GetHostIP() + ":" + std::to_string(serverAddress.GetPort()));
     // Connect to server
     auto attempts = 0;
     while(!connected && attempts < 10)
@@ -191,26 +177,32 @@ void InGame::Start()
 
     if(!connected)
     {
-        client_->logger->LogError("Could not connect to server. Quitting");
-        // TODO: Go back to main menu with error pop up Server Browser
+        GetLogger()->LogError("Could not connect to server. Quitting");
     }
 
-    client_->quit = !connected;
+    exit = !connected;
     client_->logger->Flush();
+
+    // Apply options after initialization
+    ApplyGameOptions(gameOptions);
 }
 
 void InGame::Update()
 {
     simulationLag = serverTickRate;
     
-    client_->logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate.count()));
-    while(!client_->quit)
+    GetLogger()->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate.count()));
+    while(!exit)
     {
         preSimulationTime = Util::Time::GetTime();
 
         HandleSDLEvents();
         if(connected)
             RecvServerSnapshots();
+
+        // Handle disconnection
+        if(exit)
+            break;
 
         while(simulationLag >= serverTickRate)
         {
@@ -229,10 +221,12 @@ void InGame::Update()
         deltaTime = (Util::Time::GetTime() - preSimulationTime);
         simulationLag += deltaTime;
         offsetTime += deltaTime;
-        client_->logger->LogInfo("Offset millis increased to " + std::to_string(offsetTime.count()));
-        client_->logger->LogInfo("Update: Delta time " + std::to_string(deltaTime.count()));
-        client_->logger->LogInfo("Update: Simulation lag " + std::to_string(simulationLag.count()));
+        GetLogger()->LogDebug("Offset millis increased to " + std::to_string(offsetTime.count()));
+        GetLogger()->LogDebug("Update: Delta time " + std::to_string(deltaTime.count()));
+        GetLogger()->LogDebug("Update: Simulation lag " + std::to_string(simulationLag.count()));
     }
+
+    ReturnToMainMenu();
 }
 
 void InGame::Shutdown()
@@ -253,16 +247,166 @@ void InGame::DoUpdate(Util::Time::Seconds deltaTime)
 {
     // Extra data: Respawns, etc
     respawnTimer.Update(deltaTime);
-    match.Update(GetLogger(), deltaTime);
+    match.Update(GetWorld(), deltaTime);
+    if(match.GetState() == Match::ON_GOING)
+        UpdateGameMode();
+
+    // Check for gameObjects use range
+    bool enabled = false;
+    auto pPos = GetLocalPlayer().GetRenderTransform().position;
+    for(auto [goPos, state] : gameObjectStates)
+    {
+        auto rPos = Game::Map::ToRealPos(goPos, map_.GetBlockScale());
+        if(state.isActive && Collisions::IsPointInSphere(pPos, rPos, Entity::GameObject::ACTION_AREA))
+        {
+            auto go = map_.GetMap()->GetGameObject(goPos);
+            inGameGui.EnableActionText(*go);
+            enabled = true;
+            break;
+        }
+    }
+    if(!enabled)
+        inGameGui.DisableActionText();
 }
 
 void InGame::OnEnterMatchState(Match::StateType type)
 {
+    auto mode = match.GetGameMode();
     switch (type)
     {
+    case Match::StateType::WAITING_FOR_PLAYERS:
+        {
+            inGameGui.countdownText.SetText("Waiting for players");
+            inGameGui.countdownText.SetIsVisible(true);
+        }
+        break;
+
+    case Match::StateType::STARTING:
+        {
+            auto sound = Game::Sound::ANNOUNCER_SOUND_MODE_FFA;
+            if(mode->GetType() == GameMode::Type::CAPTURE_THE_FLAG)
+                sound = Game::Sound::ANNOUNCER_SOUND_MODE_CAPTURE_THE_FLAG;
+            else if(mode->GetType() == GameMode::Type::DOMINATION)
+                sound = Game::Sound::ANNOUNCER_SOUND_MODE_DOMINATION;
+            else if(mode->GetType() == GameMode::Type::TEAM_DEATHMATCH)
+                sound = Game::Sound::ANNOUNCER_SOUND_MODE_TEAM_DEATHMATCH;
+
+            audioMgr->PlayStreamSource(soundtrackSource);
+            PlayAnnouncerAudio(sound);
+
+            // GUI
+            inGameGui.countdownText.SetIsVisible(true);
+        }
+        break;
     case Match::StateType::ON_GOING:
-        inGameGui.countdownText.SetIsVisible(false);
-        inGameGui.gameTimeText.SetIsVisible(true);
+        {
+            inGameGui.countdownText.SetIsVisible(false);
+            inGameGui.gameTimeText.SetIsVisible(true);
+            inGameGui.EnableScore();
+
+            audioMgr->PlayStreamSource(soundtrackSource);
+        }
+        break;
+    
+    case Match::StateType::ENDING:
+        {
+            inGameGui.EnableWinnerText(true);
+
+            auto scoreBoard = mode->GetScoreboard();
+            auto winner = scoreBoard.GetWinner().value();
+            if(mode->GetType() != GameMode::Type::FREE_FOR_ALL)
+            {
+                auto sound = winner.teamId == BLUE_TEAM_ID ? Game::Sound::ANNOUNCER_SOUND_BLUE_TEAM_WINS : Game::Sound::ANNOUNCER_SOUND_RED_TEAM_WINS;
+                PlayAnnouncerAudio(sound);
+            }
+
+            predictionHistory_.Clear();
+        }
+        break;
+
+    case Match::StateType::ENDED:
+        inGameGui.EnableWinnerText(false);
+        client_->SetMouseGrab(false);
+        break;
+
+    default:
+        break;
+    }
+}
+
+void InGame::UpdateGameMode()
+{
+    auto mode = match.GetGameMode();
+    mode->WipeEvents();
+    auto map = map_.GetMap();
+
+    switch (mode->GetType())
+    {
+    case GameMode::Type::DOMINATION:
+        {
+            auto domination = static_cast<Domination*>(mode);
+            auto& player = GetLocalPlayer();
+            auto world = GetWorld();
+            
+            bool wasInArea = false;
+            for(auto& [pos, point] : domination->pointsState)
+            {
+                if(domination->IsPlayerInPointArea(world, &player, pos))
+                {
+                    inGameGui.EnableCapturingText(true);
+                    auto percent = point.GetCapturePercent();
+
+                    if(point.capturedBy == player.teamId)
+                    {
+                        percent = 100.0f;
+                        inGameGui.capturingText.SetText("CAPTURED");
+                    }
+                    else
+                        inGameGui.capturingText.SetText("CAPTURING");
+
+                    inGameGui.SetCapturePercent(percent);
+
+                    wasInArea = true;
+                }
+            }
+
+            if(!wasInArea)
+                inGameGui.EnableCapturingText(false);
+        }
+        break;
+
+     case GameMode::Type::CAPTURE_THE_FLAG:
+        {
+            auto captureFlag = static_cast<CaptureFlag*>(mode);
+            auto& player = GetLocalPlayer();
+            auto world = GetWorld();
+            
+            bool wasInArea = false;
+            bool isCarrying = false;
+            for(auto& [flagId, flag] : captureFlag->flags)
+            {
+                bool friendlyFlag = flag.teamId == player.teamId;
+                bool inArea = captureFlag->IsPlayerInFlagArea(world, &player, flag.pos, captureFlag->recoverArea);
+                bool dropped = !captureFlag->IsFlagInOrigin(flag) && !flag.carriedBy.has_value();
+                if(friendlyFlag && dropped && inArea)
+                {
+                    inGameGui.EnableCapturingText(true);
+                    auto percent = flag.GetRecoverPercent();
+                    inGameGui.capturingText.SetText("RECOVERING");
+                    inGameGui.SetCapturePercent(percent);
+
+                    wasInArea = true;
+                }
+
+                if(flag.carriedBy.has_value() && flag.carriedBy.value() == player.teamId)
+                    isCarrying = true;
+            }
+
+            if(!wasInArea)
+                inGameGui.EnableCapturingText(false);
+
+            inGameGui.flagIconImg.SetIsVisible(isCarrying);
+        }
         break;
     
     default:
@@ -277,6 +421,10 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
 
     auto& player = GetLocalPlayer();
 
+    // Update shield
+    if(!player.IsDead())
+        player.health = pController.UpdateShield(player.health, player.dmgTimer, deltaTime);
+
     // Set camera in player
     auto camMode = camController_.GetMode();
     if(camMode == CameraMode::FPS)
@@ -287,15 +435,6 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     else
         camController_.Update();
 
-    // Rellocate camera
-    if(player.IsDead() && Util::Map::Contains(playerTable, killerId))
-    {
-        // Look to killer during death
-        auto& killer = playerTable[killerId];
-        auto pos = killer.GetRenderTransform().position;
-        camera_.SetTarget(pos);
-    }
-
     // Update animations
     fpsAvatar.Update(deltaTime);
     for(auto& [playerId, playerState] : playerModelStateTable)
@@ -303,7 +442,55 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
         playerState.deathPlayer.Update(deltaTime);
         playerState.shootPlayer.Update(deltaTime);
     }
+    explosionMgr.Update(deltaTime);
+
+    // Update camera
+    if(auto lastPred = predictionHistory_.Back())
+        UpdateCamera(lastPred->inputReq.playerInput);
+
+    // Rellocate camera
+    if(player.IsDead() && Util::Map::Contains(playerTable, killerId) && killerId != playerId)
+    {
+        // Look to killer during death
+        auto& killer = playerTable[killerId];
+        auto pos = killer.GetRenderTransform().position;
+        camera_.SetTarget(pos);
+    }
+
+    // AUDIO
+
+    // Update announcer pos
+    auto pPos = player.GetRenderTransform().position;
+    audioMgr->SetSourceTransform(announcerSource, pPos);
+
+    // Update player source pos
+    audioMgr->SetSourceTransform(playerSource, pPos);
+    audioMgr->SetSourceTransform(playerReloadSource, pPos);
+    
+    // Update players source Pos
+    for(auto& [id, ed] : playersExtraData)
+    {
+        auto pPos = playerTable[id].GetRenderTransform().position;
+        audioMgr->SetSourceTransform(ed.dmgSourceId, pPos);
+        audioMgr->SetSourceTransform(ed.shootSourceId, pPos);
+    }
 }
+
+// Exit
+
+void InGame::ReturnToMainMenu()
+{
+    auto onGoing = match.GetState() != Match::StateType::ENDED;
+    client_->GoBackToMainMenu(onGoing);
+}
+
+void InGame::Exit()
+{
+    exit = true;
+    client_->SetMouseGrab(false);
+}
+
+// Input
 
 void InGame::HandleSDLEvents()
 {
@@ -316,17 +503,18 @@ void InGame::HandleSDLEvents()
         switch(e.type)
         {
         case SDL_QUIT:
+            Exit();
             client_->quit = true;
             break;
         case SDL_KEYDOWN:
-            if(e.key.keysym.sym == SDLK_f)
-                drawMode = drawMode == GL_FILL ? GL_LINE : GL_FILL;
             if(e.key.keysym.sym == SDLK_p)
             {
                 using namespace ::App::Client;
                 auto mode = this->camController_.GetMode();
                 auto nextMode = mode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
-                this->camController_.SetMode(nextMode);
+                #ifdef _DEBUG
+                    this->camController_.SetMode(nextMode);
+                #endif
             }
             if(e.key.keysym.sym == SDLK_ESCAPE)
             {
@@ -338,14 +526,12 @@ void InGame::HandleSDLEvents()
             if(e.key.keysym.sym == SDLK_TAB)
             {
                 inGameGui.showScoreboard = true;
-                inGameGui.crosshairImg.SetIsVisible(false);
             }
             break;
         case SDL_KEYUP:
             if(e.key.keysym.sym == SDLK_TAB)
             {
                 inGameGui.showScoreboard = false;
-                inGameGui.crosshairImg.SetIsVisible(true);
             }
         case SDL_MOUSEBUTTONDOWN:
             {
@@ -353,637 +539,135 @@ void InGame::HandleSDLEvents()
             break;
         }
         
-        if(!inGameGui.IsMenuOpen())
+        bool hasNotEnded = match.GetState() != Match::StateType::ENDED && match.GetState() != Match::StateType::ENDING;
+        if(!inGameGui.IsMenuOpen() && hasNotEnded)
             camController_.HandleSDLEvent(e);
     }
 }
 
-// Handy
+void InGame::UpdateCamera(Entity::PlayerInput input)
+{
+    // Zoom
+    auto& player = GetLocalPlayer();
+    auto weapon = player.GetCurrentWeapon();
+    auto canZoom = weapon.state == Entity::Weapon::State::IDLE || weapon.state == Entity::Weapon::State::SHOOTING;
+
+    auto offset = (float)deltaTime.count() * zoomSpeed;
+    if(input[Entity::Inputs::ALT_SHOOT] && canZoom)
+        zoomMod = std::min(zoomMod + offset, 1.0f);
+    else
+        zoomMod = std::max(zoomMod - offset, 0.0f);
+
+    auto wepType = Entity::WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
+    auto zoom = 1.0f + (wepType.zoomLevel - 1.0f) * zoomMod;
+    camera_.SetZoom(zoom);
+}
+
+void InGame::WeaponRecoil()
+{
+    auto camRot = camera_.GetRotationDeg();
+    auto sideRecoil = Util::Random::Normal(0.0f, 1.0f);
+    auto strength = Entity::WeaponMgr::weaponTypes.at(GetLocalPlayer().GetCurrentWeapon().weaponTypeId).recoil;
+    auto recoil = glm::vec2{-1.0f, sideRecoil} * strength;
+    auto newRot = camRot + recoil;
+
+    camera_.SetRotationDeg(newRot.x, newRot.y);
+}
+
+// World
+
+void InGame::InitGameObjects()
+{
+    auto map = map_.GetMap();
+    auto criteria = [this](glm::ivec3 pos, Entity::GameObject& go)
+    {
+        return go.IsInteractable();
+    };
+    auto goIndices = map->FindGameObjectByCriteria(criteria);
+    for(auto goIndex : goIndices)
+    {
+        gameObjectStates[goIndex] = Entity::GameObject::State{true};
+    }
+}
 
 Entity::Player& InGame::GetLocalPlayer()
 {
     return playerTable[playerId];
 }
 
-// Networking
-
-void InGame::OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::PlayerSnapshot playerState)
+Entity::ID InGame::GetPlayerTeam(Entity::ID playerId)
 {
-    Entity::Player player;
-    player.id = playerId;
-    player.teamId = teamId;
-    player.ApplyState(playerState.ToPlayerState(player.ExtractState()));
+    Entity::ID teamId = 0;
+    auto scoreBoard = match.GetGameMode()->GetScoreboard();
+    if(auto score = scoreBoard.GetPlayerScore(playerId))
+        teamId = score->teamId;
 
-    playerTable[playerId] = player;
-    prevPlayerTable[playerId] = player;
-
-    // Setup player animator
-    playerModelStateTable[playerId] = PlayerModelState();
-    PlayerModelState& ps = playerModelStateTable[playerId];
-
-    ps.deathPlayer.SetClip(playerAvatar.GetDeathAnim());
-    ps.deathPlayer.SetTargetFloat("scale", &ps.gScale);
-
-    ps.shootPlayer.SetClip(playerAvatar.GetShootAnim());
-    ps.shootPlayer.SetTargetFloat("zPos", &ps.armsPivot.position.z);
-    ps.shootPlayer.SetTargetBool("left-flash", &ps.leftFlashActive);
-    ps.shootPlayer.SetTargetBool("right-flash", &ps.rightFlashActive);
-
-    ps.shootPlayer.SetTargetFloat("yPos", &ps.armsPivot.position.y);
-    ps.shootPlayer.SetTargetFloat("pitch", &ps.armsPivot.rotation.x);
+    return teamId;
 }
 
-void InGame::OnPlayerLeave(Entity::ID playerId)
+void InGame::OnGrenadeExplode(Entity::Projectile& grenade)
 {
-    playerTable.erase(playerId);
-    prevPlayerTable.erase(playerId);
-    playerModelStateTable.erase(playerId);
+    auto pos = grenade.GetPos();
+    explosionMgr.CreateExplosion(pos);
+
+    // Play sound effect
+    auto source = grenadeSources.Get();
+    audioMgr->SetSourceTransform(source, pos);
+    audioMgr->PlaySource(source);
 }
 
-void InGame::OnConnectToServer(ENet::PeerId id)
-{
-    this->serverId = id;
-    this->client_->logger->LogInfo("Succes on connection to server");
-
-    // Send login packet
-    auto packet = std::make_unique<Networking::Packets::Client::Login>();
-    packet->playerUuid = this->playerUuid;
-    packet->playerName = this->playerName;
-    packet->Write();
-    auto buffer = packet->GetBuffer();
-    ENet::SentPacket sentPacket{buffer->GetData(), buffer->GetSize(), ENET_PACKET_FLAG_RELIABLE};
-    host.SendPacket(serverId, 0, sentPacket);
-}
-
-void InGame::OnRecvPacket(ENet::PeerId id, uint8_t channelId, ENet::RecvPacket recvPacket)
-{
-    Util::Buffer::Reader reader{recvPacket.GetData(), recvPacket.GetSize()};
-    Util::Buffer buffer = reader.ReadAll();
-    
-    auto packet = Networking::MakePacket<Networking::PacketType::Server>(std::move(buffer));
-    if(packet)
-    {
-        packet->Read();
-        OnRecvPacket(*packet);
-    }
-    else
-        GetLogger()->LogError("Invalid packet recv from server");
-}
-
-void InGame::OnRecvPacket(Networking::Packet& packet)
-{
-    using namespace Networking::Packets::Server;
-
-    switch (packet.GetOpcode())
-    {
-        case Networking::OpcodeServer::OPCODE_SERVER_BATCH:
-        {
-            auto batch = packet.To<Networking::Batch<Networking::PacketType::Server>>();
-            for(auto i = 0; i < batch->GetPacketCount(); i++)
-                OnRecvPacket(*batch->GetPacket(i));
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_WELCOME:
-        {
-            auto welcome = packet.To<Welcome>();
-            client_->logger->LogInfo("Server tick rate is " + std::to_string(welcome->tickRate));
-
-            // Set server params
-            this->serverTickRate = Util::Time::Seconds(welcome->tickRate);
-            this->offsetTime = serverTickRate * 0.5;
-            this->playerId = welcome->playerId;
-            this->connected = true;
-
-            // Set player state
-            Entity::Player player;
-            player.id = this->playerId;
-            player.teamId = welcome->teamId;
-            GetLogger()->LogInfo("We play as player " + std::to_string(this->playerId));
-
-            // Add to table
-            playerTable[playerId] = player;
-            prevPlayerTable[playerId] = player;
-
-            this->match.Start(welcome->mode);
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_MATCH_STATE:
-        {
-            auto ms = packet.To<MatchState>();
-            auto matchState = ms->state.state;
-            if(matchState == Match::StateType::WAITING_FOR_PLAYERS)
-                inGameGui.countdownText.SetIsVisible(true);
-
-            // Set server params
-            this->match.ApplyState(ms->state);
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_SNAPSHOT:
-        {
-            auto snapShot = packet.To<WorldUpdate>();
-            client_->logger->LogInfo("Recv server snapshot for tick: " + std::to_string(snapShot->snapShot.serverTick));
-
-            // Entity Interpolation - Reset offset
-            auto mostRecent = snapshotHistory.Back();
-            if(mostRecent.has_value() && snapShot->snapShot.serverTick > mostRecent->serverTick)
-            {
-                auto om = this->offsetTime - this->serverTickRate;
-                this->offsetTime = std::min(serverTickRate, std::max(om, -serverTickRate));
-                client_->logger->LogInfo("Offset millis " + std::to_string(this->offsetTime.count()));
-            }
-            
-            // Store snapshot
-            auto s = snapShot->snapShot;           
-            snapshotHistory.PushBack(s);
-
-            // Sort by tick. This is only needed if a packet arrives late.
-            snapshotHistory.Sort([](Networking::Snapshot a, Networking::Snapshot b)
-            {
-                return a.serverTick < b.serverTick;
-            });
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_JOINED:
-        {
-            auto pd = packet.To<PlayerJoined>();
-            OnPlayerJoin(pd->playerId, pd->teamId, pd->playerSnapshot);
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_DISCONNECTED:
-        {
-            auto pd = packet.To<PlayerDisconnected>();
-            OnPlayerLeave(pd->playerId);
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_INPUT_ACK:
-        {
-            auto pi = packet.To<PlayerInputACK>();
-
-            // Update last ack
-            this->lastAck = pi->lastCmd;
-            localPlayerStateHistory.PushBack(pi->playerState);
-            client_->logger->LogInfo("Server ack command: " + std::to_string(this->lastAck));
-            //client_->logger->LogError("Player new pos " + glm::to_string(pi->playerState.transform.pos));
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_TAKE_DMG:
-        {
-            auto ptd = packet.To<PlayerTakeDmg>();
-            client_->logger->LogInfo("Player took dmg!");
-
-            auto& player = GetLocalPlayer();
-            player.health = ptd->healthState;
-
-            inGameGui.PlayDmgAnim();
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_HIT_CONFIRM:
-        {
-            auto ptd = packet.To<PlayerHitConfirm>();
-            client_->logger->LogInfo("Enemy player was hit!");
-
-            inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::DMG);
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_DIED:
-        {
-            auto ptd = packet.To<PlayerDied>();
-
-            if(ptd->victimId == playerId)
-            {   
-                // Set player dead
-                auto& player = GetLocalPlayer();
-                player.health.hp = 0;
-
-                fpsAvatar.isEnabled = false;
-                inGameGui.crosshairImg.SetIsVisible(false);
-
-                inGameGui.killText.SetIsVisible(true);
-                inGameGui.respawnTimeText.SetIsVisible(true);
-
-                // Clear prediction history. No prediction is useful
-                predictionHistory_.Clear();
-
-                respawnTimer.SetDuration(ptd->respawnTime);
-                respawnTimer.Start();
-
-                // Set killer
-                killerId = ptd->killerId;
-            }
-            else
-            {
-                playerModelStateTable[ptd->victimId].deathPlayer.Reset();
-                playerModelStateTable[ptd->victimId].deathPlayer.Play();
-            }
-
-            if(ptd->killerId == playerId)
-                inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::KILL);
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_RESPAWN:
-        {
-            auto respawn = packet.To<PlayerRespawn>();
-
-            if(respawn->playerId == playerId)
-            {
-                localPlayerStateHistory.PushBack(respawn->playerState);
-                GetLocalPlayer().ApplyState(respawn->playerState);
-                GetLocalPlayer().ResetHealth();
-
-                // Set spawn camera rotation
-                auto camRot = camera_.GetRotationDeg();
-                camera_.SetRotationDeg(90.0f, respawn->playerState.transform.rot.y + 90.0f);
-
-                // On Player respawn
-                fpsAvatar.isEnabled = true;
-                inGameGui.crosshairImg.SetIsVisible(true);
-
-                inGameGui.killText.SetIsVisible(false);
-                inGameGui.respawnTimeText.SetIsVisible(false);
-            }
-            else
-            {
-                // Reset scale after death animation
-                playerModelStateTable[respawn->playerId].gScale = 1.0f;
-                if(Util::Map::Contains(playerTable, respawn->playerId))
-                    playerTable[respawn->playerId].ApplyState(respawn->playerState);
-            }
-        }
-        break;
-
-        case Networking::OpcodeServer::OPCODE_SERVER_SCOREBOARD_REPORT:
-        {
-            auto sr = packet.To<ScoreboardReport>();
-            match.GetGameMode()->SetScoreboard(sr->scoreboard);
-        }
-        break;
-
-        default:
-            break;
-    }
-}
-
-void InGame::RecvServerSnapshots()
-{
-    host.PollAllEvents();
-}
-
-void InGame::UpdateNetworking()
+void InGame::OnLocalPlayerShot()
 {
     auto& player = GetLocalPlayer();
-    bool sendInputs = !player.IsDead() && match.GetState() == Match::ON_GOING;
-    if(sendInputs)
+    auto& weapon = player.GetCurrentWeapon();
+    
+    auto audioId = gallery.GetWepSoundID(weapon.weaponTypeId);
+    audioMgr->SetSourceAudio(playerSource, audioId);
+    audioMgr->SetSourceTransform(playerSource, player.GetRenderTransform().position);
+    audioMgr->PlaySource(playerSource);
+
+    auto projViewMat = camera_.GetProjViewMat();
+    Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
+    auto collision = Game::CastRayFirst(map_.GetMap(), ray, map_.GetBlockScale());
+    if(collision.intersection.intersects && collision.block->type != Game::SLOPE)
     {
-        // Sample player input
-        auto mask = inGameGui.IsMenuOpen() ? Entity::PlayerInput{false} : Entity::PlayerInput{true};
-        auto input = Input::GetPlayerInput(mask);
+        auto colPoint = collision.intersection.colPoint;
+        auto normal = collision.intersection.normal;
 
-        // Prediction
-        Predict(input);
-        SendPlayerInput();
+        auto up = Rendering::Camera::UP;        
+        if(abs(normal.y) == 1.0f)
+            up = glm::vec3{0.0f, 0.0f, 1.0f};
 
-        // Update last cmdId
-        this->cmdId++;
-    }
-}
-
-void InGame::SendPlayerInput()
-{
-    // Build batched player input batch
-    auto cmdId = this->cmdId;
-    Networking::Batch<Networking::PacketType::Client> batch;
-
-    auto historySize = predictionHistory_.GetSize();
-    auto redundancy = std::min(redundantInputs, historySize);
-    auto amount = redundancy + 1u;
-
-    // Write inputs
-    for(int i = 0; i < amount; i++)
-    {
-        auto oldCmd = predictionHistory_.At((historySize - (1 + i)));
-
-        using InputPacket = Networking::Packets::Client::Input;
-        auto inputPacket = std::make_unique<InputPacket>();
-        
-        inputPacket->req = oldCmd->inputReq;
-
-        batch.PushPacket(std::move(inputPacket));
+        auto orientation = glm::lookAt(glm::vec3{0.0f}, normal, up);
+        auto translate = glm::translate(glm::mat4{1.0f}, colPoint + (normal * 0.05f));
+        auto mat = translate * orientation;
+        decalTransforms.PushBack(mat);
     }
 
-    // Send them
-    batch.Write();
-    auto batchBuffer = batch.GetBuffer();
-    ENet::SentPacket sentPacket{batchBuffer->GetData(), batchBuffer->GetSize(), 0};
-    host.SendPacket(serverId, 0, sentPacket);
+    fpsAvatar.PlayShootAnimation(); 
+    WeaponRecoil();
 }
 
-// Networking Prediction
-
-void InGame::Predict(Entity::PlayerInput playerInput)
-{
-    if(playerTable.find(playerId) == playerTable.end())
-        return;
-
-    auto& player = GetLocalPlayer();
-
-    // Check prediction errors
-    if(!predictionHistory_.Empty() && predictionHistory_.Front()->inputReq.reqId <= this->lastAck)
-    {
-        // Discard old commands
-        std::optional<Prediction> prediction;
-        GetLogger()->LogDebug("Prediction: Last ACK " + std::to_string(this->lastAck));
-        do
-        {
-            prediction = predictionHistory_.PopFront();
-            GetLogger()->LogDebug("Prediction: Discarding prediction for " + std::to_string(prediction->inputReq.reqId));
-        } while(prediction && prediction->inputReq.reqId < lastAck);
-
-        // Checking prediction errors
-        auto lastState = localPlayerStateHistory.Back();
-        if(prediction && lastState.has_value())
-        {
-            auto newState = lastState.value();
-            auto pState = prediction->dest;
-
-            /*
-            GetLogger()->LogError("New state pos " + glm::to_string(newState.transform.pos));
-            GetLogger()->LogError("Predicted state pos " + glm::to_string(pState.transform.pos));
-            GetLogger()->LogError("Render pos " + glm::to_string(playerTable[playerId].GetRenderTransform().position));
-            GetLogger()->LogError("Error correction offset " + glm::to_string(errorCorrectionDiff.pos));
-            */
-
-            // On error
-            auto areSame = newState == pState;
-            if(!areSame)
-            {
-                client_->logger->LogError("Prediction: Error on prediction");
-                client_->logger->LogError("Prediction: Prediction Id " + std::to_string(prediction->inputReq.reqId) + " ACK " + std::to_string(this->lastAck));
-                auto diff = glm::length(pState.transform.pos - newState.transform.pos);
-                if(diff > 0.005f)
-                    client_->logger->LogError("Prediction: D " + std::to_string(diff) + 
-                        " P " + glm::to_string(pState.transform.pos) + " S " + glm::to_string(newState.transform.pos));
-
-                // Accept player pos
-                auto realState = newState;
-
-                // Run prev commands again
-                for(auto i = 0; i < predictionHistory_.GetSize(); i++)
-                {
-                    auto predict = predictionHistory_.At(i);
-                    GetLogger()->LogDebug("Prediction: Repeting prediction for " + std::to_string(predict->inputReq.reqId));
-
-                    // Re-calculate prediction
-                    auto origin = realState;
-                    realState = PredPlayerState(origin, predict->inputReq.playerInput, predict->inputReq.camYaw, serverTickRate);
-                    GetLogger()->LogDebug("Prediction: Predicted pos is " + glm::to_string(predict->dest.transform.pos));
-
-                    // Update history
-                    predict->origin = origin;
-                    predict->dest = realState;
-                    predictionHistory_.Set(i, predict.value());
-                }
-
-                // Update error correction values
-                auto renderState = GetLocalPlayer().ExtractState();
-                errorCorrectionDiff = renderState.transform - realState.transform;
-                errorCorrectionStart = Util::Time::GetTime();
-            }
-        }
-    }
-
-    // Get prev pos
-    auto preState = localPlayerStateHistory.Back().value();
-    auto prevPred = predictionHistory_.Back();
-    if(prevPred.has_value())
-        preState = prevPred->dest;
-
-    // Run predicted command for this simulation
-    auto camRot = camera_.GetRotationDeg();
-    auto predState = PredPlayerState(preState, playerInput, camRot.y, serverTickRate);
-    predState.transform.rot.x = camRot.x;
-    auto fov = camera_.GetParam(Rendering::Camera::FOV);
-    auto aspectRatio = camera_.GetParam(Rendering::Camera::ASPECT_RATIO);
-    InputReq inputReq{cmdId, playerInput, camRot.y, camRot.x, fov, aspectRatio, GetRenderTime()};
-
-    auto now = Util::Time::GetTime();
-    Prediction p{inputReq, preState, predState, now};
-    predictionHistory_.PushBack(p);
-}
-
-void InGame::SmoothPlayerMovement()
-{
-    if(playerTable.find(playerId) == playerTable.end())
-        return;
-
-    auto& player = GetLocalPlayer();
-
-    if(player.IsDead())
-        return;
-
-    auto lastPred = predictionHistory_.Back();
-    if(lastPred)
-    {
-        auto now = Util::Time::GetTime();
-        Util::Time::Seconds elapsed = now - lastPred->time;
-        auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
-
-        // Prediction Error correction
-        Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
-        float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
-        auto errorCorrection = errorCorrectionDiff * weight;
-        predState.transform = predState.transform + errorCorrection;
-        player.ApplyState(predState);
-
-        #ifdef _DEBUG
-            auto dist = glm::length(errorCorrection.pos);
-            if(dist > 0.005)
-                client_->logger->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
-        #endif
-    }
-}
-
-Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::PlayerInput playerInput, float playerYaw, Util::Time::Seconds deltaTime)
+void InGame::OnLocalPlayerReload()
 {
     auto& player = GetLocalPlayer();
-    
-    Entity::PlayerState nextState = a;
-    nextState.transform.pos = pController.UpdatePosition(a.transform.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
-    nextState.transform.rot.y = playerYaw;
-
-    nextState.weaponState = pController.UpdateWeapon(a.weaponState, playerInput, deltaTime);
-
-    // Animation
-    if(Entity::HasShot(a.weaponState.state, nextState.weaponState.state))
-        fpsAvatar.PlayShootAnimation();
-    else if(Entity::HasReloaded(a.weaponState.state, nextState.weaponState.state))
-        fpsAvatar.PlayReloadAnimation(nextState.weaponState.cooldown);
-
-    return nextState;
+    auto weapon = player.GetCurrentWeapon();
+    auto audioId = gallery.GetWepReloadSoundId(weapon.weaponTypeId);
+    audioMgr->SetSourceAudio(playerReloadSource, audioId);
+    audioMgr->PlaySource(playerReloadSource);
 }
 
-// Networking Entity Interpolation
-
-Util::Time::Seconds InGame::TickToTime(uint32_t tick)
+World InGame::GetWorld()
 {
-    return tick * this->serverTickRate;
-}
+    World world;
 
-Util::Time::Seconds InGame::GetCurrentTime()
-{
-    auto maxTick = snapshotHistory.Back()->serverTick;
-    auto base = TickToTime(maxTick);
+    world.map = map_.GetMap();
+    for(auto& [pid, player] : playerTable)
+        world.players[pid] = &player;
 
-    return base + this->offsetTime;
-}
+    world.logger = GetLogger();
 
-Util::Time::Seconds InGame::GetRenderTime()
-{
-    auto clientTime = GetCurrentTime();
-    auto windowSize = 2.0 * this->serverTickRate;
-    auto renderTime = clientTime - windowSize;
-    
-    return renderTime;
-}
-
-void InGame::EntityInterpolation()
-{
-    if(snapshotHistory.GetSize() < 2)
-        return;
-
-    // Calculate render time
-    auto clientTime = GetCurrentTime();
-    auto renderTime = GetRenderTime();
-
-    // Get last snapshot before renderTime
-    auto s1p = snapshotHistory.FindRevFirstPair([this, renderTime](auto i, auto s)
-    {
-        auto time = TickToTime(s.serverTick);
-        return time < renderTime;
-    });
-    
-    if(s1p.has_value())
-    {
-        auto s2o = snapshotHistory.At(s1p->first + 1);
-        if(s2o.has_value())
-        {
-            // Find samples to use for interpolation
-            // Sample 1: Last one before current render time
-            // Sample 2: First one after current render time
-            auto s1 = s1p->second;
-            auto s2 = s2o.value();
-
-            // Find weights
-            auto t1 = TickToTime(s1.serverTick);
-            auto t2 = TickToTime(s2.serverTick);
-            auto ws = Math::GetWeights(t1.count(), t2.count(), renderTime.count());
-            auto w1 = ws.x; auto w2 = ws.y;
-
-            client_->logger->LogDebug("Tick 1 " + std::to_string(s1.serverTick) + " Tick 2 " + std::to_string(s2.serverTick));
-            client_->logger->LogDebug("RT " + std::to_string(renderTime.count()) + " CT " + std::to_string(clientTime.count()) + " OT " + std::to_string(offsetTime.count()));
-            client_->logger->LogDebug("T1 " + std::to_string(t1.count()) + " T2 " + std::to_string(t2.count()));
-            client_->logger->LogDebug("W1 " + std::to_string(w1) + " W2 " + std::to_string(w2));
-
-            for(auto pair : playerTable)
-            { 
-                auto playerId = pair.first;
-                if(playerId == this->playerId)
-                    continue;
-
-                bool s1HasData = s1.players.find(pair.first) != s1.players.end();
-                bool s2HasData = s2.players.find(pair.first) != s2.players.end();
-                bool canInterpolate = s1HasData && s2HasData;
-
-                if(canInterpolate)
-                    EntityInterpolation(playerId, s1, s2, w1);
-            }
-        }
-        // We don't have enough data. We need to extrapolate
-        else
-        {
-            // Get prev snapshot with player data
-            auto prev = snapshotHistory.At(s1p->first - 1);
-
-            if(prev.has_value())
-            {
-                auto s0 = prev.value();
-                auto s1 = s1p.value().second;
-
-                Networking::Snapshot exS;
-                exS.serverTick = s1.serverTick + 1;
-
-                for(auto pair : playerTable)
-                {
-                    auto playerId = pair.first;
-                    if(playerId == this->playerId)
-                        continue;
-
-                    // Extrapolate player pos
-                    /*
-                    auto s0Pos = s0.players[playerId].pos;
-                    auto s1Pos = s1.players[playerId].pos;
-                    auto offset = s1Pos - s0Pos;
-                    auto s2Pos = PredPlayerState(s1Pos, offset, EXTRAPOLATION_DURATION);
-                    exS.players[playerId].pos = s2Pos;
-
-                    // Interpolate
-                    auto t1 = TickToTime(s1.serverTick);
-                    auto t2 = TickToTime(s1.serverTick) + EXTRAPOLATION_DURATION;
-                    auto ws = Math::GetWeights(t1.count(), t2.count(), renderTime.count());
-                    auto alpha = ws.x;
-                    EntityInterpolation(playerId, s1, exS, alpha);
-                    */
-                }
-            }
-        }
-    }
-}
-
-void InGame::EntityInterpolation(Entity::ID playerId, const Networking::Snapshot& s1, const Networking::Snapshot& s2, float alpha)
-{
-    auto state1 = s1.players.at(playerId);
-    auto state2 = s2.players.at(playerId);
-
-    auto& player = playerTable[playerId];
-    auto oldState = player.ExtractState();
-    auto interpolation = Networking::PlayerSnapshot::Interpolate(state1, state2, alpha);
-
-    if(Entity::HasShot(oldState.weaponState.state, interpolation.wepState))
-    {
-        auto& modelState = playerModelStateTable.at(playerId);
-        modelState.shootPlayer.SetClip(playerAvatar.GetShootAnim());
-        modelState.shootPlayer.Reset();
-        modelState.shootPlayer.Play();
-    }
-
-    if(Entity::HasReloaded(oldState.weaponState.state, interpolation.wepState))
-    {
-        auto& modelState = playerModelStateTable.at(playerId);
-        modelState.shootPlayer.SetClip(playerAvatar.GetReloadAnim());
-        modelState.shootPlayer.Reset();
-        modelState.shootPlayer.Play();
-    }
-
-    auto newState = interpolation.ToPlayerState(oldState);
-    player.ApplyState(newState);
-}
-
-glm::vec3 InGame::GetLastMoveDir(Entity::ID playerId) const
-{
-    auto ps1 = prevPlayerTable.at(playerId).ExtractState();
-    auto ps2 = playerTable.at(playerId).ExtractState();
-    auto moveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
-
-    return moveDir;
+    return world;
 }
 
 // Rendering
@@ -1040,6 +724,8 @@ void InGame::DrawScene()
         playerAvatar.RotateArms(pitch);
         auto lmd = GetLastMoveDir(playerId);
         playerAvatar.SteerWheels(lmd, playerT.rotation.y);
+        auto flagColor = inGameGui.GetOppositeColor(player.teamId);
+        playerAvatar.SetFlagActive(playerState.flagCarrying, flagColor);
 
         // Draw model
         playerT = player.GetRenderTransform();
@@ -1049,8 +735,11 @@ void InGame::DrawScene()
         auto color = isFFA ? ffaColors[player.teamId] : teamColors[player.teamId];
         playerAvatar.SetColor(color);
         playerAvatar.Draw(transform);
+        
+        // Draw playerName
+        DrawPlayerName(playerId);
 
-        // TODO: Remove
+    #ifdef _DEBUG
         // Draw player move collision box
         Math::Transform boxTf = pController.GetECB();
         //DrawCollisionBox(view, boxTf);
@@ -1071,38 +760,306 @@ void InGame::DrawScene()
         wt.rotation.y = Entity::Player::GetWheelsRotation(lmd, playerT.rotation.y + 90.0f);
 
         DrawCollisionBox(view, wt);
+    #endif
     }
     prevPlayerTable = playerTable;
 
     // Draw skybox
-    skybox.Draw(skyboxShader, camera_.GetViewMat(), camera_.GetProjMat());
+    client_->skybox.Draw(client_->skyboxShader, camera_.GetViewMat(), camera_.GetProjMat());
 
     // Draw models
+    DrawGameObjects();
+    DrawModeObjects();
+    DrawProjectiles();
+    DrawDecals();
+    explosionMgr.DrawExplosions();
     renderMgr.Render(camera_);
 
     // Draw fpsModel, always rendered last
     auto proj = camera_.GetProjMat();
-    shader.SetUniformInt("dmg", 0);
     auto& player = playerTable[playerId];
     auto color = isFFA ? ffaColors[player.teamId] : teamColors[player.teamId];
     fpsAvatar.Draw(proj, color);
+    renderMgr.Render(camera_);
+}
+
+void InGame::DrawGameObjects()
+{
+    auto view = camera_.GetProjViewMat();
+    auto map = map_.GetMap();
+    auto blockScale = map->GetBlockScale();
+
+    for(auto& [pos, state] : gameObjectStates)
+    {
+        if(!state.isActive)
+            continue;
+
+        // Calc. Pos and flags
+        auto go = map->GetGameObject(pos);
+        auto rPos = Game::Map::ToRealPos(pos, blockScale);
+        rPos.y -= (blockScale / 2.0f);
+        
+        // Billboard icon
+        auto iconPos = rPos + glm::vec3{0.0f, 1.5f, 0.0f};
+        auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING;
+        glm::vec2 scale{1.25f};
+        if(go->type == Entity::GameObject::Type::WEAPON_CRATE)
+        {
+            auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go->properties["Weapon ID"].value));
+            scale = glm::vec2{3.14f, 1.0f};
+            modelMgr.DrawWepBillboard(wepId, iconPos, 0.0f, scale, glm::vec4{1.0f}, renderflags);
+        }
+        else if(go->type == Entity::GameObject::Type::HEALTHPACK)
+            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, iconPos, 0.0f, scale, glm::vec4{1.0f}, renderflags);
+
+        // Draw gameObject
+        Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
+        auto tMat = view * t.GetTransformMat();
+        modelMgr.DrawGo(go->type, tMat);
+    }
+}
+
+void InGame::DrawModeObjects()
+{
+    auto view = camera_.GetProjViewMat();
+    auto mode = match.GetGameMode();
+    auto map = map_.GetMap();
+
+    std::vector<glm::ivec3> goIndices;
+    auto blockScale = map_.GetBlockScale();
+    switch (mode->GetType())
+    {
+    case GameMode::Type::DOMINATION:
+        {
+            goIndices = map->FindGameObjectByType(Entity::GameObject::DOMINATION_POINT);
+            auto domination = static_cast<Domination*>(match.GetGameMode());
+            
+            for(auto& [pos, point] : domination->pointsState)
+            {
+                auto color = teamColors[point.capturedBy];
+                auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.0f, 3.0f, 0.0f};
+                if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
+                {
+                    auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
+                    modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, iconPos, 0.0f, glm::vec2{2.f}, color, renderflags);
+                }
+            }
+        }
+        break;
+
+    case GameMode::Type::CAPTURE_THE_FLAG:
+        {
+            std::vector<glm::ivec3> flagSpawns[2];
+            flagSpawns[TeamID::BLUE_TEAM_ID] = map->FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A);
+            flagSpawns[TeamID::RED_TEAM_ID] = map->FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_B);
+
+            for(auto teamId = 0; teamId < TeamID::NEUTRAL; teamId++)
+            {
+                auto& fs = flagSpawns[teamId];
+                goIndices.insert(goIndices.begin(), fs.begin(), fs.end());
+
+                for(auto pos : fs)
+                {
+                    auto color = teamColors[teamId];
+                    auto iconPos = Game::Map::ToRealPos(pos, map->GetBlockScale()) + glm::vec3{0.f, 5.0f, 0.0f};
+                    if(!Collisions::IsPointInSphere(camera_.GetPos(), iconPos, 5.0f))
+                    {
+                        auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING | Rendering::RenderMgr::RenderFlags::IGNORE_DEPTH;
+                        modelMgr.DrawBillboard(Game::Models::FLAG_ICON_ID, iconPos, 0.0f, glm::vec2{2.f}, color, renderflags);
+                    }
+                }
+            }
+
+            auto captureFlag = static_cast<CaptureFlag*>(match.GetGameMode());
+            for(auto& [id, flag] : captureFlag->flags)
+            {
+                if(flag.carriedBy.has_value())
+                    continue;
+                
+                Math::Transform t{flag.pos, glm::vec3{0.0f}, glm::vec3{2.0f}};
+                auto tMat = view * t.GetTransformMat();
+                auto model = static_cast<Rendering::Model*>(modelMgr.GetModel(Game::Models::FLAG_MODEL_ID));
+
+                const auto CLOTH_SM_ID = 1;
+                model->GetSubModel(CLOTH_SM_ID)->painting.color = teamColors[flag.teamId];
+                modelMgr.Draw(Game::Models::FLAG_MODEL_ID, tMat);
+            }
+        }
+        break;
+    
+    default:
+        break;
+    }
+
+    for(auto goPos : goIndices)
+    {
+        auto go = map->GetGameObject(goPos);
+        auto rPos = Game::Map::ToRealPos(goPos, blockScale);
+        rPos.y -= (blockScale / 2.0f);
+
+        Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
+        auto tMat = view * t.GetTransformMat();
+        modelMgr.DrawGo(go->type, tMat);
+    }
+}
+
+void InGame::DrawProjectiles()
+{
+    auto view = camera_.GetProjViewMat();
+
+    for(auto& [id, projectile] : projectiles)
+    {
+        Math::Transform t{projectile->GetPos(), projectile->GetRotation(), glm::vec3{1.0f}};
+        
+        auto type = projectile->GetType();
+        if(type == Entity::Projectile::GRENADE)
+        {
+            auto tMat = view * t.GetTransformMat();
+            modelMgr.Draw(Game::Models::GRENADE_MODEL_ID, tMat);
+        }
+        else if(type == Entity::Projectile::ROCKET)
+        {
+            auto translation = glm::translate(glm::mat4{1.0f}, projectile->GetPos());
+            auto dir = glm::normalize(projectile->GetVelocity());
+            auto lookPoint = t.position - dir;
+            auto rotation = glm::inverse(glm::lookAt(t.position, lookPoint, glm::vec3{0.0f, 1.0f, 0.0f})) 
+                * glm::rotate(glm::mat4{1.0f}, glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+            rotation = glm::mat4{glm::mat3{rotation}};
+            auto tMat = translation * rotation;
+            tMat = view * tMat;
+            modelMgr.Draw(Game::Models::ROCKET_MODEL_ID, tMat);
+        }
+
+        #ifdef _DEBUG
+            t.scale = projectile->GetScale();
+            DrawCollisionBox(view, t);
+        #endif
+    }
+}
+
+void InGame::DrawDecals()
+{
+    auto view = camera_.GetProjViewMat();
+
+    auto size = decalTransforms.GetSize();
+    for(auto i = 0; i < size; i++)
+    {
+        auto decalMat = decalTransforms.At(i).value();
+        auto mat = view * decalMat;
+        modelMgr.Draw(Game::Models::DECAL_MODEL_ID, mat);
+    }
+}
+
+void InGame::DrawPlayerName(Entity::ID playerId)
+{
+    auto& player = playerTable[playerId];
+    if(player.IsDead())
+        return;
+
+    if(auto mode = match.GetGameMode())
+    {
+        auto& scoreBoard = mode->GetScoreboard();
+        if(auto ps = scoreBoard.GetPlayerScore(playerId))
+        {
+            nameText.SetText(ps->name);
+
+            // Render to texture
+            auto& ed = playersExtraData[playerId];
+            
+            ed.frameBuffer.Bind();
+                auto texSize = ed.frameBuffer.GetTextureSize();
+                glViewport(0, 0, texSize.x, texSize.y);
+                glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                nameText.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
+                nameText.SetColor(glm::vec4{1.0f});
+                nameText.SetScale(1.25f);
+                auto size = nameText.GetSize();
+                nameText.SetOffset(glm::ivec2{texSize.x / 2 - size.x / 2, 0});
+                nameText.Draw(textShader, texSize);
+
+                auto enemyWepId = player.GetCurrentWeapon().weaponTypeId;
+                auto tex = modelMgr.GetWepIconTex(enemyWepId);
+                wepImage.SetAnchorPoint(GUI::AnchorPoint::CENTER_UP);
+                wepImage.SetTexture(tex);
+                wepImage.SetParent(&nameText);
+                auto wepSize = wepImage.GetSize();
+                wepImage.SetOffset(glm::ivec2{-wepSize.x / 2, 5});
+                wepImage.Draw(imgShader, texSize);
+            ed.frameBuffer.Unbind();
+
+            auto winSize = client_->GetWindowSize();
+            glViewport(0, 0, winSize.x, winSize.y);
+
+            // Draw name billboard
+            auto pPos = player.GetRenderTransform().position;
+            auto bPos = pPos + glm::vec3{0.0f, 2.75f, 0.0f};
+            if(ed.nameBillboard)
+                ed.nameBillboard->Draw(bPos, 0.0f, glm::vec2{1.6f, 0.9f} * 2.0f, glm::vec4{1.0f});
+        }
+    }
 }
 
 void InGame::DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box)
 {
     auto mat = viewProjMat * box.GetTransformMat();
-    shader.SetUniformMat4("transform", mat);
-    cube.Draw(shader, glm::vec4{1.0f}, GL_LINE);
+    renderShader.SetUniformMat4("transform", mat);
+    modelMgr.cube.Draw(renderShader, glm::vec4{1.0f}, GL_LINE);
 }
 
 // Audio
 
+void InGame::InitAudio()
+{
+    using namespace Game::Sound;
+
+    // Set up gallery
+    audioMgr = audioMgr->Get();
+    audioMgr->Init();
+    std::filesystem::path audioFolder = "/home/defu/Projects/BlockBuster/resources/audio";
+    gallery.SetDefaultFolder(audioFolder);
+    gallery.Start();
+
+    // Play Spawn Theme
+    soundtrackSource = audioMgr->CreateStreamSource();
+    Audio::AudioSource::Params audioParams;
+    audioParams.gain = 0.5f;
+    audioMgr->SetStreamSourceParams(soundtrackSource, audioParams);
+    audioMgr->SetStreamSourceAudio(soundtrackSource, gallery.GetMusicId(MusicID::SPAWN_THEME_ID));
+
+    // Player source
+    playerSource = audioMgr->CreateSource();
+    playerReloadSource = audioMgr->CreateSource();
+
+    // Set grenade sources
+    for(auto i = 0; i < grenadeSources.GetSize(); i++)
+    {
+        auto sourceId = audioMgr->CreateSource();
+        grenadeSources.Get() = sourceId;
+
+        audioMgr->SetSourceAudio(sourceId, gallery.GetSoundId(SoundID::GRENADE_SOUND_ID));
+        audioMgr->SetSourceParams(sourceId, glm::vec3{0.0f}, 0.0f, false, 8.0f, 2.25f);
+    }
+
+    // Announcer source
+    announcerSource = audioMgr->CreateSource();
+}
+
 void InGame::UpdateAudio()
 {
-    audioMgr->SetListenerParams(camera_.GetPos(), camera_.GetRotation().y);
+    audioMgr->SetListenerTransform(camera_.GetPos(), camera_.GetRotation().y);
     audioMgr->Update();
 }
 
+void InGame::PlayAnnouncerAudio(Game::Sound::AnnouncerSoundID asid)
+{
+    auto audioId = gallery.GetAnnouncerSoundId(asid);
+    audioMgr->SetSourceAudio(announcerSource, audioId);
+    audioMgr->PlaySource(announcerSource);
+}
+
+// Map
 // TODO: Redundancy with Project::Load
 void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
 {
@@ -1111,7 +1068,7 @@ void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
     std::fstream file{filepath, file.binary | file.in};
     if(!file.is_open())
     {
-        client_->logger->LogError("Could not open file " + filepath.string());
+        GetLogger()->LogError("Could not open file " + filepath.string());
         std::exit(-1);
         return;
     }
@@ -1119,7 +1076,7 @@ void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
     auto magic = ReadFromFile<int>(file);
     if(magic != Game::Map::Map::magicNumber)
     {
-        client_->logger->LogError("Wrong format for file " + filepath.string());
+        GetLogger()->LogError("Wrong format for file " + filepath.string());
         return;
     }
 
@@ -1133,9 +1090,10 @@ void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
 
 void InGame::LoadGameOptions()
 {
-    gameOptions.sensitivity= std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
+    gameOptions.sensitivity = std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
     gameOptions.audioEnabled = std::atoi(client_->GetConfigOption("audioEnabled", "1").c_str());
     gameOptions.audioGeneral = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioGeneral","100").c_str())));
+    gameOptions.audioAnnouncer = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioAnnouncer","100").c_str())));
 }
 
 void InGame::WriteGameOptions()
@@ -1143,6 +1101,7 @@ void InGame::WriteGameOptions()
     client_->config.options["Sensitivity"] = std::to_string(gameOptions.sensitivity);
     client_->config.options["audioEnabled"] = std::to_string(gameOptions.audioEnabled);
     client_->config.options["audioGeneral"] = std::to_string(gameOptions.audioGeneral);
+    client_->config.options["audioAnnouncer"] = std::to_string(gameOptions.audioAnnouncer);
 }
 
 void InGame::ApplyGameOptions(GameOptions options)
@@ -1152,5 +1111,8 @@ void InGame::ApplyGameOptions(GameOptions options)
 
     // Apply changes
     camController_.rotMod = gameOptions.sensitivity;
-    // TODO: Apply sound
+
+    audioMgr->SetListenerGain((float)options.audioGeneral / 100.0f);
+    auto announcerGain = (float)options.audioAnnouncer / 100.0f;
+    audioMgr->SetSourceParams(announcerSource, glm::vec3{0.0f}, 0.0f, false, 1.0f, announcerGain);
 }

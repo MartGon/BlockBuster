@@ -43,20 +43,26 @@ void FPS::Update(Util::Time::Seconds deltaTime)
 
 void FPS::PlayShootAnimation()
 {
+    // HACK Reset pitch and pos, in case it was reloading
+    idlePivot.rotation.x = 0.0f;
+    idlePlayer.Play();
+    idlePlayer.Update(Util::Time::Seconds{0.0f});
+
     idlePlayer.Pause();
     shootPlayer.SetClip(&shoot);
-    shootPlayer.Reset();
-    shootPlayer.Play();
+    shootPlayer.Restart();
 }
 
-// TODO: This should take the reload time as param. Adapt the animation's speed accordingly
 void FPS::PlayReloadAnimation(Util::Time::Seconds reloadTime)
 {
     idlePlayer.Pause();
+
     shootPlayer.SetClip(&reload);
     shootPlayer.SetClipDuration(reloadTime);
-    shootPlayer.Reset();
-    shootPlayer.Play();
+    shootPlayer.Restart();
+
+    leftFlash->enabled = false;
+    rightFlash->enabled = false;
 }
 
 void FPS::InitModel(Rendering::RenderMgr& renderMgr, GL::Shader& shader, GL::Shader& quadShader)
@@ -180,9 +186,12 @@ void FPS::InitAnimations()
     shootPlayer.SetTargetBool("right-flash", &rightFlash->enabled);
     shootPlayer.SetOnDoneCallback([this](){
         this->idlePlayer.Resume();
+        this->leftFlash->enabled = false;
+        this->rightFlash->enabled = false;
     });
 
     // Set reload params
     shootPlayer.SetTargetFloat("yPos", &idlePivot.position.y);
     shootPlayer.SetTargetFloat("pitch", &idlePivot.rotation.x);
+
 }

@@ -35,6 +35,14 @@ namespace Collisions
     glm::vec3 ToWorldSpace(glm::vec3 vec, glm::mat4 modelMat);
     glm::vec3 NormalToWorldSpace(glm::vec3 normal, glm::mat4 modelMat);
 
+    // General
+    struct Intersection
+    {
+        bool collides;
+        glm::vec3 normal;
+        glm::vec3 offset;
+    };
+
     // AABB
     struct AABBIntersection
     {
@@ -42,6 +50,11 @@ namespace Collisions
         bool intersects;
         glm::vec3 offset;
         glm::vec3 normal;
+
+        operator bool() const
+        {
+            return collides;
+        }
     };
 
     AABBIntersection AABBCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 posB, glm::vec3 sizeB);
@@ -54,8 +67,29 @@ namespace Collisions
         bool intersects;
         glm::vec3 offset;
         glm::vec3 normal;
+
+        operator bool() const
+        {
+            return collides;
+        }
     };
 
     AABBSlopeIntersection AABBSlopeCollision(glm::vec3 posA, glm::vec3 sizeA, glm::vec3 sizeB, float precision = 0.005f);
     AABBSlopeIntersection AABBSlopeCollision(Math::Transform transformAABB, Math::Transform transformSlope, float precision = 0.005f);
+
+    // Points
+    bool IsPointInAABB(glm::vec3 point, Math::Transform transformAABB);
+    bool IsPointInSphere(glm::vec3 point, glm::vec3 center, float scale);
+    struct SpherePointCollision
+    {
+        bool collides;
+        glm::vec3 dist;
+        float distance;
+
+        operator bool() const
+        {
+            return collides;
+        }
+    };
+    SpherePointCollision PointInSphere(glm::vec3 point ,glm::vec3 center, float scale);
 };

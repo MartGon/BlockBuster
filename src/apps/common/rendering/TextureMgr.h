@@ -31,6 +31,7 @@ namespace Rendering
         TextureID LoadFromMemory(TextureID id, void* data, size_t bufferSize, bool flipVertically = false);
         TextureID LoadRaw(TextureID id, uint8_t* data, glm::ivec2 size, int format);
         TextureID LoadRaw(uint8_t* data, glm::ivec2 size, int format);
+        TextureID Handle(unsigned int handle, glm::ivec2 size, int format);
 
         void Bind(TextureID id, unsigned int activeTexture = GL_TEXTURE0);
         GL::Texture* GetTexture(TextureID id);

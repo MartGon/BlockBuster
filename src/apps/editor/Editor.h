@@ -4,6 +4,7 @@
 #include <gl/Shader.h>
 #include <gl/VertexArray.h>
 #include <gl/Texture.h>
+#include <gl/Framebuffer.h>
 
 #include <rendering/Camera.h>
 #include <rendering/Mesh.h>
@@ -33,11 +34,6 @@
 #include <EditorGUI.h>
 
 #include <functional>
-
-/* TODO LIST
-    2. Change respawn color based on teamId
-    3. Choose rotation in place block
-*/
 
 namespace BlockBuster::Editor
 {
@@ -96,11 +92,13 @@ namespace BlockBuster::Editor
         Util::Result<bool> LoadTexture();
         bool IsTextureInPalette(std::filesystem::path folder, std::filesystem::path textureName);
         void ResetTexturePalette();
+        void Render();
 
         // World
         void NewProject();
         void SaveProject();
         Util::Result<bool> OpenProject();
+        void TakePicture();
 
         // Editor
         void UpdateEditor();
@@ -173,11 +171,11 @@ namespace BlockBuster::Editor
         // Rendering
         Rendering::RenderMgr renderMgr;
         GL::Shader renderShader;
-        GL::Shader colorShader;
         GL::Shader paintShader;
         GL::Shader chunkShader;
         GL::Shader quadShader;
         GL::Shader skyboxShader;
+        GL::Shader billboardShader;
 
         Rendering::Mesh cube;
         Rendering::Mesh slope;
@@ -186,8 +184,9 @@ namespace BlockBuster::Editor
         Rendering::Camera camera;
         ::App::Client::CameraController cameraController;
 
-        // Textures
-        GL::Texture flashTexture;
+        // Framebuffer;
+        GL::Framebuffer framebuffer;
+        const glm::ivec2 picSize{800, 600};
 
         // Models
         Game::Models::ModelMgr modelMgr;

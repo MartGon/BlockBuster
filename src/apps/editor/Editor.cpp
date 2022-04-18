@@ -14,6 +14,8 @@
 #include <debug/Debug.h>
 
 #include <imgui/backends/imgui_impl_opengl3.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
 
 using namespace BlockBuster::Editor;
 
@@ -25,11 +27,10 @@ void Editor::Start()
     try{
         auto sf = config.openGL.shadersFolder;
         renderShader = GL::Shader::FromFolder(sf, "renderVertex.glsl", "renderFrag.glsl");
-        colorShader = GL::Shader::FromFolder(sf, "simpleVertex.glsl", "simpleFrag.glsl");
         paintShader = GL::Shader::FromFolder(sf, "paintVertex.glsl", "paintFrag.glsl");
         chunkShader = GL::Shader::FromFolder(sf, "chunkVertex.glsl", "chunkFrag.glsl");
-        quadShader = GL::Shader::FromFolder(sf, "quadVertex.glsl", "quadFrag.glsl");
         skyboxShader = GL::Shader::FromFolder(sf, "skyboxVertex.glsl", "skyboxFrag.glsl");
+        billboardShader = GL::Shader::FromFolder(sf, "billboardVertex.glsl", "billboardFrag.glsl");
     }
     catch(const std::runtime_error& e)
     {
@@ -50,7 +51,12 @@ void Editor::Start()
     };
     TRY_LOAD(skybox.Load(map, false));
 
-    TRY_LOAD(flashTexture.LoadFromFolder(TEXTURES_DIR, "flash.png"));
+    renderMgr.Start();
+    auto& texMgr = renderMgr.GetTextureMgr();
+    texMgr.SetDefaultFolder(texturesDir);
+
+    // Framebuffer
+    framebuffer.Init(picSize);
 
     // Meshes
     cube = Rendering::Primitive::GenerateCube();
@@ -58,14 +64,14 @@ void Editor::Start()
     cylinder = Rendering::Primitive::GenerateCylinder(1.f, 1.f, 16, 1);
 
     // Models
-    modelMgr.Start(renderMgr, renderShader);
+    modelMgr.Start(renderMgr, renderShader, billboardShader);
 
     respawnModel.SetMeshes(cylinder, slope);
-    respawnModel.Start(renderMgr, colorShader);
+    respawnModel.Start(renderMgr, renderShader);
 
     playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
-    playerAvatar.Start(renderMgr, colorShader, quadShader);
-    modelMgr.SetModel(Entity::GameObject::Type::PLAYER_DECOY, &playerAvatar);
+    playerAvatar.Start(renderMgr, renderShader, renderShader);
+    modelMgr.SetGoModel(Entity::GameObject::Type::PLAYER_DECOY, &playerAvatar);
     
     // OpenGL features
     glEnable(GL_DEPTH_TEST);
@@ -111,21 +117,7 @@ void Editor::Start()
 
 void Editor::Update()
 {
-    // Clear Buffer
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Setup texture arrays
-    project.map.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
-    project.map.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
-
-    // Draw new Map System Cubes
-    project.map.Draw(chunkShader, camera.GetProjViewMat());
-
-        // Draw skybox
-    auto view = camera.GetViewMat();
-    auto proj = camera.GetProjMat();
-    skybox.Draw(skyboxShader, view, proj, true);
+    Render();
     
     if(playerMode)
         UpdatePlayerMode();
@@ -219,6 +211,25 @@ void Editor::ResetTexturePalette()
     gui.SyncGUITextures();
 }
 
+void Editor::Render()
+{
+    // Clear Buffer
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Setup texture arrays
+    project.map.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);
+    project.map.cPalette.GetTextureArray()->Bind(GL_TEXTURE1);
+
+    // Draw new Map System Cubes
+    project.map.Draw(chunkShader, camera.GetProjViewMat());
+
+        // Draw skybox
+    auto view = camera.GetViewMat();
+    auto proj = camera.GetProjMat();
+    skybox.Draw(skyboxShader, view, proj, true);
+}
+
 // #### World #### \\
 
 void Editor::NewProject()
@@ -272,6 +283,8 @@ void Editor::SaveProject()
     unsaved = false;
 
     RenameMainWindow();
+
+    TakePicture();
 }
 
 Util::Result<bool> Editor::OpenProject()
@@ -319,6 +332,32 @@ Util::Result<bool> Editor::OpenProject()
     
     
     return res;
+}
+
+void Editor::TakePicture()
+{
+    framebuffer.Bind();
+        glViewport(0, 0, picSize.x, picSize.y);
+        Render();
+
+        const auto components = 4;
+        auto data = new GLubyte[components * picSize.x * picSize.y];
+        glReadPixels(0, 0, picSize.x, picSize.y, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    framebuffer.Unbind();
+
+    // Restore view port
+    auto winSize = GetWindowSize();
+    glViewport(0, 0, winSize.x, winSize.y);
+
+    // Write image
+    auto stride = picSize.x * components;
+    auto filePath = mapMgr.GetMapFolder(gui.fileName) / (gui.fileName + ".jpg");
+    stbi_flip_vertically_on_write(true);
+    stbi_write_jpg(filePath.string().c_str(), picSize.x, picSize.y, components, data, 100);
+    stbi_flip_vertically_on_write(false);
+
+
+    delete[] data;
 }
 
 // #### Editor #### \\
@@ -432,7 +471,7 @@ void Editor::UpdateEditor()
         if(go->type != Entity::GameObject::Type::PLAYER_DECOY)
         {
             auto tMat = view * t.GetTransformMat();
-            modelMgr.Draw(go->type, tMat);
+            modelMgr.DrawGo(go->type, tMat);
         }
                 
         // Special cases
@@ -442,7 +481,7 @@ void Editor::UpdateEditor()
             t.position.y = t.position.y + ecb.scale.y / 2.0f;
             t.scale = glm::vec3{Entity::Player::scale};
             auto tMat = view * t.GetTransformMat();
-            modelMgr.Draw(go->type, tMat);
+            modelMgr.DrawGo(go->type, tMat);
         }
 
         if(gui.selectedObj == goPos)
@@ -463,6 +502,19 @@ void Editor::UpdateEditor()
             
             DrawCursor(t);
         }
+
+        // Icon
+        auto iconPos = rPos + glm::vec3{0.0f, 1.5f, 0.0f};
+        auto renderflags = Rendering::RenderMgr::RenderFlags::NO_FACE_CULLING;
+        glm::vec2 scale{1.25f};
+        if(go->type == Entity::GameObject::Type::WEAPON_CRATE)
+        {
+            auto wepId = static_cast<Entity::WeaponTypeID>(std::get<int>(go->properties["Weapon ID"].value));
+            scale = glm::vec2{3.14f, 1.0f};
+            modelMgr.DrawWepBillboard(wepId, iconPos, 0.0f, scale, glm::vec4{1.0f}, renderflags);
+        }
+        else if(go->type == Entity::GameObject::Type::HEALTHPACK)
+            modelMgr.DrawBillboard(Game::Models::RED_CROSS_ICON_ID, iconPos, 0.0f, scale, glm::vec4{1.0f}, renderflags);
     }
 
     // Draw Cursor
@@ -523,7 +575,7 @@ void Editor::UpdateEditor()
     // Draw chunk borders
     const glm::vec4 yellow = glm::vec4{1.0f, 1.0f, 0.0f, 1.0f};
     if(gui.drawChunkBorders)
-        project.map.DrawChunkBorders(colorShader, cube, view, yellow);
+        project.map.DrawChunkBorders(renderShader, cube, view, yellow);
 
     renderMgr.Render(camera);
 
@@ -1093,15 +1145,13 @@ void Editor::DrawCursor(Math::Transform t)
     // Draw cursor
     auto model = t.GetTransformMat();
     auto transform = camera.GetProjViewMat() * model;
-    colorShader.SetUniformMat4("transform", transform);
-    colorShader.SetUniformInt("hasBorder", false);
-    colorShader.SetUniformInt("overrideColor", true);
-    colorShader.SetUniformInt("textureType", 1);
-    colorShader.SetUniformVec4("color", cursor.color);
+    renderShader.SetUniformMat4("transform", transform);
+    renderShader.SetUniformInt("textureType", 2);
+    renderShader.SetUniformVec4("color", cursor.color);
     auto& mesh = GetMesh(cursor.type);
     //mesh.Draw(shader, cursor.color, GL_LINE);
     glDisable(GL_CULL_FACE);
-    mesh.Draw(colorShader, GL_LINE);
+    mesh.Draw(renderShader, GL_LINE);
     glEnable(GL_CULL_FACE);
 }
 

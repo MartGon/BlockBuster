@@ -8,6 +8,8 @@
 #include <gl/Texture.h>
 #include <gl/Shader.h>
 
+#include <rendering/Camera.h>
+
 #include <gui/PopUp.h>
 #include <util/Ring.h>
 #include <http/AsyncClient.h>
@@ -25,8 +27,11 @@ namespace BlockBuster
 {
     class Client;
 
+
     class MainMenu : public GameState
     {
+    friend class Client;
+    friend class InGame;
     friend class MenuState::Login;
     friend class MenuState::ServerBrowser;
     friend class MenuState::CreateGame;
@@ -49,11 +54,12 @@ namespace BlockBuster
         void ListGames();
         void JoinGame(std::string gameId);
         void CreateGame(std::string name, std::string map, std::string mode, uint8_t max_players);
+        void EditGame(std::string name, std::string map, std::string mode);
         void GetAvailableMaps();
         void LeaveGame();
         void ToggleReady();
         void SendChatMsg(std::string msg);
-        void UpdateGame();
+        void UpdateGame(bool forced = false);
         void StartGame();
         void DownloadMap(std::string mapName);
         void GetMapPicture(std::string mapName);
@@ -64,7 +70,9 @@ namespace BlockBuster
 
         // Rendering
         void Render();
+        void DrawSkybox();
         void DrawGUI();
+        void ResetWindow();
 
         // GUI
         void SetState(std::unique_ptr<MenuState::Base> menuState_);
@@ -72,6 +80,7 @@ namespace BlockBuster
         // Handy 
         void LaunchGame();
         MapMgr& GetMapMgr();
+        bool ShouldDownloadMap(std::string map);
 
         //#### Data Members ####\\
         // Rest Service
@@ -103,5 +112,8 @@ namespace BlockBuster
         std::optional<GameDetails> currentGame;
         MenuState::Lobby* lobby = nullptr;
         bool enteringGame = false;
+
+        // Rendering
+        Rendering::Camera camera_;
     };
 }

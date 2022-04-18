@@ -25,8 +25,16 @@ Host::Host(uint32_t connections, uint32_t channels, uint32_t inBandwidth, uint32
 
 Host::~Host()
 {
+    for(auto& [id, peer] : peers_)
+    {
+        peer.Disconnect();
+    }
+    
     if(socket_)
+    {
+        PollAllEvents(3000);
         enet_host_destroy(socket_);
+    }
 }
 
 Host::Host(Host&& other) : address_{other.address_}
@@ -131,8 +139,12 @@ void Host::Broadcast(uint8_t channelId, const SentPacket& packet)
     enet_host_broadcast(socket_, channelId, p);
 }
 
-PeerInfo Host::GetPeerInfo(PeerId id) const
+std::optional<PeerInfo> Host::GetPeerInfo(PeerId id) const
 {
+    std::optional<PeerInfo> ret;
+    if(peers_.find(id) == peers_.end())
+        return ret;
+
     auto& peer = GetPeer(id);
 
     PeerInfo info;
@@ -145,8 +157,9 @@ PeerInfo Host::GetPeerInfo(PeerId id) const
     info.packetLoss = peer.peer_->packetLoss;
     info.incomingBandwidth = peer.peer_->incomingBandwidth;
     info.outgoingBandwidth = peer.peer_->outgoingBandwidth;
+    ret = info;
 
-    return info;
+    return ret;
 }
 
 // ##### PRIVATE ##### \\

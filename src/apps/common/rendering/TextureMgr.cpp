@@ -99,6 +99,14 @@ TextureID TextureMgr::LoadRaw(uint8_t* data, glm::ivec2 size, int format)
     return LoadRaw(id, data, size, format);
 }
 
+TextureID TextureMgr::Handle(unsigned int handle, glm::ivec2 size, int format)
+{
+    auto id = GetFreeID();
+    GL::Texture* texture = new GL::Texture{handle, size, format};
+    SetTexture(id, texture);
+    return id;
+}
+
 TextureID TextureMgr::LoadRaw(TextureID id, uint8_t* data, glm::ivec2 size, int format)
 {
     GL::Texture* texture = new GL::Texture;

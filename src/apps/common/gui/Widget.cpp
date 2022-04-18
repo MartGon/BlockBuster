@@ -34,6 +34,7 @@ glm::ivec2 Widget::GetPos(glm::ivec2 screenSize)
     }
     else
     {
+        // Down Left Corner
         parentPos = -screenSize / 2;
         parentSize = screenSize;
     }

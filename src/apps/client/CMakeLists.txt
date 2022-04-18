@@ -9,6 +9,7 @@ SET(SOURCES
 
     GameState/InGame/InGame.cpp
     GameState/InGame/InGameGUI.cpp
+    GameState/InGame/InGameNet.cpp
 )
 
 add_executable(Client ${SOURCES})

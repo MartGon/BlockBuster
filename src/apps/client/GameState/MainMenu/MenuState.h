@@ -79,6 +79,11 @@ namespace BlockBuster
             bool IsEveryoneReady();
             bool IsGameOnGoing();
             bool IsGameInLobby();
+            void SelectMap(MapInfo a);
+
+            std::string gameName;
+            MapInfo mapInfo;
+            std::string mode;
             
             char chat[4096] = "\0";
             char chatLine[128] = "\0";

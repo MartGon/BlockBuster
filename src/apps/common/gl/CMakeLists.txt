@@ -1,5 +1,6 @@
 SET(SOURCES
 
+    Framebuffer.cpp
     Shader.cpp
     Texture.cpp
     VertexArray.cpp

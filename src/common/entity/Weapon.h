@@ -3,7 +3,11 @@
 #include <stdint.h>
 #include <unordered_map>
 
+#include <glm/glm.hpp>
+
 #include <util/BBTime.h>
+
+#include <Projectile.h>
 
 namespace Entity
 {
@@ -13,10 +17,15 @@ namespace Entity
     enum WeaponTypeID : uint8_t
     {
         NONE,
-        SNIPER,
-        RIFLE,
+        ASSAULT_RIFLE,
+        BATTLE_RIFLE,
+        SHOTGUN,
         SMG,
-        CHEAT_SMG
+        SNIPER,
+        GRENADE_LAUNCHER,
+        ROCKET_LAUNCHER,
+        CHEAT_SMG,
+        COUNT
     };
     class WeaponMgr
     {
@@ -47,6 +56,12 @@ namespace Entity
             BURST,
             AUTO,
         };
+
+        enum class ShotType : uint8_t
+        {
+            HITSCAN,
+            PROJECTILE,
+        };
         
         WeaponTypeID id;
         FiringMode firingMode;
@@ -55,13 +70,15 @@ namespace Entity
         float baseDmg;
         float maxRange; // Damage will be reduced across range. if distance > maxRange => dmg = baseDmg * max(0, (1 - (distance - maxRange) / maxRange));
         float baseSpread; // Size of the crosshair
+        glm::vec2 recoil;
         uint8_t burstShots; // Amount of shots per burst
-
-        uint32_t visualId;
-        uint32_t soundPackId;
-
+        float zoomLevel;
+        
         AmmoType ammoType;
         AmmoTypeData ammoData;
+
+        ShotType shotType;
+        Projectile::Type projType;
 
         Weapon CreateInstance() const;
     };
@@ -78,6 +95,9 @@ namespace Entity
             IDLE,
             SHOOTING,
             RELOADING,
+            SWAPPING,
+            PICKING_UP,
+            GRENADE_THROWING
         };
         State state = State::IDLE;
 
@@ -91,10 +111,21 @@ namespace Entity
         uint8_t burstCount = 0;
     };
 
+    // WeaponType
+    WeaponType GetWeaponType(WeaponTypeID id);
+
     // Weapon
     bool HasShot(Weapon::State s1, Weapon::State s2);
     bool HasReloaded(Weapon::State s1, Weapon::State s2);
+    bool HasStartedSwap(Weapon::State s1, Weapon::State s2);
+    bool HasSwapped(Weapon::State s1, Weapon::State s2);
+    bool HasPickedUp(Weapon::State s1, Weapon::State s2);
+    bool HasGrenadeThrow(Weapon::State s1, Weapon::State s2);
+
     bool CanShoot(Weapon weapon);
+    void StartWeaponSwap(Weapon& weapon);
+    void StartPickingWeapon(Weapon& weapon);
+    void StartGrenadeThrow(Weapon& weapon);
 
     // Ammo
     Weapon::AmmoState ResetAmmo(AmmoTypeData ammoData, AmmoType ammoType);
@@ -104,4 +135,7 @@ namespace Entity
 
     // Dmg
     float GetDistanceDmgMod(WeaponType weaponType, float distance);
+    float GetDistanceDmgMod(float range, float distance);
+    float GetMaxEffectiveRange(WeaponTypeID wepTypeId);
+    float GetMaxEffectiveRange(WeaponType weaponType);
 }

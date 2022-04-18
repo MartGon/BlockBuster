@@ -191,6 +191,18 @@ std::vector<glm::ivec3> Map::FindGameObjectByType(Entity::GameObject::Type type)
     return vec;
 }
 
+std::vector<glm::ivec3> Map::FindGameObjectByCriteria(std::function<bool(glm::ivec3, Entity::GameObject&)> criteria)
+{
+    std::vector<glm::ivec3> vec;
+    for(auto& [pos, go] : gameObjects_)
+    {
+        if(criteria(pos, go))
+            vec.push_back(pos);
+    } 
+
+    return vec;
+}
+
 void Map::RemoveGameObject(glm::ivec3 pos)
 {
     if(auto go = GetGameObject(pos); go->type == Entity::GameObject::Type::RESPAWN)

@@ -35,6 +35,7 @@ namespace Math
 
     glm::mat4 GetRotMatInverse(const glm::mat4& rotMat);
     glm::vec3 RotateVec3(const glm::mat4& rotMat, glm::vec3 vec);
+    glm::vec2 RotateVec2(const glm::vec2& vec2, float radians);
 
     // Floats
     bool AreSame(float a, float b, float threshold = 0.005f);

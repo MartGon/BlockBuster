@@ -22,15 +22,39 @@ Client::Client(::App::Configuration config) : AppI{config}
 }
 
 void Client::Start()
-{
+{   
+    // MapMgr
     auto mapsFolder = GetConfigOption("mapsFolder", "./maps");
     mapMgr.SetMapsFolder(mapsFolder);
 
-    state = std::make_unique<MainMenu>(this);
-    //state = std::make_unique<InGame>(this, "localhost", 8081, "Alpha2");
+    // Skybox
+    try{
+        skyboxShader = GL::Shader::FromFolder(config.openGL.shadersFolder, "skyboxVertex.glsl", "skyboxFrag.glsl");
+    }
+    catch(const std::runtime_error& e)
+    {
+        logger->LogCritical(e.what());
+        quit = true;
+        return;
+    }
+
+    texturesDir = GetConfigOption("TexturesDir", TEXTURES_DIR);
+    GL::Cubemap::TextureMap map = {
+        {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
+        {GL::Cubemap::LEFT, texturesDir / "left.jpg"},
+        {GL::Cubemap::TOP, texturesDir / "top.jpg"},
+        {GL::Cubemap::BOTTOM, texturesDir / "bottom.jpg"},
+        {GL::Cubemap::FRONT, texturesDir / "front.jpg"},
+        {GL::Cubemap::BACK, texturesDir / "back.jpg"},
+    };
+    TRY_LOAD(skybox.Load(map, false));
+
+    // MainMenu
+    menu = std::make_unique<MainMenu>(this);
+    state = menu.get();
     state->Start();
     
-    LaunchGame("localhost", 8081, "Alpha2", "NULL PLAYER UUID", "Defu");
+    LaunchGame("localhost", 8081, "Alpha3", "NULL PLAYER UUID", "Defu");
 }
 
 void Client::Shutdown()
@@ -43,15 +67,6 @@ void Client::Shutdown()
 void Client::Update()
 {
     state->Update();
-
-    if(nextState)
-    {
-        state->Shutdown();
-
-        state = std::move(nextState);
-        state->Start();
-        nextState = nullptr;
-    }
 }
 
 bool Client::Quit()
@@ -61,7 +76,28 @@ bool Client::Quit()
 
 void Client::LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid, std::string playerName)
 {
-    nextState = std::make_unique<InGame>(this, address, port, map, playerUuid, playerName);
+    inGame = std::make_unique<InGame>(this, address, port, map, playerUuid, playerName);
+    inGame->Start();
+    state = inGame.get();
+}
+
+void Client::GoBackToMainMenu(bool onGoing)
+{        
+    inGame->Shutdown();
+    inGame = nullptr;
+
+    if(menu.get() == nullptr)
+    {
+        quit = true;
+        return;
+    }
+    else if(onGoing)
+        menu->LeaveGame();
+    else if(menu->lobby)
+        menu->UpdateGame(true);
+    
+    menu->ResetWindow();
+    state = menu.get();
 }
 
 void Client::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)

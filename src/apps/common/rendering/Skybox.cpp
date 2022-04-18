@@ -2,7 +2,7 @@
 
 using namespace Rendering;
 
-Skybox::Skybox() : cube{Primitive::GenerateCube()}
+Skybox::Skybox()
 {
 
 }
@@ -36,5 +36,6 @@ void Skybox::Draw(GL::Shader& skyboxShader, const glm::mat4 view, const glm::mat
 
 void Skybox::Load(const GL::Cubemap::TextureMap& textureMap, bool flipVertically)
 {
+    cube = Primitive::GenerateCube();
     cubemap.Load(textureMap, flipVertically);
 }

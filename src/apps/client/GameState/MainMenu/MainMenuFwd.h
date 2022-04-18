@@ -8,6 +8,7 @@ namespace BlockBuster
         std::string id;
         std::string name;
         std::string map;
+        std::string map_version;
         std::string mode;
         uint8_t players;
         uint8_t maxPlayers;
@@ -24,6 +25,7 @@ namespace BlockBuster
             gameInfo.id = game.at("id").get<std::string>();
             gameInfo.name = game.at("name").get<std::string>();
             gameInfo.map = game.at("map").get<std::string>();
+            gameInfo.map_version = game.at("map_version").get<std::string>();
             gameInfo.mode = game.at("mode").get<std::string>();
             gameInfo.maxPlayers = game.at("max_players").get<uint8_t>();
             gameInfo.players = game.at("players").get<uint8_t>();

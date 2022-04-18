@@ -13,7 +13,7 @@ const Player::HitBox Player::sHitbox = {
 };
 
 // Dmg mod
-const float Player::dmgMod[Player::HitBoxType::MAX] = {1.25f, 1.0f, 0.75f};
+const float Player::dmgMod[Player::HitBoxType::MAX] = {1.5f, 1.0f, 0.75f};
 
 // Player move collision boxes
 const Math::Transform Player::moveCollisionBox{glm::vec3{0.0f, -0.25f, 0.0f}, glm::vec3{0.0f}, glm::vec3{2.0f, 4.5f, 2.0f}};
@@ -73,13 +73,22 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
     bool same = a.transform == b.transform;
 
     // Weapon state
-    auto wsA = a.weaponState; auto wsB = b.weaponState;
-    if(wsA.weaponTypeId != WeaponTypeID::NONE)
+    for(auto i = 0; i < 2; i++)
     {
-        bool sameState = wsA.state == wsB.state;
-        bool sameCd = std::abs((wsA.cooldown - wsB.cooldown).count()) < 0.05;
-        same = same && sameState && sameCd;
+        auto wsA = a.weaponState[i]; auto wsB = b.weaponState[i];
+        if(wsA.weaponTypeId != WeaponTypeID::NONE)
+        {
+            bool sameState = wsA.state == wsB.state;
+            bool sameCd = std::abs((wsA.cooldown - wsB.cooldown).count()) < 0.05;
+            same = same && sameState && sameCd;
+        }
     }
+
+    // Cur wep
+    same = same && a.curWep == b.curWep;
+
+    // Grenades
+    same = same && a.grenades == b.grenades;
 
     return same;
 }
@@ -159,6 +168,11 @@ glm::vec3 Entity::GetLastMoveDir(glm::vec3 posA, glm::vec3 posB)
 
 // Player
 
+Player::Player()
+{
+    ResetWeapons();
+}
+
 Math::Transform Player::GetMoveCollisionBox()
 {
     auto mcb = moveCollisionBox;
@@ -202,7 +216,11 @@ Entity::PlayerState Player::ExtractState() const
     s.transform.pos = this->transform.position;
     s.transform.rot = glm::vec2{transform.rotation};
     
-    s.weaponState = weapon;
+    for(auto i = 0; i < 2; i++)
+        s.weaponState[i] = weapons[i];
+    s.curWep = curWep;
+
+    s.grenades = grenades;
 
     return s;
 }
@@ -212,7 +230,11 @@ void Player::ApplyState(Entity::PlayerState s)
     this->transform.position = s.transform.pos;
     this->transform.rotation = glm::vec3{s.transform.rot, 0.0f};
 
-    this->weapon = s.weaponState;
+    curWep = s.curWep;
+    for(auto i = 0; i < 2; i++)
+        weapons[i] = s.weaponState[i];
+
+    grenades = s.grenades;
 }
 
 // Transforms
@@ -249,6 +271,11 @@ void Player::TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float 
     auto dmgMod = GetDmgMod(hitboxType) * GetDistanceDmgMod(weaponType, distance);
     auto dmg = weaponType.baseDmg * dmgMod;
 
+    TakeDmg(dmg);
+}
+
+void Player::TakeDmg(float dmg)
+{
     auto& shield = health.shield;
     auto& health = this->health.hp;
 
@@ -263,12 +290,69 @@ void Player::TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float 
         else
             health = 0.0f;
     }
+
+    this->health.shieldState = SHIELD_STATE_DAMAGED;
+    dmgTimer.Restart();
 }
 
 void Player::ResetWeaponAmmo(Entity::WeaponTypeID wepId)
 {
-    weapon = Entity::WeaponMgr::weaponTypes.at(wepId).CreateInstance();
+    auto wepType = WeaponMgr::weaponTypes.at(wepId);
+    weapons[curWep].ammoState = ResetAmmo(wepType.ammoData, wepType.ammoType);
 }
+
+Weapon& Player::GetCurrentWeapon()
+{
+    return weapons[curWep];
+}
+
+uint8_t Player::WeaponSwap()
+{
+    curWep = GetNextWeaponId();
+    return curWep;
+}
+
+uint8_t Player::GetNextWeaponId()
+{
+    return (curWep + 1) % MAX_WEAPONS;
+}
+
+void Player::ResetWeapons()
+{
+    curWep = 0;
+    for(auto i = 0; i < MAX_WEAPONS; i++)
+        weapons[i] = Weapon{WeaponTypeID::NONE};
+}
+
+void Player::PickupWeapon(Weapon weapon)
+{
+    StartPickingWeapon(weapon);
+
+    auto nextWepId = GetNextWeaponId();
+    auto nextWep = weapons[nextWepId];
+    if(nextWep.weaponTypeId == WeaponTypeID::NONE)
+    {
+        weapons[nextWepId] = weapon;
+        curWep = nextWepId;
+    }
+    else
+        weapons[curWep] = weapon;
+}
+
+// Grenades
+
+bool Player::HasGrenades()
+{
+    return grenades > 0;
+}
+
+void Player::ThrowGrenade()
+{
+    Entity::StartGrenadeThrow(GetCurrentWeapon());
+    grenades = std::max(grenades - 1, 0);
+}
+
+// Health
 
 void Player::ResetHealth()
 {
@@ -276,9 +360,46 @@ void Player::ResetHealth()
     health.shield = MAX_SHIELD;
 }
 
+bool Player::IsShieldFull()
+{
+    return health.shield >= MAX_SHIELD;
+}
+
 bool Player::IsDead()
 {
     return health.hp <= 0.0f;
+}
+
+// Interaction
+
+void Player::InteractWith(GameObject go)
+{
+    switch (go.type)
+    {
+    case GameObject::Type::WEAPON_CRATE:
+        {
+            auto wepId = static_cast<WeaponTypeID>(std::get<int>(go.properties["Weapon ID"].value));
+            auto weaponType = WeaponMgr::weaponTypes.at(wepId);
+            PickupWeapon(weaponType.CreateInstance());
+        }
+        break;
+    
+    case GameObject::Type::HEALTHPACK:
+        {
+            health.hp = MAX_HEALTH;
+            health.shield = MAX_SHIELD;
+        }
+        break;
+
+    case GameObject::Type::GRENADES:
+        {
+            grenades = std::min(grenades + 2, 4);
+        }
+        break;
+
+    default:
+        break;
+    }
 }
 
 

@@ -46,6 +46,8 @@ void CameraController::SetMode(CameraMode mode)
     }
 }
 
+// Private
+
 void CameraController::UpdateEditorCamera()
 {
     auto state = SDL_GetKeyboardState(nullptr);

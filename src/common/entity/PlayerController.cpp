@@ -61,7 +61,7 @@ glm::vec3 Entity::PlayerController::UpdatePosition(glm::vec3 pos, float yaw, Ent
     return transform.position;
 }
 
-Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, Util::Time::Seconds deltaTime)
+Weapon PlayerController::UpdateWeapon(Weapon weapon, Weapon secWeapon, Entity::PlayerInput input, Util::Time::Seconds deltaTime)
 {
     const auto weaponType = WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
     auto wepState = weapon.state;
@@ -97,6 +97,10 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
                 float mod = weaponType.ammoType == AmmoType::OVERHEAT ? 0.25f + (weapon.ammoState.overheat / 100.f) : 1.0f;
                 weapon.cooldown = weaponType.reloadTime * mod;
             }
+            else if(input[Entity::WEAPON_SWAP_0] && secWeapon.weaponTypeId != WeaponTypeID::NONE) 
+            {
+                StartWeaponSwap(weapon);
+            }
 
             weapon.triggerPressed = input[Entity::SHOOT];
             if(weaponType.ammoType == AmmoType::OVERHEAT && !Entity::HasShot(wepState, weapon.state))        
@@ -112,7 +116,7 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
             if(weapon.cooldown.count() <= 0.0)
             {
                 // Force reload when MAX_OVERHEAT is reached
-                if(weaponType.ammoType == AmmoType::OVERHEAT && weapon.ammoState.overheat == MAX_OVERHEAT)
+                if(weaponType.ammoType == AmmoType::OVERHEAT && weapon.ammoState.overheat >= MAX_OVERHEAT)
                 {
                     weapon.state = Weapon::State::RELOADING;
                     weapon.cooldown = weaponType.reloadTime * 2.0f;
@@ -138,10 +142,54 @@ Weapon PlayerController::UpdateWeapon(Weapon weapon, Entity::PlayerInput input, 
             }
         }
         break;
+
+        case Weapon::State::SWAPPING:
+        case Weapon::State::PICKING_UP:
+        case Weapon::State::GRENADE_THROWING:
+        {
+            weapon.cooldown -= deltaTime;
+            if(weapon.cooldown.count() <= 0.0)
+            {
+                weapon.state = Weapon::State::IDLE;
+            }
+        }
+        break;
     }
 
     return weapon;
 }
+
+Player::HealthState PlayerController::UpdateShield(Player::HealthState healthState, Util::Timer& dmgTimer, Util::Time::Seconds deltaTime)
+{
+    switch (healthState.shieldState)
+    {
+    case Player::SHIELD_STATE_IDLE:
+        
+        break;
+    
+    case Player::SHIELD_STATE_DAMAGED:
+        dmgTimer.Update(deltaTime);
+        if(dmgTimer.IsDone())
+            healthState.shieldState = Player::SHIELD_STATE_REGENERATING;
+        break;
+    
+    case Player::SHIELD_STATE_REGENERATING:
+    {
+        auto increase = Player::SHIELD_PER_SEC * (float)deltaTime.count();
+        healthState.shield = std::min(healthState.shield + increase, Player::MAX_SHIELD);
+        if(healthState.shield == Player::MAX_SHIELD)
+            healthState.shieldState = Player::SHIELD_STATE_IDLE;
+    }
+        break;
+
+    default:
+        break;
+    }
+
+    return healthState;
+}
+
+// Collisions
 
 struct Intersection
 {
@@ -292,7 +340,7 @@ Math::Transform PlayerController::GetGCB()
 
 glm::vec3 PlayerController::HandleGravityCollisionsAlt(Game::Map::Map* map, float blockScale, Util::Time::Seconds deltaTime)
 {
-    float fallDistance = gravitySpeed; // TODO: * deltaTime;
+    float fallDistance = gravitySpeed * deltaTime.count();
     glm::vec3 offset = glm::vec3{0.0f, fallDistance, 0.0f};
 
     auto ecb = GetGCB();

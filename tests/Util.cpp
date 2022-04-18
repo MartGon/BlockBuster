@@ -131,7 +131,7 @@ TEST_CASE("Random")
         uint32_t max = 2;
         for(int i = 0; i < tests; i++)
         {
-            uint32_t random = Util::Random::Uniform(0, max);
+            uint32_t random = Util::Random::Uniform(0u, max);
             bool inRange = random >= 0 && random <= max;
             CHECK(inRange == true);
         }

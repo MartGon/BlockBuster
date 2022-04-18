@@ -8,14 +8,16 @@ PlayerSnapshot PlayerSnapshot::FromPlayerState(Entity::PlayerState playerState)
 {
     PlayerSnapshot ps;
     ps.transform = playerState.transform;
-    ps.wepState = playerState.weaponState.state;
+    ps.wepState = playerState.weaponState[playerState.curWep].state;
+    ps.weaponId = playerState.weaponState[playerState.curWep].weaponTypeId;
     return ps;
 }
 
 Entity::PlayerState PlayerSnapshot::ToPlayerState(Entity::PlayerState ps)
 {
     ps.transform = transform;
-    ps.weaponState.state = wepState;
+    ps.weaponState[ps.curWep].state = wepState;
+    ps.weaponState[ps.curWep].weaponTypeId = weaponId;
 
     return ps;
 }
@@ -45,6 +47,14 @@ Util::Buffer Snapshot::ToBuffer() const
         buffer.Write(ps);
     }
 
+    // Projectiles
+    buffer.Write<Entity::ID>(projectiles.size());
+    for(auto& [id, p] : projectiles) 
+    {
+        buffer.Write(id);
+        buffer.Write(p);
+    }
+
     return buffer;
 }
 
@@ -61,6 +71,14 @@ Snapshot Snapshot::FromBuffer(Util::Buffer::Reader& reader)
         auto id = reader.Read<Entity::ID>();
         auto playerSnapshot = reader.Read<PlayerSnapshot>();
         s.players[id] = playerSnapshot;
+    }
+
+    auto projectiles = reader.Read<Entity::ID>();
+    for(auto i = 0; i < projectiles; i++)
+    {
+        auto id = reader.Read<Entity::ID>();
+        auto pState = reader.Read<Entity::Projectile::State>();
+        s.projectiles[id] = pState;
     }
 
     return s;

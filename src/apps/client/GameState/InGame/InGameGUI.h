@@ -8,13 +8,11 @@
 #include <animation/Animation.h>
 
 #include <util/BBTime.h>
-
+#include <util/Table.h>
 #include <gl/Texture.h>
-
 #include <GameState/InGame/InGameFwd.h>
-
 #include <rendering/TextureMgr.h>
-
+#include <entity/Player.h>
 #include <mglogger/Logger.h>
 
 namespace BlockBuster
@@ -41,8 +39,27 @@ namespace BlockBuster
             KILL
         };
 
+        enum ScreenEffect
+        {
+            SCREEN_EFFECT_DMG,
+            SCREEN_EFFECT_HEALING,
+            SCREEN_EFFECT_COUNT
+        };
+
         void PlayHitMarkerAnim(HitMarkerType type);
-        void PlayDmgAnim();
+        void PlayScreenEffect(ScreenEffect effect = ScreenEffect::SCREEN_EFFECT_DMG);
+
+        void EnableActionText(Entity::GameObject& go);
+        void DisableActionText();
+        void EnableScore(bool enabled = true);
+        void EnableHUD(bool enabled);
+        void EnableWinnerText(bool enabled);
+        void EnableCapturingText(bool enabled);
+        void SetCapturePercent(float percent);
+
+        void ShowLogMsg(std::string msg);
+
+        glm::vec4 GetOppositeColor(Entity::ID playerTeam);
 
     private:
         // PopUps
@@ -62,6 +79,7 @@ namespace BlockBuster
         void InitAnimations();
 
         void HUD();
+
         void UpdateHealth();
         void UpdateArmor();
         std::string GetBoundedValue(int val, int max);
@@ -73,10 +91,11 @@ namespace BlockBuster
         void UpdateGameTimeText();
 
         void ScoreboardWindow();
-        void ScoreTable(const char* name);
-        void DebugWindow();
+        void ScoreTable(const char* name, Entity::ID teamId = 0);
         void RenderStatsWindow();
         void NetworkStatsWindow();
+
+        void DebugWindow();
 
         // Handy
         Log::Logger* GetLogger();
@@ -93,9 +112,11 @@ namespace BlockBuster
         GUI::PopUpMgr<PopUpState::MAX> puMgr;
 
         // Textures
-        Rendering::TextureID crosshair;
         Rendering::TextureID hitmarker;
         Rendering::TextureID dmgTexture;
+        Rendering::TextureID grenadeTexId;
+        Rendering::TextureID dmgArrowId;
+        Util::Table<Rendering::TextureID> crosshairTextures;
 
         // HUD
         GUI::Text healthIcon;
@@ -104,28 +125,48 @@ namespace BlockBuster
         GUI::Text shieldIcon;
         GUI::Text ammoText;
         GUI::Text ammoNumIcon;
+        GUI::Text grenadeNumText;
+        GUI::Text actionText;
+        GUI::Image wepIcon;
+        GUI::Image altWepIcon;
+        GUI::Image grenadeIcon;
         GUI::Image crosshairImg;
         GUI::Image hitmarkerImg;
+        GUI::Image flagIconImg;
         GUI::Image dmgEffectImg;
+        GUI::Image dmgArrowImg;
+        GUI::Image actionImg;
 
         // Animations
         Animation::Clip hitmarkerAnim;
         bool showHitmarker = false;
         Animation::Player hitMarkerPlayer;
         float dmgAlpha = 0.0f;
+        float dmgArrowAlpha = 0.0f;
+        const glm::ivec3 effectColor[SCREEN_EFFECT_COUNT] = {glm::vec3{1.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 1.0f, 0.0f}};
+        ScreenEffect effectType = SCREEN_EFFECT_DMG;
         Animation::Clip dmgAnim;
         Animation::Player dmgAnimationPlayer;
+        Animation::Player dmgArrowAnimationPlayer;
 
         // Score
         GUI::Text leftScoreText;
         GUI::Text midScoreText;
         GUI::Text rightScoreText;
         GUI::Text gameTimeText;
+        GUI::Text winnerText;
+        GUI::Text winnerAnnoucerText;
 
         // Log
         GUI::Text killText;
         GUI::Text respawnTimeText;
         GUI::Text countdownText;
+        GUI::Text capturingText;
+        GUI::Text captCountdownText;
+        GUI::Text logText;
+        float logAlpha = 1.0f;
+        Animation::Clip logAnim;
+        Animation::Player logAnimPlayer;
 
         // ScoreBoard
         bool showScoreboard = false;
@@ -136,8 +177,8 @@ namespace BlockBuster
         // Metrics
         double maxFPS = 60.0;
 
-        //TODO: DEBUG. Remove on final version
         // Player Model
+    #ifdef _DEBUG
         uint32_t modelId = 0;
         float sliderPrecision = 2.0f;
         glm::vec3 modelOffset{0.0f};
@@ -146,5 +187,6 @@ namespace BlockBuster
         glm::ivec2 wtPos{0};
         float tScale = 0.45f;
         bool tShow = false;
+    #endif
     };
 }

@@ -1,13 +1,16 @@
 SET(SOURCES
     Block.cpp
+    Event.cpp
     Map.cpp
     Game.cpp
     GameMode.cpp
     Player.cpp
     PlayerController.cpp
+    Projectile.cpp
     Weapon.cpp
     GameObject.cpp
     Match.cpp
+    Scoreboard.cpp
 )
 
 

@@ -8,7 +8,7 @@
 using namespace BlockBuster;
 using namespace Networking::Packets::Client;
 
-Server::Server(Params params, MMServer mmServer) : params{params}, mmServer{mmServer}, 
+Server::Server(Params params, MMServer mmServer, Util::Time::Seconds tickRate) : params{params}, mmServer{mmServer}, TICK_RATE{tickRate},
     asyncClient{mmServer.address, mmServer.port}
 {
 
@@ -27,7 +27,7 @@ void Server::Start()
 void Server::Run()
 {
     // Server loop
-    while(!match.IsOver())
+    while(!match.IsOver() && !quit)
     {
         host->PollAllEvents();
 
@@ -38,17 +38,21 @@ void Server::Run()
             HandleClientsInput();
             UpdateWorld();
             SendWorldUpdate();
-            SendScoreboardReport();
 
             tickCount++;
         }
 
-        match.Update(&logger, TICK_RATE);
+        SendScoreboardReport();
+        match.Update(GetWorld(), TICK_RATE);
         logger.Flush();
         SleepUntilNextTick(preSimulationTime);
     }
 
     logger.LogInfo("Server shutdown");
+    ServerEvent::Notification n;
+    n.eventType = ServerEvent::Type::GAME_ENDED;
+    n.event = ServerEvent::GameEnded();
+    SendServerNotification(n);
 }
 
 // Initialization
@@ -95,8 +99,9 @@ void Server::InitMatch()
 {
     InitAI();
     InitMap();
+    InitGameObjects();
     auto mode = GameMode::stringTypes.at(params.mode);
-    match.Start(mode);
+    match.Start(GetWorld(), mode, params.startingPlayers);
 }
 
 void Server::InitAI()
@@ -126,35 +131,66 @@ void Server::InitMap()
     }
 }
 
+void Server::InitGameObjects()
+{
+    auto criteria = [this](glm::ivec3 pos, Entity::GameObject& go)
+    {
+        return go.IsInteractable();
+    };
+    auto goIndices = map.FindGameObjectByCriteria(criteria);
+    for(auto goIndex : goIndices)
+    {
+        auto go = map.GetGameObject(goIndex);
+        auto respawnTime = std::get<int>(go->properties["Respawn Time (s)"].value);
+
+        GOState goState;
+        goState.state = Entity::GameObject::State{true};
+        goState.respawnTimer.SetDuration(Util::Time::Seconds{respawnTime});
+        gameObjectStates[goIndex] = goState;
+    }
+}
+
 // Networking
 
 void Server::OnClientJoin(ENet::PeerId peerId)
 {
-    logger.LogError("Connected with peer " + std::to_string(peerId));
+    logger.LogInfo("Connected with peer " + std::to_string(peerId));
 
-    std::vector<ENet::PeerId> connectedClients;
-    for(auto& [id, client] : clients)
-        connectedClients.push_back(id);
-
-    // Create Player
+    // Create Client
     Entity::Player player;
-    player.id = this->lastId++;
-    player.teamId = player.id; // TODO: Let gamemode decide based on current teams
+    player.id = peerId;
 
     // Add to table
     clients[peerId].id = peerId;
     clients[peerId].player = player;
+}
+
+void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::string playerName)
+{
+    auto& client = clients[peerId];
+    auto& player = client.player;
+
+    // Set name
+    client.playerUuuid = playerUuid;
+    client.playerName = playerName;
+
+    // Get Team id
+    auto teamId = match.GetGameMode()->PlayerJoin(client.player.id, playerName);
+    client.player.teamId = teamId;
+
+    // Spawn player
     SpawnPlayer(peerId);
 
     // Send welcome packet
     Networking::Batch<Networking::PacketType::Server> batch;
 
     auto welcome = std::make_unique<Networking::Packets::Server::Welcome>();
-    welcome->playerId = player.id;
-    welcome->teamId = player.teamId;
+    welcome->playerId = peerId;
+    welcome->teamId = teamId;
     welcome->tickRate = TICK_RATE.count();
     welcome->mode = match.GetGameMode()->GetType();
-    logger.LogError("Game mode sent is " + std::to_string(welcome->mode));
+    welcome->startingPlayers = params.startingPlayers;
+    logger.LogDebug("Game mode sent is " + std::to_string(welcome->mode));
     batch.PushPacket(std::move(welcome));
 
     // Send match state packet
@@ -162,7 +198,23 @@ void Server::OnClientJoin(ENet::PeerId peerId)
     ms->state = match.ExtractState();
     batch.PushPacket(std::move(ms));
 
-    // Send info about already connected players
+    // Send info about other connected players
+    std::vector<ENet::PeerId> connectedClients;
+    for(auto& [id, client] : clients)
+    {
+        if(id != peerId)
+            connectedClients.push_back(id);
+    }
+
+    // Send gameObjects state
+    for(auto [goPos, state] : gameObjectStates)
+    {
+        auto gos = std::make_unique<Networking::Packets::Server::GameObjectState>();
+        gos->goPos = goPos;
+        gos->state = gameObjectStates[goPos].state;
+        batch.PushPacket(std::move(gos));
+    }
+
     for(auto& id : connectedClients)
     {
         auto& client = clients[id];
@@ -197,7 +249,7 @@ void Server::OnClientLeave(ENet::PeerId peerId)
     auto& player = client.player;
 
     // Update scoreboard
-    match.GetGameMode()->GetScoreboard().RemovePlayer(player.id);
+    match.GetGameMode()->PlayerLeave(player.id);
 
     // Informing players
     Networking::Packets::Server::PlayerDisconnected pd;
@@ -212,6 +264,14 @@ void Server::OnClientLeave(ENet::PeerId peerId)
 
     // Finally remove peerId
     clients.erase(peerId);
+
+    #ifndef _DEBUG
+        if(clients.size() == 0 && match.GetState() == Match::ON_GOING)
+        {
+            quit = true;
+            logger.LogInfo("No players left. Leaving");
+        }
+    #endif
 }
 
 void Server::OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket)
@@ -247,10 +307,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
         case Networking::OpcodeClient::OPCODE_CLIENT_LOGIN:
         {
             auto login = packet.To<Networking::Packets::Client::Login>();
-            client.playerUuuid = login->playerUuid;
-            client.playerName = login->playerName;
-
-            match.GetGameMode()->GetScoreboard().AddPlayer(client.player.id, login->playerName);
+            OnClientLogin(peerId, login->playerUuid, login->playerName);
         }
         break;
         case Networking::OpcodeClient::OPCODE_CLIENT_INPUT:
@@ -259,7 +316,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
             auto inputReq = inputPacket->req;
 
             auto cmdId = inputReq.reqId;
-            logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId) + " from " + std::to_string(peerId));
+            logger.LogDebug("Command arrived with cmdid " + std::to_string(cmdId) + " from " + std::to_string(peerId));
 
             // Check if we already have this input
             auto found = client.inputBuffer.FindFirst([cmdId](auto input)
@@ -354,26 +411,40 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     if(player.IsDead())
         return;
 
+    auto input = cmd.playerInput;
+
     auto playerTransform = player.GetTransform();
     auto playerPos = playerTransform.position;
     auto playerYaw = cmd.camYaw;
 
     auto& pController = client.pController;
-    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, cmd.playerInput, &map, TICK_RATE);
+    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, input, &map, TICK_RATE);
     playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
     player.SetTransform(playerTransform);
+    logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
 
-    auto oldWepState = player.weapon;
-    player.weapon = pController.UpdateWeapon(player.weapon, cmd.playerInput, TICK_RATE);
-    logger.LogDebug("Player Ammo " + std::to_string(player.weapon.ammoState.magazine));
+    auto oldWepState = player.GetCurrentWeapon();
+    auto nextWeapon = player.weapons[player.GetNextWeaponId()];
+    player.GetCurrentWeapon() = pController.UpdateWeapon(player.GetCurrentWeapon(), nextWeapon, input, TICK_RATE);
+    logger.LogDebug("Player Ammo " + std::to_string(player.GetCurrentWeapon().ammoState.magazine));
 
-    if(Entity::HasShot(oldWepState.state, player.weapon.state))
+    if(Entity::HasShot(oldWepState.state, player.GetCurrentWeapon().state))
     {
         ShotCommand sc{peerId, player.GetFPSCamPos(), glm::radians(playerTransform.rotation), cmd.fov, cmd.aspectRatio, cmd.renderTime};
         HandleShootCommand(sc);
     }
 
-    logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
+    if(Entity::HasSwapped(oldWepState.state, player.GetCurrentWeapon().state))
+        player.WeaponSwap();
+
+    if(input[Entity::Inputs::ACTION])
+        HandleActionCommand(player);
+
+    if(input[Entity::Inputs::GRENADE])
+        HandleGrenadeCommand(peerId);
+
+    if(IsPlayerOutOfBounds(peerId))
+        OnPlayerDeath(peerId, peerId);
 }
 
 void Server::HandleShootCommand(ShotCommand sc)
@@ -416,56 +487,129 @@ void Server::HandleShootCommand(ShotCommand sc)
     Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
     logger.LogDebug("Handling player shot from " + glm::to_string(ray.origin) + " to " + glm::to_string(ray.GetDir()));
 
-    // Check collision with block
-    auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
-    auto bColDist = std::numeric_limits<float>::max();
-    if(bCol.intersection.intersects)
-        bColDist = bCol.intersection.GetRayLength(ray);
-
-    // Check collision with players. This allows collaterals
     auto& author = clients[sc.clientId].player;
-    for(auto& [peerId, client] : clients)
+    auto& weapon = author.GetCurrentWeapon();
+    auto wepType = Entity::GetWeaponType(weapon.weaponTypeId);
+
+    // Hit scan
+    if(wepType.shotType == Entity::WeaponType::ShotType::HITSCAN)
     {
-        if(peerId == sc.clientId)
-            continue;
+        // Check collision with block
+        auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
+        auto bColDist = std::numeric_limits<float>::max();
+        if(bCol.intersection.intersects)
+            bColDist = bCol.intersection.GetRayLength(ray);
 
-        auto& victim = client.player;
-        if(victim.IsDead())
-            continue;
-
-        auto playerId = victim.id;
-        bool s1HasData = s1.players.find(playerId) != s1.players.end();
-        bool s2HasData = s2.players.find(playerId) != s2.players.end();
-
-        if(!s1HasData || !s2HasData)
-            continue;
-
-        // Calculate player pos that client views
-        auto ps1 = s1.players.at(playerId);
-        auto ps2 = s2.players.at(playerId);
-        auto smoothState = Networking::PlayerSnapshot::Interpolate(ps1, ps2, alpha);
-
-        auto lastMoveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
-        auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.transform.pos, smoothState.transform.rot.y, lastMoveDir);
-        if(rpc.collides)
+        // Check collision with players. This allows collaterals
+        for(auto& [peerId, client] : clients)
         {
-            auto colDist = rpc.intersection.GetRayLength(ray);
-            if(colDist < bColDist)
-            {
-                victim.TakeWeaponDmg(author.weapon, rpc.hitboxType, colDist);
-                OnPlayerTakeDmg(sc.clientId, peerId);
+            if(peerId == sc.clientId)
+                continue;
 
-                logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
-                logger.LogDebug("Victim's shield " + std::to_string(victim.health.shield) + " Victim health " + std::to_string(victim.health.hp));
+            // No Friendly fire or dmg to dead units
+            auto& victim = client.player;
+            if(victim.IsDead() || victim.teamId == author.teamId)
+                continue;
+
+            auto playerId = victim.id;
+            bool s1HasData = s1.players.find(playerId) != s1.players.end();
+            bool s2HasData = s2.players.find(playerId) != s2.players.end();
+
+            if(!s1HasData || !s2HasData)
+                continue;
+
+            // Calculate player pos that client views
+            auto ps1 = s1.players.at(playerId);
+            auto ps2 = s2.players.at(playerId);
+            auto smoothState = Networking::PlayerSnapshot::Interpolate(ps1, ps2, alpha);
+
+            auto lastMoveDir = Entity::GetLastMoveDir(ps1.transform.pos, ps2.transform.pos);
+            auto rpc = Game::RayCollidesWithPlayer(ray, smoothState.transform.pos, smoothState.transform.rot.y, lastMoveDir);
+            if(rpc.collides)
+            {
+                auto colDist = rpc.intersection.GetRayLength(ray);
+                
+                if(colDist < bColDist && colDist <= Entity::GetMaxEffectiveRange(weapon.weaponTypeId))
+                {
+                    victim.TakeWeaponDmg(weapon, rpc.hitboxType, colDist);
+                    OnPlayerTakeDmg(sc.clientId, peerId);
+
+                    logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
+                    logger.LogDebug("Victim's shield " + std::to_string(victim.health.shield) + " Victim health " + std::to_string(victim.health.hp));
+                }
+                else
+                    logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit block " + glm::to_string(bCol.pos));
             }
             else
-                logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit block " + glm::to_string(bCol.pos));
+                logger.LogDebug("Shot from player " + std::to_string(author.id) + " has NOT hit player " + std::to_string(peerId));
         }
-        else
-            logger.LogDebug("Shot from player " + std::to_string(author.id) + " has NOT hit player " + std::to_string(peerId));
-        //logger.LogInfo("Player was at " + glm::to_string(smoothState.transform.pos));
+    }
+    else if(wepType.shotType == Entity::WeaponType::ShotType::PROJECTILE)
+    {
+        std::unique_ptr<Entity::Projectile> p;
+        if(wepType.projType == Entity::Projectile::GRENADE)
+            p = std::make_unique<Entity::Grenade>();
+        else if(wepType.projType == Entity::Projectile::ROCKET)
+            p = std::make_unique<Entity::Rocket>();
+
+        float SPEED = 20.0f;
+        glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
+        auto scaler = p->GetType() == Entity::Projectile::ROCKET ? 3.0f : 1.2f;
+        auto launchPos = ray.origin + ray.GetDir() * (p->GetScale().x * scaler);
+        p->Launch(author.id, launchPos, ray.GetDir() * SPEED, acceleration);
+        projectiles.MoveInto(std::move(p));
     }
 }
+
+void Server::HandleActionCommand(Entity::Player& player)
+{
+    auto blockScale = map.GetBlockScale();
+    for(auto& [pos, goState] : gameObjectStates)
+    {
+        if(!goState.state.isActive)
+            continue;
+
+        auto goPos = Game::Map::ToRealPos(pos, blockScale);
+        auto pPos = player.GetTransform().position;
+        if(Collisions::IsPointInSphere(pPos, goPos, Entity::GameObject::ACTION_AREA))
+        {
+            auto go = map.GetGameObject(pos);
+            player.InteractWith(*go);
+
+            // Inform clients
+            goState.state.isActive = false;
+            goState.respawnTimer.Restart();
+            BroadcastGameObjectState(pos);
+
+            // Inform player of interaction
+            SendPlayerGameObjectInteraction(player.id, pos);
+        }
+    }
+}
+
+void Server::HandleGrenadeCommand(ENet::PeerId peerId)
+{
+    auto& player = clients[peerId].player;
+    auto& weapon = player.GetCurrentWeapon();
+
+    if(weapon.state == Entity::Weapon::State::IDLE && player.HasGrenades())
+    {
+        player.ThrowGrenade();
+
+        auto origin = player.GetFPSCamPos();
+        auto rotation = player.GetTransform().rotation;
+        auto dir = Math::GetFront(glm::radians(glm::vec2{rotation}));
+
+        auto p = std::make_unique<Entity::Grenade>();
+        float SPEED = 20.0f;
+        glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
+        auto launchPos = origin + dir * p->GetScale().x * 1.1f;
+        p->Launch(player.id, launchPos, dir * SPEED, acceleration);
+        projectiles.MoveInto(std::move(p));
+    }
+}
+
+// Sending
 
 void Server::SendWorldUpdate()
 {
@@ -474,6 +618,8 @@ void Server::SendWorldUpdate()
 
     Networking::Snapshot s;
     s.serverTick = tickCount;
+
+    // Players
     for(auto& [id, client] : clients)
     {
         auto& player = client.player;
@@ -482,6 +628,15 @@ void Server::SendWorldUpdate()
 
         s.players[player.id] = Networking::PlayerSnapshot::FromPlayerState(player.ExtractState());
     }
+    
+    // Projectiles
+    for(auto& id : projectiles.GetIDs())
+    {
+        auto& projectile = projectiles.GetRef(id);
+        s.projectiles[id] = projectile->ExtractState();
+    }
+
+    // Save snapshot
     history.PushBack(s);
 
     // Send snapshot with acks
@@ -509,10 +664,12 @@ void Server::SendWorldUpdate()
 
 void Server::SendScoreboardReport()
 {
-    auto scoreboard = match.GetGameMode()->GetScoreboard();
+    auto& scoreboard = match.GetGameMode()->GetScoreboard();
     if(!scoreboard.HasChanged())
         return;
+
     scoreboard.CommitChanges();
+    logger.LogDebug("Sending scoreboard");
 
     Networking::Packets::Server::ScoreboardReport sr;
     sr.scoreboard = scoreboard;
@@ -553,8 +710,27 @@ void Server::BroadcastRespawn(ENet::PeerId peerId)
     Networking::Packets::Server::PlayerRespawn pr;
     pr.playerId = player.id;
     pr.playerState = player.ExtractState();
+    for(auto i = 0 ; i < Entity::Player::MAX_WEAPONS; i++)
+        pr.weapons[i] = player.weapons[i].weaponTypeId;
 
     Broadcast(pr);
+}
+
+void Server::BroadcastGameObjectState(glm::ivec3 pos)
+{
+    Networking::Packets::Server::GameObjectState gos;
+    gos.goPos = pos;
+    gos.state = gameObjectStates[pos].state;
+
+    Broadcast(gos);
+}
+
+void Server::SendPlayerGameObjectInteraction(ENet::PeerId peerId, glm::ivec3 pos)
+{
+    Networking::Packets::Server::PlayerGameObjectInteract pgoi;
+    pgoi.goPos = pos;
+    
+    SendPacket(peerId, pgoi);
 }
 
 void Server::SendPacket(ENet::PeerId peerId, Networking::Packet& packet)
@@ -581,6 +757,7 @@ void Server::Broadcast(Networking::Packet& packet)
 
 void Server::UpdateWorld()
 {
+    // Player respawns
     for(auto& [id, client] : clients)
     {
         auto& player = client.player;
@@ -594,7 +771,175 @@ void Server::UpdateWorld()
             else
                 client.respawnTime -= TICK_RATE;
         }
+        else if(!player.IsShieldFull())
+        {
+            auto& pController = client.pController;
+            player.health = pController.UpdateShield(player.health, player.dmgTimer, TICK_RATE);
+        }
     }
+
+    // GameObject respawns
+    for(auto& [goPos, goState] : gameObjectStates)
+    {
+        goState.respawnTimer.Update(TICK_RATE);
+        if(goState.respawnTimer.IsDone())
+        {
+            goState.respawnTimer.Restart();
+            goState.state.isActive = true;
+            BroadcastGameObjectState(goPos);
+        }
+    }
+
+    UpdateProjectiles();
+
+    // Send broad events
+    auto gameMode = match.GetGameMode();
+    auto broadEvents = gameMode->PollEventMsgs(MsgType::BROADCAST);
+    Networking::Batch<Networking::PacketType::Server> batch;
+    for(auto event : broadEvents)
+    {
+        auto eventPacket = std::make_unique<Networking::Packets::Server::GameEvent>();
+        eventPacket->event = event;
+        batch.PushPacket(std::move(eventPacket));
+    }
+    Broadcast(batch);
+
+    // Send targeted events
+    for(auto& [id, client] : clients)
+    {
+        auto targetedEvents = gameMode->PollEventMsgs(MsgType::PLAYER_TARGET, id);
+        if(!targetedEvents.empty())
+        {
+            logger.LogDebug("Sending targeted evenst");
+            Networking::Batch<Networking::PacketType::Server> batch;
+            for(auto event : targetedEvents)
+            {
+                auto eventPacket = std::make_unique<Networking::Packets::Server::GameEvent>();
+                eventPacket->event = event;
+                batch.PushPacket(std::move(eventPacket));
+            }
+            SendPacket(id, batch);
+        }
+    }
+}
+
+void Server::UpdateProjectiles()
+{
+     // Projectiles
+    auto pIds = projectiles.GetIDs();
+    std::vector<uint16_t> idsToRemove;
+    for(auto id : pIds)
+    {
+        auto& projectile = projectiles.GetRef(id);
+        projectile->Update(TICK_RATE);
+        
+        Math::Transform t{projectile->GetPos(), glm::vec3{0.0f}, projectile->GetScale()};
+        auto collision = Game::AABBCollidesBlock(&map, t);
+        if(collision.collides)
+        {
+            logger.LogDebug("Surface normal " + glm::to_string(collision.normal));
+            logger.LogDebug("Offset " + glm::to_string(collision.offset));
+            projectile->OnCollide(collision.normal);
+            projectile->SetPos(t.position + collision.offset);
+        }
+
+        // TODO: Check collision with players;
+        for(auto& [id, client] : clients)
+        {
+            auto& player = client.player;
+            auto playerT = player.GetRenderTransform();
+            
+            auto s1 = history.At(-2);
+            auto s2 = history.At(-1);
+            if(s1.has_value() && s2.has_value())
+            {
+                if(Util::Map::Contains(s1->players, player.id) && Util::Map::Contains(s2->players, player.id))
+                {
+                    auto lastMoveDir = Entity::GetLastMoveDir(s1->players[player.id].transform.pos, s2->players[player.id].transform.pos);
+                    if(auto collision = Game::AABBCollidesWithPlayer(t, playerT.position, playerT.rotation.y, lastMoveDir))
+                    {
+                        projectile->OnCollide(collision.normal);
+                        projectile->SetPos(t.position + collision.offset);
+                    }
+                }
+            }
+        }
+
+        // Apply dmg to players
+        if(projectile->HasDenotaded())
+        {
+            if(Util::Map::Contains(clients, projectile->GetAuthor()))
+            {
+                auto& author = clients[projectile->GetAuthor()].player;
+                auto radius = projectile->GetRadius();
+                for(auto& [id, client] : clients)
+                {
+                    auto& victim = client.player;
+
+                    if(victim.IsDead() || (victim.teamId == author.teamId && victim.id != author.id))
+                        continue;
+
+                    auto victimPos = victim.GetTransform().position;
+                    if(auto collision = Collisions::PointInSphere(victimPos, projectile->GetPos(), radius))
+                    {
+                        bool doDmg = victim.teamId != author.teamId || author.id == victim.id; // Different team or player
+                        auto dmg = Entity::GetDistanceDmgMod(projectile->GetRadius() * 0.5f, collision.distance) * projectile->GetDmg();
+                        victim.TakeDmg(dmg);
+                        OnPlayerTakeDmg(author.id, victim.id);
+                    }
+                }
+            }
+            idsToRemove.push_back(id);
+        }
+    }
+    for(auto id : idsToRemove)
+        projectiles.Remove(id);
+}
+
+bool Server::IsPlayerOutOfBounds(ENet::PeerId peerId)
+{
+    bool outOfBounds = false;
+
+    auto& player = clients[peerId].player;
+    auto pos = player.GetRenderTransform().position;
+
+    // Is in any of the chunks?
+    auto blockScale = map.GetBlockScale();
+    auto chunkPos = Game::Map::ToChunkIndex(pos, blockScale);
+    if(!map.HasChunk(chunkPos))
+        return true;
+
+    // Is in a killbox area
+    auto playerPos = Game::Map::ToRealPos(pos);
+    auto killboxes = map.FindGameObjectByType(Entity::GameObject::KILLBOX);
+    for(auto goPos : killboxes)
+    {
+        auto go = map.GetGameObject(goPos);
+        Math::Transform box;
+
+        box.position = Game::Map::ToRealPos(goPos, blockScale);
+        float scaleX = std::get<float>(go->properties["Scale X"].value);
+        float scaleY = std::get<float>(go->properties["Scale Y"].value);
+        float scaleZ = std::get<float>(go->properties["Scale Z"].value);
+        box.scale = glm::vec3{scaleX, scaleY, scaleZ} * blockScale;    
+        box.position.y += ((box.scale.y) / 2.0f);
+
+        if(Collisions::IsPointInAABB(playerPos, box))
+            return true;
+    }
+
+    return false;
+}
+
+void Server::OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId)
+{
+    auto& victim = clients[victimId].player;
+    victim.health.hp = 0.0f;
+    
+    auto gameMode = match.GetGameMode();
+    clients[victimId].respawnTime = gameMode->GetRespawnTime();
+    BroadcastPlayerDied(authorId, victimId, clients[victimId].respawnTime);
+    gameMode->PlayerDeath(authorId, victimId, clients[authorId].player.teamId);
 }
 
 void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
@@ -611,8 +956,8 @@ void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
 
     // Calculate how far behind the server is
     lag = afterSleepTime - nextTickDate;
-    //logger.LogInfo("Server tick took " + std::to_string(simulationTime.count()) + " s");
-    //logger.LogInfo("Server delay " + std::to_string(lag.count()));
+    logger.LogDebug("Server tick took " + std::to_string(simulationTime.count()) + " s");
+    logger.LogDebug("Server delay " + std::to_string(lag.count()));
 
     // Update next tick date
     nextTickDate = nextTickDate + TICK_RATE;
@@ -642,7 +987,7 @@ void Server::SendServerNotification(ServerEvent::Notification notification)
 }
 
 // Match
-const float Server::MIN_SPAWN_ENEMY_DISTANCE = 5.0f;
+const float Server::MIN_SPAWN_ENEMY_DISTANCE = 6.0f; // In Blocks
 
 // This should get a random spawn point from a list of valid ones
 // A valid spawn point is one which doesn't have an enemy in X distance
@@ -677,10 +1022,13 @@ glm::vec3 Server::ToSpawnPos(glm::ivec3 spawnPoint)
     return pos;
 }
 
-bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
+bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player)
 {
-    auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
+    auto spawn = map.GetRespawn(spawnPoint);
+    if(spawn->teamId != player.teamId)
+        return false;
 
+    auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
     auto players = GetPlayers();
     for(auto other : players)
     {
@@ -689,7 +1037,7 @@ bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const
             auto posA = other.GetTransform().position;
             auto dist = glm::length(posA - spawnPos);
 
-            if(dist < MIN_SPAWN_ENEMY_DISTANCE)
+            if(dist < MIN_SPAWN_ENEMY_DISTANCE * map.GetBlockScale())
                 return false;
         }
     }
@@ -711,8 +1059,11 @@ void Server::SpawnPlayer(ENet::PeerId clientId)
     player.SetTransform(playerTransform);
 
     // Set weapon and health
-    player.ResetWeaponAmmo(Entity::WeaponTypeID::CHEAT_SMG);
+    player.ResetWeapons();
+    player.GetCurrentWeapon() = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::ASSAULT_RIFLE).CreateInstance();
+    //player.weapons[1] = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
     player.ResetHealth();
+    player.grenades = 2;
 }
 
 void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
@@ -726,11 +1077,7 @@ void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
     SendPlayerHitConfirm(authorId, victim.id);
     if(victim.IsDead())
     {   
-        auto gameMode = match.GetGameMode();
-        // TODO: Change according to mode
-        clients[victimId].respawnTime = Util::Time::Seconds{5.0f};
-        BroadcastPlayerDied(author.id, victim.id, clients[victimId].respawnTime);
-        gameMode->OnPlayerDeath(author.id, victim.id, author.teamId);
+        OnPlayerDeath(authorId, victimId);
     }
 }
 
@@ -742,4 +1089,19 @@ std::vector<Entity::Player> Server::GetPlayers() const
         players.push_back(client.player);
 
     return players;
+}
+
+// World
+
+World Server::GetWorld()
+{
+    World world;
+
+    world.map = &map;
+    for(auto& [peerId, client] : clients)
+        world.players[peerId] = &client.player;
+
+    world.logger = &logger;
+
+    return world;
 }

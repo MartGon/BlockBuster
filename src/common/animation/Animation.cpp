@@ -15,9 +15,9 @@ void Player::Update(Util::Time::Seconds secs)
     timer.Update(secs);
 
     auto curFrame = GetCurrentFrame();
-    auto index = GetKeyFrameIndex(curFrame);
     if(!IsDone(curFrame))
     {
+        auto index = GetKeyFrameIndex(curFrame);
         auto k1 = clip->keyFrames[index];
         auto k2 = clip->keyFrames[index + 1];
         auto w = Math::GetWeights(k1.frame, k2.frame, curFrame);
@@ -54,7 +54,6 @@ void Player::SetClipDuration(Util::Time::Seconds secs)
 Sample Animation::Interpolate(Sample s1, Sample s2, float alpha)
 {
     Sample s;
-
     // Interpolate floats
     for(auto [k, f] : s1.floats)
     {  
@@ -65,6 +64,19 @@ Sample Animation::Interpolate(Sample s1, Sample s2, float alpha)
             auto val = Math::Interpolate(f1, f2, alpha);
 
             s.floats[k] = val;
+        }
+    }
+
+    // Interpolate ints
+    for(auto [k, i] : s1.ints)
+    {  
+        auto i1 = i;
+        if(s2.ints.find(k) != s2.ints.end())
+        {
+            auto i2 = s2.ints[k];
+            auto val = Math::Interpolate(i1, i2, alpha);
+
+            s.ints[k] = val;
         }
     }
 
@@ -88,9 +100,14 @@ bool Player::IsDone(uint32_t curFrame)
     return isDone = curFrame >= GetClipLastFrame();
 }
 
+KeyFrame Player::GetClipLastKeyFrame() const
+{
+    return *clip->keyFrames.rbegin();
+}
+
 uint32_t Player::GetClipLastFrame() const
 {   
-    return clip->keyFrames.rbegin()->frame;
+    return GetClipLastKeyFrame().frame;
 }
 
 uint32_t Player::GetKeyFrameIndex(uint32_t curFrame) const
@@ -119,9 +136,20 @@ static void ApplyParams(std::unordered_map<std::string, T*>& targets, std::unord
     {
         if(refs.find(k) != refs.end())
         {
+            auto temp = refs[k];
             if(value)
-                *value = refs[k];
+                *value = temp;
         }
+    }
+}
+
+template<typename T>
+static void ReadParams(std::unordered_map<std::string, T*>& targets, std::unordered_map<std::string, T>& refs)
+{
+    for(auto& [k, value] : targets)
+    {
+        if(value)
+            refs[k] = *value;
     }
 }
 
@@ -129,4 +157,15 @@ void Player::ApplySample(Sample s1)
 {
     ApplyParams(fTargets, s1.floats);
     ApplyParams(bTargets, s1.bools);
+    ApplyParams(iTargets, s1.ints);
+}
+
+Sample Player::TakeSample()
+{
+    Sample sample;
+    ReadParams(fTargets, sample.floats);
+    ReadParams(bTargets, sample.bools);
+    ReadParams(iTargets, sample.ints);
+
+    return sample;
 }

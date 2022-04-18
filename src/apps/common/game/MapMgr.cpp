@@ -1,5 +1,7 @@
 #include <MapMgr.h>
 
+#include <fstream>
+
 using namespace BlockBuster;
 
 bool MapMgr::HasMap(const std::string& mapName)
@@ -34,4 +36,27 @@ std::vector<std::filesystem::path> MapMgr::GetLocalMaps()
     }
 
     return maps;
+}
+
+void MapMgr::WriteMapVersion(const std::string& map, const std::string& version)
+{
+    auto mapFolder = GetMapFolder(map);
+    auto versionFilePath = mapFolder / "version.txt";
+    std::fstream versionFile{versionFilePath, versionFile.out};
+
+    versionFile.write(version.c_str(), version.size());
+    versionFile.close();
+}
+
+std::string MapMgr::ReadMapVersion(const std::string& map)
+{
+    auto mapFolder = GetMapFolder(map);
+    auto versionFilePath = mapFolder / "version.txt";
+    std::fstream versionFile{versionFilePath, versionFile.in};
+
+    std::string version;
+    if(!versionFile.bad())
+        std::getline(versionFile, version);
+
+    return version;
 }

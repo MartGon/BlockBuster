@@ -44,7 +44,7 @@ namespace App::Client
         void UpdateEditorCamera();
         void UpdateFPSCameraMovement();
         void UpdateFPSCameraRotation(const SDL_MouseMotionEvent& motion);
-
+        
         CameraMode mode_;
         Rendering::Camera* camera_;
         CameraContext context_;

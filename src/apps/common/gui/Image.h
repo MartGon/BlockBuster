@@ -27,6 +27,16 @@ namespace GUI
             return imgScale;
         }
 
+        inline void SetRot(float rot)
+        {
+            this->rot = rot;
+        }
+
+        inline float GerRot()
+        {
+            return this->rot;
+        }
+
         inline void SetSize(glm::ivec2 size)
         {
             imgScale = glm::vec2{size} / glm::vec2{texture->GetSize()};
@@ -49,9 +59,9 @@ namespace GUI
 
         static std::unique_ptr<Rendering::Mesh> quadMesh;
 
+        float rot = 0.0f;
         glm::vec4 color{1.0f};
         glm::vec2 imgScale{1.0f};
         GL::Texture* texture;
-
     };
 }

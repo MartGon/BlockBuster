@@ -23,7 +23,6 @@ namespace BlockBuster
     protected:
 
         Log::Logger* GetLogger();
-
         Client* client_;
     };
 }

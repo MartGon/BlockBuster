@@ -59,6 +59,18 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_SCOREBOARD_REPORT:
         packet = std::make_unique<ScoreboardReport>();
         break;
+
+    case OpcodeServer::OPCODE_SERVER_GAME_EVENT:
+        packet = std::make_unique<GameEvent>();
+        break;
+
+    case OpcodeServer::OPCODE_SERVER_GAMEOBJECT_STATE:
+        packet = std::make_unique<GameObjectState>();
+        break;
+
+    case OpcodeServer::OPCODE_SERVER_PLAYER_GAMEOBJECT_INTERACT:
+        packet = std::make_unique<PlayerGameObjectInteract>();
+        break;
     
     default:
         break;
@@ -115,7 +127,7 @@ void Welcome::OnRead(Util::Buffer::Reader& reader)
     teamId = reader.Read<Entity::ID>();
     tickRate = reader.Read<double>();
     mode = reader.Read<BlockBuster::GameMode::Type>();
-    buffer.Write(mode);
+    startingPlayers = reader.Read<uint8_t>();
 }
 
 void Welcome::OnWrite()
@@ -124,6 +136,7 @@ void Welcome::OnWrite()
     buffer.Write(teamId);
     buffer.Write(tickRate);
     buffer.Write(mode);
+    buffer.Write(startingPlayers);
 }
 
 void MatchState::OnRead(Util::Buffer::Reader& reader)
@@ -138,15 +151,7 @@ void MatchState::OnWrite()
 
 void WorldUpdate::OnRead(Util::Buffer::Reader& reader)
 {
-    snapShot.serverTick = reader.Read<uint32_t>();
-
-    auto len = reader.Read<std::uint8_t>();
-    for(auto i = 0; i < len; i++)
-    {
-        auto id = reader.Read<Entity::ID>();
-        auto playerState = reader.Read<PlayerSnapshot>();
-        snapShot.players.insert({id, playerState});
-    }
+    snapShot = Snapshot::FromBuffer(reader);
 }
 
 void WorldUpdate::OnWrite()
@@ -230,12 +235,19 @@ void PlayerRespawn::OnRead(Util::Buffer::Reader& reader)
 {
     playerId = reader.Read<Entity::ID>();
     playerState = reader.Read<Entity::PlayerState>();
+    auto weaponCount = reader.Read<uint8_t>();
+    for(auto i = 0; i < weaponCount; i++)
+        weapons[i] = reader.Read<Entity::WeaponTypeID>();
 }
 
 void PlayerRespawn::OnWrite()
 {
     buffer.Write(playerId);
     buffer.Write(playerState);
+
+    buffer.Write(Entity::Player::MAX_WEAPONS);
+    for(auto i = 0; i < Entity::Player::MAX_WEAPONS; i++)
+        buffer.Write(weapons[i]);
 }
 
 void ScoreboardReport::OnRead(Util::Buffer::Reader& reader)
@@ -246,6 +258,38 @@ void ScoreboardReport::OnRead(Util::Buffer::Reader& reader)
 void ScoreboardReport::OnWrite()
 {
     buffer.Append(scoreboard.ToBuffer());
+}
+
+void GameEvent::OnRead(Util::Buffer::Reader& reader)
+{
+    event = reader.Read<BlockBuster::Event>();
+}
+
+void GameEvent::OnWrite()
+{
+    buffer.Write(event);
+}
+
+void GameObjectState::OnRead(Util::Buffer::Reader& reader)
+{
+    goPos = reader.Read<glm::ivec3>();
+    state = reader.Read<Entity::GameObject::State>();
+}
+
+void GameObjectState::OnWrite()
+{
+    buffer.Write(goPos);
+    buffer.Write(state);
+}
+
+void PlayerGameObjectInteract::OnRead(Util::Buffer::Reader& reader)
+{
+    goPos = reader.Read<glm::ivec3>();
+}
+
+void PlayerGameObjectInteract::OnWrite()
+{
+    buffer.Write(goPos);
 }
 
 using namespace Networking::Packets::Client;

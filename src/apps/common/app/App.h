@@ -41,6 +41,7 @@ namespace App
         glm::ivec2 GetWindowSize();
         void SetWindowSize(glm::ivec2 size);
         glm::ivec2 GetMousePos();
+        void SetMouseGrab(bool grab);
         void RenameMainWindow(const std::string& name);
         Log::Logger* GetLogger();
         

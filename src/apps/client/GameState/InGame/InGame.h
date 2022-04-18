@@ -6,6 +6,7 @@
 #include <gl/Shader.h>
 #include <gl/VertexArray.h>
 #include <gl/Texture.h>
+#include <gl/Framebuffer.h>
 
 #include <rendering/Camera.h>
 #include <rendering/Mesh.h>
@@ -13,16 +14,19 @@
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
 #include <rendering/TextureMgr.h>
-#include <rendering/Skybox.h>
 
 #include <game/Map.h>
 #include <game/CameraController.h>
 #include <game/ChunkMeshMgr.h>
 #include <game/models/Player.h>
 #include <game/models/FPS.h>
+#include <game/models/ModelMgr.h>
+#include <game/models/Explosion.h>
 
 #include <util/BBTime.h>
 #include <util/Ring.h>
+#include <util/Table.h>
+#include <util/Pool.h>
 
 #include <entity/Player.h>
 #include <entity/PlayerController.h>
@@ -33,6 +37,7 @@
 #include <networking/Packets.h>
 
 #include <audio/Audio.h>
+#include <game/sound/Gallery.h>
 
 #include <GameState/InGame/InGameGUI.h>
 
@@ -56,13 +61,26 @@ namespace BlockBuster
         // Update funcs
         void DoUpdate(Util::Time::Seconds deltaTime);
         void OnEnterMatchState(Match::StateType type);
+        void UpdateGameMode();
         void OnNewFrame(Util::Time::Seconds deltaTime);
+
+        // Exit
+        void Exit();
+        void ReturnToMainMenu();
 
         // Input
         void HandleSDLEvents();
+        void UpdateCamera(Entity::PlayerInput input);
+        void WeaponRecoil();
 
-        // Handy
+        // World
+        void InitGameObjects();
         Entity::Player& GetLocalPlayer();
+        Entity::ID GetPlayerTeam(Entity::ID playerId);
+        void OnGrenadeExplode(Entity::Projectile& grenade);
+        void OnLocalPlayerShot();
+        void OnLocalPlayerReload();
+        World GetWorld();
 
         // Networking
         void OnPlayerJoin(Entity::ID playerId, Entity::ID teamId, Networking::PlayerSnapshot playerState);
@@ -70,6 +88,7 @@ namespace BlockBuster
         void OnConnectToServer(ENet::PeerId peerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket packet);
         void OnRecvPacket(Networking::Packet& packet);
+        void HandleGameEvent(Event event);
         void RecvServerSnapshots();
         void UpdateNetworking();
         void SendPlayerInput();
@@ -91,12 +110,18 @@ namespace BlockBuster
 
         // Rendering
         void DrawScene();
+        void DrawGameObjects();
+        void DrawModeObjects();
+        void DrawProjectiles();
+        void DrawDecals();
+        void DrawPlayerName(Entity::ID playerId);
         void DrawCollisionBox(const glm::mat4& viewProjMat, Math::Transform box);
-        void DrawGUI();
         void Render();
 
         // Audio
+        void InitAudio();
         void UpdateAudio();
+        void PlayAnnouncerAudio(Game::Sound::AnnouncerSoundID asid);
 
         // Map
         void LoadMap(std::filesystem::path mapFolder, std::string fileName);
@@ -115,20 +140,48 @@ namespace BlockBuster
             float gScale = 1.0f;
             bool leftFlashActive = false;
             bool rightFlashActive = false;
+            bool flagCarrying = false;
         };
         struct ExtraData
         {
-            
+            Rendering::Billboard* nameBillboard = nullptr;
+            GL::Framebuffer frameBuffer;
+
+            Audio::ID shootSourceId;
+            Audio::ID dmgSourceId;
         };
         std::unordered_map<Entity::ID, Entity::Player> playerTable;
         std::unordered_map<Entity::ID, Entity::Player> prevPlayerTable;
         std::unordered_map<Entity::ID, PlayerModelState> playerModelStateTable;
         std::unordered_map<Entity::ID, ExtraData> playersExtraData;
+        enum TeamColors
+        {
+            TEAM_BLUE, TEAM_RED, NEUTRAL
+        };
+        enum FFAColors
+        {
+            FFA_RED, FFA_BLUE, FFA_DARK_GREEN, FFA_GOLD,
+            FFA_BLACK, FFA_WHITE, FFA_ORANGE, FFA_PURPLE,
+            FFA_BROWN, FFA_LIME, FFA_CYAN, FFA_PINK,
+            FFA_GREY, FFA_MAGENTA, FFA_ROSY_BROWN, FFA_AQUA_MARINE
+        };
+        static glm::vec4 teamColors[3];
+        static glm::vec4 ffaColors[16];
+        GUI::Text nameText;
+        GUI::Image wepImage;
 
         // Local player
         uint8_t playerId = 0;
         Util::Timer respawnTimer;
         Entity::ID killerId = 0;
+        glm::vec3 lastDmgOrigin{0.0f};
+        float zoomMod = 0.0f;
+        const float zoomSpeed = 5.0f;
+
+        // GameObjects
+        std::unordered_map<glm::ivec3, Entity::GameObject::State> gameObjectStates;
+        std::unordered_map<Entity::ID, std::unique_ptr<Entity::Projectile>> projectiles;
+        Util::Ring<glm::mat4, 20> decalTransforms;
 
         // Match Making data
         std::string playerUuid;
@@ -165,6 +218,7 @@ namespace BlockBuster
         Util::Ring<Prediction> predictionHistory_{128};
         uint32_t cmdId = 0;
         uint32_t lastAck = 0;
+        uint32_t lastRenderedPred = 0;
 
         const Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0};
         Entity::PlayerState::Transform errorCorrectionDiff;
@@ -180,28 +234,21 @@ namespace BlockBuster
         Rendering::RenderMgr renderMgr;
 
             // Shaders
-        GL::Shader shader;
+        GL::Shader renderShader;
         GL::Shader chunkShader;
-        GL::Shader quadShader;
+        GL::Shader billboardShader;
+        GL::Shader expShader;
         GL::Shader textShader;
         GL::Shader imgShader;
-        GL::Shader skyboxShader;
-
-            // Meshes
-        Rendering::Mesh quad;
-        Rendering::Mesh cylinder;
-        Rendering::Mesh sphere;
-        Rendering::Mesh cube;
-        Rendering::Mesh slope;
-        Rendering::Skybox skybox;
 
             // Models
+        Game::Models::ModelMgr modelMgr;
         Game::Models::Player playerAvatar;
         Game::Models::FPS fpsAvatar;
+        Game::Models::ExplosionMgr explosionMgr;
 
             // Camera
         Rendering::Camera camera_;
-        int drawMode = GL_FILL;
         ::App::Client::CameraController camController_;
 
         // GUI
@@ -209,6 +256,12 @@ namespace BlockBuster
 
         // Audio
         Audio::AudioMgr* audioMgr = nullptr;
+        Game::Sound::Gallery gallery;
+        Util::Pool<Audio::ID, 4> grenadeSources;
+        Audio::ID soundtrackSource;
+        Audio::ID playerSource;
+        Audio::ID playerReloadSource;
+        Audio::ID announcerSource;
 
         // Scene
         std::string mapName;
@@ -216,5 +269,6 @@ namespace BlockBuster
 
         // Config
         GameOptions gameOptions;
+        bool exit = false;
     };
 }

@@ -1,11 +1,12 @@
 #pragma once
 
+#include <entity/GameObject.h>
 #include <math/Transform.h>
 #include <entity/Weapon.h>
+#include <util/Timer.h>
 
 namespace Entity
 {
-    // TODO: Move all of these inside Player class
     // PlayerInput
     enum Inputs
     {
@@ -17,10 +18,10 @@ namespace Entity
         ALT_SHOOT, // Aim
         RELOAD,
         GRENADE,
+        ACTION,
         WEAPON_SWAP_0,
         WEAPON_SWAP_1,
         WEAPON_SWAP_2,
-        WEAPON_SWAP_3,
 
         MAX
     };
@@ -61,7 +62,9 @@ namespace Entity
         PlayerState();
 
         Transform transform;
-        Weapon weaponState;
+        Weapon weaponState[2];
+        uint8_t curWep;
+        uint8_t grenades;
     };
     bool operator==(const PlayerState& a, const PlayerState& b);
 
@@ -72,13 +75,16 @@ namespace Entity
     PlayerState::Transform Interpolate(const PlayerState::Transform& a, const PlayerState::Transform& b, float alpha);
 
     PlayerState Interpolate(PlayerState a, PlayerState b, float alpha);
+
     glm::vec3 GetLastMoveDir(glm::vec3 posA, glm::vec3 posB);
 
     using ID = uint8_t;
     class Player
     {
     public:
+        Player();
 
+        // Hitboxes
         enum HitBoxType : uint8_t
         {
             HEAD,
@@ -117,6 +123,10 @@ namespace Entity
 
         static const float MAX_SHIELD;
         static const float MAX_HEALTH;
+        
+        static constexpr uint8_t MAX_WEAPONS = 2;
+        static constexpr uint8_t MAX_GRENADES = 4;
+        static constexpr Util::Time::Seconds GRENADE_THROW_CD{0.25f};
 
         // Serialization
         PlayerState ExtractState() const;
@@ -130,26 +140,54 @@ namespace Entity
         void SetTransform(Math::Transform transform);
         glm::vec3 GetFPSCamPos() const;
 
-        // Weapons / Health
+        // Weapons
+        void TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance);
+        void TakeDmg(float dmg);
+        void ResetWeaponAmmo(Entity::WeaponTypeID weaponType);
+        Weapon& GetCurrentWeapon();
+        uint8_t WeaponSwap();
+        uint8_t GetNextWeaponId();
+        void ResetWeapons();
+        void PickupWeapon(Weapon weapon);
+
+        // Greandes
+        bool HasGrenades();
+        void ThrowGrenade();
+
+        // Health
+        enum ShieldState
+        {
+            SHIELD_STATE_IDLE,
+            SHIELD_STATE_DAMAGED,
+            SHIELD_STATE_REGENERATING,
+        };
+        constexpr static float SHIELD_PER_SEC = 60.0f;
+        constexpr static Util::Time::Seconds TIME_TO_START_REGEN{5.0f};
         struct HealthState
         {
             float shield = MAX_SHIELD;
             float hp = MAX_HEALTH;
+            ShieldState shieldState = SHIELD_STATE_IDLE;
         };
-        void TakeWeaponDmg(Entity::Weapon& weapon, HitBoxType hitboxType, float distance);
-        void ResetWeaponAmmo(Entity::WeaponTypeID weaponType);
         void ResetHealth();
+        bool IsShieldFull();
         bool IsDead();
+        
+        // Interaction
+        void InteractWith(Entity::GameObject gameObject);
 
         // Data
         ID id = 0;
 
         // Health
         HealthState health;
+        Util::Timer dmgTimer{TIME_TO_START_REGEN};
 
         ID teamId = 0;
 
-        Weapon weapon;
+        Weapon weapons[MAX_WEAPONS];
+        uint8_t curWep = 0;
+        uint8_t grenades = 0;
     private:
 
         static const Math::Transform moveCollisionBox; // Only affects collision with terrain

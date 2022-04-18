@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstring>
+#include <regex>
 
 // #### GUI - PopUps #### \\
 
@@ -36,8 +37,20 @@ void EditorGUI::InitPopUps()
         sa->SetPlaceHolder(this->fileName);
     });
     saveAs.SetOnAccept([this](std::string map){
-        this->fileName = map;
-        this->editor->SaveProject(); return true;
+        auto sa = puMgr.GetAs<GUI::EditTextPopUp>(SAVE_AS);
+
+        std::regex validName{"[A-z0-9]*"};
+        std::smatch m;
+        bool isValid = std::regex_match(map, m, validName);
+        if(!isValid)
+            sa->SetErrorText("Map name is not valid");
+        else
+        {
+            this->fileName = map;
+            this->editor->SaveProject();
+        }
+
+        return isValid;
     });
     puMgr.Set(SAVE_AS, std::make_unique<GUI::EditTextPopUp>(saveAs));
 
@@ -132,29 +145,6 @@ void EditorGUI::InitPopUps()
         }
     });
     puMgr.Set(GO_TO_BLOCK, std::make_unique<GUI::GenericPopUp>(goToBlock));
-
-    GUI::EditTextPopUp setTextureFolder;
-    setTextureFolder.SetStringSize(128);
-    setTextureFolder.SetTitle("Set Texture Folder");
-    setTextureFolder.SetLabel("Texture Folder");
-    setTextureFolder.SetErrorText("Could not set texture folder");
-    setTextureFolder.SetOnOpen([this](){
-        //std::strcpy(this->textureFolderPath, editor->project.map.textureFolder.string().c_str());
-        auto stf = this->puMgr.GetAs<GUI::EditTextPopUp>(SET_TEXTURE_FOLDER);
-        stf->SetPlaceHolder(this->textureFolderPath);
-    });
-    setTextureFolder.SetOnAccept([this](auto path){
-        std::strcpy(this->textureFolderPath, path.data());
-        if(std::filesystem::is_directory(this->textureFolderPath))
-        {
-            //editor->project.map.textureFolder = this->textureFolderPath;
-            
-            return true;
-        }
-        else
-            return false;
-    });
-    puMgr.Set(SET_TEXTURE_FOLDER, std::make_unique<GUI::EditTextPopUp>(setTextureFolder));
 
     GUI::BasicPopUp basicPopUp;
     basicPopUp.SetButtonVisible(true);
@@ -259,19 +249,6 @@ void EditorGUI::MenuBar()
 
             ImGui::EndMenu();
         }
-
-        /*
-        if(ImGui::BeginMenu("Project", true))
-        {
-            
-            if(ImGui::MenuItem("Set Texture Folder"))
-            {
-                puMgr.Open(PopUpState::SET_TEXTURE_FOLDER);
-            }
-
-            ImGui::EndMenu();
-        }
-        */
 
         if(ImGui::BeginMenu("Settings", true))
         {

@@ -10,6 +10,7 @@
 #include <rendering/Mesh.h>
 #include <rendering/Primitive.h>
 #include <rendering/Rendering.h>
+#include <rendering/Skybox.h>
 
 #include <entity/PlayerController.h>
 #include <game/Map.h>
@@ -27,6 +28,8 @@
 #include <game/MapMgr.h>
 
 #include <GameState/GameState.h>
+#include <GameState/InGame/InGame.h>
+#include <GameState/MainMenu/MainMenu.h>
 
 namespace BlockBuster
 {
@@ -48,15 +51,23 @@ namespace BlockBuster
     private:
 
         void LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid, std::string playerName);
+        void GoBackToMainMenu(bool onGoing);
 
         void ApplyVideoOptions(App::Configuration::WindowConfig& winConfig) override;
 
-        std::unique_ptr<GameState> state;
-        std::unique_ptr<GameState> nextState;
+        std::unique_ptr<MainMenu> menu = nullptr;
+        std::unique_ptr<InGame> inGame = nullptr;
+        GameState* state = nullptr;
 
+        // Map Mgr
         MapMgr mapMgr;
 
+        // Skybox
+        GL::Shader skyboxShader;
+        Rendering::Skybox skybox;
+
         // App
+        std::filesystem::path texturesDir;
         bool quit = false;
     };
 }

@@ -1,5 +1,7 @@
 #include <gui/Image.h>
 
+#include <BBMath.h>
+
 using namespace GUI;
 
 std::unique_ptr<Rendering::Mesh> Image::quadMesh = nullptr;
@@ -25,15 +27,16 @@ void Image::DoDraw(GL::Shader& shader, glm::ivec2 pos, glm::ivec2 screenSize)
     if(!texture)
         return;
 
-    glm::vec2 size = GetSize();
-    auto scale = (size / glm::vec2{screenSize}) * 2.0f;
-    auto renderPos = (glm::vec2{pos} / size) + 0.5f;
+    auto size = GetSize();
+    auto renderPos = pos + size / 2;
 
     shader.Use();
     shader.SetUniformInt("uTexture", 0);
     shader.SetUniformVec4("uColor", color);
     shader.SetUniformVec2("offset", renderPos);
-    shader.SetUniformVec2("scale", scale);
+    shader.SetUniformVec2("size", size);
+    shader.SetUniformVec2("screenSize", screenSize);
+    shader.SetUniformFloat("rot", rot);
     texture->Bind(GL_TEXTURE0);
 
     quadMesh->Draw(shader);

@@ -15,9 +15,13 @@ namespace Util
 
         inline void Start()
         {
-            startPoint_ = Util::Time::GetTime();
             elapsed_ = Util::Time::Seconds{0};
             isPaused = false;
+        }
+
+        inline void Restart()
+        {
+            Start();
         }
 
         inline void Resume()
@@ -37,7 +41,6 @@ namespace Util
 
         inline void Reset()
         {
-            startPoint_ = Util::Time::GetTime();
             elapsed_ = Util::Time::Seconds{0};
             isPaused = true;
         }
@@ -77,6 +80,5 @@ namespace Util
         bool isPaused = true;
         Util::Time::Seconds duration_{0};
         Util::Time::Seconds elapsed_{0};
-        Util::Time::SteadyPoint startPoint_;
     };
 }

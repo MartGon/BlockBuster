@@ -7,7 +7,9 @@ const glm::vec3 Rendering::Camera::UP = glm::vec3{0.0f, 1.0f, 0.0f};
 void Rendering::Camera::SetParam(Param param, float value)
 {
     params_[param] = value;
-
+    if(param == FOV)
+        zoom = 1.0f;
+    
     projMat_ = Math::GetPerspectiveMat(params_[FOV], params_[ASPECT_RATIO], params_[NEAR_PLANE], params_[FAR_PLANE]);
 }
 
@@ -19,6 +21,7 @@ void Rendering::Camera::SetPos(glm::vec3 pos)
 
 void Rendering::Camera::SetRotation(float pitch, float yaw)
 {
+    pitch = glm::clamp(pitch, glm::radians(1.0f), glm::radians(179.0f));
     rotation_ = glm::vec2{pitch, yaw};
     UpdateViewMat();
 }
@@ -38,6 +41,15 @@ void Rendering::Camera::SetTarget(glm::vec3 target)
 
     front_ = front;
     viewMat_ = glm::lookAt(pos_, target, UP);
+}
+
+void Rendering::Camera::SetZoom(float zoom)
+{
+    auto oldZoom = this->zoom;
+    this->zoom = zoom;
+    auto fov = params_[FOV] / (zoom / oldZoom);
+    params_[FOV] = fov;
+    projMat_ = Math::GetPerspectiveMat(params_[FOV], params_[ASPECT_RATIO], params_[NEAR_PLANE], params_[FAR_PLANE]);
 }
 
 float Rendering::Camera::GetParam(Rendering::Camera::Param param) const
@@ -63,6 +75,21 @@ glm::vec2 Rendering::Camera::GetRotationDeg() const
 glm::vec3 Rendering::Camera::GetFront() const
 {
     return front_;
+}
+
+glm::vec3 Rendering::Camera::GetRight() const
+{
+    return glm::vec3{viewMat_[0][0], viewMat_[1][0], viewMat_[2][0]};
+}
+
+glm::vec3 Rendering::Camera::GetUp() const
+{
+    return glm::vec3{viewMat_[0][1], viewMat_[1][1], viewMat_[2][1]};
+}
+
+float Rendering::Camera::GetZoom() const
+{
+    return zoom;
 }
 
 glm::mat4 Rendering::Camera::GetProjMat() const

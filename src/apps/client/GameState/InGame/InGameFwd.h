@@ -7,5 +7,6 @@ namespace BlockBuster
         float sensitivity;
         bool audioEnabled;
         int audioGeneral;
+        int audioAnnouncer;
     };
 }

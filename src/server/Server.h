@@ -12,6 +12,7 @@
 #include <util/BBTime.h>
 #include <util/Random.h>
 #include <util/Ring.h>
+#include <util/Table.h>
 
 #include <collisions/Collisions.h>
 
@@ -22,6 +23,7 @@
 #include <entity/PlayerController.h>
 #include <entity/Map.h>
 #include <entity/Match.h>
+#include <entity/Projectile.h>
 
 #include <http/AsyncClient.h>
 
@@ -103,7 +105,7 @@ namespace BlockBuster
             std::string serverKey;
         };
 
-        Server(Params params, MMServer mserver);
+        Server(Params params, MMServer mserver, Util::Time::Seconds tickRate);
 
         void Start();
         void Run();
@@ -116,42 +118,60 @@ namespace BlockBuster
         void InitMatch();
         void InitAI();
         void InitMap();
+        void InitGameObjects();
 
         // Networking
         void OnClientJoin(ENet::PeerId peerId);
+        void OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::string playerName);
         void OnClientLeave(ENet::PeerId peerId);
         void OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket);
         void OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet);
         void HandleClientInput(ENet::PeerId peerId, InputReq pm);
         void HandleClientsInput();
         void HandleShootCommand(ShotCommand sc);
+        void HandleActionCommand(Entity::Player& player);
+        void HandleGrenadeCommand(ENet::PeerId peerId);
+
         void SendWorldUpdate();
         void SendScoreboardReport();
         void SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin);
         void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId);
         void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime);
         void BroadcastRespawn(ENet::PeerId peerId);
+        void BroadcastGameObjectState(glm::ivec3 goPos);
+        void SendPlayerGameObjectInteraction(ENet::PeerId peerId, glm::ivec3 goPos);
         void SendPacket(ENet::PeerId peerId, Networking::Packet& packet);
         void Broadcast(Networking::Packet& packet);
 
         // Simulation
         void UpdateWorld();
+        void UpdateProjectiles();
+        bool IsPlayerOutOfBounds(ENet::PeerId peerId);
+        void OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId);
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
 
         // MMServer
         void SendServerNotification(ServerEvent::Notification event);
 
         // Spawns 
-        // TODO: Should move these to their class/module
         static const float MIN_SPAWN_ENEMY_DISTANCE;
         glm::ivec3 FindSpawnPoint(Entity::Player player);
         glm::vec3 ToSpawnPos(glm::ivec3 spawnPoint);
-        bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player) const;
+        bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player);
 
         // Players
         void SpawnPlayer(ENet::PeerId clientId);
         void OnPlayerTakeDmg(ENet::PeerId author, ENet::PeerId victim);
         std::vector<Entity::Player> GetPlayers() const;
+
+        // World 
+        World GetWorld();
+        struct GOState{
+            Entity::GameObject::State state;
+            Util::Timer respawnTimer;
+        };
+        std::unordered_map<glm::ivec3, GOState> gameObjectStates;
+        Util::Table<std::unique_ptr<Entity::Projectile>> projectiles;
 
         // Server params
         Params params;
@@ -165,10 +185,10 @@ namespace BlockBuster
         Util::Ring<Networking::Snapshot, 30> history;
 
         // Simulation
-        const Util::Time::Seconds TICK_RATE{0.050};
-        Util::Time::Seconds deltaTime{0};
+        Util::Time::Seconds TICK_RATE{0.033};
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
+        bool quit = false;
 
         // Match
         Match match;

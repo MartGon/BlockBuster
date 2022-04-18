@@ -94,7 +94,7 @@ bool RaySlopeIntersectionCheckPoint(glm::vec3 point)
 RayIntersection Collisions::RaySlopeIntersection(Ray modelRay, glm::vec3 boxSize)
 {
     auto aabbIntersect = Collisions::RayAABBIntersection(modelRay, boxSize);
-    RayIntersection intersection{false, aabbIntersect.ts, aabbIntersect.normal};
+    RayIntersection intersection{false, aabbIntersect.ts, aabbIntersect.normal, aabbIntersect.colPoint};
     if(aabbIntersect.intersects)
     {
         auto rayDir = modelRay.GetDir();
@@ -102,8 +102,9 @@ RayIntersection Collisions::RaySlopeIntersection(Ray modelRay, glm::vec3 boxSize
         auto nearPoint = modelRay.origin + rayDir * aabbIntersect.ts.x;
         auto farPoint = modelRay.origin + rayDir * aabbIntersect.ts.y;
 
-        auto nearInt = RaySlopeIntersectionCheckPoint(nearPoint);
+        bool frontFace = false;
         auto farInt = RaySlopeIntersectionCheckPoint(farPoint);
+        auto nearInt = RaySlopeIntersectionCheckPoint(nearPoint);
         intersection.intersects = nearInt || farInt;
     }
 
@@ -254,4 +255,28 @@ Collisions::AABBSlopeIntersection Collisions::AABBSlopeCollision(Math::Transform
     intersection.offset = slopeRot * glm::vec4{intersection.offset, 1.0f};
 
     return intersection;
+}
+
+// Points
+
+bool Collisions::IsPointInAABB(glm::vec3 point, Math::Transform aaBB)
+{
+    auto ldn = aaBB.position - (aaBB.scale * 0.5f);
+    auto ruf = aaBB.position + (aaBB.scale * 0.5f);
+
+    auto res = glm::greaterThanEqual(point, ldn) && glm::lessThanEqual(point, ruf);
+    return res.x && res.y && res.z;
+}
+
+bool Collisions::IsPointInSphere(glm::vec3 point, glm::vec3 center, float scale)
+{
+    auto distance = glm::length(point - center);
+    return distance <= scale;
+}
+
+SpherePointCollision Collisions::PointInSphere(glm::vec3 point, glm::vec3 center, float scale)
+{
+    auto dist = point - center;
+    auto distance = glm::length(dist);
+    return SpherePointCollision{distance <= scale, dist, distance};
 }

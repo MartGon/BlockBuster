@@ -11,7 +11,8 @@
 
 using namespace BlockBuster;
 
-MainMenu::MainMenu(Client* client)  : GameState{client}, httpClient{"localhost", 3030}
+MainMenu::MainMenu(Client* client)  : GameState{client}, httpClient{"localhost", 3030}, 
+    menuState_{std::make_unique<MenuState::Login>(this)}
 {
 
 }
@@ -22,16 +23,24 @@ MainMenu::~MainMenu()
 
 void MainMenu::Start()
 {
-    menuState_ = std::make_unique<MenuState::Login>(this);
-
     // Set default name
     popUp.SetTitle("Connecting");
     popUp.SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 
-    // Set window properties
-    SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
-    SDL_SetWindowFullscreen(this->client_->window_, 0);
-    client_->SetWindowSize(glm::ivec2{1024, 720});
+    // Reset window
+    ResetWindow();
+
+    // Start camera
+    auto winSize = client_->GetWindowSize();
+    camera_.SetPos(glm::vec3{0.0f});
+    camera_.SetTarget(glm::vec3{0.0f, 0.0f, -1.0f});
+    camera_.SetParam(Rendering::Camera::Param::ASPECT_RATIO, (float)winSize.x / (float)winSize.y);
+    camera_.SetParam(Rendering::Camera::Param::FOV, client_->config.window.fov);
+
+    // Set matchmaking address and port
+    auto address = client_->GetConfigOption("MatchMakingServerAddress", "127.0.0.1");
+    uint16_t port = std::atoi(client_->GetConfigOption("MatchMakinServerPort", "3030").c_str());
+    httpClient.SetAddress(address, port);
 }
 
 void MainMenu::Shutdown()
@@ -39,6 +48,12 @@ void MainMenu::Shutdown()
     // Call LeaveGame and wait for it
     if(lobby && !enteringGame)
         LeaveGame();
+
+    httpClient.Close();
+
+    // Write config
+    client_->config.options["MatchMakingServerAddress"] = httpClient.GetAddress().first;
+    client_->config.options["MatchMakinServerPort"] = std::to_string(httpClient.GetAddress().second);
 }
 
 void MainMenu::Update()
@@ -69,12 +84,12 @@ void MainMenu::Login(std::string userName)
         popUp.SetText("Your username is " + std::string(body["username"]));
         popUp.SetButtonVisible(true);
         popUp.SetButtonCallback([this](){
-            GetLogger()->LogInfo("Button pressed. Opening server browser");
+            GetLogger()->LogDebug("Button pressed. Opening server browser");
 
             SetState(std::make_unique<MenuState::ServerBrowser>(this));
         });
 
-        GetLogger()->LogInfo("Response: " + bodyStr);
+        GetLogger()->LogDebug("Response: " + bodyStr);
         GetLogger()->Flush();
     };
 
@@ -89,12 +104,12 @@ void MainMenu::Login(std::string userName)
 
 void MainMenu::ListGames()
 {
-    GetLogger()->LogInfo("Requesting list of games");
+    GetLogger()->LogDebug("Requesting list of games");
 
     nlohmann::json body;
     auto onSuccess = [this](httplib::Response& res)
     {
-        GetLogger()->LogInfo("List of games updated successfully");
+        GetLogger()->LogDebug("List of games updated successfully");
 
         auto bodyStr = res.body;        
         auto body = nlohmann::json::parse(bodyStr);
@@ -123,7 +138,7 @@ void MainMenu::ListGames()
 
 void MainMenu::JoinGame(std::string gameId)
 {
-    GetLogger()->LogInfo("Joining game " + gameId);
+    GetLogger()->LogDebug("Joining game " + gameId);
 
     // Show connecting pop up
     popUp.SetVisible(true);
@@ -228,9 +243,53 @@ void MainMenu::CreateGame(std::string name, std::string map, std::string mode, u
     httpClient.Request("/create_game", nlohmann::to_string(body), onSuccess, onError);
 }
 
+
+void MainMenu::EditGame(std::string name, std::string map, std::string mode)
+{
+    // Create request body
+    nlohmann::json body;
+    body["player_id"] = userId;
+    body["game_id"] = currentGame->game.id;
+    body["name"] = name;
+    body["map"] = map;
+    body["mode"] = mode;
+
+    auto onSuccess = [this, name](httplib::Response& res)
+    {   
+        if(res.status == 200)
+        {
+            auto body = nlohmann::json::parse(res.body);
+            auto gameDetails = GameDetails::FromJson(body);
+        }
+        else
+        {
+            popUp.SetVisible(true);
+            popUp.SetText(res.body);
+            popUp.SetTitle("Error");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
+        }
+    };
+
+    auto onError = [this](httplib::Error err)
+    {
+        popUp.SetVisible(true);
+        popUp.SetText("Connection error");
+        popUp.SetTitle("Error");
+        popUp.SetButtonVisible(true);
+        popUp.SetButtonCallback([this](){
+            popUp.SetVisible(false);
+        });
+    };
+
+    httpClient.Request("/edit_game", nlohmann::to_string(body), onSuccess, onError);
+}
+
 void MainMenu::GetAvailableMaps()
 {
-    GetLogger()->LogInfo("Getting available maps ");
+    GetLogger()->LogDebug("Getting available maps ");
     
     // Show connecting pop up
     popUp.SetVisible(true);
@@ -254,7 +313,7 @@ void MainMenu::GetAvailableMaps()
             this->availableMaps.push_back(mapInfo);
         }
 
-        SetState(std::make_unique<MenuState::CreateGame>(this));
+        //SetState(std::make_unique<MenuState::CreateGame>(this));
 
         popUp.SetVisible(false);
     };
@@ -324,7 +383,7 @@ void MainMenu::ToggleReady()
     auto onSuccess = [this](httplib::Response& res)
     {
         GetLogger()->LogInfo("Succesfully set ready state");
-        GetLogger()->LogInfo("Result " + res.body);
+        GetLogger()->LogDebug("Result " + res.body);
     };
 
     auto onError = [this](httplib::Error err)
@@ -360,7 +419,7 @@ void MainMenu::SendChatMsg(std::string msg)
     httpClient.Request("/send_chat_msg", nlohmann::to_string(body), onSuccess, onError);
 }
 
-void MainMenu::UpdateGame()
+void MainMenu::UpdateGame(bool forced)
 {
     // Only update current game while in lobby
     if(lobby && lobby->updatePending)
@@ -368,28 +427,42 @@ void MainMenu::UpdateGame()
 
     nlohmann::json body;
     body["game_id"] = currentGame->game.id;
+    body["forced"] = forced;
 
     auto onSuccess = [this](httplib::Response& res)
     {
         if(lobby)
             lobby->updatePending = false;
             
-        GetLogger()->LogInfo("[Update Game]Result " + res.body);
+        GetLogger()->LogDebug("[Update Game]Result " + res.body);
 
         if(res.status == 200)
         {
-            GetLogger()->LogInfo("Succesfully updated game");
+            GetLogger()->LogDebug("Succesfully updated game");
             auto body = nlohmann::json::parse(res.body);
             auto gameDetails = GameDetails::FromJson(body);
 
             // Check if we are still in lobby. Keep updating in that case
             if(lobby)
             {
-                auto oldState = currentGame->game.state;
-
+                auto oldGameInfo = currentGame->game;
                 // Set current game
                 currentGame = gameDetails;
 
+                // On map change
+                auto mapName = currentGame->game.map;
+                if(mapName != oldGameInfo.map)
+                {
+                    if(ShouldDownloadMap(mapName))
+                    {
+                        GetLogger()->LogWarning("Need to download map " + mapName);
+                        DownloadMap(mapName);
+                    }
+                    GetMapPicture(mapName);
+                }
+
+                // Check game start
+                auto oldState = oldGameInfo.state;
                 if(currentGame->game.state == "InGame" && oldState == "InLobby")
                 {
                     LaunchGame();
@@ -465,12 +538,12 @@ void MainMenu::StartGame()
     };
 
     httpClient.Request("/start_game", nlohmann::to_string(body), onSuccess, onError);
-    httpClient.Disable();
+    //httpClient.Disable();
 }
 
 void MainMenu::DownloadMap(std::string mapName)
 {
-    GetLogger()->LogInfo("Downloading map: " + mapName);
+    GetLogger()->LogDebug("Downloading map: " + mapName);
 
     // Show connecting pop up
     popUp.SetVisible(true);
@@ -492,10 +565,8 @@ void MainMenu::DownloadMap(std::string mapName)
             auto mapB64 = body["map"].get<std::string>();
             auto mapBuff = base64_decode(mapB64);
 
-            auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
-            std::filesystem::create_directory(mapFolder);
-            GetLogger()->LogInfo("Creating dir " + mapFolder.string());
-            zip_stream_extract(mapBuff.data(), mapBuff.size(), mapFolder.string().c_str(), nullptr, nullptr);
+            auto mapsFolder = client_->mapMgr.GetMapsFolder();
+            zip_stream_extract(mapBuff.data(), mapBuff.size(), mapsFolder.string().c_str(), nullptr, nullptr);
 
             popUp.SetVisible(true);
             popUp.SetCloseable(false);
@@ -543,7 +614,7 @@ void MainMenu::GetMapPicture(std::string mapName)
         return;
     }
 
-    GetLogger()->LogInfo("Downloading map picture: " + mapName);
+    GetLogger()->LogDebug("Downloading map picture: " + mapName);
 
     nlohmann::json body;
     body["map_name"] = mapName;
@@ -603,10 +674,16 @@ void MainMenu::GetMapPicture(std::string mapName)
 
 void MainMenu::UploadMap(std::string mapName, std::string password)
 {
+    // Write map version
+    // TODO: This could be done in editor, by hashing the map binary file, or something
+    auto version = Util::Random::RandomString(16);
+    client_->mapMgr.WriteMapVersion(mapName, version);
+
     // Payload
     nlohmann::json body;
     body["map_name"] = mapName;
     body["password"] = password;
+    body["map_version"] = version;
         
     auto mapFile = client_->mapMgr.GetMapFile(mapName);
     auto res = Game::Map::Map::LoadFromFile(mapFile);
@@ -627,7 +704,7 @@ void MainMenu::UploadMap(std::string mapName, std::string password)
         auto onSuccess = [this, mapName](httplib::Response& res)
         {
             GetLogger()->LogInfo("Succesfullly uploaded map " + mapName);
-            GetLogger()->LogInfo("Result " + res.body);
+            GetLogger()->LogDebug("Result " + res.body);
 
             if(res.status == 200)
             {
@@ -714,10 +791,26 @@ void MainMenu::Render()
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    DrawSkybox();
     DrawGUI();
 
     // Swap buffers
     SDL_GL_SwapWindow(client_->window_);
+}
+
+void MainMenu::DrawSkybox()
+{
+    auto now = Util::Time::GetTime().time_since_epoch();
+    auto secs = Util::Time::Seconds(now);
+    const auto ROT_SPEED = 0.005f;
+    auto yaw = std::sin(secs.count() * ROT_SPEED) * glm::two_pi<float>();
+    auto rot = camera_.GetRotation();
+    camera_.SetRotation(rot.x, yaw);
+
+    auto view = camera_.GetViewMat();
+    auto proj = camera_.GetProjMat();
+
+    client_->skybox.Draw(client_->skyboxShader, view, proj, true);
 }
 
 void MainMenu::DrawGUI()
@@ -738,6 +831,15 @@ void MainMenu::DrawGUI()
     ImGui_ImplOpenGL3_RestoreState(scissor_box);
 }
 
+void MainMenu::ResetWindow()
+{
+    // Set window properties
+    client_->SetMouseGrab(false);
+    SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
+    SDL_SetWindowFullscreen(this->client_->window_, 0);
+    client_->SetWindowSize(glm::ivec2{800, 600});
+}
+
 void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)
 {
     this->menuState_->OnExit();
@@ -751,16 +853,25 @@ void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)
 
 void MainMenu::LaunchGame()
 {
-    GetLogger()->LogInfo("Game Started!");
+    GetLogger()->LogDebug("Game Started!");
     auto address = currentGame->game.address.value();
     auto port = currentGame->game.serverPort.value();
     client_->LaunchGame(address, port, currentGame->game.map, userId, user);
 
-    httpClient.Disable();
+    //httpClient.Disable();
     enteringGame = true;
 }
 
 MapMgr& MainMenu::GetMapMgr()
 {
     return client_->mapMgr;
+}
+
+bool MainMenu::ShouldDownloadMap(std::string map)
+{
+    auto& mapMgr = GetMapMgr();
+    auto serverVersion = currentGame->game.map_version;
+
+    bool hasMap = mapMgr.HasMap(map);
+    return !hasMap || mapMgr.ReadMapVersion(map) != serverVersion;
 }

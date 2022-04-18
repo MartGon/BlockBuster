@@ -22,11 +22,15 @@ namespace HTTP
         {
 
         }
+        AsyncClient() = default;
         ~AsyncClient()
         {
-            for(auto& [id, thread] : reqThreads)
-                if(thread.joinable())
-                    thread.join();
+            if(waitThreads)
+            {
+                for(auto& [id, thread] : reqThreads)
+                    if(thread.joinable())
+                        thread.join();
+            }
         }
 
         inline void SetReadTimeout(Util::Time::Seconds seconds)
@@ -44,13 +48,29 @@ namespace HTTP
             enabled = true;
         }
 
-        void Request(const std::string& path, const std::string& body, RespHandler respHandler, ErrHandler errHandler);
-        void HandleResponses();
+        inline void Close()
+        {
+            waitThreads = false;
+        }
+
+        inline void SetAddress(std::string address, uint16_t port)
+        {
+            this->address = address;
+            this->port = port;
+        }
+
+        inline std::pair<std::string, uint16_t> GetAddress()
+        {
+            return {address, port};
+        }
 
         inline bool IsConnecting()
         {
             return connecting.load();
         }
+
+        void Request(const std::string& path, const std::string& body, RespHandler respHandler, ErrHandler errHandler);
+        void HandleResponses();
 
     private:
 
@@ -65,7 +85,7 @@ namespace HTTP
 
         std::string address;
         uint16_t port;
-        Util::Time::Seconds timeout{5};
+        Util::Time::Seconds timeout{7};
 
         std::mutex reqMutex;
         using ThreadID = uint8_t;
@@ -75,5 +95,6 @@ namespace HTTP
         std::atomic_bool connecting = false;
         Util::Ring<Response, 16> responses;
         bool enabled = true;
+        bool waitThreads = true;
     };
 }
