@@ -12,7 +12,7 @@ uniform float rot;
 
 uniform vec4 colorMod;
 
-out vec2 texCoords;
+centroid out vec2 texCoords;
 
 void main()
 {
