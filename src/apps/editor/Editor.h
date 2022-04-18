@@ -194,6 +194,7 @@ namespace BlockBuster::Editor
         Game::Models::Respawn respawnModel;
         
         // Editor
+        std::filesystem::path resourcesDir;
         bool quit = false;
         bool unsaved = true;
 

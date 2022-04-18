@@ -40,7 +40,7 @@ void Editor::Start()
     }
 
     // Textures
-    std::filesystem::path resourcesDir = GetConfigOption("ResourcesFolder", RESOURCES_DIR);
+    resourcesDir = GetConfigOption("ResourcesFolder", RESOURCES_DIR);
     std::filesystem::path texturesDir = resourcesDir / "textures";
     GL::Cubemap::TextureMap map = {
         {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
@@ -140,6 +140,7 @@ void Editor::Shutdown()
     config.options["showCursor"] = std::to_string(cursor.show);
     config.options["camMoveSpeed"] = std::to_string(cameraController.moveSpeed);
     config.options["camRotSpeed"] = std::to_string(cameraController.rotSpeed);
+    config.options["ResourcesFolder"] = resourcesDir.string();
 }
 
 // #### Rendering #### \\
