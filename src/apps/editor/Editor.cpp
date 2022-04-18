@@ -39,7 +39,7 @@ void Editor::Start()
     }
 
     // Textures
-    std::filesystem::path texturesDir = TEXTURES_DIR;
+    std::filesystem::path texturesDir = GetConfigOption("TexturesFolder", TEXTURES_DIR);
     GL::Cubemap::TextureMap map = {
         {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
         {GL::Cubemap::LEFT, texturesDir / "left.jpg"},
