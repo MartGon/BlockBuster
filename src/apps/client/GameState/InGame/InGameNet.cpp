@@ -753,7 +753,7 @@ void InGame::SmoothPlayerMovement()
             if(Entity::HasShot(oldWepState.state, nextWepState.state))
                 OnLocalPlayerShot();
             
-            bool hasReloaded = Entity::HasReloaded(oldWepState.state, renderWepState.state);
+            bool hasReloaded = Entity::HasReloaded(oldWepState.state, nextWepState.state);
             if(hasReloaded)
                 OnLocalPlayerReload();
 

@@ -1,4 +1,6 @@
 
+find_package(SDL2 REQUIRED)
+
 set(SOURCES
     imgui.cpp
     imgui_draw.cpp
