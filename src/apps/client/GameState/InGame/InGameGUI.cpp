@@ -78,7 +78,7 @@ void InGameGUI::Start()
     grenadeIcon.SetTexture(textureMgr.GetTexture(grenadeTexId));
     grenadeIcon.SetAnchorPoint(GUI::AnchorPoint::DOWN_LEFT_CORNER);
     grenadeIcon.SetParent(&grenadeNumText);
-    grenadeIcon.SetScale(glm::vec2{0.5f});
+    grenadeIcon.SetSize(glm::ivec2{35, 35});
     iconSize = grenadeIcon.GetSize();
     grenadeIcon.SetOffset(glm::ivec2{-iconSize.x, -7});
 
