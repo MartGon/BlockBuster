@@ -14,7 +14,7 @@ uniform vec4 colorMod;
 
 uniform int frameId;
 
-out vec2 texCoords;
+centroid out vec2 texCoords;
 
 const ivec2 mapSize = ivec2(6, 6);
 
