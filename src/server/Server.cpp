@@ -27,7 +27,7 @@ void Server::Start()
 void Server::Run()
 {
     // Server loop
-    while(!match.IsOver())
+    while(!match.IsOver() && !quit)
     {
         host->PollAllEvents();
 
@@ -264,6 +264,14 @@ void Server::OnClientLeave(ENet::PeerId peerId)
 
     // Finally remove peerId
     clients.erase(peerId);
+
+    #ifndef _DEBUG
+        if(clients.size() == 0 && match.GetState() == Match::ON_GOING)
+        {
+            quit = true;
+            logger.LogInfo("No players left. Leaving");
+        }
+    #endif
 }
 
 void Server::OnRecvPacket(ENet::PeerId peerId, uint8_t channelId, ENet::RecvPacket recvPacket)

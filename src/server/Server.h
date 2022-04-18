@@ -188,6 +188,7 @@ namespace BlockBuster
         Util::Time::Seconds TICK_RATE{0.033};
         Util::Time::Seconds lag{0};
         Util::Time::Point<Util::Time::Seconds> nextTickDate;
+        bool quit = false;
 
         // Match
         Match match;

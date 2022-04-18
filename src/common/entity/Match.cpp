@@ -33,7 +33,7 @@ void Match::Update(World world, Util::Time::Seconds deltaTime)
         if(timer.IsDone())
         {
             EnterState(ON_GOING);
-            world.logger->LogError("Match started");
+            world.logger->LogInfo("Match started");
 
             timer.SetDuration(gameMode->GetDuration());
             timer.Start();
