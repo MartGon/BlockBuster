@@ -45,7 +45,7 @@ AppI::AppI(Configuration config) : config{config}, logger{ServiceLocator::GetLog
 
     if(config.openGL.antialiasing)
     {
-        logger->LogInfo("AA enabled");
+        logger->LogDebug("AA enabled");
 	    //SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, config.openGL.msaaSamples);
@@ -116,10 +116,10 @@ AppI::~AppI()
     SDL_GL_DeleteContext(context_);
     SDL_DestroyWindow(window_);
 
-    logger->LogInfo("Quitting SDL_INIT_VIDEO");
+    logger->LogDebug("Quitting SDL_INIT_VIDEO");
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
-    logger->LogInfo("Quitting SDL");
+    logger->LogDebug("Quitting SDL");
     SDL_Quit();
 }
 

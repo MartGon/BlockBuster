@@ -84,12 +84,12 @@ void MainMenu::Login(std::string userName)
         popUp.SetText("Your username is " + std::string(body["username"]));
         popUp.SetButtonVisible(true);
         popUp.SetButtonCallback([this](){
-            GetLogger()->LogInfo("Button pressed. Opening server browser");
+            GetLogger()->LogDebug("Button pressed. Opening server browser");
 
             SetState(std::make_unique<MenuState::ServerBrowser>(this));
         });
 
-        GetLogger()->LogInfo("Response: " + bodyStr);
+        GetLogger()->LogDebug("Response: " + bodyStr);
         GetLogger()->Flush();
     };
 
@@ -104,12 +104,12 @@ void MainMenu::Login(std::string userName)
 
 void MainMenu::ListGames()
 {
-    GetLogger()->LogInfo("Requesting list of games");
+    GetLogger()->LogDebug("Requesting list of games");
 
     nlohmann::json body;
     auto onSuccess = [this](httplib::Response& res)
     {
-        GetLogger()->LogInfo("List of games updated successfully");
+        GetLogger()->LogDebug("List of games updated successfully");
 
         auto bodyStr = res.body;        
         auto body = nlohmann::json::parse(bodyStr);
@@ -138,7 +138,7 @@ void MainMenu::ListGames()
 
 void MainMenu::JoinGame(std::string gameId)
 {
-    GetLogger()->LogInfo("Joining game " + gameId);
+    GetLogger()->LogDebug("Joining game " + gameId);
 
     // Show connecting pop up
     popUp.SetVisible(true);
@@ -289,7 +289,7 @@ void MainMenu::EditGame(std::string name, std::string map, std::string mode)
 
 void MainMenu::GetAvailableMaps()
 {
-    GetLogger()->LogInfo("Getting available maps ");
+    GetLogger()->LogDebug("Getting available maps ");
     
     // Show connecting pop up
     popUp.SetVisible(true);
@@ -383,7 +383,7 @@ void MainMenu::ToggleReady()
     auto onSuccess = [this](httplib::Response& res)
     {
         GetLogger()->LogInfo("Succesfully set ready state");
-        GetLogger()->LogInfo("Result " + res.body);
+        GetLogger()->LogDebug("Result " + res.body);
     };
 
     auto onError = [this](httplib::Error err)
@@ -543,7 +543,7 @@ void MainMenu::StartGame()
 
 void MainMenu::DownloadMap(std::string mapName)
 {
-    GetLogger()->LogInfo("Downloading map: " + mapName);
+    GetLogger()->LogDebug("Downloading map: " + mapName);
 
     // Show connecting pop up
     popUp.SetVisible(true);
@@ -566,7 +566,6 @@ void MainMenu::DownloadMap(std::string mapName)
             auto mapBuff = base64_decode(mapB64);
 
             auto mapsFolder = client_->mapMgr.GetMapsFolder();
-            //GetLogger()->LogInfo("Creating dir " + mapFolder.string());
             zip_stream_extract(mapBuff.data(), mapBuff.size(), mapsFolder.string().c_str(), nullptr, nullptr);
 
             popUp.SetVisible(true);
@@ -615,7 +614,7 @@ void MainMenu::GetMapPicture(std::string mapName)
         return;
     }
 
-    GetLogger()->LogInfo("Downloading map picture: " + mapName);
+    GetLogger()->LogDebug("Downloading map picture: " + mapName);
 
     nlohmann::json body;
     body["map_name"] = mapName;
@@ -705,7 +704,7 @@ void MainMenu::UploadMap(std::string mapName, std::string password)
         auto onSuccess = [this, mapName](httplib::Response& res)
         {
             GetLogger()->LogInfo("Succesfullly uploaded map " + mapName);
-            GetLogger()->LogInfo("Result " + res.body);
+            GetLogger()->LogDebug("Result " + res.body);
 
             if(res.status == 200)
             {
@@ -854,7 +853,7 @@ void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)
 
 void MainMenu::LaunchGame()
 {
-    GetLogger()->LogInfo("Game Started!");
+    GetLogger()->LogDebug("Game Started!");
     auto address = currentGame->game.address.value();
     auto port = currentGame->game.serverPort.value();
     client_->LaunchGame(address, port, currentGame->game.map, userId, user);

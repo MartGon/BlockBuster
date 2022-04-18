@@ -170,7 +170,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             {
                 auto om = this->offsetTime - this->serverTickRate;
                 this->offsetTime = std::min(serverTickRate, std::max(om, -serverTickRate));
-                client_->logger->LogInfo("Offset millis " + std::to_string(this->offsetTime.count()));
+                client_->logger->LogDebug("Offset millis " + std::to_string(this->offsetTime.count()));
             }
             
             // Store snapshot
@@ -233,14 +233,13 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             this->lastAck = pi->lastCmd;
             localPlayerStateHistory.PushBack(pi->playerState);
             client_->logger->LogInfo("Server ack command: " + std::to_string(this->lastAck));
-            //client_->logger->LogError("Player new pos " + glm::to_string(pi->playerState.transform.pos));
         }
         break;
 
         case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_TAKE_DMG:
         {
             auto ptd = packet.To<PlayerTakeDmg>();
-            client_->logger->LogInfo("Player took dmg!");
+            client_->logger->LogDebug("Player took dmg!");
 
             auto& player = GetLocalPlayer();
             player.health = ptd->healthState;
@@ -255,7 +254,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_HIT_CONFIRM:
         {
             auto ptd = packet.To<PlayerHitConfirm>();
-            client_->logger->LogInfo("Enemy player was hit!");
+            client_->logger->LogDebug("Enemy player was hit!");
 
             // Play sound effect
             if(Util::Map::Contains(playersExtraData, ptd->victimId))
@@ -308,7 +307,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::KILL);
 
             match.GetGameMode()->PlayerDeath(ptd->killerId, ptd->killerId, killer.teamId);
-            GetLogger()->LogError("Player died");
+            GetLogger()->LogDebug("Player died");
 
             if(killer.teamId == player.teamId && ptd->killerId != playerId)
             {
@@ -354,7 +353,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                     playerTable[respawn->playerId].ApplyState(respawn->playerState);
             }
 
-            GetLogger()->LogError("Player respawned");
+            GetLogger()->LogDebug("Player respawned");
         }
         break;
 
@@ -454,7 +453,7 @@ void InGame::HandleGameEvent(Event event)
         {
             auto flagEvent = event.flagEvent;
             auto gameMode = match.GetGameMode();
-            GetLogger()->LogError("Recv flag event");
+            GetLogger()->LogDebug("Recv flag event");
             if(gameMode->GetType() == GameMode::CAPTURE_THE_FLAG)
             {
                 auto captureFlag = static_cast<CaptureFlag*>(gameMode);
@@ -466,7 +465,7 @@ void InGame::HandleGameEvent(Event event)
                     {
                         inGameGui.ShowLogMsg("The flag was taken");
                         PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_TAKEN);
-                        GetLogger()->LogInfo("The flag wass taken");
+                        GetLogger()->LogDebug("The flag wass taken");
 
                         flag.carriedBy = flagEvent.playerSubject;
 
@@ -483,7 +482,7 @@ void InGame::HandleGameEvent(Event event)
                     {
                         inGameGui.ShowLogMsg("The flag was dropped");
                         PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_DROPPED);
-                        GetLogger()->LogInfo("The flag wass dropped");
+                        GetLogger()->LogDebug("The flag wass dropped");
 
                         flag.carriedBy.reset();
                         flag.pos = flagEvent.pos;
@@ -499,7 +498,7 @@ void InGame::HandleGameEvent(Event event)
                     {
                         inGameGui.ShowLogMsg("The flag was captured");
                         PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_CAPTURED);
-                        GetLogger()->LogError("The flag wass captured");
+                        GetLogger()->LogDebug("The flag wass captured");
 
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
@@ -515,7 +514,7 @@ void InGame::HandleGameEvent(Event event)
                     {
                         inGameGui.ShowLogMsg("The flag was recovered");
                         PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_RECOVERED);
-                        GetLogger()->LogError("The flag wass recovered");
+                        GetLogger()->LogDebug("The flag wass recovered");
 
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
@@ -527,7 +526,7 @@ void InGame::HandleGameEvent(Event event)
                     {
                         inGameGui.ShowLogMsg("The flag was reset");
                         PlayAnnouncerAudio(Game::Sound::ANNOUNCER_SOUND_FLAG_RESET);
-                        GetLogger()->LogError("The flag wass reset");
+                        GetLogger()->LogDebug("The flag wass reset");
 
                         flag.carriedBy.reset();
                         flag.pos = flag.origin;
@@ -537,7 +536,7 @@ void InGame::HandleGameEvent(Event event)
 
                 case FLAG_STATE:
                     {
-                        GetLogger()->LogError("Flag state recv");
+                        GetLogger()->LogDebug("Flag state recv");
                         if(flagEvent.playerSubject != 255)
                             flag.carriedBy = flagEvent.playerSubject;
                         flag.pos = flagEvent.pos;
@@ -646,24 +645,22 @@ void InGame::Predict(Entity::PlayerInput playerInput)
             auto newState = lastState.value();
             auto pState = prediction->dest;
 
-            /*
-            GetLogger()->LogError("New state pos " + glm::to_string(newState.transform.pos));
-            GetLogger()->LogError("Predicted state pos " + glm::to_string(pState.transform.pos));
-            GetLogger()->LogError("Render pos " + glm::to_string(playerTable[playerId].GetRenderTransform().position));
-            GetLogger()->LogError("Error correction offset " + glm::to_string(errorCorrectionDiff.pos));
-            */
+            #ifdef _DEBUG
+                GetLogger()->LogDebug("New state pos " + glm::to_string(newState.transform.pos));
+                GetLogger()->LogDebug("Predicted state pos " + glm::to_string(pState.transform.pos));
+                GetLogger()->LogDebug("Render pos " + glm::to_string(playerTable[playerId].GetRenderTransform().position));
+                GetLogger()->LogDebug("Error correction offset " + glm::to_string(errorCorrectionDiff.pos));
+            #endif
 
             // On error
             auto areSame = newState == pState;
             if(!areSame)
             {
-                client_->logger->LogError("Prediction: Error on prediction");
-                client_->logger->LogError("Prediction: Prediction Id " + std::to_string(prediction->inputReq.reqId) + " ACK " + std::to_string(this->lastAck));
-                /*GetLogger()->LogError("Predicted wepState " + std::to_string(static_cast<int>(pState.weaponState.state)) + 
-                    " Recv wepState " + std::to_string(static_cast<int>(newState.weaponState.state)));*/
+                GetLogger()->LogError("Prediction: Error on prediction");
+                GetLogger()->LogError("Prediction: Prediction Id " + std::to_string(prediction->inputReq.reqId) + " ACK " + std::to_string(this->lastAck));
                 auto diff = glm::length(pState.transform.pos - newState.transform.pos);
                 if(diff > 0.005f)
-                    client_->logger->LogError("Prediction: D " + std::to_string(diff) + 
+                    GetLogger()->LogError("Prediction: D " + std::to_string(diff) + 
                         " P " + glm::to_string(pState.transform.pos) + " S " + glm::to_string(newState.transform.pos));
 
                 // Accept player pos
@@ -740,7 +737,7 @@ void InGame::SmoothPlayerMovement()
         #ifdef _DEBUG
             auto dist = glm::length(errorCorrection.pos);
             if(dist > 0.005)
-                client_->logger->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
+                GetLogger()->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
         #endif
 
         if(lastPred->inputReq.reqId != lastRenderedPred)

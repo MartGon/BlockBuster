@@ -154,7 +154,7 @@ void Server::InitGameObjects()
 
 void Server::OnClientJoin(ENet::PeerId peerId)
 {
-    logger.LogError("Connected with peer " + std::to_string(peerId));
+    logger.LogInfo("Connected with peer " + std::to_string(peerId));
 
     // Create Client
     Entity::Player player;
@@ -190,7 +190,7 @@ void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::str
     welcome->tickRate = TICK_RATE.count();
     welcome->mode = match.GetGameMode()->GetType();
     welcome->startingPlayers = params.startingPlayers;
-    logger.LogError("Game mode sent is " + std::to_string(welcome->mode));
+    logger.LogDebug("Game mode sent is " + std::to_string(welcome->mode));
     batch.PushPacket(std::move(welcome));
 
     // Send match state packet
@@ -308,7 +308,7 @@ void Server::OnRecvPacket(ENet::PeerId peerId, Networking::Packet& packet)
             auto inputReq = inputPacket->req;
 
             auto cmdId = inputReq.reqId;
-            logger.LogInfo("Command arrived with cmdid " + std::to_string(cmdId) + " from " + std::to_string(peerId));
+            logger.LogDebug("Command arrived with cmdid " + std::to_string(cmdId) + " from " + std::to_string(peerId));
 
             // Check if we already have this input
             auto found = client.inputBuffer.FindFirst([cmdId](auto input)
@@ -534,7 +534,6 @@ void Server::HandleShootCommand(ShotCommand sc)
             }
             else
                 logger.LogDebug("Shot from player " + std::to_string(author.id) + " has NOT hit player " + std::to_string(peerId));
-            //logger.LogInfo("Player was at " + glm::to_string(smoothState.transform.pos));
         }
     }
     else if(wepType.shotType == Entity::WeaponType::ShotType::PROJECTILE)
@@ -662,7 +661,7 @@ void Server::SendScoreboardReport()
         return;
 
     scoreboard.CommitChanges();
-    logger.LogError("Sending scoreboard");
+    logger.LogDebug("Sending scoreboard");
 
     Networking::Packets::Server::ScoreboardReport sr;
     sr.scoreboard = scoreboard;
@@ -803,7 +802,7 @@ void Server::UpdateWorld()
         auto targetedEvents = gameMode->PollEventMsgs(MsgType::PLAYER_TARGET, id);
         if(!targetedEvents.empty())
         {
-            logger.LogError("Sending targeted evenst");
+            logger.LogDebug("Sending targeted evenst");
             Networking::Batch<Networking::PacketType::Server> batch;
             for(auto event : targetedEvents)
             {
@@ -830,8 +829,8 @@ void Server::UpdateProjectiles()
         auto collision = Game::AABBCollidesBlock(&map, t);
         if(collision.collides)
         {
-            logger.LogError("Surface normal " + glm::to_string(collision.normal));
-            logger.LogError("Offset " + glm::to_string(collision.offset));
+            logger.LogDebug("Surface normal " + glm::to_string(collision.normal));
+            logger.LogDebug("Offset " + glm::to_string(collision.offset));
             projectile->OnCollide(collision.normal);
             projectile->SetPos(t.position + collision.offset);
         }
@@ -949,8 +948,8 @@ void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
 
     // Calculate how far behind the server is
     lag = afterSleepTime - nextTickDate;
-    //logger.LogInfo("Server tick took " + std::to_string(simulationTime.count()) + " s");
-    //logger.LogInfo("Server delay " + std::to_string(lag.count()));
+    logger.LogDebug("Server tick took " + std::to_string(simulationTime.count()) + " s");
+    logger.LogDebug("Server delay " + std::to_string(lag.count()));
 
     // Update next tick date
     nextTickDate = nextTickDate + TICK_RATE;

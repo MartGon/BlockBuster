@@ -268,7 +268,7 @@ void Lobby::OnEnter()
     // Do we download map?
     if(mainMenu_->ShouldDownloadMap(mapName))
     {
-        mainMenu_->GetLogger()->LogError("Need to download map " + mapName);
+        mainMenu_->GetLogger()->LogWarning("Need to download map " + mapName);
         mainMenu_->DownloadMap(mapName);
     }
 

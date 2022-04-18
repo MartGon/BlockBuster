@@ -44,6 +44,11 @@ int main(int argc, char** args)
     if(argc > 1)
         id = args[1];
 
+    Log::Verbosity v = Log::Verbosity::VERBOSITY_ERROR;
+    #ifdef _DEBUG
+        v = Log::Verbosity::DEBUG;
+    #endif
+
     std::string filename = std::string("./logs/client-") + id + ".log";
     App::Configuration config{
         App::Configuration::WindowConfig{
@@ -61,15 +66,15 @@ int main(int argc, char** args)
             3, 0, SDL_GL_CONTEXT_PROFILE_CORE, 0, 8, SHADERS_DIR
         },
         App::Configuration::LogConfig{
-            filename, Log::Verbosity::DEBUG
+            filename, v
         }
     };
 
     // Init logger
     auto cLogger = std::make_unique<Log::ComposedLogger>();
+
     auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
-    //consoleLogger->Disable();
-    //consoleLogger->SetVerbosity(Log::Verbosity::VERBOSITY_ERROR);
+    consoleLogger->SetVerbosity(Log::Verbosity::VERBOSITY_ERROR);
     cLogger->AddLogger(std::move(consoleLogger));
     
     auto filelogger = std::make_unique<Log::FileLogger>();
@@ -106,8 +111,7 @@ int main(int argc, char** args)
     }
 
     // Set logger
-    // TODO: Uncomment and review
-    //cLogger->SetVerbosity(config.log.verbosity);
+    cLogger->SetVerbosity(config.log.verbosity);
     App::ServiceLocator::SetLogger(std::move(cLogger));
     
     // Start client

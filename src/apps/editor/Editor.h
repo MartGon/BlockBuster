@@ -35,11 +35,6 @@
 
 #include <functional>
 
-/* TODO LIST
-    2. Change respawn color based on teamId
-    3. Choose rotation in place block
-*/
-
 namespace BlockBuster::Editor
 {
     using BlockData = std::pair<glm::ivec3, Game::Block>;

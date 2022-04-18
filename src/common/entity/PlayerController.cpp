@@ -340,7 +340,7 @@ Math::Transform PlayerController::GetGCB()
 
 glm::vec3 PlayerController::HandleGravityCollisionsAlt(Game::Map::Map* map, float blockScale, Util::Time::Seconds deltaTime)
 {
-    float fallDistance = gravitySpeed; // TODO: * deltaTime;
+    float fallDistance = gravitySpeed * deltaTime.count();
     glm::vec3 offset = glm::vec3{0.0f, fallDistance, 0.0f};
 
     auto ecb = GetGCB();

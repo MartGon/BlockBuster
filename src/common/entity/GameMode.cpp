@@ -376,7 +376,7 @@ void CaptureFlag::Update(World world, Util::Time::Seconds deltaTime)
                 else if(flag.teamId != player->teamId && !player->IsDead() && IsPlayerInFlagArea(world, player, flag.pos, captureArea))
                 {
                     TakeFlag(flag, pid);
-                    world.logger->LogError("[GameMode] Flag was taken");
+                    world.logger->LogDebug("[GameMode] Flag was taken");
                 }
                     
             }

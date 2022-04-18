@@ -164,7 +164,7 @@ void InGame::Start()
     });
     host.Connect(serverAddress);
 
-    client_->logger->LogInfo("Connecting to server at " + serverAddress.GetHostIP() + ":" + std::to_string(serverAddress.GetPort()));
+    GetLogger()->LogInfo("Connecting to server at " + serverAddress.GetHostIP() + ":" + std::to_string(serverAddress.GetPort()));
     // Connect to server
     auto attempts = 0;
     while(!connected && attempts < 10)
@@ -177,7 +177,7 @@ void InGame::Start()
 
     if(!connected)
     {
-        client_->logger->LogError("Could not connect to server. Quitting");
+        GetLogger()->LogError("Could not connect to server. Quitting");
     }
 
     exit = !connected;
@@ -191,7 +191,7 @@ void InGame::Update()
 {
     simulationLag = serverTickRate;
     
-    client_->logger->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate.count()));
+    GetLogger()->LogInfo("Update rate(s) is: " + std::to_string(serverTickRate.count()));
     while(!exit)
     {
         preSimulationTime = Util::Time::GetTime();
@@ -221,9 +221,9 @@ void InGame::Update()
         deltaTime = (Util::Time::GetTime() - preSimulationTime);
         simulationLag += deltaTime;
         offsetTime += deltaTime;
-        client_->logger->LogInfo("Offset millis increased to " + std::to_string(offsetTime.count()));
-        client_->logger->LogInfo("Update: Delta time " + std::to_string(deltaTime.count()));
-        client_->logger->LogInfo("Update: Simulation lag " + std::to_string(simulationLag.count()));
+        GetLogger()->LogDebug("Offset millis increased to " + std::to_string(offsetTime.count()));
+        GetLogger()->LogDebug("Update: Delta time " + std::to_string(deltaTime.count()));
+        GetLogger()->LogDebug("Update: Simulation lag " + std::to_string(simulationLag.count()));
     }
 
     ReturnToMainMenu();
@@ -1067,7 +1067,7 @@ void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
     std::fstream file{filepath, file.binary | file.in};
     if(!file.is_open())
     {
-        client_->logger->LogError("Could not open file " + filepath.string());
+        GetLogger()->LogError("Could not open file " + filepath.string());
         std::exit(-1);
         return;
     }
@@ -1075,7 +1075,7 @@ void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
     auto magic = ReadFromFile<int>(file);
     if(magic != Game::Map::Map::magicNumber)
     {
-        client_->logger->LogError("Wrong format for file " + filepath.string());
+        GetLogger()->LogError("Wrong format for file " + filepath.string());
         return;
     }
 
