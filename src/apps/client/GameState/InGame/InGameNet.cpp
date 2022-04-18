@@ -745,14 +745,15 @@ void InGame::SmoothPlayerMovement()
             // Animation
             auto oldState = lastPred->origin;
             auto renderState = GetLocalPlayer().ExtractState();
-            auto oldWepState = oldState.weaponState[oldState.curWep];
             auto renderWepState = renderState.weaponState[oldState.curWep];
+            
+            auto oldWepState = oldState.weaponState[oldState.curWep];
             auto nextWepState = lastPred->dest.weaponState[oldState.curWep];
             
             if(Entity::HasShot(oldWepState.state, nextWepState.state))
                 OnLocalPlayerShot();
             
-            bool hasReloaded = Entity::HasReloaded(oldWepState.state, nextWepState.state);
+            bool hasReloaded = Entity::HasReloaded(oldWepState.state, renderWepState.state);
             if(hasReloaded)
                 OnLocalPlayerReload();
 
