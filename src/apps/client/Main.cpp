@@ -76,20 +76,6 @@ int main(int argc, char** args)
     auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
     consoleLogger->SetVerbosity(Log::Verbosity::VERBOSITY_ERROR);
     cLogger->AddLogger(std::move(consoleLogger));
-    
-    auto filelogger = std::make_unique<Log::FileLogger>();
-    filelogger->OpenLogFile(config.log.logFile);
-    
-    if(filelogger->IsOk())
-    {
-        filelogger->SetVerbosity(config.log.verbosity);
-        cLogger->AddLogger(std::move(filelogger));
-    }
-    else
-    {
-        std::string msg = "Could not open log file: " + config.log.logFile.string() + '\n';
-        cLogger->LogError(msg);
-    }
 
     // Load config
     std::filesystem::path configPath("./client.ini");
@@ -108,6 +94,20 @@ int main(int argc, char** args)
     {
         App::ServiceLocator::GetLogger()->LogError(std::string(e.what()) + '\n');
         App::ServiceLocator::GetLogger()->LogInfo("Loading default config\n");
+    }
+
+    auto filelogger = std::make_unique<Log::FileLogger>();
+    filelogger->OpenLogFile(config.log.logFile);
+
+    if (filelogger->IsOk())
+    {
+        filelogger->SetVerbosity(config.log.verbosity);
+        cLogger->AddLogger(std::move(filelogger));
+    }
+    else
+    {
+        std::string msg = "Could not open log file: " + config.log.logFile.string() + '\n';
+        cLogger->LogError(msg);
     }
 
     // Set logger

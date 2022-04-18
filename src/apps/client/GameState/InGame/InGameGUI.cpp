@@ -27,7 +27,7 @@ void InGameGUI::Start()
     InitPopUps();
 
     // Init text
-    std::filesystem::path fontPath = std::filesystem::path{RESOURCES_DIR} / "fonts/Pixel.ttf";
+    std::filesystem::path fontPath = inGame->client_->resourcesDir / "fonts/Pixel.ttf";
     pixelFont = GUI::TextFactory::Get()->LoadFont(fontPath);
     InitTexts();
     
