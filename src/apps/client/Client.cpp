@@ -38,7 +38,8 @@ void Client::Start()
         return;
     }
 
-    texturesDir = GetConfigOption("TexturesDir", TEXTURES_DIR);
+    resourcesDir = GetConfigOption("ResourcesFolder", RESOURCES_DIR);
+    texturesDir = resourcesDir / "textures";
     GL::Cubemap::TextureMap map = {
         {GL::Cubemap::RIGHT, texturesDir / "right.jpg"},
         {GL::Cubemap::LEFT, texturesDir / "left.jpg"},
@@ -54,7 +55,7 @@ void Client::Start()
     state = menu.get();
     state->Start();
     
-    LaunchGame("localhost", 8081, "Alpha3", "NULL PLAYER UUID", "Defu");
+    //LaunchGame("localhost", 8081, "Alpha3", "NULL PLAYER UUID", "Defu");
 }
 
 void Client::Shutdown()
@@ -62,6 +63,7 @@ void Client::Shutdown()
     state->Shutdown();
 
     config.options["mapsFolder"] = mapMgr.GetMapsFolder().string();
+    config.options["ResourcesFolder"] = resourcesDir.string();
 }
 
 void Client::Update()

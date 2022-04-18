@@ -26,4 +26,5 @@ target_include_directories(App PUBLIC include
     ${DEPS_FOLDER}/imgui 
     ${APPS_COMMON_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${SDL2_INCLUDE_DIR}
 )

@@ -99,6 +99,14 @@ void InGame::Start()
     auto& texMgr = renderMgr.GetTextureMgr();
     texMgr.SetDefaultFolder(client_->texturesDir);
 
+    // Audio
+    InitAudio();
+
+    // Map
+    auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
+    auto mapFileName = mapName + ".bbm";
+    LoadMap(mapFolder, mapFileName);
+
     // Models
     modelMgr.Start(renderMgr, renderShader, billboardShader);
     playerAvatar.SetMeshes(modelMgr.quad, modelMgr.cube, modelMgr.cylinder, modelMgr.slope);
@@ -122,11 +130,6 @@ void InGame::Start()
         camController_.SetMode(::App::Client::CameraMode::FPS);
     #endif
 
-    // Map
-    auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
-    auto mapFileName = mapName + ".bbm";
-    LoadMap(mapFolder, mapFileName);
-
     // Gameobjects
     InitGameObjects();
 
@@ -134,9 +137,6 @@ void InGame::Start()
     match.SetOnEnterState([this](Match::StateType type){
         this->OnEnterMatchState(type);
     });
-
-    // Audio
-    InitAudio();
 
     // Networking
     auto serverAddress = ENet::Address::CreateByDomain(serverDomain, serverPort).value();
@@ -1017,7 +1017,7 @@ void InGame::InitAudio()
     // Set up gallery
     audioMgr = audioMgr->Get();
     audioMgr->Init();
-    std::filesystem::path audioFolder = "/home/defu/Projects/BlockBuster/resources/audio";
+    std::filesystem::path audioFolder = client_->resourcesDir / "audio";
     gallery.SetDefaultFolder(audioFolder);
     gallery.Start();
 

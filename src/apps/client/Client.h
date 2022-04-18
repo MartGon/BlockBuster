@@ -68,6 +68,7 @@ namespace BlockBuster
 
         // App
         std::filesystem::path texturesDir;
+        std::filesystem::path resourcesDir;
         bool quit = false;
     };
 }

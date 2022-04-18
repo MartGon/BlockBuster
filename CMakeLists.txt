@@ -27,10 +27,7 @@ else()
     add_compile_options(-Wno-deprecated-volatile)
 endif()
 
-find_package(OpenGL REQUIRED)
-find_package(X11 REQUIRED)
 find_package(Threads REQUIRED)
-find_package(SDL2 REQUIRED)
 
 add_subdirectory(deps)
 add_subdirectory(src)
