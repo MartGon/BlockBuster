@@ -123,9 +123,11 @@ void InGameGUI::DrawGUI(GL::Shader& textShader)
     bool isOpen = true;
     if(inGame->connected)
     {
+    #ifdef _DEBUG
         DebugWindow();
         NetworkStatsWindow();
         RenderStatsWindow();
+    #endif
         puMgr.Update();
 
         bool show = showScoreboard || inGame->match.GetState() == Match::StateType::ENDED;
@@ -1106,6 +1108,8 @@ void InGameGUI::ScoreTable(const char* name, Entity::ID teamId)
     }
 }
 
+#ifdef _DEBUG
+
 void InGameGUI::DebugWindow()
 {
     if(ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -1199,6 +1203,8 @@ void InGameGUI::DebugWindow()
     }
     ImGui::End();
 }
+
+#endif
 
 void InGameGUI::NetworkStatsWindow()
 {

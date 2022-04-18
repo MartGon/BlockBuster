@@ -92,9 +92,10 @@ namespace BlockBuster
 
         void ScoreboardWindow();
         void ScoreTable(const char* name, Entity::ID teamId = 0);
-        void DebugWindow();
         void RenderStatsWindow();
         void NetworkStatsWindow();
+
+        void DebugWindow();
 
         // Handy
         Log::Logger* GetLogger();
@@ -176,8 +177,8 @@ namespace BlockBuster
         // Metrics
         double maxFPS = 60.0;
 
-        //TODO: DEBUG. Remove on final version
         // Player Model
+    #ifdef _DEBUG
         uint32_t modelId = 0;
         float sliderPrecision = 2.0f;
         glm::vec3 modelOffset{0.0f};
@@ -186,5 +187,6 @@ namespace BlockBuster
         glm::ivec2 wtPos{0};
         float tScale = 0.45f;
         bool tShow = false;
+    #endif
     };
 }

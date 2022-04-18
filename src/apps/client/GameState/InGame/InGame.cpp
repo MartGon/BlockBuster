@@ -118,7 +118,9 @@ void InGame::Start()
     camController_ = ::App::Client::CameraController{&camera_, {client_->window_, client_->io_}, ::App::Client::CameraMode::EDITOR};
     auto sensitivity = std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
     camController_.rotMod = sensitivity;
-    //camController_.SetMode(::App::Client::CameraMode::FPS);
+    #ifndef _DEBUG
+        camController_.SetMode(::App::Client::CameraMode::FPS);
+    #endif
 
     // Map
     auto mapFolder = client_->mapMgr.GetMapFolder(mapName);
@@ -509,7 +511,9 @@ void InGame::HandleSDLEvents()
                 using namespace ::App::Client;
                 auto mode = this->camController_.GetMode();
                 auto nextMode = mode == CameraMode::EDITOR ? CameraMode::FPS : CameraMode::EDITOR;
-                this->camController_.SetMode(nextMode);
+                #ifdef _DEBUG
+                    this->camController_.SetMode(nextMode);
+                #endif
             }
             if(e.key.keysym.sym == SDLK_ESCAPE)
             {
@@ -925,8 +929,10 @@ void InGame::DrawProjectiles()
             modelMgr.Draw(Game::Models::ROCKET_MODEL_ID, tMat);
         }
 
-        t.scale = projectile->GetScale();
-        DrawCollisionBox(view, t);
+        #ifdef _DEBUG
+            t.scale = projectile->GetScale();
+            DrawCollisionBox(view, t);
+        #endif
     }
 }
 
