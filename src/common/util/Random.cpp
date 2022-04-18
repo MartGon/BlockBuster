@@ -17,7 +17,7 @@ std::string Random::RandomString(unsigned int length)
     std::string str;
     for(auto i = 0; i < length; i++)
     {
-        auto c = Random::Uniform('A', 'Z');
+        char c = Random::Uniform((int)'A', (int)'Z');
         str.push_back(c);
     }
 
