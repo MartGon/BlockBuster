@@ -504,6 +504,7 @@ void InGame::HandleSDLEvents()
         {
         case SDL_QUIT:
             Exit();
+            client_->quit = true;
             break;
         case SDL_KEYDOWN:
             if(e.key.keysym.sym == SDLK_p)
