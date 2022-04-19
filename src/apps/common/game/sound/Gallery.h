@@ -16,7 +16,12 @@ namespace Game::Sound
     };
 
     enum MusicID{
-        SPAWN_THEME_ID,
+        SPAWN_THEME_01_ID,
+        SPAWN_THEME_02_ID,
+        SPAWN_THEME_03_ID,
+        SPAWN_THEME_04_ID,
+        VICTORY_THEME_01_ID,
+        VICTORY_THEME_02_ID,
         MUSIC_ID_COUNT
     };
 

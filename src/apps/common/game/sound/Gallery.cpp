@@ -23,8 +23,21 @@ void Gallery::Start()
     }
 
     // Music 
-    auto spawnId = LoadStreamedAudio("soundtrack.wav");
-    musicIds.Add(SPAWN_THEME_ID, spawnId);
+        // Spawn
+    for(int i = MusicID::SPAWN_THEME_01_ID; i < MusicID::MUSIC_ID_COUNT; i++)
+    {
+        auto filename = "spawn-theme-" + std::to_string(i + 1) + ".wav";
+        auto audioId = LoadStreamedAudio(filename);
+        musicIds.Add(i, audioId);
+    }
+        // Victory
+    for(int i = 0; i < 2; i++)
+    {
+        auto id = MusicID::VICTORY_THEME_01_ID + i;
+        auto filename = "victory-theme-" + std::to_string(i + 1) + ".wav";
+        auto audioId = LoadStreamedAudio(filename);
+        musicIds.Add(id, audioId);
+    }
 
     // Wep Sounds
     for(int i = Entity::WeaponTypeID::ASSAULT_RIFLE; i < Entity::WeaponTypeID::CHEAT_SMG; i++)

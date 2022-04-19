@@ -291,6 +291,8 @@ void InGame::OnEnterMatchState(Match::StateType type)
             else if(mode->GetType() == GameMode::Type::TEAM_DEATHMATCH)
                 sound = Game::Sound::ANNOUNCER_SOUND_MODE_TEAM_DEATHMATCH;
 
+            auto themeId = Util::Random::Uniform<int>(Game::Sound::MusicID::SPAWN_THEME_01_ID, Game::Sound::MusicID::SPAWN_THEME_04_ID);
+            audioMgr->SetStreamSourceAudio(soundtrackSource, gallery.GetMusicId(static_cast<Game::Sound::MusicID>(themeId)));
             audioMgr->PlayStreamSource(soundtrackSource);
             PlayAnnouncerAudio(sound);
 
@@ -303,8 +305,6 @@ void InGame::OnEnterMatchState(Match::StateType type)
             inGameGui.countdownText.SetIsVisible(false);
             inGameGui.gameTimeText.SetIsVisible(true);
             inGameGui.EnableScore();
-
-            audioMgr->PlayStreamSource(soundtrackSource);
         }
         break;
     
@@ -318,6 +318,14 @@ void InGame::OnEnterMatchState(Match::StateType type)
             {
                 auto sound = winner.teamId == BLUE_TEAM_ID ? Game::Sound::ANNOUNCER_SOUND_BLUE_TEAM_WINS : Game::Sound::ANNOUNCER_SOUND_RED_TEAM_WINS;
                 PlayAnnouncerAudio(sound);
+            }
+
+            bool isWinner = winner.teamId == GetLocalPlayer().teamId;
+            if(isWinner)
+            {
+                auto themeId = Util::Random::Uniform<int>(Game::Sound::MusicID::VICTORY_THEME_01_ID, Game::Sound::MusicID::VICTORY_THEME_02_ID);
+                audioMgr->SetStreamSourceAudio(soundtrackSource, gallery.GetMusicId(static_cast<Game::Sound::MusicID>(themeId)));
+                audioMgr->PlayStreamSource(soundtrackSource);
             }
 
             predictionHistory_.Clear();
@@ -466,6 +474,7 @@ void InGame::OnNewFrame(Util::Time::Seconds deltaTime)
     // Update player source pos
     audioMgr->SetSourceTransform(playerSource, pPos);
     audioMgr->SetSourceTransform(playerReloadSource, pPos);
+    audioMgr->SetSourceTransform(playerDmgSource, pPos);
     
     // Update players source Pos
     for(auto& [id, ed] : playersExtraData)
@@ -655,6 +664,14 @@ void InGame::OnLocalPlayerReload()
     auto audioId = gallery.GetWepReloadSoundId(weapon.weaponTypeId);
     audioMgr->SetSourceAudio(playerReloadSource, audioId);
     audioMgr->PlaySource(playerReloadSource);
+}
+
+void InGame::OnLocalPlayerTakeDmg()
+{
+    auto soundId = Util::Random::Uniform(0u, 1u) + Game::Sound::BULLET_HIT_METAL_1;
+    auto audioId = gallery.GetSoundId((Game::Sound::SoundID)soundId);
+    audioMgr->SetSourceAudio(playerDmgSource, audioId);
+    audioMgr->PlaySource(playerDmgSource);
 }
 
 World InGame::GetWorld()
@@ -1026,11 +1043,12 @@ void InGame::InitAudio()
     Audio::AudioSource::Params audioParams;
     audioParams.gain = 0.5f;
     audioMgr->SetStreamSourceParams(soundtrackSource, audioParams);
-    audioMgr->SetStreamSourceAudio(soundtrackSource, gallery.GetMusicId(MusicID::SPAWN_THEME_ID));
+    audioMgr->SetStreamSourceAudio(soundtrackSource, gallery.GetMusicId(MusicID::SPAWN_THEME_01_ID));
 
     // Player source
     playerSource = audioMgr->CreateSource();
     playerReloadSource = audioMgr->CreateSource();
+    playerDmgSource = audioMgr->CreateSource();
 
     // Set grenade sources
     for(auto i = 0; i < grenadeSources.GetSize(); i++)
