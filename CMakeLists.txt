@@ -16,6 +16,7 @@ add_compile_definitions(TEXTURES_DIR="${CMAKE_SOURCE_DIR}/resources/textures/")
 add_compile_definitions(RESOURCES_DIR="${RESOURCES_DIR}")
 add_compile_definitions(IMGUI_IMPL_OPENGL_LOADER_GLAD=1)
 add_compile_definitions(NOMINMAX=1)
+
 # Add compile defines
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     add_compile_definitions(_DEBUG=1)
@@ -27,13 +28,20 @@ else()
     add_compile_options(-Wno-deprecated-volatile)
 endif()
 
+set(BUILD_APPS 1 CACHE BOOL "Whether to build apps")
+set(BUILD_TESTS 1 CACHE BOOL "Whether to build tests")
+
 find_package(Threads REQUIRED)
+
+if(CMAKE_COMPILER_IS_GNUCC)
+    link_libraries(-lstdc++fs)
+endif()
 
 add_subdirectory(deps)
 add_subdirectory(src)
 
 include(CTest)
 
-if(BUILD_TESTING)
+if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
