@@ -835,6 +835,7 @@ void MainMenu::ResetWindow()
 {
     // Set window properties
     client_->SetMouseGrab(false);
+    SDL_SetWindowPosition(this->client_->window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
     SDL_SetWindowFullscreen(this->client_->window_, 0);
     client_->SetWindowSize(glm::ivec2{800, 600});
