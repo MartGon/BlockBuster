@@ -141,8 +141,8 @@ std::unordered_map<GameMode::Type, bool> BlockBuster::GetSupportedGameModes(Game
     gameModes[GameMode::Type::FREE_FOR_ALL] = !map.FindGameObjectByType(Entity::GameObject::RESPAWN).empty();
     gameModes[GameMode::Type::TEAM_DEATHMATCH] = gameModes[GameMode::Type::FREE_FOR_ALL];
     gameModes[GameMode::Type::DOMINATION] = gameModes[GameMode::Type::FREE_FOR_ALL] && !map.FindGameObjectByType(Entity::GameObject::DOMINATION_POINT).empty();
-    gameModes[GameMode::Type::CAPTURE_THE_FLAG] = gameModes[GameMode::Type::FREE_FOR_ALL] && !map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A).empty()
-        && !map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_B).empty();;
+    gameModes[GameMode::Type::CAPTURE_THE_FLAG] = gameModes[GameMode::Type::FREE_FOR_ALL] && (!map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A).empty()
+        || !map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_B).empty() );
 
     return gameModes;
 }

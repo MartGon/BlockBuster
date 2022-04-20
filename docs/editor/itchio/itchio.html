@@ -3,10 +3,13 @@
     <em>Block Buster Editor</em> is the Map Editor for the upcoming voxel first-person shooter <em>Block Buster</em>. With this tool, blocks and ramps can be placed to create interesting shooter maps.
     The first design goal of this program is simplicity. However, it also offers powerful utilities to ease and speed up the creation process.
 </p>
+
 <h2> Tools </h2>
+
+<div style="margin-top: 30px;"></div>
+
 <table>
-<tbody>
-    
+<tbody>  
     <tr>
         <td colspan="2" style="text-align: center;">
             <h3>Basic Tools</h3>
@@ -60,8 +63,6 @@
     
 </tbody>
 </table>
-
-<div style="margin-top: 30px;"></div>
 
 <table>
 <tr>
@@ -166,8 +167,293 @@
         <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/paint-selection.gif?raw=true" width="320" height="240">
     </td>
 </tr>
-
 </table>
+
+<table>
+    <tbody>  
+        <tr>
+            <td colspan="2" style="text-align: center;">
+                <h3>Game Object Tools</h3>
+                <p style="text-align: left;">
+                    The Game Object Tools can be used to place or edit different types of game objects on the map. 
+                    Depending on what game objects you include, you can completely change how players will 
+                    interact during gameplay.
+                </p>
+            </td>
+        </tr>
+        
+        <tr>
+            <td style="width: 65%;">
+                <strong>Place</strong>
+                <p>
+                With this tool you can place game objects on the map. 
+                To do so, simply left click on one of the faces of a block/ramp that has already been placed on the map.
+                You can also remove existing game object with this tool by right clicking on them.
+                </p>
+            </td>
+            <td>
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 65%;">
+                <strong>Select</strong>
+                <p>
+                The select tool can be used to change the properties or type of an existing game object. 
+                Use left click to select a game object.
+                </p>
+    
+            </td>
+            <td>
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/paint.gif?raw=true" width="320" height="240">
+            </td>
+        </tr>
+        
+    </tbody>
+</table>
+
+<table>
+    <tbody>  
+        <tr>
+            <td colspan="2" style="text-align: center;">
+                <h3>Game Object Types</h3>
+            </td>
+        </tr>
+        
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+            <td>
+                <strong>Respawn</strong>
+                <p>
+                    Respawns mark specific points where players will appear when the game starts or after they die.
+                </p>
+                <strong>Properties</strong>
+                <ul>
+                    <li><strong>Orientation</strong>: Dictates the angle the player will look at, once they appear in this location.</li>
+                    <li>
+                        <strong>TeamID</strong>: Only players with the same TeamID will be able to respawn at this location.
+                    </li>
+                </ul>
+
+                <table>
+                    <tr>
+                        <th colspan="2">
+                            <strong>Team Table</strong>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th>Team Color</th>
+                        <th>TeamID</th>
+                    </tr>
+                    <tr>
+                        <td>Blue</td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td>Red</td>
+                        <td>1</td>
+                    </tr>
+                </table>
+
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+            <td>
+                <strong>Weapon crate</strong>
+                <p>
+                    Weapon crates hold weapons which player can pick up during a match.
+                </p>
+                <strong>Properties</strong>
+                <ul>
+                    <li><strong>Respawn Time</strong>: Dictates how many seconds have to pass for this weapon to appear again after being picked up.</li>
+                    <li>
+                        <strong>Weapon ID</strong>: The type of weapon that this crate holds.
+                    </li>
+                </ul>
+
+                
+                <table>
+                    <tr>
+                        <th colspan="2">
+                            <strong>Weapon Table</strong>
+                        </th>
+                    </tr>
+
+                    <tr>
+                        <th>Weapon</th>
+                        <th>Weapon ID</th>
+                    </tr>
+
+                    <tr>
+                        <td>Assault Rifle</td>
+                        <td>1</td>
+                    </tr>
+                    <tr>
+                        <td>Battle Rifle</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>SMG</td>
+                        <td>3</td>
+                    </tr>
+                    <tr>
+                        <td>Shotgun</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td>Sniper</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>Grenade Launcher</td>
+                        <td>6</td>
+                    </tr>
+                    <tr>
+                        <td>Rocket Launcher</td>
+                        <td>7</td>
+                    </tr>
+                </table>
+
+                <p>
+                    You can find more information about the weapons in the game's <a href="">page</a>.
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+            <td>
+                <strong>Healthpack</strong>
+                <p>
+                    Healthpacks can be used by players to restore their health and shield.
+                </p>
+                <strong>Properties</strong>
+                <ul>
+                    <li>
+                        <strong>Respawn Time</strong>: Dictates how many seconds have to pass for this healthpack to appear again after being picked up.
+                    </li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+            <td>
+                <strong>Flag Spawns (A or B)</strong>
+                <p>
+                    Flag Spawns mark the location where each teams flags will appear, when playing <em>Capture the Flag</em>
+                    game mode.
+                </p>
+                <ul>
+                    <li>Flag Spawn A: Marks where a BLUE team flag will appear</li>
+                    <li>Flag Spawn B: Marks where a RED team flag will appear</li>
+                </ul>
+
+                <p>
+                    <strong>IMPORTANT</strong>: You'll need to place at least one Flag Spawn (either A or B) in order to be able to play <em>Capture the Flag</em>
+                    game mode in that map.
+                </p>
+
+                <strong>Properties</strong>
+                <p>This Game Object doesn't have any properties.</p>
+            </td>
+        </tr>
+        
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+            <td>
+                <strong>Domination point</strong>
+                <p>
+                    Domination points mark specific locations which the player need to capture in order to earn points in the 
+                    Domination game mode.
+                </p>
+
+                <p>
+                    <strong>IMPORTANT</strong>: You'll need to place at least one Domination point to be able to player the Domination
+                    game mode in that map.
+                </p>
+                <strong>Properties</strong>
+                <ul>
+                    <li>
+                        <strong>Scale</strong>: Dictates the size of the area where player's will need to stand in order to capture the point.
+                    </li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+            <td>
+                <strong>Player Decoy</strong>
+                <p>
+                    Player Decoys can be used as tool to compare the player's size to a section of the map.
+                </p>
+                
+                <p>
+                    <strong>IMPORTANT</strong>: This object is temporary, it won't be saved on the map data. You'll have to place
+                    a new one each time you load the map in the Editor.
+                </p>
+
+                <strong>Properties</strong>
+                <p>This Game Object doesn't have any properties.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+            <td>
+                <strong>Grenades</strong>
+                <p>
+                    Grenades can be picked up by players during a match.
+                </p>
+
+                <strong>Properties</strong>
+                <ul>
+                    <li>
+                        <strong>Respawn Time</strong>: Dictates how many seconds have to pass for this Game Object to appear again after being picked up.
+                    </li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true" width="320" height="240">
+            </td>
+            <td>
+                <strong>Killbox</strong>
+                <p>
+                    Killboxes mark specific locations where a player would be killed upon entering.
+                </p>
+
+                <strong>Properties</strong>
+                <ul>
+                    <li>
+                        <strong>Scale</strong>: Dictates the size of the area of the Killbox.
+                    </li>
+                </ul>
+            </td>
+        </tr>
+
+    </tbody>
+</table>
+
 
 <h2>Keybinds</h2>
 
