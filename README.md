@@ -1,95 +1,63 @@
-# Block Buster Editor
+# Block Buster
 
 ## Description
-*Block Buster Editor* is the map editor for the upcoming voxel first-person shooter *Block Buster*. With this tool, blocks and ramps can be placed to create interesting shooter maps.
-The first design goal of this program is simplicity. However, it also offers powerful utilities to ease and speed up the creation process.
-
-## Tools
-
-### Place Tool
-# ![place](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/place.gif?raw=true)
-### Paint Tool
-# ![paint](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/paint.gif?raw=true)
-### Rotate Tool
-# ![rotate](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/gifs/rotate.gif?raw=true)
-
-## Keybinds
---------
-You can find a more extensive list of keybinds on the editor itself. Check **Help Menu -> Keyboard Shortcut Reference**.
-
-### Camera
-**Movement**
-|Key|Action|
-|---|------|
-|W|Move Forward|
-|S|Move Backward|
-|A|Strafe Left|
-|D|Strafe Right|
-|Q|Move Up|
-|E|Move Down|
-
-**Rotation**
-|Key|Action|
-|---|------|
-|Up Arrow|Pitch up|
-|Down Arrow|Pitch down|
-|Left Arrow|Turn Left|
-|Right Arrow|Turn Right|
-
-**Modes**
-|Key|Action|
-|---|------|
-|Middle Mouse Button (Hold)|Use FPS camera|
-|F|Toggle FPS camera|
-
-### Select Tool
-
-**Cursor Movement**
-|Key|Action|
-|---|------|
-|Numpad 8|Move on +Z|
-|Numpad 2|Move on -Z|
-|Numpad 4|Move on -X|
-|Numpad 6|Move on +X|
-|Numpad 7|Move on +Y|
-|Numpad 9|Move on -Y|
-
-**Cursor Scaling**
-|Key|Action|
-|---|------|
-|Ctrl + Numpad 8|Scale on +Z|
-|Ctrl + Numpad 2|Scale on -Z|
-|Ctrl + Numpad 4|Scale on -X|
-|Ctrl + Numpad 6|Scale on +X|
-|Ctrl + Numpad 7|Scale on +Y|
-|Ctrl + Numpad 9|Scale on -Y|
-
-**Test Mode**
-
-By using Test Mode, you can check how your map feels from the perspective of a player. While on test mode, you will be affected by gravity, so be wary!
-
-|Key|Action|
-|---|------|
-|P|Toggle Editor/Test mode|
-
-**Player Movement**
-|Key|Action|
-|---|------|
-|W|Move Forward|
-|S|Move Backward|
-|A|Strafe Left|
-|D|Strafe Right|
-
-**Rotation**
-|Key|Action|
-|---|------|
-|Mouse Up|Pitch up|
-|Mouse Down|Pitch down|
-|Mouse Left|Turn Left|
-|Mouse Right|Turn Right|
+*Block Buster* is a minimalist multiplayer voxel first-person shooter. It features 4 different game modes, 7 different weapons, its own game map creation tool and match making server. 
 
 ## Screenshots
 
-# ![bridge](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Bridge.png?raw=true)
-# ![door-e](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Door.png?raw=true)
-# ![door](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Door-E.png?raw=true)
+## Map Editor
+
+You can find more detailed info about the Editor application by clicking here.
+
+## Match Making Server
+
+Unlike this project, the Match Making Server is made in rust. Click here to check its repo.
+
+## Build Requirements (Client/Editor)
+
+In order to build properly the client or editor application, you will need the following libraries:
+
+- SDL2 (https://www.libsdl.org/download-2.0.php)
+- OpenGL Development libraries (https://www.khronos.org/opengl/)
+
+And the following tools:
+
+- CMake
+- C++17 compatible compiler
+
+## Build steps (Linux)
+
+1. Clone this repository
+2. Create a build directory
+
+`mkdir build && cd build`
+
+3. Run CMake
+
+`cmake ..`
+
+4. Run Make
+
+`make -j 4`
+
+
+## Software libraries used in this project
+
+- glad (https://glad.dav1d.de/)
+- glm  (https://glm.g-truc.net/0.9.9/glm)
+- ImGui (https://github.com/ocornut/imgui)
+- stb (https://github.com/nothings/stb)
+- freetype (https://freetype.org/)
+- enet (http://enet.bespin.org/)
+- openal-soft (https://github.com/kcat/openal-soft)
+- json (https://github.com/nlohmann/json)
+- zip (https://github.com/kuba--/zip)
+- argparse (https://github.com/p-ranav/argparse)
+- base64 (https://renenyffenegger.ch/notes/development/Base64/Encoding-and-decoding-base-64-with-cpp/index)
+- http-lib (https://github.com/yhirose/cpp-httplib)
+- doctest (https://github.com/doctest/doctest)
+- result (https://github.com/oktal/result)
+
+## About
+
+This whole project took exactly one year to complete. Started on 23rd April 2021.
