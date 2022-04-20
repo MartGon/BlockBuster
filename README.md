@@ -8,7 +8,7 @@
 # ![gameplay-1](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Gameplay1.png?raw=true)
 # ![gameplay-2](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Gameplay2.png?raw=true)
 # ![explosion-1](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Explosion.png?raw=true)
-# ![Menu](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Menu.png?raw=true)
+# ![menu](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Menu.png?raw=true)
 
 ## Playing
 

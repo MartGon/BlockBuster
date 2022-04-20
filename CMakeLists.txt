@@ -33,7 +33,7 @@ set(BUILD_TESTS 1 CACHE BOOL "Whether to build tests")
 
 find_package(Threads REQUIRED)
 
-if(CMAKE_COMPILER_IS_GNUCC)
+if(UNIX)
     link_libraries(-lstdc++fs)
 endif()
 
