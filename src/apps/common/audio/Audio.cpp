@@ -92,6 +92,36 @@ void AudioMgr::Update()
     }
 }
 
+void AudioMgr::Shutdown()
+{
+    for(auto& [id, source] : sources)
+    {
+        alSourceStop(source.handle);
+        alDeleteSources(1, &source.handle);
+    }
+    sources.clear();
+
+    for(auto& [id, sSource] : streamSources)
+    {
+        alSourceStop(sSource.source.handle);
+        alDeleteBuffers(4, sSource.streamBuffers);
+        alDeleteSources(1, &sSource.source.handle);
+    }
+    streamSources.clear();
+
+    for(auto& [id, file] : staticFiles)
+    {
+        alDeleteBuffers(1, &file.alBuffer);
+    }
+    staticFiles.clear();
+
+    for(auto& [id, file] : streamedFiles)
+    {
+        SDL_FreeWAV(file.wavBuffer);
+    }
+    streamedFiles.clear();
+}
+
 // Audio Files
 
 std::pair<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAVOrNull(ID id, std::filesystem::path path)
@@ -443,7 +473,7 @@ Result<AudioMgr::File, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::filesystem
             format = AL_MONO32F_SOFT;
         else if(audioSpec.channels == 2 && audioSpec.format == AUDIO_U8)
             format = AL_FORMAT_STEREO8;
-        else if(audioSpec.channels == 2 && audioSpec.format == AUDIO_U16)
+        else if(audioSpec.channels == 2 && (audioSpec.format == AUDIO_U16 || audioSpec.format == AUDIO_S16LSB || audioSpec.format == AUDIO_S16MSB))
             format = AL_FORMAT_STEREO16;
         else
         {

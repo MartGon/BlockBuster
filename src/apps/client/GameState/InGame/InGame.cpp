@@ -232,6 +232,7 @@ void InGame::Update()
 void InGame::Shutdown()
 {
     WriteGameOptions();
+    audioMgr->Shutdown();
 }
 
 void InGame::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)

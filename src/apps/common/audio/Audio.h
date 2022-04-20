@@ -59,6 +59,7 @@ namespace Audio
 
         void Init();
         void Update();
+        void Shutdown();
 
         // Audio Files
         enum LoadWAVError

@@ -24,7 +24,7 @@ void Gallery::Start()
 
     // Music 
         // Spawn
-    for(int i = MusicID::SPAWN_THEME_01_ID; i < MusicID::MUSIC_ID_COUNT; i++)
+    for(int i = MusicID::SPAWN_THEME_01_ID; i <= MusicID::SPAWN_THEME_04_ID; i++)
     {
         auto filename = "spawn-theme-" + std::to_string(i + 1) + ".wav";
         auto audioId = LoadStreamedAudio(filename);
