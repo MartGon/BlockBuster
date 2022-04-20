@@ -92,4 +92,4 @@ By using Test Mode, you can check how your map feels from the perspective of a p
 
 # ![bridge](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Bridge.png?raw=true)
 # ![door-e](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Door.png?raw=true)
-# ![door](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Door-E.png?raw=true)
+# ![editor](https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/maps/Editor.png?raw=true)
