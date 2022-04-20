@@ -1,17 +1,26 @@
 # Block Buster
 
 ## Description
-*Block Buster* is a minimalist multiplayer voxel first-person shooter. It features 4 different game modes, 7 different weapons, its own game map creation tool and match making server. 
+*Block Buster* is a minimalist multiplayer voxel first-person shooter. It features 4 different game modes, 7 different weapons, its own game map creation tool and match making server.
 
 ## Screenshots
 
+# ![gameplay-1](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Gameplay1.png?raw=true)
+# ![gameplay-2](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Gameplay2.png?raw=true)
+# ![explosion-1](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Explosion.png?raw=true)
+# ![Menu](https://github.com/MartGon/BlockBuster/blob/main/docs/game/itchio/imgs/Menu.png?raw=true)
+
+## Playing
+
+Click [here](https://defu.itch.io/block-buster) to download a Windows build from itch.io. 
+
 ## Map Editor
 
-You can find more detailed info about the Editor application by clicking here.
+You can find more detailed info about the Editor application by clicking [here](https://defu.itch.io/blockbuster-editor).
 
 ## Match Making Server
 
-Unlike this project, the Match Making Server is made in rust. Click here to check its repo.
+Unlike this project, the Match Making Server is made in rust. Click [here](https://github.com/MartGon/BlockBuster-MatchMaking) to check its repo.
 
 ## Build Requirements (Client/Editor)
 
@@ -22,11 +31,12 @@ In order to build properly the client or editor application, you will need the f
 
 And the following tools:
 
-- CMake
+- CMake (https://cmake.org/)
 - C++17 compatible compiler
 
 ## Build steps (Linux)
 
+0. Install the required libraries
 1. Clone this repository
 2. Create a build directory
 
