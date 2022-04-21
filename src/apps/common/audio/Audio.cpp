@@ -338,7 +338,9 @@ void AudioMgr::SetStreamSourceParams(ID streamSrcId, AudioSource::Params params)
     if(Util::Map::Contains(streamSources, streamSrcId))
     {
         auto& sSource = streamSources[streamSrcId];
-        SetSourceParams(sSource.source.handle, params);
+        sSource.source.params = params;
+        
+        SetSourceParams(sSource.source);
     }
 }
 

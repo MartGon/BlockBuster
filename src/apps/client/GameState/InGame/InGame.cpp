@@ -1137,5 +1137,7 @@ void InGame::ApplyGameOptions(GameOptions options)
     auto announcerGain = (float)options.audioAnnouncer / 100.0f;
     audioMgr->SetSourceParams(announcerSource, glm::vec3{0.0f}, 0.0f, false, 1.0f, announcerGain);
     auto musicGain = (float) options.audioMusic / 100.0f;
-    audioMgr->SetSourceParams(soundtrackSource, glm::vec3{0.0f}, 0.0f, false, 1.0f, musicGain);
+    Audio::AudioSource::Params params;
+    params.gain = musicGain;
+    audioMgr->SetStreamSourceParams(soundtrackSource, params);
 }
