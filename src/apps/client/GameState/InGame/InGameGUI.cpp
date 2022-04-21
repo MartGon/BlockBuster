@@ -211,6 +211,7 @@ void InGameGUI::InitPopUps()
         ImGui::Checkbox("Sound enabled", &gameOptions.audioEnabled);
         ImGui::SliderInt("General",  &gameOptions.audioGeneral, 0, 100);
         ImGui::SliderInt("Announcer",  &gameOptions.audioAnnouncer, 0, 100);
+        ImGui::SliderInt("Music",  &gameOptions.audioMusic, 0, 100);
 
         auto winWidth = ImGui::GetWindowWidth();
         auto aW = ImGui::CalcTextSize("Apply").x + 8;

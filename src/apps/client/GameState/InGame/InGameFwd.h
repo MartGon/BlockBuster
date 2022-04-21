@@ -8,5 +8,6 @@ namespace BlockBuster
         bool audioEnabled;
         int audioGeneral;
         int audioAnnouncer;
+        int audioMusic;
     };
 }

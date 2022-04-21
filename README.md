@@ -16,11 +16,11 @@ Click [here](https://defu.itch.io/block-buster) to download a Windows build from
 
 ## Map Editor
 
-You can find more detailed info about the Editor application by clicking [here](https://defu.itch.io/blockbuster-editor).
+You can find more detailed information about the Editor application by clicking [here](https://defu.itch.io/blockbuster-editor).
 
 ## Match Making Server
 
-Unlike this project, the Match Making Server is made in rust. Click [here](https://github.com/MartGon/BlockBuster-MatchMaking) to check its repo.
+Unlike this project, the Match Making Server is made in Rust. Click [here](https://github.com/MartGon/BlockBuster-MatchMaking) to check its repo.
 
 ## Build Requirements (Client/Editor)
 

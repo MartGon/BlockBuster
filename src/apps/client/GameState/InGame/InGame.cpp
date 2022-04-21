@@ -1113,6 +1113,7 @@ void InGame::LoadGameOptions()
     gameOptions.audioEnabled = std::atoi(client_->GetConfigOption("audioEnabled", "1").c_str());
     gameOptions.audioGeneral = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioGeneral","100").c_str())));
     gameOptions.audioAnnouncer = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioAnnouncer","100").c_str())));
+    gameOptions.audioMusic = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioMusic","100").c_str())));
 }
 
 void InGame::WriteGameOptions()
@@ -1121,6 +1122,7 @@ void InGame::WriteGameOptions()
     client_->config.options["audioEnabled"] = std::to_string(gameOptions.audioEnabled);
     client_->config.options["audioGeneral"] = std::to_string(gameOptions.audioGeneral);
     client_->config.options["audioAnnouncer"] = std::to_string(gameOptions.audioAnnouncer);
+    client_->config.options["audioMusic"] = std::to_string(gameOptions.audioMusic);
 }
 
 void InGame::ApplyGameOptions(GameOptions options)
@@ -1134,4 +1136,6 @@ void InGame::ApplyGameOptions(GameOptions options)
     audioMgr->SetListenerGain((float)options.audioGeneral / 100.0f);
     auto announcerGain = (float)options.audioAnnouncer / 100.0f;
     audioMgr->SetSourceParams(announcerSource, glm::vec3{0.0f}, 0.0f, false, 1.0f, announcerGain);
+    auto musicGain = (float) options.audioMusic / 100.0f;
+    audioMgr->SetSourceParams(soundtrackSource, glm::vec3{0.0f}, 0.0f, false, 1.0f, musicGain);
 }
