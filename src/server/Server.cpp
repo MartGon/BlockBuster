@@ -102,6 +102,17 @@ void Server::InitMatch()
     InitGameObjects();
     auto mode = GameMode::stringTypes.at(params.mode);
     match.Start(GetWorld(), mode, params.startingPlayers);
+    #ifndef _DEBUG
+        match.SetOnEnterState([this](BlockBuster::Match::StateType state)
+        {
+            auto isEarly = state == BlockBuster::Match::STARTING || state == BlockBuster::Match::ON_GOING;
+            if(isEarly && this->clients.empty())
+            {
+                this->quit = true;
+                logger.LogInfo("No players left on game start. Leaving");
+            }
+        });
+    #endif
 }
 
 void Server::InitAI()
@@ -266,7 +277,7 @@ void Server::OnClientLeave(ENet::PeerId peerId)
     clients.erase(peerId);
 
     #ifndef _DEBUG
-        if(clients.size() == 0 && match.GetState() == Match::ON_GOING)
+        if(clients.size() == 0 && match.GetState() != Match::WAITING_FOR_PLAYERS)
         {
             quit = true;
             logger.LogInfo("No players left. Leaving");
