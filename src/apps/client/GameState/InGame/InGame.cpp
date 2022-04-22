@@ -241,6 +241,7 @@ void InGame::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)
     camera_.SetParam(camera_.ASPECT_RATIO, (float) winSize.x / (float) winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, winConfig.fov);
     camera_.SetParam(camera_.FAR_PLANE, (float)winConfig.renderDistance * camera_.FAR_PLANE_BASE_DISTANCE);
+    GetLogger()->LogDebug("Applying vide options");
 }
 
 // Update
@@ -573,7 +574,8 @@ void InGame::UpdateCamera(Entity::PlayerInput input)
     auto zoom = 1.0f + (wepType.zoomLevel - 1.0f) * zoomMod;
     camera_.SetZoom(zoom);
 
-    camController_.rotMod = gameOptions.sensitivity * 1 / std::max(0.1f, zoomMod);
+    if(gameOptions.dynamicSensitivity)
+        camController_.rotMod = gameOptions.sensitivity * (1 / std::max(0.1f, zoom));
 }
 
 void InGame::WeaponRecoil()
@@ -1113,6 +1115,8 @@ void InGame::LoadMap(std::filesystem::path mapFolder, std::string fileName)
 void InGame::LoadGameOptions()
 {
     gameOptions.sensitivity = std::max(0.1f, std::stof(client_->GetConfigOption("Sensitivity", std::to_string(camController_.rotMod))));
+    gameOptions.dynamicSensitivity = std::stoi(client_->GetConfigOption("DynamicSensitivity", "1"));
+
     gameOptions.audioEnabled = std::atoi(client_->GetConfigOption("audioEnabled", "1").c_str());
     gameOptions.audioGeneral = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioGeneral","100").c_str())));
     gameOptions.audioAnnouncer = std::max(0, std::min(100, std::atoi(client_->GetConfigOption("audioAnnouncer","100").c_str())));
@@ -1122,6 +1126,8 @@ void InGame::LoadGameOptions()
 void InGame::WriteGameOptions()
 {
     client_->config.options["Sensitivity"] = std::to_string(gameOptions.sensitivity);
+    client_->config.options["DynamicSensitivity"] = std::to_string(gameOptions.dynamicSensitivity);
+
     client_->config.options["audioEnabled"] = std::to_string(gameOptions.audioEnabled);
     client_->config.options["audioGeneral"] = std::to_string(gameOptions.audioGeneral);
     client_->config.options["audioAnnouncer"] = std::to_string(gameOptions.audioAnnouncer);
