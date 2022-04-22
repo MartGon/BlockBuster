@@ -157,7 +157,8 @@ void InGameGUI::OpenMenu(PopUpState state)
 
 void InGameGUI::CloseMenu()
 {
-    if(this->inGame->camController_.GetMode() != App::Client::CameraMode::EDITOR)
+    if(this->inGame->camController_.GetMode() != App::Client::CameraMode::EDITOR && 
+        this->inGame->match.GetState() != Match::StateType::ENDED)
     {
         inGame->client_->SetMouseGrab(true);
     }
