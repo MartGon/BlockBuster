@@ -152,6 +152,7 @@ namespace Audio
 
         // Singleton
         static std::unique_ptr<AudioMgr> audioMgr_;
+        std::unordered_map<std::string, File> filesCache;
         ALCdevice* device_ = nullptr;
         ALCcontext* context_ = nullptr;
 
