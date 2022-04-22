@@ -518,6 +518,8 @@ void MainMenu::StartGame()
 {
     if(!lobby)
         return;
+
+    GetLogger()->LogDebug("Start Game req sent");
     
     nlohmann::json body;
     body["game_id"] = currentGame->game.id;
@@ -527,6 +529,18 @@ void MainMenu::StartGame()
     {
         if(res.status == 200)
             GetLogger()->LogInfo("Succesfully sent start game");
+        else
+        {
+            std::string msg = res.body;
+
+            popUp.SetVisible(true);
+            popUp.SetText(msg);
+            popUp.SetTitle("Error");
+            popUp.SetButtonVisible(true);
+            popUp.SetButtonCallback([this](){
+                popUp.SetVisible(false);
+            });
+        }
     };
 
     auto onError = [this](httplib::Error err)
@@ -538,7 +552,6 @@ void MainMenu::StartGame()
     };
 
     httpClient.Request("/start_game", nlohmann::to_string(body), onSuccess, onError);
-    //httpClient.Disable();
 }
 
 void MainMenu::DownloadMap(std::string mapName)
@@ -778,6 +791,7 @@ void MainMenu::HandleSDLEvents()
         {
         case SDL_QUIT:
             client_->quit = true;
+            LeaveGame();
             break;
         case SDL_KEYDOWN:
             break;
