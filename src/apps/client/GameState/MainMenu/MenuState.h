@@ -91,8 +91,8 @@ namespace BlockBuster
             char chat[4096] = "\0";
             char chatLine[128] = "\0";
 
-            constexpr static Util::Time::Seconds reqPeriod{5.0f};
-            Util::Timer reqTimer;
+            constexpr static Util::Time::Seconds reqPeriod{1.0f};
+            Util::Timer reqTimer{reqPeriod};
         };
 
         class UploadMap : public Base

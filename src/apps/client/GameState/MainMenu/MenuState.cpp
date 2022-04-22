@@ -132,10 +132,12 @@ void ServerBrowser::Update()
             mainMenu_->ListGames();
         }
 
+        /*
         ImGui::SameLine();
         ImGui::Button("Connect");
         ImGui::SameLine();
         ImGui::Button("Filters");
+        */
 
         ImGui::SameLine();
         if(ImGui::Button("Upload Map"))
@@ -275,7 +277,8 @@ void Lobby::OnEnter()
     // Start
     OnGameInfoUpdate();
     mainMenu_->GetMapPicture(mapName);
-    mainMenu_->UpdateGame();
+    mainMenu_->UpdateGame(true);
+    reqTimer.Start();
 }
 
 void Lobby::OnExit()
@@ -310,6 +313,14 @@ void Lobby::OnGameInfoUpdate()
 void Lobby::Update()
 {
     DrawWindow();
+
+    reqTimer.Update(mainMenu_->deltaTime);
+    if(reqTimer.IsDone())
+    {
+        mainMenu_->GetLogger()->LogError("Sending periodic update");
+        reqTimer.Restart();
+        mainMenu_->UpdateGame(true);
+    }
 }
 
 void Lobby::DrawWindow()

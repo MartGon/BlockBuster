@@ -58,9 +58,14 @@ void MainMenu::Shutdown()
 
 void MainMenu::Update()
 {
+    auto now = Util::Time::GetTime();
+
     httpClient.HandleResponses();
     HandleSDLEvents();
     Render();
+    
+    auto afterNow = Util::Time::GetTime();
+    deltaTime = afterNow - now;
 }
 
 void MainMenu::Login(std::string userName)
@@ -220,6 +225,9 @@ void MainMenu::EditGame(std::string name, std::string map, std::string mode)
         {
             auto body = nlohmann::json::parse(res.body);
             auto gameDetails = GameDetails::FromJson(body);
+
+            // Force update
+            UpdateGame(true);
         }
         else
         {
@@ -310,6 +318,9 @@ void MainMenu::ToggleReady()
     {
         GetLogger()->LogInfo("Succesfully set ready state");
         GetLogger()->LogDebug("Result " + res.body);
+
+        // Force update
+        UpdateGame(true);
     };
 
     auto onError = [this](httplib::Error err)
@@ -397,9 +408,6 @@ void MainMenu::UpdateGame(bool forced)
                 {
                     // Update chat
                     lobby->OnGameInfoUpdate();
-
-                    // Call again
-                    UpdateGame();
                 }
             }
         }
@@ -425,7 +433,7 @@ void MainMenu::UpdateGame(bool forced)
         // Timeout on read. Call again
         if(err == httplib::Error::Read)
         {
-            UpdateGame();
+        
         }
     };
 
@@ -447,7 +455,12 @@ void MainMenu::StartGame()
     auto onSuccess = [this](httplib::Response& res)
     {
         if(res.status == 200)
+        {
             GetLogger()->LogInfo("Succesfully sent start game");
+
+            // Force Update
+            UpdateGame(true);
+        }
         else
         {
             RaisePopUp("Error", res.body, true, true);
@@ -635,7 +648,6 @@ void MainMenu::HandleSDLEvents()
         {
         case SDL_QUIT:
             client_->quit = true;
-            LeaveGame();
             break;
         case SDL_KEYDOWN:
             break;
@@ -698,7 +710,9 @@ void MainMenu::ResetWindow()
     client_->SetWindowSize(glm::ivec2{800, 600});
     SDL_SetWindowPosition(this->client_->window_, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
     SDL_SetWindowResizable(this->client_->window_, SDL_FALSE);
-    
+
+    // Reset flag
+    enteringGame = false;
 }
 
 void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)
