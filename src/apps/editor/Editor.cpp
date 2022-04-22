@@ -23,6 +23,8 @@ using namespace BlockBuster::Editor;
 
 void Editor::Start()
 {
+    ApplyVideoOptions(config.window);
+
     // Load shaders
     try{
         auto sf = config.openGL.shadersFolder;
@@ -1811,4 +1813,5 @@ void Editor::ApplyVideoOptions(::App::Configuration::WindowConfig& winConfig)
     auto winSize = GetWindowSize();
     camera.SetParam(camera.ASPECT_RATIO, (float) winSize.x/ (float) winSize.y);
     camera.SetParam(Rendering::Camera::Param::FOV, winConfig.fov);
+    camera.SetParam(camera.FAR_PLANE, (float)winConfig.renderDistance * camera.FAR_PLANE_BASE_DISTANCE);
 }

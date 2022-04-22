@@ -240,6 +240,7 @@ void InGame::ApplyVideoOptions(App::Configuration::WindowConfig& winConfig)
     auto winSize = client_->GetWindowSize();
     camera_.SetParam(camera_.ASPECT_RATIO, (float) winSize.x / (float) winSize.y);
     camera_.SetParam(Rendering::Camera::Param::FOV, winConfig.fov);
+    camera_.SetParam(camera_.FAR_PLANE, (float)winConfig.renderDistance * camera_.FAR_PLANE_BASE_DISTANCE);
 }
 
 // Update

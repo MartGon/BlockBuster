@@ -60,7 +60,8 @@ int main(int argc, char** args)
             App::Configuration::WindowMode::WINDOW,
             true,
             60,
-            glm::radians(60.0f)
+            glm::radians(60.0f),
+            4
         },
         App::Configuration::OpenGLConfig{
             3, 0, SDL_GL_CONTEXT_PROFILE_CORE, 0, 8, SHADERS_DIR

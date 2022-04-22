@@ -34,6 +34,7 @@ void App::WriteConfig(App::Configuration config, std::filesystem::path filePath)
     file << "mode=" << config.window.mode << '\n';
     file << "vsync=" << config.window.vsync << '\n';
     file << "fov=" << (int)glm::degrees(config.window.fov) << '\n';
+    file << "renderDistance=" << config.window.renderDistance << '\n';
     file << '\n'; 
 
     file << "### Open GL Options ###" << '\n';
@@ -124,6 +125,7 @@ App::Configuration App::LoadConfig(std::filesystem::path filePath)
     config.window.mode = ExtractEnum<App::Configuration::WindowMode>(config.options, "mode");
     config.window.vsync = ExtractInt(config.options, "vsync");
     config.window.fov = glm::radians(ExtractFloat(config.options, "fov"));
+    config.window.renderDistance = ExtractInt(config.options, "renderDistance");
 
     config.openGL.majorVersion = ExtractInt(config.options, "majorVersion");
     config.openGL.minorVersion = ExtractInt(config.options, "minorVersion");

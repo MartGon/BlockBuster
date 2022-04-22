@@ -30,6 +30,7 @@ namespace App
             bool vsync = true;
             int refreshRate;
             float fov;
+            int renderDistance;
         };
 
         struct OpenGLConfig

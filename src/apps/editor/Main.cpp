@@ -48,7 +48,8 @@ int main(int argc, char* args[])
             App::Configuration::WindowMode::WINDOW,
             true,
             60,
-            glm::radians(60.0f)
+            glm::radians(60.0f),
+            4
         },
         App::Configuration::OpenGLConfig{
             3, 0, SDL_GL_CONTEXT_PROFILE_CORE, 1, 8, "./shaders/"
@@ -63,17 +64,6 @@ int main(int argc, char* args[])
     auto consoleLogger = std::make_unique<Log::ConsoleLogger>();
     cLogger->AddLogger(std::move(consoleLogger));
 
-    auto filelogger = std::make_unique<Log::FileLogger>();
-    filelogger->OpenLogFile(config.log.logFile);
-    
-    if(filelogger->IsOk())
-        cLogger->AddLogger(std::move(filelogger));
-    else
-    {
-        std::string msg = "Could not open log file: " + config.log.logFile.string() + '\n';
-        cLogger->LogError(msg);
-    }
-
     // Load config
     std::filesystem::path configPath("editor.ini");
     try
@@ -82,15 +72,26 @@ int main(int argc, char* args[])
     }
     catch (const std::out_of_range& e)
     {
-        App::ServiceLocator::GetLogger()->LogError(std::string("Configuration file is corrupted:") + e.what() + '\n');
-        App::ServiceLocator::GetLogger()->LogError("Either fix or remove it to generate the default one\n");
-        App::ServiceLocator::GetLogger()->Flush();
+        cLogger->LogError(std::string("Configuration file is corrupted:") + e.what() + '\n');
+        cLogger->LogError("Either fix or remove it to generate the default one\n");
+        cLogger->Flush();
         std::exit(-1);
     }
     catch (const std::exception& e)
     {
-        App::ServiceLocator::GetLogger()->LogError(std::string(e.what()) + '\n');
-        App::ServiceLocator::GetLogger()->LogInfo("Loading default config\n");
+        cLogger->LogError(std::string(e.what()) + '\n');
+        cLogger->LogInfo("Loading default config\n");
+    }
+
+    auto filelogger = std::make_unique<Log::FileLogger>();
+    filelogger->OpenLogFile(config.log.logFile);
+
+    if(filelogger->IsOk())
+        cLogger->AddLogger(std::move(filelogger));
+    else
+    {
+        std::string msg = "Could not open log file: " + config.log.logFile.string() + '\n';
+        cLogger->LogError(msg);
     }
 
     // Set logger

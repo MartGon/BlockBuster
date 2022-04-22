@@ -7,7 +7,7 @@ using namespace App;
 VideoSettingsPopUp::VideoSettingsPopUp(AppI& app) : app{&app}
 {
     SetTitle("Video Settings"); // Bug: This glitches everything, for some reason
-    SetFlags(ImGuiWindowFlags_NoResize);
+    SetFlags(ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
 }
 
 static std::vector<SDL_DisplayMode> GetDisplayModes()
@@ -75,6 +75,7 @@ void VideoSettingsPopUp::OnDraw()
     {
         winConfig.fov = glm::radians((float)fov);
     }
+    ImGui::SliderInt("Render Distance", &winConfig.renderDistance, 1, 10);
 
     if(ImGui::Button("Accept"))
     {

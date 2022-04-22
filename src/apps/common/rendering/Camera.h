@@ -39,6 +39,7 @@ namespace Rendering
         glm::mat4 GetProjViewMat() const;
 
         static const glm::vec3 UP;
+        constexpr static float FAR_PLANE_BASE_DISTANCE = 25.f;
 
     private:
 
@@ -46,7 +47,7 @@ namespace Rendering
 
 
         float zoom = 1.0f;
-        float params_[MAX] = {glm::radians(45.0f), 16.f/9.f, 0.1f, 100.f};
+        float params_[MAX] = {glm::radians(45.0f), 16.f/9.f, 0.1f, FAR_PLANE_BASE_DISTANCE};
         glm::vec3 pos_;
         // Pitch (X Axis), Yaw (Y Axis)
         glm::vec2 rotation_{glm::radians(0.0f), glm::radians(90.0f)};
