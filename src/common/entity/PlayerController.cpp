@@ -47,20 +47,26 @@ Entity::PlayerState Entity::PlayerController::UpdatePosition(Entity::PlayerState
         transform.position += offset;
     }
 
+    // Jump effect
+    if(ret.isGrounded)
+        ret.jumpSpeed = input[JUMP] ? this->jumpSpeed : fallSpeed; // Applies default 
+    else
+        ret.jumpSpeed = std::max(terminalFallSpeed, ret.jumpSpeed + (gravityAcceleration * dT));
+
     // Gravity effect
 #ifdef ALT_COLLISIONS
     auto offset = HandleGravityCollisionsAlt(map, map->GetBlockScale(), dT);
 #else
-    auto velocity = glm::vec3{0.0f, gravitySpeed * dT, 0.0f};
+    auto velocity = glm::vec3{0.0f, ret.jumpSpeed * dT, 0.0f};
     transform.position += velocity;
 
     auto blocks = GetCollisionBlocks(map, map->GetBlockScale());
     auto offset = HandleGravityCollisions(map, blocks);
 #endif
-
+    ret.isGrounded = offset.y > 0.0f;
     transform.position.y += offset.y;
 
-    // Jump effect
+    // Return
     ret.transform.pos = transform.position;
     return ret;
 }
@@ -342,6 +348,8 @@ Math::Transform PlayerController::GetGCB()
     return ecb;
 }
 
+#ifdef ALT_COLLISIONS
+
 glm::vec3 PlayerController::HandleGravityCollisionsAlt(Game::Map::Map* map, float blockScale, Util::Time::Seconds deltaTime)
 {
     float fallDistance = gravitySpeed * deltaTime.count();
@@ -411,3 +419,5 @@ std::optional<glm::vec3> PlayerController::HandleGravityCollisionAltBlock(Game::
 
     return offset;
 }
+
+#endif

@@ -246,6 +246,7 @@ namespace BlockBuster::Editor
 
         // Test
         bool playerMode = false;
-        Entity::PlayerController player;
+        Entity::Player player;
+        Entity::PlayerController playerController;
     };
 }

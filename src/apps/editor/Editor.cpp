@@ -481,7 +481,7 @@ void Editor::UpdateEditor()
         // Special cases
         if(go->type == Entity::GameObject::Type::PLAYER_DECOY)
         {
-            auto ecb = player.GetECB();
+            auto ecb = playerController.GetECB();
             t.position.y = t.position.y + ecb.scale.y / 2.0f;
             t.scale = glm::vec3{Entity::Player::scale};
             auto tMat = view * t.GetTransformMat();
@@ -798,15 +798,17 @@ void Editor::UpdatePlayerMode()
             break;
         }
     }
-    
+
     // HACK: Use an actual player
-    Entity::PlayerState ps;
+    Entity::PlayerState ps = player.ExtractState();
     const auto camOffset = glm::vec3{0.0f, Entity::Player::camHeight, 0.0f};
     ps.transform.pos = camera.GetPos() - camOffset;
     ps.transform.rot = glm::vec3{0.0f, camera.GetRotationDeg().y, 0.0f};
 
     auto input = Input::GetPlayerInput(Entity::PlayerInput{true});
-    auto nextState = player.UpdatePosition(ps, input, project.map.GetMap(), Util::Time::Seconds{0.016666f});
+    auto nextState = playerController.UpdatePosition(ps, input, project.map.GetMap(), Util::Time::Seconds{0.016666f});
+    player.ApplyState(nextState);
+
     auto camPos = nextState.transform.pos + camOffset;
     camera.SetPos(camPos);
 }

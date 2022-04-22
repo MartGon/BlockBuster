@@ -215,6 +215,8 @@ Entity::PlayerState Player::ExtractState() const
 
     s.transform.pos = this->transform.position;
     s.transform.rot = glm::vec2{transform.rotation};
+    s.jumpSpeed = jumpSpeed;
+    s.isGrounded = isGrounded;
     
     for(auto i = 0; i < 2; i++)
         s.weaponState[i] = weapons[i];
@@ -229,6 +231,8 @@ void Player::ApplyState(Entity::PlayerState s)
 {
     this->transform.position = s.transform.pos;
     this->transform.rotation = glm::vec3{s.transform.rot, 0.0f};
+    this->jumpSpeed = s.jumpSpeed;
+    this->isGrounded = s.isGrounded;
 
     curWep = s.curWep;
     for(auto i = 0; i < 2; i++)

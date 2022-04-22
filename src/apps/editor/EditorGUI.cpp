@@ -1226,8 +1226,9 @@ void EditorGUI::GUI()
                 }
                 if(ImGui::CollapsingHeader("Player Mode"))
                 {
-                    ImGui::SliderFloat("Player speed", &editor->player.speed, 0.01, 1);
-                    ImGui::SliderFloat("Player gravity", &editor->player.gravitySpeed, -0.05, -1);
+                    ImGui::SliderFloat("Player speed", &editor->playerController.speed, 0.01, 1);
+                    ImGui::SliderFloat("Player jump speed", &editor->playerController.jumpSpeed, 0.0f, 50.0f);
+                    ImGui::SliderFloat("Gravity Acceleration", &editor->playerController.gravityAcceleration, -50.0f, 0.0f);
                     //ImGui::SliderFloat("Player height", &player.height, 0.25, 5);
                 }
                 /*

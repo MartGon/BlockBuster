@@ -21,7 +21,7 @@ namespace Entity
         ACTION,
         WEAPON_SWAP_0,
         WEAPON_SWAP_1,
-        WEAPON_SWAP_2,
+        JUMP,
 
         MAX
     };
@@ -63,8 +63,10 @@ namespace Entity
 
         Transform transform;
         Weapon weaponState[2];
+        float jumpSpeed;
         uint8_t curWep;
         uint8_t grenades;
+        bool isGrounded;
     };
     bool operator==(const PlayerState& a, const PlayerState& b);
 
