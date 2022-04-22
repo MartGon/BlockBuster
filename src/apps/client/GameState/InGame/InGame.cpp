@@ -1063,7 +1063,7 @@ void InGame::InitAudio()
         grenadeSources.Get() = sourceId;
 
         audioMgr->SetSourceAudio(sourceId, gallery.GetSoundId(SoundID::GRENADE_SOUND_ID));
-        audioMgr->SetSourceParams(sourceId, glm::vec3{0.0f}, 0.0f, false, 8.0f, 2.25f);
+        audioMgr->SetSourceParams(sourceId, glm::vec3{0.0f}, 0.0f, false, 8.0f, 1.5f);
     }
 
     // Announcer source
