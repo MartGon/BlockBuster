@@ -68,10 +68,7 @@ void MainMenu::Login(std::string userName)
     GetLogger()->LogDebug("Login with rest service");
 
     // Raise pop up
-    popUp.SetTitle("Login connection");
-    popUp.SetText("Connnecting to match making server");
-    popUp.SetVisible(true);
-    popUp.SetButtonVisible(false);
+    RaisePopUp("Login connection", "Connecting to match-making server");
 
     nlohmann::json body{{"username", userName}};
     auto onSuccess = [this](httplib::Response& res){
@@ -80,14 +77,12 @@ void MainMenu::Login(std::string userName)
         this->userId = body["id"];
         this->user = body["username"];
 
-        popUp.SetTitle("Login succesful");
-        popUp.SetText("Your username is " + std::string(body["username"]));
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
+        auto callback = [this](){
             GetLogger()->LogDebug("Button pressed. Opening server browser");
 
             SetState(std::make_unique<MenuState::ServerBrowser>(this));
-        });
+        };
+        RaisePopUp("Login succesful", "Your username is " + std::string(body["username"]), false, true, callback);
 
         GetLogger()->LogDebug("Response: " + bodyStr);
         GetLogger()->Flush();
@@ -124,13 +119,7 @@ void MainMenu::ListGames()
     };
 
     auto onError = [this](httplib::Error error){
-        popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
+        RaisePopUp("Error", "Connection Error", true, true);
     };
 
     httpClient.Request("/list_games", nlohmann::to_string(body), onSuccess, onError);
@@ -141,11 +130,7 @@ void MainMenu::JoinGame(std::string gameId)
     GetLogger()->LogDebug("Joining game " + gameId);
 
     // Show connecting pop up
-    popUp.SetVisible(true);
-    popUp.SetCloseable(false);
-    popUp.SetTitle("Connecting");
-    popUp.SetText("Joining game...");
-    popUp.SetButtonVisible(false);
+    RaisePopUp("Connecting", "Joining game...");
 
     nlohmann::json body;
     body["player_id"] = userId;
@@ -171,28 +156,13 @@ void MainMenu::JoinGame(std::string gameId)
         }
         else
         {
-            // Handle game full errors, game doesn't exist, etc.
-            std::string msg = res.body;
-
-            popUp.SetVisible(true);
-            popUp.SetText(msg);
-            popUp.SetTitle("Error");
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);
-            });
+            RaisePopUp("Error", res.body, true, true);
         }
     };
 
     auto onError = [this](httplib::Error err)
     {
-        popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
+        RaisePopUp("Error", "Connection Error", true, true);
     };
 
     httpClient.Request("/join_game", nlohmann::to_string(body), onSuccess, onError);
@@ -209,11 +179,7 @@ void MainMenu::CreateGame(std::string name, std::string map, std::string mode, u
     body["max_players"] = max_players;
 
     // Show connecting pop up
-    popUp.SetVisible(true);
-    popUp.SetCloseable(false);
-    popUp.SetTitle("Connecting");
-    popUp.SetText("Creating game...");
-    popUp.SetButtonVisible(false);
+    RaisePopUp("Connecting", "Creating game...");
 
     auto onSuccess = [this, name](httplib::Response& res)
     {
@@ -231,13 +197,7 @@ void MainMenu::CreateGame(std::string name, std::string map, std::string mode, u
 
     auto onError = [this](httplib::Error err)
     {
-        popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
+        RaisePopUp("Error", "Connection Error", true, true);
     };
 
     httpClient.Request("/create_game", nlohmann::to_string(body), onSuccess, onError);
@@ -263,25 +223,13 @@ void MainMenu::EditGame(std::string name, std::string map, std::string mode)
         }
         else
         {
-            popUp.SetVisible(true);
-            popUp.SetText(res.body);
-            popUp.SetTitle("Error");
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);
-            });
+            RaisePopUp("Error", res.body, true, true);
         }
     };
 
     auto onError = [this](httplib::Error err)
     {
-        popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
+        RaisePopUp("Error", "Connection Error", true, true);
     };
 
     httpClient.Request("/edit_game", nlohmann::to_string(body), onSuccess, onError);
@@ -292,11 +240,7 @@ void MainMenu::GetAvailableMaps()
     GetLogger()->LogDebug("Getting available maps ");
     
     // Show connecting pop up
-    popUp.SetVisible(true);
-    popUp.SetCloseable(false);
-    popUp.SetTitle("Connecting");
-    popUp.SetText("Retrieving data from server...");
-    popUp.SetButtonVisible(false);
+    RaisePopUp("Connecting", "Retrieving data from server...");
 
     auto onSuccess = [this](httplib::Response& res)
     {
@@ -313,19 +257,11 @@ void MainMenu::GetAvailableMaps()
             this->availableMaps.push_back(mapInfo);
         }
 
-        //SetState(std::make_unique<MenuState::CreateGame>(this));
-
         popUp.SetVisible(false);
     };
 
     auto onError = [this](httplib::Error error){
-        popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
+        RaisePopUp("Error", "Connection Error", true, true);
     };
 
     nlohmann::json body;
@@ -335,11 +271,7 @@ void MainMenu::GetAvailableMaps()
 void MainMenu::LeaveGame()
 {
     // Show connecting pop up
-    popUp.SetVisible(true);
-    popUp.SetCloseable(true);
-    popUp.SetTitle("Connecting");
-    popUp.SetText("Leaving game...");
-    popUp.SetButtonVisible(false);
+    RaisePopUp("Connecting", "Leaving game...");
 
     nlohmann::json body;
     body["player_id"] = userId;
@@ -360,13 +292,7 @@ void MainMenu::LeaveGame()
 
     auto onError = [this](httplib::Error err)
     {
-        popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
+        RaisePopUp("Error", "Connection Error", true, true);
     };
 
     httpClient.Request("/leave_game", nlohmann::to_string(body), onSuccess, onError);
@@ -483,14 +409,7 @@ void MainMenu::UpdateGame(bool forced)
             GetLogger()->LogError("[Update Game]: Game didn't exist");
 
             // Show error popUp
-            popUp.SetVisible(true);
-            popUp.SetCloseable(false);
-            popUp.SetTitle("Error");
-            popUp.SetText(res.body);
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);                   
-            });
+            RaisePopUp("Error", res.body, true, true);
 
             // Back to lobby
             SetState(std::make_unique<MenuState::ServerBrowser>(this));
@@ -531,15 +450,7 @@ void MainMenu::StartGame()
             GetLogger()->LogInfo("Succesfully sent start game");
         else
         {
-            std::string msg = res.body;
-
-            popUp.SetVisible(true);
-            popUp.SetText(msg);
-            popUp.SetTitle("Error");
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);
-            });
+            RaisePopUp("Error", res.body, true, true);
         }
     };
 
@@ -559,11 +470,7 @@ void MainMenu::DownloadMap(std::string mapName)
     GetLogger()->LogDebug("Downloading map: " + mapName);
 
     // Show connecting pop up
-    popUp.SetVisible(true);
-    popUp.SetCloseable(false);
-    popUp.SetTitle("Connecting");
-    popUp.SetText("Downloading game map...");
-    popUp.SetButtonVisible(false);
+    RaisePopUp("Connecting", "Downloading game map...");
 
     nlohmann::json body;
     body["map_name"] = mapName;
@@ -581,39 +488,17 @@ void MainMenu::DownloadMap(std::string mapName)
             auto mapsFolder = client_->mapMgr.GetMapsFolder();
             zip_stream_extract(mapBuff.data(), mapBuff.size(), mapsFolder.string().c_str(), nullptr, nullptr);
 
-            popUp.SetVisible(true);
-            popUp.SetCloseable(false);
-            popUp.SetTitle("Success");
-            popUp.SetText(mapName + " was downloaded succesfully!");
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);
-            });
+            RaisePopUp("Success", mapName + " was downloaded succesfully!", true, true);
         }
         else
         {
-            // Handle game full errors, game doesn't exist, etc.
-            std::string msg = res.body;
-
-            popUp.SetVisible(true);
-            popUp.SetText(msg);
-            popUp.SetTitle("Error");
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);
-            });
+            RaisePopUp("Error", res.body, true, true);
         }
     };
 
     auto onError = [this](httplib::Error err)
     {
-        popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
+        RaisePopUp("Error", "Connection Error", true, true);
     };
 
      httpClient.Request("/download_map", nlohmann::to_string(body), onSuccess, onError);
@@ -658,28 +543,13 @@ void MainMenu::GetMapPicture(std::string mapName)
         }
         else
         {
-            // Handle game full errors, game doesn't exist, etc.
-            std::string msg = res.body;
-
-            popUp.SetVisible(true);
-            popUp.SetText(msg);
-            popUp.SetTitle("Error");
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);
-            });
+            RaisePopUp("Error", res.body, true, true);
         }
     };
 
     auto onError = [this](httplib::Error err)
     {
-        popUp.SetVisible(true);
-        popUp.SetText("Connection error");
-        popUp.SetTitle("Error");
-        popUp.SetButtonVisible(true);
-        popUp.SetButtonCallback([this](){
-            popUp.SetVisible(false);
-        });
+        RaisePopUp("Error", "Connection Error", true, true);
     };
 
     httpClient.Request("/get_map_picture", nlohmann::to_string(body), onSuccess, onError);
@@ -721,58 +591,32 @@ void MainMenu::UploadMap(std::string mapName, std::string password)
 
             if(res.status == 200)
             {
-                popUp.SetVisible(true);
-                popUp.SetCloseable(false);
-                popUp.SetTitle("Success");
-                popUp.SetText(mapName + " was uploaded succesfully!");
-                popUp.SetButtonVisible(true);
-                popUp.SetButtonCallback([this](){
+                
+                auto cb = [this](){
                     popUp.SetVisible(false);
                     SetState(std::make_unique<MenuState::ServerBrowser>(this));
-                });
+                };
+                RaisePopUp("Success", mapName + " was uploaded succesfully!", false, true, cb);
             }
             else
             {
                 std::string msg = res.body;
-
-                popUp.SetVisible(true);
-                popUp.SetText(msg);
-                popUp.SetTitle("Error");
-                popUp.SetButtonVisible(true);
-                popUp.SetButtonCallback([this](){
-                    popUp.SetVisible(false);
-                });
+                RaisePopUp("Error", msg, true, true);
             }
         };
 
         auto onError = [this](httplib::Error err)
         {
-            popUp.SetVisible(true);
-            popUp.SetText("Connection error");
-            popUp.SetTitle("Error");
-            popUp.SetButtonVisible(true);
-            popUp.SetButtonCallback([this](){
-                popUp.SetVisible(false);
-            });
+            RaisePopUp("Error", "Connection Error", true, true);
         };
 
-        // Show connecting pop up
-        popUp.SetVisible(true);
-        popUp.SetCloseable(false);
-        popUp.SetTitle("Connecting");
-        popUp.SetText("Uploading map...");
-        popUp.SetButtonVisible(false);
+        RaisePopUp("Connecting", "Uploading map...", true, true);
 
         httpClient.Request("/upload_map", nlohmann::to_string(body), onSuccess, onError);
     }
     else
     {
-        // Show connecting pop up
-        popUp.SetVisible(true);
-        popUp.SetCloseable(false);
-        popUp.SetTitle("Error");
-        popUp.SetText("Could not load map");
-        popUp.SetButtonVisible(true);
+        this->RaisePopUp("Error", "Could not uplaod map", true);
 
         GetLogger()->LogError("Could not load map " + mapName);
     }
@@ -864,6 +708,24 @@ void MainMenu::SetState(std::unique_ptr<MenuState::Base> menuState)
     this->menuState_ = std::move(menuState);
 
     this->menuState_->OnEnter();
+}
+
+void MainMenu::RaisePopUp(std::string title, std::string text, bool closeable, bool showButton, std::function<void()> onClick)
+{
+    popUp.SetVisible(true);
+    
+    popUp.SetTitle(title);
+    popUp.SetText(text);
+
+    popUp.SetCloseable(closeable);
+    popUp.SetButtonVisible(showButton);
+    auto f = [this](){
+        popUp.SetVisible(false);
+    };
+    if(onClick)
+        popUp.SetButtonCallback(onClick);
+    else
+        popUp.SetButtonCallback(f);
 }
 
 // Handy

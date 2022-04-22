@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <GameState/MainMenu/MainMenuFwd.h>
+#include <util/Timer.h>
 
 namespace BlockBuster
 {
@@ -75,6 +76,8 @@ namespace BlockBuster
             bool updatePending = false;
         private:
 
+            void DrawWindow();
+
             bool IsPlayerHost();
             bool IsEveryoneReady();
             bool IsGameOnGoing();
@@ -87,6 +90,9 @@ namespace BlockBuster
             
             char chat[4096] = "\0";
             char chatLine[128] = "\0";
+
+            constexpr static Util::Time::Seconds reqPeriod{5.0f};
+            Util::Timer reqTimer;
         };
 
         class UploadMap : public Base

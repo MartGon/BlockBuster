@@ -309,6 +309,11 @@ void Lobby::OnGameInfoUpdate()
 
 void Lobby::Update()
 {
+    DrawWindow();
+}
+
+void Lobby::DrawWindow()
+{
     auto displaySize = ImGui::GetIO().DisplaySize;
     
     // Size

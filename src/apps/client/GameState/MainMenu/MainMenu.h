@@ -76,6 +76,7 @@ namespace BlockBuster
 
         // GUI
         void SetState(std::unique_ptr<MenuState::Base> menuState_);
+        void RaisePopUp(std::string title, std::string text, bool closeable = true, bool showButton = false, std::function<void()> onClick = [](){});
 
         // Handy 
         void LaunchGame();
@@ -115,5 +116,6 @@ namespace BlockBuster
 
         // Rendering
         Rendering::Camera camera_;
+        Util::Time::Seconds deltaTime;
     };
 }
