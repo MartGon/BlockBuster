@@ -195,5 +195,7 @@ namespace Entity
         static const float dmgMod[HitBoxType::MAX];
 
         Math::Transform transform;
+        float jumpSpeed = 0.0f;
+        bool isGrounded = true;
     };
 }

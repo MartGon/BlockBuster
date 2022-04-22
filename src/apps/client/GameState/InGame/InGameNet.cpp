@@ -324,14 +324,16 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         {
             auto respawn = packet.To<PlayerRespawn>();
             auto& player = playerTable[respawn->playerId];
-            player.health.hp = Entity::Player::MAX_HEALTH;
+            player.ResetHealth();
 
             if(respawn->playerId == playerId)
             {
+                // Accept last snapshot
                 auto& player = GetLocalPlayer();
                 localPlayerStateHistory.PushBack(respawn->playerState);
                 GetLocalPlayer().ApplyState(respawn->playerState);
-                GetLocalPlayer().ResetHealth();
+
+                // Set server weapon
                 for(auto i = 0; i < Entity::Player::MAX_WEAPONS; i++)
                     if(respawn->weapons[i] != Entity::WeaponTypeID::NONE)
                         player.weapons[i] = Entity::WeaponMgr::weaponTypes.at(respawn->weapons[i]).CreateInstance();
@@ -695,8 +697,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
 
     // Get prev pos
     auto preState = localPlayerStateHistory.Back().value();
-    auto prevPred = predictionHistory_.Back();
-    if(prevPred.has_value())
+    if(auto prevPred = predictionHistory_.Back())
         preState = prevPred->dest;
 
     // Run predicted command for this simulation
@@ -773,10 +774,11 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
 {
     auto& player = GetLocalPlayer();
     
-    Entity::PlayerState nextState = a;
-    nextState.transform.pos = pController.UpdatePosition(a.transform.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
-    nextState.transform.rot.y = playerYaw;
+    // Position
+    a.transform.rot.y = playerYaw;
+    Entity::PlayerState nextState = pController.UpdatePosition(a, playerInput, map_.GetMap(), deltaTime);
 
+    // Weapons
     auto nextWep = (a.curWep + 1) % Entity::Player::MAX_WEAPONS;
     nextState.weaponState[a.curWep] = pController.UpdateWeapon(a.weaponState[a.curWep], a.weaponState[nextWep], playerInput, deltaTime);
 

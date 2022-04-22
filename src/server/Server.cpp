@@ -424,16 +424,16 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 
     auto input = cmd.playerInput;
 
-    auto playerTransform = player.GetTransform();
-    auto playerPos = playerTransform.position;
-    auto playerYaw = cmd.camYaw;
-
+    // Player pos
+    auto ps = player.ExtractState();
+    ps.transform.rot = glm::vec2{cmd.camPitch, cmd.camYaw};
+    
     auto& pController = client.pController;
-    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, input, &map, TICK_RATE);
-    playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
-    player.SetTransform(playerTransform);
-    logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
+    auto nextState = pController.UpdatePosition(ps, input, &map, TICK_RATE);
+    player.ApplyState(nextState);
+    logger.LogDebug("MovePos " + glm::to_string(nextState.transform.pos));
 
+    // Player weapons
     auto oldWepState = player.GetCurrentWeapon();
     auto nextWeapon = player.weapons[player.GetNextWeaponId()];
     player.GetCurrentWeapon() = pController.UpdateWeapon(player.GetCurrentWeapon(), nextWeapon, input, TICK_RATE);
@@ -441,7 +441,7 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 
     if(Entity::HasShot(oldWepState.state, player.GetCurrentWeapon().state))
     {
-        ShotCommand sc{peerId, player.GetFPSCamPos(), glm::radians(playerTransform.rotation), cmd.fov, cmd.aspectRatio, cmd.renderTime};
+        ShotCommand sc{peerId, player.GetFPSCamPos(), glm::radians(nextState.transform.rot), cmd.fov, cmd.aspectRatio, cmd.renderTime};
         HandleShootCommand(sc);
     }
 

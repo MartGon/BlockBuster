@@ -798,13 +798,17 @@ void Editor::UpdatePlayerMode()
             break;
         }
     }
-
+    
+    // HACK: Use an actual player
+    Entity::PlayerState ps;
     const auto camOffset = glm::vec3{0.0f, Entity::Player::camHeight, 0.0f};
-    auto pos = camera.GetPos() - camOffset;
-    auto yaw = camera.GetRotationDeg().y;
+    ps.transform.pos = camera.GetPos() - camOffset;
+    ps.transform.rot = glm::vec3{0.0f, camera.GetRotationDeg().y, 0.0f};
+
     auto input = Input::GetPlayerInput(Entity::PlayerInput{true});
-    auto playerPos = player.UpdatePosition(pos, yaw, input, project.map.GetMap(), Util::Time::Seconds{0.016666f}) + camOffset;
-    camera.SetPos(playerPos);
+    auto nextState = player.UpdatePosition(ps, input, project.map.GetMap(), Util::Time::Seconds{0.016666f});
+    auto camPos = nextState.transform.pos + camOffset;
+    camera.SetPos(camPos);
 }
 
 
