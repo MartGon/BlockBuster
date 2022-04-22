@@ -74,7 +74,6 @@ void VideoSettingsPopUp::OnDraw()
     if(ImGui::SliderInt("FOV", &fov, 45, 90))
     {
         winConfig.fov = glm::radians((float)fov);
-        std::cout << "Preconfig fov is " << winConfig.fov << "\n";
     }
 
     if(ImGui::Button("Accept"))

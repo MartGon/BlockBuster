@@ -571,6 +571,8 @@ void InGame::UpdateCamera(Entity::PlayerInput input)
     auto wepType = Entity::WeaponMgr::weaponTypes.at(weapon.weaponTypeId);
     auto zoom = 1.0f + (wepType.zoomLevel - 1.0f) * zoomMod;
     camera_.SetZoom(zoom);
+
+    camController_.rotMod = gameOptions.sensitivity * 1 / std::max(0.1f, zoomMod);
 }
 
 void InGame::WeaponRecoil()
