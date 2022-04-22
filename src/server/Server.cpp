@@ -1019,7 +1019,7 @@ glm::ivec3 Server::FindSpawnPoint(Entity::Player player)
         spawn = *Util::Vector::PickRandom(validSpawns);
     else
     {
-        logger.LogWarning("There where no valid spawns for player " + player.id);
+        logger.LogWarning("There where no valid spawns for player " + std::to_string(player.id));
         spawn = *Util::Vector::PickRandom(spawnPoints);
     }
 
