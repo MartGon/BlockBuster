@@ -69,8 +69,10 @@ namespace Entity
         bool isGrounded;
     };
     bool operator==(const PlayerState& a, const PlayerState& b);
+    bool operator!=(const PlayerState& a, const PlayerState& b);
 
     bool operator==(const PlayerState::Transform& a, const PlayerState::Transform& b);
+    bool operator!=(const PlayerState::Transform& a, const PlayerState::Transform& b);
     PlayerState::Transform operator+(const PlayerState::Transform& a, const PlayerState::Transform& b);
     PlayerState::Transform operator-(const PlayerState::Transform& a, const PlayerState::Transform& b);
     PlayerState::Transform operator*(const PlayerState::Transform& a, float b);

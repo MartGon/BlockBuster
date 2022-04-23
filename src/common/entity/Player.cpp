@@ -93,11 +93,21 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
     return same;
 }
 
+bool Entity::operator!=(const Entity::PlayerState& a, const Entity::PlayerState& b)
+{
+    return !(a == b);
+}
+
 bool Entity::operator==(const PlayerState::Transform& a, const PlayerState::Transform& b)
 {
     // Pos
     auto distance = glm::length(a.pos - b.pos);
     return distance == 0.0f;
+}
+
+bool Entity::operator!=(const PlayerState::Transform& a, const PlayerState::Transform& b)
+{
+    return !(a == b);
 }
 
 
