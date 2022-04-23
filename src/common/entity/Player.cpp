@@ -160,6 +160,7 @@ glm::vec3 Entity::GetLastMoveDir(glm::vec3 posA, glm::vec3 posB)
 {
     auto moveDir = posB - posA;
 
+    moveDir.y = 0.0f;
     auto len = glm::length(moveDir);
     moveDir = len > 0.005f ? moveDir / len : glm::vec3{0.0f};
 
