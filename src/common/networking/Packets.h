@@ -33,6 +33,7 @@ namespace Networking
         OPCODE_SERVER_PLAYER_HIT_CONFIRM,
         OPCODE_SERVER_PLAYER_DIED,
         OPCODE_SERVER_PLAYER_RESPAWN,
+        OPCODE_SERVER_PLAYER_WARPED,
         OPCODE_SERVER_SCOREBOARD_REPORT,
         OPCODE_SERVER_GAME_EVENT,
         OPCODE_SERVER_GAMEOBJECT_STATE,
@@ -281,6 +282,21 @@ namespace Networking
                 Entity::ID playerId;
                 Entity::PlayerState playerState;
                 Entity::WeaponTypeID weapons[Entity::Player::MAX_WEAPONS];
+            };
+
+            class PlayerWarped final : public Packet
+            {
+            public:
+                PlayerWarped() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_WARPED, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader& reader) override;
+                void OnWrite() override;
+
+                Entity::ID playerId;
+                Entity::PlayerState playerState;
             };
 
             class ScoreboardReport final : public Packet

@@ -840,6 +840,21 @@ void InGame::DrawGameObjects()
         auto tMat = view * t.GetTransformMat();
         modelMgr.DrawGo(go->type, tMat);
     }
+
+    auto teleports = map->FindGameObjectByCriteria([](auto pos, Entity::GameObject go){
+        return go.type == Entity::GameObject::TELEPORT_DEST || go.type == Entity::GameObject::TELEPORT_ORIGIN;
+    });
+
+    for(auto pos : teleports)
+    {
+        auto go = map->GetGameObject(pos);
+
+        auto rPos = Game::Map::ToRealPos(pos, blockScale);
+        rPos.y -= (blockScale / 2.0f);
+        Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
+        auto tMat = view * t.GetTransformMat();
+        modelMgr.DrawGo(go->type, tMat);
+    }
 }
 
 void InGame::DrawModeObjects()

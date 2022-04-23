@@ -56,6 +56,10 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
         packet = std::make_unique<PlayerRespawn>();
         break;
 
+    case OpcodeServer::OPCODE_SERVER_PLAYER_WARPED:
+        packet = std::make_unique<PlayerWarped>();
+        break;
+
     case OpcodeServer::OPCODE_SERVER_SCOREBOARD_REPORT:
         packet = std::make_unique<ScoreboardReport>();
         break;
@@ -248,6 +252,18 @@ void PlayerRespawn::OnWrite()
     buffer.Write(Entity::Player::MAX_WEAPONS);
     for(auto i = 0; i < Entity::Player::MAX_WEAPONS; i++)
         buffer.Write(weapons[i]);
+}
+
+void PlayerWarped::OnRead(Util::Buffer::Reader& reader)
+{
+    playerId = reader.Read<Entity::ID>();
+    playerState = reader.Read<Entity::PlayerState>();
+}
+
+void PlayerWarped::OnWrite()
+{
+    buffer.Write(playerId);
+    buffer.Write(playerState);
 }
 
 void ScoreboardReport::OnRead(Util::Buffer::Reader& reader)

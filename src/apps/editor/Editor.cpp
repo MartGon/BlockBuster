@@ -472,7 +472,8 @@ void Editor::UpdateEditor()
         rPos.y -= (blockScale / 2.0f);
 
         Math::Transform t{rPos, glm::vec3{0.0f}, glm::vec3{1.0f}};
-        if(go->type != Entity::GameObject::Type::PLAYER_DECOY)
+        if(go->type != Entity::GameObject::Type::PLAYER_DECOY &&
+           go->type != Entity::GameObject::Type::TELEPORT_DEST)
         {
             auto tMat = view * t.GetTransformMat();
             modelMgr.DrawGo(go->type, tMat);
@@ -488,23 +489,33 @@ void Editor::UpdateEditor()
             modelMgr.DrawGo(go->type, tMat);
         }
 
+        if(go->type == Entity::GameObject::Type::TELEPORT_DEST)
+        {
+            auto yaw = std::get<float>(go->properties["Orientation"].value);
+            t.rotation.y = yaw;
+            auto tMat = view * t.GetTransformMat();
+            modelMgr.DrawGo(go->type, tMat);
+        }
+
+        // Draw object area
         if(gui.selectedObj == goPos)
         {
             if(go->type == Entity::GameObject::DOMINATION_POINT)
             {
                 float scale = std::get<float>(go->properties["Scale"].value);
                 t.scale = glm::vec3{scale, 3.0f, scale} * blockScale;
+                t.position.y += (t.scale.y / 2.0f);
+                DrawCursor(t);
             }
             else if(go->type == Entity::GameObject::KILLBOX)
             {
                 float scaleX = std::get<float>(go->properties["Scale X"].value);
                 float scaleY = std::get<float>(go->properties["Scale Y"].value);
                 float scaleZ = std::get<float>(go->properties["Scale Z"].value);
-                t.scale = glm::vec3{scaleX, scaleY, scaleZ} * blockScale;    
-            }
-            t.position.y += ((t.scale.y) / 2.0f);
-            
-            DrawCursor(t);
+                t.scale = glm::vec3{scaleX, scaleY, scaleZ} * blockScale;   
+                t.position.y += (t.scale.y / 2.0f);
+                DrawCursor(t);
+            } 
         }
 
         // Icon
@@ -522,17 +533,13 @@ void Editor::UpdateEditor()
     }
 
     // Draw Cursor
-    glDisable(GL_DEPTH_TEST);
     if(cursor.enabled && cursor.show && tool != SELECT_BLOCKS)
     {   
         auto t = Game::GetBlockTransform(cursor.pos, cursor.rot, project.map.GetBlockScale());
         DrawCursor(t);
     }
     else if(tool == SELECT_BLOCKS)
-    {
         DrawSelectCursor(cursor.pos);
-    }
-    glEnable(GL_DEPTH_TEST);
 
     // Draw pre view painted block
     bool isPainted = intersecting && tool == PAINT_BLOCK;

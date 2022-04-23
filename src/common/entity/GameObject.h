@@ -59,6 +59,8 @@ namespace Entity
             PLAYER_DECOY,
             GRENADES,
             KILLBOX,
+            TELEPORT_ORIGIN,
+            TELEPORT_DEST,
 
             COUNT
         };

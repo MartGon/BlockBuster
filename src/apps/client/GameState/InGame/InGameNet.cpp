@@ -361,6 +361,38 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         }
         break;
 
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_WARPED:
+        {
+            auto warped = packet.To<PlayerWarped>();
+            auto& player = playerTable[warped->playerId];
+
+            if(warped->playerId == playerId)
+            {
+                // Accept last snapshot
+                auto& player = GetLocalPlayer();
+                localPlayerStateHistory.PushBack(warped->playerState);
+                GetLocalPlayer().ApplyState(warped->playerState);
+
+                // Set spawn camera rotation
+                auto camRot = camera_.GetRotationDeg();
+                camera_.SetRotationDeg(90.0f, warped->playerState.transform.rot.y + 90.0f);
+
+                predictionHistory_.Clear();
+                errorCorrectionDiff.pos = glm::vec3{0.0f};
+            }
+            else
+            {
+                // Reset scale after death animation
+                if(Util::Map::Contains(playerModelStateTable, warped->playerId))
+                    playerModelStateTable[warped->playerId].gScale = 1.0f;
+                if(Util::Map::Contains(playerTable, warped->playerId))
+                    playerTable[warped->playerId].ApplyState(warped->playerState);
+            }
+
+            GetLogger()->LogDebug("Player warped");
+        }
+        break;
+
         case Networking::OpcodeServer::OPCODE_SERVER_SCOREBOARD_REPORT:
         {
             auto sr = packet.To<ScoreboardReport>();

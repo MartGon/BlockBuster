@@ -52,6 +52,7 @@ void Projectile::Update(Util::Time::Seconds deltaTime)
 
     auto displacement = velocity * dT;
     pos += displacement;
+    travelDistance += glm::length(displacement);
 
     rotation += torque * dT;
 

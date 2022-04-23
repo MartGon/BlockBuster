@@ -55,6 +55,11 @@ namespace Entity
             this->pos = pos;
         }
 
+        inline float GetTravelDistance() const
+        {
+            return this->travelDistance;
+        }
+
         inline glm::vec3 GetVelocity() const
         {
             return this->velocity;
@@ -118,7 +123,8 @@ namespace Entity
 
         glm::vec3 torque{0.0f};
         glm::vec3 rotation{0.0f};
-
+        
+        float travelDistance = 0.0f;
         Entity::ID playerId;
         float radius = 8.0f;
         float dmg = 375.f;
