@@ -55,7 +55,7 @@ void Client::Start()
     state = menu.get();
     state->Start();
     
-    LaunchGame("127.0.0.1", 8080, "Alpha3", "NULL PLAYER UUID", "Defu");
+    //LaunchGame("127.0.0.1", 8081, "Alpha3", "NULL PLAYER UUID", "Defu");
 }
 
 void Client::Shutdown()

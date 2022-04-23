@@ -766,6 +766,8 @@ void InGame::SmoothPlayerMovement()
             float weight = glm::max(1.0 - (errorElapsed / errorCorrectionDuration), 0.0);
             auto errorCorrection = errorCorrectionDiff * weight;
 
+            GetLogger()->LogError("Error correction duration " + std::to_string(errorCorrectionDuration.count()));
+
             predState.transform = predState.transform + errorCorrection;
             correctError = weight <= 0.005f;
             if(!correctError)
