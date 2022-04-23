@@ -1063,7 +1063,7 @@ void Server::SendServerNotification(ServerEvent::Notification notification)
 }
 
 // Match
-const float Server::MIN_SPAWN_ENEMY_DISTANCE = 6.0f; // In Blocks
+const float Server::MIN_SPAWN_ENEMY_DISTANCE = 8.0f; // In Blocks
 
 // This should get a random spawn point from a list of valid ones
 // A valid spawn point is one which doesn't have an enemy in X distance
@@ -1104,7 +1104,7 @@ glm::vec3 Server::ToSpawnPos(glm::ivec3 spawnPoint)
 bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player)
 {
     auto spawn = map.GetRespawn(spawnPoint);
-    if(spawn->teamId != player.teamId)
+    if(match.GetGameMode()->GetType() != GameMode::FREE_FOR_ALL && spawn->teamId != player.teamId)
         return false;
 
     auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());

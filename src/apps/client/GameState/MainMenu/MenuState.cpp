@@ -317,7 +317,7 @@ void Lobby::Update()
     reqTimer.Update(mainMenu_->deltaTime);
     if(reqTimer.IsDone())
     {
-        mainMenu_->GetLogger()->LogError("Sending periodic update");
+        mainMenu_->GetLogger()->LogDebug("Sending periodic update");
         reqTimer.Restart();
         mainMenu_->UpdateGame(true);
     }
