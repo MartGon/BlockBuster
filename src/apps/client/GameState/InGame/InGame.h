@@ -221,9 +221,9 @@ namespace BlockBuster
         uint32_t lastAck = 0;
         uint32_t lastRenderedPred = 0;
 
-        static constexpr Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0f};
         bool correctError = false;
-        Util::Time::Seconds errorCorrectionDuration{3.0};
+        static constexpr Util::Time::Seconds ERROR_CORRECTION_DURATION{3.0f};
+        Util::Time::Seconds errorCorrectionDuration{ERROR_CORRECTION_DURATION};
         Entity::PlayerState::Transform errorCorrectionDiff;
         Util::Time::SteadyPoint errorCorrectionStart;
 

@@ -371,6 +371,14 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 // Accept last snapshot
                 auto& player = GetLocalPlayer();
                 localPlayerStateHistory.PushBack(warped->playerState);
+                if(auto lastPred = predictionHistory_.Back())
+                {
+                    auto pred = lastPred.value();
+                    pred.dest = warped->playerState;
+                    pred.origin = warped->playerState;
+                    predictionHistory_.Set(-1, pred);
+                }
+                
                 GetLocalPlayer().ApplyState(warped->playerState);
 
                 // Set spawn camera rotation
@@ -766,12 +774,15 @@ void InGame::SmoothPlayerMovement()
             float weight = glm::max(1.0 - (errorElapsed / errorCorrectionDuration), 0.0);
             auto errorCorrection = errorCorrectionDiff * weight;
 
-            GetLogger()->LogError("Error correction duration " + std::to_string(errorCorrectionDuration.count()));
+            GetLogger()->LogDebug("Error correction duration " + std::to_string(errorCorrectionDuration.count()));
 
             predState.transform = predState.transform + errorCorrection;
-            correctError = weight <= 0.005f;
+            correctError = weight >= 0.05f;
             if(!correctError)
+            {
+                GetLogger()->LogError("Errors corrected");
                 errorCorrectionDuration = ERROR_CORRECTION_DURATION;
+            }
 
             #ifdef _DEBUG
                 auto dist = glm::length(errorCorrection.pos);
