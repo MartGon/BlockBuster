@@ -228,3 +228,26 @@ Collisions::Intersection Game::AABBCollidesBlock(Game::Map::Map* map, Math::Tran
 
     return ret;
 }
+
+bool Game::IsPlayerInTelOrigin(Game::Map::Map* map, glm::vec3 playerPos)
+{
+    auto telOrigins = map->FindGameObjectByType(Entity::GameObject::TELEPORT_ORIGIN);
+    for(auto goPos : telOrigins)
+    {
+        auto rPos = Game::Map::ToRealPos(goPos, map->GetBlockScale());
+        auto go = map->GetGameObject(goPos);
+        auto channelId = std::get<int>(go->properties["Channel ID"].value);
+
+        if(Collisions::IsPointInSphere(playerPos, rPos, Entity::GameObject::ACTION_AREA))
+        {
+            auto dests = map->FindGameObjectByCriteria([channelId](auto pos, auto go){
+                return go.type == Entity::GameObject::TELEPORT_DEST && std::get<int>(go.properties["Channel ID"].value) == channelId;
+            });
+
+            if(!dests.empty())
+                return true;
+        }
+    }
+
+    return false;
+}

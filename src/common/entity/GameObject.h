@@ -17,7 +17,7 @@ namespace Entity
     {
     public:
 
-        static const float ACTION_AREA;
+        constexpr static float ACTION_AREA = 2.5f;
 
         struct State
         {

@@ -2,7 +2,6 @@
 
 using namespace Entity;
 
-const float Entity::GameObject::ACTION_AREA = 2.5f;
 const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {
     "Respawn", "Weapon Crate", "HealthPack", 
     "Flag Spawn A", "Flag Spawn B", "Domination Point", 

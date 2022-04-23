@@ -206,6 +206,7 @@ void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::str
     // Set name
     client.playerUuuid = playerUuid;
     client.playerName = playerName;
+    logger.LogInfo("Player joined:  " + client.playerName);
 
     // Get Team id
     auto teamId = match.GetGameMode()->PlayerJoin(client.player.id, playerName);
@@ -453,7 +454,7 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
     auto& pController = client.pController;
     auto nextState = pController.UpdatePosition(ps, input, &map, TICK_RATE);
     player.ApplyState(nextState);
-    logger.LogDebug("MovePos " + glm::to_string(nextState.transform.pos));
+    logger.LogWarning("MovePos " + glm::to_string(nextState.transform.pos));
 
     // Player weapons
     auto oldWepState = player.GetCurrentWeapon();
@@ -828,7 +829,7 @@ void Server::UpdateWorld()
             for(auto& telPos : telPositions)
             {
                 auto rPos = Game::Map::ToRealPos(telPos, blockScale);
-                if(Collisions::IsPointInSphere(pPos, rPos, blockScale * 1.5f))
+                if(Collisions::IsPointInSphere(pPos, rPos, Entity::GameObject::ACTION_AREA))
                 {
                     if(Util::Map::Contains(teleportDests, id))
                     {
