@@ -39,7 +39,7 @@ namespace Rendering
         glm::mat4 GetProjViewMat() const;
 
         static const glm::vec3 UP;
-        constexpr static float FAR_PLANE_BASE_DISTANCE = 25.f;
+        constexpr static float FAR_PLANE_BASE_DISTANCE = 50.f;
 
     private:
 

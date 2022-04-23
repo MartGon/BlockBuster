@@ -1104,7 +1104,9 @@ glm::vec3 Server::ToSpawnPos(glm::ivec3 spawnPoint)
 bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player)
 {
     auto spawn = map.GetRespawn(spawnPoint);
-    if(match.GetGameMode()->GetType() != GameMode::FREE_FOR_ALL && spawn->teamId != player.teamId)
+    auto spawnTeamId = player.teamId + 1;
+    bool isValidTeam = spawn->teamId & spawnTeamId;
+    if(match.GetGameMode()->GetType() != GameMode::FREE_FOR_ALL && isValidTeam)
         return false;
 
     auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());

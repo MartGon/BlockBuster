@@ -14,14 +14,14 @@ std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTem
         { 
             // NOTE: Keys must be in alphabetical order
             {"Orientation", GameObject::Property::Type::FLOAT, 0.0f},
-            {"TeamId", GameObject::Property::Type::INT, 0},
+            {"TeamId", GameObject::Property::Type::INT, 3},
         }
     },
     {
         GameObject::Type::WEAPON_CRATE, 
         { 
             {"Respawn Time (s)", GameObject::Property::Type::INT, 180},
-            {"Weapon ID", GameObject::Property::Type::INT, 0},
+            {"Weapon ID", GameObject::Property::Type::INT, 1},
         }
     },
     {
