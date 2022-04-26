@@ -250,11 +250,15 @@
                     </tr>
                     <tr>
                         <td>Blue</td>
-                        <td>0</td>
+                        <td>1</td>
                     </tr>
                     <tr>
                         <td>Red</td>
-                        <td>1</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>Any team</td>
+                        <td>3</td>
                     </tr>
                 </table>
 
@@ -448,6 +452,31 @@
                     <li>
                         <strong>Scale</strong>: Dictates the size of the area of the Killbox.
                     </li>
+                </ul>
+            </td>
+        </tr>
+
+        <tr>
+            <td style="width: 35%;">
+                <img src="https://github.com/MartGon/BlockBuster/blob/main/docs/editor/itchio/imgs/Teleports.png?raw=true" width="320">
+            </td>
+            <td>
+                <strong>Teleports</strong>
+                <p>
+                    Teleports can be used by players to warp to specific locations. A player will be teleported
+                    when they step on a <em>Teleport - Origin</em> and will be moved to a specific
+                    <em>Teleport - Destination</em>.
+                </p>
+
+                <strong>Properties</strong>
+                <ul>
+                    <li>
+                        <strong>Channel ID</strong>: A number which is used to identify which <em>Teleport - Destination</em> will
+                        a player be warped to, when they step on this <em>Teleport - Origin</em>. If two or more <em>Teleport - Destination</em>
+                        share the same <strong>Channel ID</strong>, one of them will be chosen at random.
+
+                    </li>
+                    <li><strong>Orientation</strong>: Dictates the angle the player will look at, once they appear in this location.</li>
                 </ul>
             </td>
         </tr>

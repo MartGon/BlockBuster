@@ -55,7 +55,7 @@ void Client::Start()
     state = menu.get();
     state->Start();
     
-    //LaunchGame("localhost", 8081, "Alpha3", "NULL PLAYER UUID", "Defu");
+    //LaunchGame("127.0.0.1", 8080, "Alpha3", "NULL PLAYER UUID", "Defu");
 }
 
 void Client::Shutdown()
@@ -79,8 +79,8 @@ bool Client::Quit()
 void Client::LaunchGame(std::string address, uint16_t port, std::string map, std::string playerUuid, std::string playerName)
 {
     inGame = std::make_unique<InGame>(this, address, port, map, playerUuid, playerName);
-    inGame->Start();
     state = inGame.get();
+    inGame->Start();
 }
 
 void Client::GoBackToMainMenu(bool onGoing)

@@ -12,6 +12,7 @@ Entity::PlayerInput Input::GetPlayerInput(Entity::PlayerInput mask)
     input[Entity::MOVE_RIGHT] = state[SDL_SCANCODE_D];
     input[Entity::MOVE_UP] = state[SDL_SCANCODE_W];
     input[Entity::MOVE_DOWN] = state[SDL_SCANCODE_S];
+    input[Entity::JUMP] = state[SDL_SCANCODE_SPACE];
 
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     input[Entity::SHOOT] = mouseState & SDL_BUTTON_LMASK || state[SDL_SCANCODE_G];
@@ -34,6 +35,7 @@ Entity::PlayerInput Input::GetPlayerInputNumpad(Entity::PlayerInput mask)
     input[Entity::MOVE_RIGHT] = state[SDL_SCANCODE_KP_6];
     input[Entity::MOVE_UP] = state[SDL_SCANCODE_KP_8];
     input[Entity::MOVE_DOWN] = state[SDL_SCANCODE_KP_2];
+    input[Entity::JUMP] = state[SDL_SCANCODE_SPACE];
 
     auto mouseState = SDL_GetMouseState(nullptr, nullptr);
     input[Entity::SHOOT] = mouseState & SDL_BUTTON_LMASK;

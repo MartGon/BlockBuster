@@ -21,7 +21,7 @@ namespace Entity
         ACTION,
         WEAPON_SWAP_0,
         WEAPON_SWAP_1,
-        WEAPON_SWAP_2,
+        JUMP,
 
         MAX
     };
@@ -63,12 +63,16 @@ namespace Entity
 
         Transform transform;
         Weapon weaponState[2];
+        float jumpSpeed;
         uint8_t curWep;
         uint8_t grenades;
+        bool isGrounded;
     };
     bool operator==(const PlayerState& a, const PlayerState& b);
+    bool operator!=(const PlayerState& a, const PlayerState& b);
 
     bool operator==(const PlayerState::Transform& a, const PlayerState::Transform& b);
+    bool operator!=(const PlayerState::Transform& a, const PlayerState::Transform& b);
     PlayerState::Transform operator+(const PlayerState::Transform& a, const PlayerState::Transform& b);
     PlayerState::Transform operator-(const PlayerState::Transform& a, const PlayerState::Transform& b);
     PlayerState::Transform operator*(const PlayerState::Transform& a, float b);
@@ -195,5 +199,7 @@ namespace Entity
         static const float dmgMod[HitBoxType::MAX];
 
         Math::Transform transform;
+        float jumpSpeed = 0.0f;
+        bool isGrounded = true;
     };
 }

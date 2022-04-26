@@ -179,11 +179,17 @@ void FreeForAll::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID 
 {
     if(auto score = scoreBoard.GetPlayerScore(killer))
     {
-        score->score++;
+        if (killer != victim)
+            score->score++;
+        else
+            score->score--;
         scoreBoard.SetPlayerScore(score.value());
 
         auto teamScore = scoreBoard.GetTeamScore(killer);
-        teamScore->score++;
+        if (killer != victim)
+            teamScore->score++;
+        else
+            teamScore->score--;
         scoreBoard.SetTeamScore(teamScore.value());
     }
 }
@@ -216,11 +222,17 @@ void TeamDeathMatch::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity:
 {
     if(auto score = scoreBoard.GetPlayerScore(killer))
     {
-        score->score++;
+        if (killer != victim)
+            score->score++;
+        else
+            score->score--;
         scoreBoard.SetPlayerScore(score.value());
 
-        auto teamScore = scoreBoard.GetTeamScore(killer);
-        teamScore->score++;
+        auto teamScore = scoreBoard.GetTeamScore(killerTeamId);
+        if (killer != victim)
+            teamScore->score++;
+        else
+            teamScore->score--;
         scoreBoard.SetTeamScore(teamScore.value());
     }
 }

@@ -324,14 +324,16 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
         {
             auto respawn = packet.To<PlayerRespawn>();
             auto& player = playerTable[respawn->playerId];
-            player.health.hp = Entity::Player::MAX_HEALTH;
+            player.ResetHealth();
 
             if(respawn->playerId == playerId)
             {
+                // Accept last snapshot
                 auto& player = GetLocalPlayer();
                 localPlayerStateHistory.PushBack(respawn->playerState);
                 GetLocalPlayer().ApplyState(respawn->playerState);
-                GetLocalPlayer().ResetHealth();
+
+                // Set server weapon
                 for(auto i = 0; i < Entity::Player::MAX_WEAPONS; i++)
                     if(respawn->weapons[i] != Entity::WeaponTypeID::NONE)
                         player.weapons[i] = Entity::WeaponMgr::weaponTypes.at(respawn->weapons[i]).CreateInstance();
@@ -356,6 +358,43 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             }
 
             GetLogger()->LogDebug("Player respawned");
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_WARPED:
+        {
+            auto warped = packet.To<PlayerWarped>();
+            auto& player = playerTable[warped->playerId];
+
+            if(warped->playerId == playerId)
+            {
+                // Accept last snapshot
+                auto& player = GetLocalPlayer();
+                localPlayerStateHistory.PushBack(warped->playerState);
+                if(auto lastPred = predictionHistory_.Back())
+                {
+                    auto pred = lastPred.value();
+                    pred.dest = warped->playerState;
+                    pred.origin = warped->playerState;
+                    predictionHistory_.Set(-1, pred);
+                }
+                
+                GetLocalPlayer().ApplyState(warped->playerState);
+
+                // Set spawn camera rotation
+                auto camRot = camera_.GetRotationDeg();
+                camera_.SetRotationDeg(90.0f, warped->playerState.transform.rot.y + 90.0f);
+
+                // Next prediction error should be corrected immediately
+                errorCorrectionDuration = Util::Time::Seconds{0.01f};
+            }
+            else
+            {
+                if(Util::Map::Contains(playerTable, warped->playerId))
+                    playerTable[warped->playerId].ApplyState(warped->playerState);
+            }
+
+            GetLogger()->LogError("Player warped to " + glm::to_string(warped->playerState.transform.pos));
         }
         break;
 
@@ -647,17 +686,16 @@ void InGame::Predict(Entity::PlayerInput playerInput)
             auto newState = lastState.value();
             auto pState = prediction->dest;
 
-            #ifdef _DEBUG
-                GetLogger()->LogDebug("New state pos " + glm::to_string(newState.transform.pos));
-                GetLogger()->LogDebug("Predicted state pos " + glm::to_string(pState.transform.pos));
-                GetLogger()->LogDebug("Render pos " + glm::to_string(playerTable[playerId].GetRenderTransform().position));
-                GetLogger()->LogDebug("Error correction offset " + glm::to_string(errorCorrectionDiff.pos));
-            #endif
-
             // On error
-            auto areSame = newState == pState;
-            if(!areSame)
+            if(newState != pState)
             {
+                #ifdef _DEBUG
+                    GetLogger()->LogError("New state pos " + glm::to_string(newState.transform.pos));
+                    GetLogger()->LogError("Predicted state pos " + glm::to_string(pState.transform.pos));
+                    GetLogger()->LogError("Render pos " + glm::to_string(playerTable[playerId].GetRenderTransform().position));
+                    GetLogger()->LogError("Error correction offset " + glm::to_string(errorCorrectionDiff.pos));
+                #endif
+
                 GetLogger()->LogError("Prediction: Error on prediction");
                 GetLogger()->LogError("Prediction: Prediction Id " + std::to_string(prediction->inputReq.reqId) + " ACK " + std::to_string(this->lastAck));
                 auto diff = glm::length(pState.transform.pos - newState.transform.pos);
@@ -677,7 +715,7 @@ void InGame::Predict(Entity::PlayerInput playerInput)
                     // Re-calculate prediction
                     auto origin = realState;
                     realState = PredPlayerState(origin, predict->inputReq.playerInput, predict->inputReq.camYaw, serverTickRate);
-                    GetLogger()->LogDebug("Prediction: Predicted pos is " + glm::to_string(predict->dest.transform.pos));
+                    GetLogger()->LogError("Prediction: Predicted pos is " + glm::to_string(realState.transform.pos));
 
                     // Update history
                     predict->origin = origin;
@@ -689,14 +727,14 @@ void InGame::Predict(Entity::PlayerInput playerInput)
                 auto renderState = GetLocalPlayer().ExtractState();
                 errorCorrectionDiff = renderState.transform - realState.transform;
                 errorCorrectionStart = Util::Time::GetTime();
+                correctError = true;
             }
         }
     }
 
     // Get prev pos
     auto preState = localPlayerStateHistory.Back().value();
-    auto prevPred = predictionHistory_.Back();
-    if(prevPred.has_value())
+    if(auto prevPred = predictionHistory_.Back())
         preState = prevPred->dest;
 
     // Run predicted command for this simulation
@@ -719,32 +757,44 @@ void InGame::SmoothPlayerMovement()
         return;
 
     auto& player = GetLocalPlayer();
-
     if(player.IsDead())
         return;
 
     auto lastPred = predictionHistory_.Back();
     if(lastPred)
     {
-        // Prediction Error correction
         auto now = Util::Time::GetTime();
         Util::Time::Seconds elapsed = now - lastPred->time;
-        Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
-        float weight = glm::max(1.0 - (errorElapsed / ERROR_CORRECTION_DURATION), 0.0);
-        auto errorCorrection = errorCorrectionDiff * weight;
         auto predState = PredPlayerState(lastPred->origin, lastPred->inputReq.playerInput, lastPred->inputReq.camYaw, elapsed);
-        predState.transform = predState.transform + errorCorrection;
+
+        // Prediction Error correction
+        if(correctError)
+        {
+            Util::Time::Seconds errorElapsed = now - errorCorrectionStart;
+            float weight = glm::max(1.0 - (errorElapsed / errorCorrectionDuration), 0.0);
+            auto errorCorrection = errorCorrectionDiff * weight;
+
+            GetLogger()->LogDebug("Error correction duration " + std::to_string(errorCorrectionDuration.count()));
+
+            predState.transform = predState.transform + errorCorrection;
+            correctError = weight >= 0.05f;
+            if(!correctError)
+            {
+                GetLogger()->LogError("Errors corrected");
+                errorCorrectionDuration = ERROR_CORRECTION_DURATION;
+            }
+
+            #ifdef _DEBUG
+                auto dist = glm::length(errorCorrection.pos);
+                if(dist > 0.005)
+                    GetLogger()->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
+            #endif
+        }
         player.ApplyState(predState);
 
-        #ifdef _DEBUG
-            auto dist = glm::length(errorCorrection.pos);
-            if(dist > 0.005)
-                GetLogger()->LogError("Error correction is " + glm::to_string(errorCorrection.pos) + " W " + std::to_string(weight) + " D " + std::to_string(dist));
-        #endif
-
+        // Animation
         if(lastPred->inputReq.reqId != lastRenderedPred)
         {
-            // Animation
             auto oldState = lastPred->origin;
             auto renderState = GetLocalPlayer().ExtractState();
             auto renderWepState = renderState.weaponState[oldState.curWep];
@@ -773,10 +823,11 @@ Entity::PlayerState InGame::PredPlayerState(Entity::PlayerState a, Entity::Playe
 {
     auto& player = GetLocalPlayer();
     
-    Entity::PlayerState nextState = a;
-    nextState.transform.pos = pController.UpdatePosition(a.transform.pos, playerYaw, playerInput, map_.GetMap(), deltaTime);
-    nextState.transform.rot.y = playerYaw;
+    // Position
+    a.transform.rot.y = playerYaw;
+    Entity::PlayerState nextState = pController.UpdatePosition(a, playerInput, map_.GetMap(), deltaTime);
 
+    // Weapons
     auto nextWep = (a.curWep + 1) % Entity::Player::MAX_WEAPONS;
     nextState.weaponState[a.curWep] = pController.UpdateWeapon(a.weaponState[a.curWep], a.weaponState[nextWep], playerInput, deltaTime);
 

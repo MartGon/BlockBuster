@@ -65,7 +65,7 @@ AudioMgr::~AudioMgr()
         alDeleteBuffers(1, &file.alBuffer);
     }
 
-    for(auto& [id, file] : streamedFiles)
+    for(auto& [id, file] : filesCache)
     {
         SDL_FreeWAV(file.wavBuffer);
     }
@@ -109,16 +109,7 @@ void AudioMgr::Shutdown()
     }
     streamSources.clear();
 
-    for(auto& [id, file] : staticFiles)
-    {
-        alDeleteBuffers(1, &file.alBuffer);
-    }
     staticFiles.clear();
-
-    for(auto& [id, file] : streamedFiles)
-    {
-        SDL_FreeWAV(file.wavBuffer);
-    }
     streamedFiles.clear();
 }
 
@@ -162,7 +153,8 @@ Result<ID, AudioMgr::LoadWAVError> AudioMgr::LoadStaticWAV(ID id, std::filesyste
         alBufferData(sfile.alBuffer, file.format, file.wavBuffer, file.wavLength, file.audioSpec.freq);
 
         // Delete from main RAM
-        SDL_FreeWAV(sfile.file.wavBuffer);
+        // SDL_FreeWAV(sfile.file.wavBuffer);
+        // Note: Commented cause we keep the cached for next game
 
         assertm(!Util::Map::Contains(staticFiles, id), "A static WAV file with that id already exists");
 
@@ -429,15 +421,14 @@ void AudioMgr::UpdateStreamedAudio(StreamAudioSource& sSource)
 
 // Listener
 
-void AudioMgr::SetListenerParams(glm::vec3 pos, float orientation, float gain, glm::vec3 vel)
+void AudioMgr::SetListenerParams(glm::vec3 pos, glm::vec3 at, float gain, glm::vec3 vel)
 {
     this->pos = pos;
-    this->orientation = orientation;
+    this->orientation = at;
     this->gain = gain;
 
     alListener3f(AL_POSITION, pos.x, pos.y, pos.z);
-    glm::vec3 rot = glm::vec3{glm::cos(orientation), 0.0f, -glm::sin(orientation)};
-    ALfloat ori[]={rot.x, rot.y, rot.z, 0.0, 1.0, 0.0};
+    ALfloat ori[]={at.x, at.y, at.z, 0.0, 1.0, 0.0};
     alListenerfv(AL_ORIENTATION, ori);
     alListenerf(AL_GAIN, gain);
     alListener3f(AL_VELOCITY, vel.x, vel.y, vel.z);
@@ -445,7 +436,13 @@ void AudioMgr::SetListenerParams(glm::vec3 pos, float orientation, float gain, g
 
 void AudioMgr::SetListenerTransform(glm::vec3 pos, float orientation)
 {
-    SetListenerParams(pos, orientation, this->gain);
+    glm::vec3 rot = {glm::cos(orientation), 0.0f, -glm::sin(orientation)};
+    SetListenerParams(pos, rot, this->gain);
+}
+
+void AudioMgr::SetListenerTransform(glm::vec3 pos, glm::vec3 at)
+{
+    SetListenerParams(pos, at, this->gain);
 }
 
 void AudioMgr::SetListenerGain(float gain)
@@ -459,8 +456,13 @@ void AudioMgr::SetListenerGain(float gain)
 
 Result<AudioMgr::File, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::filesystem::path path)
 {
+    std::string pathStr = path.string();
+
+    if(Util::Map::Contains(filesCache, pathStr))
+        return Ok(filesCache[pathStr]);
+
     File file;
-    auto res = SDL_LoadWAV(path.string().c_str(), &file.audioSpec, &file.wavBuffer, &file.wavLength);
+    auto res = SDL_LoadWAV(pathStr.c_str(), &file.audioSpec, &file.wavBuffer, &file.wavLength);
 
     if(res)
     {
@@ -484,6 +486,7 @@ Result<AudioMgr::File, AudioMgr::LoadWAVError> AudioMgr::LoadWAV(std::filesystem
         }
         file.format = format;
 
+        filesCache[pathStr] = file;
         return Ok(file);
     }
 

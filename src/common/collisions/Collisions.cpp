@@ -268,10 +268,10 @@ bool Collisions::IsPointInAABB(glm::vec3 point, Math::Transform aaBB)
     return res.x && res.y && res.z;
 }
 
-bool Collisions::IsPointInSphere(glm::vec3 point, glm::vec3 center, float scale)
+bool Collisions::IsPointInSphere(glm::vec3 point, glm::vec3 center, float radius)
 {
     auto distance = glm::length(point - center);
-    return distance <= scale;
+    return distance <= radius;
 }
 
 SpherePointCollision Collisions::PointInSphere(glm::vec3 point, glm::vec3 center, float scale)

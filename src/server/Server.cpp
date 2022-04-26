@@ -140,6 +140,28 @@ void Server::InitMap()
         logger.LogError("Could not load map " + params.mapPath.string());
         std::exit(-1);
     }
+
+    // Find teleports
+    auto telOrigins = map.FindGameObjectByType(Entity::GameObject::TELEPORT_ORIGIN);
+    for(auto pos : telOrigins)
+    {
+        auto go = map.GetGameObject(pos);
+        auto channel = std::get<int>(go->properties["Channel ID"].value);
+        teleportOrigins[channel].push_back(pos);
+    }
+
+    auto telDests = map.FindGameObjectByType(Entity::GameObject::TELEPORT_DEST);
+    for(auto pos : telDests)
+    {
+        auto go = map.GetGameObject(pos);
+        auto channel = std::get<int>(go->properties["Channel ID"].value);
+        teleportDests[channel].push_back(pos);
+    }
+
+    // Find lowest pos
+    auto blockit = map.CreateIterator();
+    for(auto blockData = blockit.GetNextBlock(); !blockit.IsOver(); blockData = blockit.GetNextBlock())
+        lowestY = std::min(lowestY, blockData.first.y);
 }
 
 void Server::InitGameObjects()
@@ -184,6 +206,7 @@ void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::str
     // Set name
     client.playerUuuid = playerUuid;
     client.playerName = playerName;
+    logger.LogInfo("Player joined:  " + client.playerName);
 
     // Get Team id
     auto teamId = match.GetGameMode()->PlayerJoin(client.player.id, playerName);
@@ -424,16 +447,16 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 
     auto input = cmd.playerInput;
 
-    auto playerTransform = player.GetTransform();
-    auto playerPos = playerTransform.position;
-    auto playerYaw = cmd.camYaw;
-
+    // Player pos
+    auto ps = player.ExtractState();
+    ps.transform.rot = glm::vec2{cmd.camPitch, cmd.camYaw};
+    
     auto& pController = client.pController;
-    playerTransform.position = pController.UpdatePosition(playerPos, playerYaw, input, &map, TICK_RATE);
-    playerTransform.rotation = glm::vec3{cmd.camPitch, playerYaw, 0.0f};
-    player.SetTransform(playerTransform);
-    logger.LogDebug("MovePos " + glm::to_string(playerTransform.position));
+    auto nextState = pController.UpdatePosition(ps, input, &map, TICK_RATE);
+    player.ApplyState(nextState);
+    logger.LogWarning("MovePos " + glm::to_string(nextState.transform.pos));
 
+    // Player weapons
     auto oldWepState = player.GetCurrentWeapon();
     auto nextWeapon = player.weapons[player.GetNextWeaponId()];
     player.GetCurrentWeapon() = pController.UpdateWeapon(player.GetCurrentWeapon(), nextWeapon, input, TICK_RATE);
@@ -441,7 +464,7 @@ void Server::HandleClientInput(ENet::PeerId peerId, Input::Req cmd)
 
     if(Entity::HasShot(oldWepState.state, player.GetCurrentWeapon().state))
     {
-        ShotCommand sc{peerId, player.GetFPSCamPos(), glm::radians(playerTransform.rotation), cmd.fov, cmd.aspectRatio, cmd.renderTime};
+        ShotCommand sc{peerId, player.GetFPSCamPos(), glm::radians(nextState.transform.rot), cmd.fov, cmd.aspectRatio, cmd.renderTime};
         HandleShootCommand(sc);
     }
 
@@ -566,8 +589,7 @@ void Server::HandleShootCommand(ShotCommand sc)
         float SPEED = 20.0f;
         glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
         auto scaler = p->GetType() == Entity::Projectile::ROCKET ? 3.0f : 1.2f;
-        auto launchPos = ray.origin + ray.GetDir() * (p->GetScale().x * scaler);
-        p->Launch(author.id, launchPos, ray.GetDir() * SPEED, acceleration);
+        p->Launch(author.id, ray.origin, ray.GetDir() * SPEED, acceleration);
         projectiles.MoveInto(std::move(p));
     }
 }
@@ -727,6 +749,17 @@ void Server::BroadcastRespawn(ENet::PeerId peerId)
     Broadcast(pr);
 }
 
+void Server::BroadcastWarp(ENet::PeerId peerId)
+{
+    auto& player = this->clients[peerId].player;
+
+    Networking::Packets::Server::PlayerWarped pw;
+    pw.playerId = player.id;
+    pw.playerState = player.ExtractState();
+
+    Broadcast(pw);
+}
+
 void Server::BroadcastGameObjectState(glm::ivec3 pos)
 {
     Networking::Packets::Server::GameObjectState gos;
@@ -768,7 +801,7 @@ void Server::Broadcast(Networking::Packet& packet)
 
 void Server::UpdateWorld()
 {
-    // Player respawns
+    // Player updates
     for(auto& [id, client] : clients)
     {
         auto& player = client.player;
@@ -786,6 +819,32 @@ void Server::UpdateWorld()
         {
             auto& pController = client.pController;
             player.health = pController.UpdateShield(player.health, player.dmgTimer, TICK_RATE);
+        }
+
+        // Teleporters
+        auto pPos = player.GetRenderTransform().position;
+        auto blockScale = map.GetBlockScale();
+        for(auto& [id, telPositions] : teleportOrigins)
+        {
+            for(auto& telPos : telPositions)
+            {
+                auto rPos = Game::Map::ToRealPos(telPos, blockScale);
+                if(Collisions::IsPointInSphere(pPos, rPos, Entity::GameObject::ACTION_AREA))
+                {
+                    if(Util::Map::Contains(teleportDests, id))
+                    {
+                        auto& dests = teleportDests[id];
+                        auto dest = Util::Vector::PickRandom(dests);
+                        auto go = map.GetGameObject(*dest);
+
+                        auto playerPos = ToSpawnPos(*dest);
+                        auto orientation = std::get<float>(go->properties["Orientation"].value);
+                        auto playerTransform = Math::Transform{playerPos, glm::vec3{0.0f, orientation, 0.0f}, glm::vec3{1.0f}};
+                        player.SetTransform(playerTransform);
+                        BroadcastWarp(player.id);
+                    }
+                }
+            }
         }
     }
 
@@ -854,11 +913,16 @@ void Server::UpdateProjectiles()
             projectile->SetPos(t.position + collision.offset);
         }
 
-        // TODO: Check collision with players;
         for(auto& [id, client] : clients)
         {
             auto& player = client.player;
             auto playerT = player.GetRenderTransform();
+
+            // Avoid self collision on launch
+            constexpr float minTravelDist = 4.0f;
+            if(player.id == projectile->GetAuthor() && 
+                minTravelDist > projectile->GetTravelDistance())
+                continue;
             
             auto s1 = history.At(-2);
             auto s2 = history.At(-1);
@@ -914,10 +978,11 @@ bool Server::IsPlayerOutOfBounds(ENet::PeerId peerId)
     auto& player = clients[peerId].player;
     auto pos = player.GetRenderTransform().position;
 
-    // Is in any of the chunks?
+    // Is below the lowest block ?
     auto blockScale = map.GetBlockScale();
-    auto chunkPos = Game::Map::ToChunkIndex(pos, blockScale);
-    if(!map.HasChunk(chunkPos))
+    auto lowest = lowestY * blockScale;
+    constexpr auto threshold = 5.0f;
+    if(lowest > (pos.y + threshold))
         return true;
 
     // Is in a killbox area
@@ -998,7 +1063,7 @@ void Server::SendServerNotification(ServerEvent::Notification notification)
 }
 
 // Match
-const float Server::MIN_SPAWN_ENEMY_DISTANCE = 6.0f; // In Blocks
+const float Server::MIN_SPAWN_ENEMY_DISTANCE = 8.0f; // In Blocks
 
 // This should get a random spawn point from a list of valid ones
 // A valid spawn point is one which doesn't have an enemy in X distance
@@ -1019,7 +1084,7 @@ glm::ivec3 Server::FindSpawnPoint(Entity::Player player)
         spawn = *Util::Vector::PickRandom(validSpawns);
     else
     {
-        logger.LogWarning("There where no valid spawns for player " + player.id);
+        logger.LogWarning("There where no valid spawns for player " + std::to_string(player.id));
         spawn = *Util::Vector::PickRandom(spawnPoints);
     }
 
@@ -1039,12 +1104,14 @@ glm::vec3 Server::ToSpawnPos(glm::ivec3 spawnPoint)
 bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player)
 {
     auto spawn = map.GetRespawn(spawnPoint);
-    if(spawn->teamId != player.teamId)
+    auto spawnTeamId = player.teamId + 1;
+    bool isValidTeam = spawn->teamId & spawnTeamId;
+    if(match.GetGameMode()->GetType() != GameMode::FREE_FOR_ALL && !isValidTeam)
         return false;
 
     auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
     auto players = GetPlayers();
-    for(auto other : players)
+    for(auto& other : players)
     {
         if(other.teamId != player.teamId)
         {

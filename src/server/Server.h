@@ -138,6 +138,7 @@ namespace BlockBuster
         void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId);
         void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime);
         void BroadcastRespawn(ENet::PeerId peerId);
+        void BroadcastWarp(ENet::PeerId peerId);
         void BroadcastGameObjectState(glm::ivec3 goPos);
         void SendPlayerGameObjectInteraction(ENet::PeerId peerId, glm::ivec3 goPos);
         void SendPacket(ENet::PeerId peerId, Networking::Packet& packet);
@@ -193,6 +194,9 @@ namespace BlockBuster
         // Match
         Match match;
         ::Game::Map::Map map;
+        int lowestY = 0.0f;
+        std::unordered_map<int, std::vector<glm::ivec3>> teleportOrigins;
+        std::unordered_map<int, std::vector<glm::ivec3>> teleportDests;
 
         // Logs        
         Log::ComposedLogger logger;

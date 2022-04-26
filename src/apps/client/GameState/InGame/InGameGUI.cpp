@@ -206,6 +206,7 @@ void InGameGUI::InitPopUps()
         ImGui::Text("Gameplay");
         ImGui::Separator();
         ImGui::SliderFloat("Sensitivity", &gameOptions.sensitivity, 0.1f, 5.0f, "%.2f");
+        ImGui::Checkbox("Dynamically reduce sensitivity on aim", &gameOptions.dynamicSensitivity);
 
         ImGui::Text("Sound");
         ImGui::Separator();

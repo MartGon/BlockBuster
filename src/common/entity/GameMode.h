@@ -41,7 +41,7 @@ namespace BlockBuster
             COUNT
         };
 
-        GameMode(Type type, uint32_t maxScore = 100, 
+        GameMode(Type type, int32_t maxScore = 100, 
             Util::Time::Seconds duration = Util::Time::Seconds{60.0f * 15.0f}, 
             Util::Time::Seconds respawnTime = Util::Time::Seconds{5.0f}) : 
             type{type}, maxScore{maxScore}, duration{duration}, respawnTime{respawnTime}
@@ -95,7 +95,7 @@ namespace BlockBuster
         Scoreboard scoreBoard;
         Util::Time::Seconds duration;
         Util::Time::Seconds respawnTime;
-        uint32_t maxScore;
+        int32_t maxScore;
 
         std::vector<Event> broadEvents;
         std::unordered_map<Entity::ID, std::vector<Event>> targetedEvents;

@@ -27,4 +27,6 @@ namespace Game
     Collisions::AABBIntersection AABBCollidesWithPlayer(Math::Transform aabb, glm::vec3 playerPos, float playerYaw, glm::vec3 lastMoveDir);
 
     Collisions::Intersection AABBCollidesBlock(Game::Map::Map* map, Math::Transform aabb);
+
+    bool IsPlayerInTelOrigin(Game::Map::Map* map, glm::vec3 playerPos);
 }

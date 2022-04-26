@@ -177,6 +177,44 @@ void ModelMgr::InitGoModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)
     killBox->AddSubModel(std::move(sm1));
 
     goModels[GameObject::Type::KILLBOX] = killBox;
+
+        // Teleport Origin
+    auto telOriginModel = renderMgr.CreateModel();
+    scale = 0.8f;
+
+    // Cylinder
+    cylinderT = Math::Transform{glm::vec3{0.0f, 0.125f, 0.0f} * scale, glm::vec3{0.0f}, glm::vec3{1.0f, 0.250f, 1.0f} * scale};
+    painting.type = Rendering::PaintingType::COLOR;
+    painting.color = gray;
+    sm1 = Rendering::SubModel{cylinderT, painting, &cylinder, &shader};
+    telOriginModel->AddSubModel(std::move(sm1));
+    
+    
+    // Slope
+    for(auto i = 0; i < 4; i++)
+    {
+        constexpr auto offset = -0.75f;
+        glm::vec2 trunc = Math::RotateVec2(glm::vec2{0.0f, offset}, glm::half_pi<float>()*i);
+        auto slopeT = Math::Transform{glm::vec3{trunc.x, 0.130f, trunc.y} * scale, glm::vec3{0.0f, 180.0f-90.0f*(float)i, 0.0f}, glm::vec3{1.0f, 0.240f, 1.0f} * scale};
+
+        auto slopeSm = Rendering::SubModel{slopeT, painting, &slope, &shader};
+        telOriginModel->AddSubModel(std::move(slopeSm));
+    }
+
+    goModels[GameObject::Type::TELEPORT_ORIGIN] = telOriginModel;
+
+    // Teleport Dest
+    auto telDestModel = renderMgr.CreateModel();
+
+    cylinderT = Math::Transform{glm::vec3{0.0f, 0.125f, 0.0f} * scale, glm::vec3{0.0f}, glm::vec3{1.0f, 0.250f, 1.0f} * scale};
+    sm1 = Rendering::SubModel{cylinderT, painting, &cylinder, &shader};
+    telDestModel->AddSubModel(std::move(sm1));
+
+    auto slopeT = Math::Transform{glm::vec3{0.0f, 0.130f, -0.750f} * scale, glm::vec3{0.0f, 180.0f, 0.0f}, glm::vec3{1.0f, 0.240f, 1.0f} * scale};
+    auto slopeSm = Rendering::SubModel{slopeT, painting, &slope, &shader};
+    telDestModel->AddSubModel(std::move(slopeSm));
+
+    goModels[GameObject::Type::TELEPORT_DEST] = telDestModel;
 }
 
 void ModelMgr::InitModels(Rendering::RenderMgr& renderMgr, GL::Shader& shader)

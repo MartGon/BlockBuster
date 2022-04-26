@@ -98,8 +98,9 @@ namespace Audio
         void PlayStreamSource(ID srcId);
 
         // Listener
-        void SetListenerParams(glm::vec3 pos, float orientation = 0.0f, float gain = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
+        void SetListenerParams(glm::vec3 pos, glm::vec3 at = glm::vec3{0.0f}, float gain = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
         void SetListenerTransform(glm::vec3 pos, float orientation = 0.0f);
+        void SetListenerTransform(glm::vec3 pos, glm::vec3 at);
         void SetListenerGain(float gain);
 
         // Config
@@ -152,6 +153,7 @@ namespace Audio
 
         // Singleton
         static std::unique_ptr<AudioMgr> audioMgr_;
+        std::unordered_map<std::string, File> filesCache;
         ALCdevice* device_ = nullptr;
         ALCcontext* context_ = nullptr;
 
@@ -165,7 +167,7 @@ namespace Audio
 
         // Listener
         glm::vec3 pos{0.0f};
-        float orientation = 0.0f;
+        glm::vec3 orientation{0.0f};
         float gain = 1.0f;
 
         // General params

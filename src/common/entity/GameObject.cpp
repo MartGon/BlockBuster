@@ -2,11 +2,11 @@
 
 using namespace Entity;
 
-const float Entity::GameObject::ACTION_AREA = 2.5f;
 const char* Entity::GameObject::objectTypesToString[GameObject::Type::COUNT] = {
     "Respawn", "Weapon Crate", "HealthPack", 
     "Flag Spawn A", "Flag Spawn B", "Domination Point", 
-    "Player Decoy", "Grenades", "Killbox"
+    "Player Decoy", "Grenades", "Killbox",
+    "Teleport - Origin", "Teleport - Dest"
     };
 std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTemplate>> Entity::GameObject::propertiesTemplate_ = {
     {
@@ -14,14 +14,14 @@ std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTem
         { 
             // NOTE: Keys must be in alphabetical order
             {"Orientation", GameObject::Property::Type::FLOAT, 0.0f},
-            {"TeamId", GameObject::Property::Type::INT, 0},
+            {"TeamId", GameObject::Property::Type::INT, 3},
         }
     },
     {
         GameObject::Type::WEAPON_CRATE, 
         { 
             {"Respawn Time (s)", GameObject::Property::Type::INT, 180},
-            {"Weapon ID", GameObject::Property::Type::INT, 0},
+            {"Weapon ID", GameObject::Property::Type::INT, 1},
         }
     },
     {
@@ -63,6 +63,19 @@ std::unordered_map<GameObject::Type, std::vector<Entity::GameObject::PropertyTem
             {"Scale X", GameObject::Property::Type::FLOAT, 3.0f},
             {"Scale Y", GameObject::Property::Type::FLOAT, 3.0f},
             {"Scale Z", GameObject::Property::Type::FLOAT, 3.0f},
+        }
+    },
+    {
+        GameObject::Type::TELEPORT_ORIGIN, 
+        {
+            {"Channel ID", GameObject::Property::Type::INT, 0},
+        }
+    },
+    {
+        GameObject::Type::TELEPORT_DEST, 
+        {
+            {"Channel ID", GameObject::Property::Type::INT, 0},
+            {"Orientation", GameObject::Property::Type::FLOAT, 0.0f},
         }
     },
 };

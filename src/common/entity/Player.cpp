@@ -93,11 +93,21 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
     return same;
 }
 
+bool Entity::operator!=(const Entity::PlayerState& a, const Entity::PlayerState& b)
+{
+    return !(a == b);
+}
+
 bool Entity::operator==(const PlayerState::Transform& a, const PlayerState::Transform& b)
 {
     // Pos
     auto distance = glm::length(a.pos - b.pos);
     return distance == 0.0f;
+}
+
+bool Entity::operator!=(const PlayerState::Transform& a, const PlayerState::Transform& b)
+{
+    return !(a == b);
 }
 
 
@@ -160,6 +170,7 @@ glm::vec3 Entity::GetLastMoveDir(glm::vec3 posA, glm::vec3 posB)
 {
     auto moveDir = posB - posA;
 
+    moveDir.y = 0.0f;
     auto len = glm::length(moveDir);
     moveDir = len > 0.005f ? moveDir / len : glm::vec3{0.0f};
 
@@ -215,6 +226,8 @@ Entity::PlayerState Player::ExtractState() const
 
     s.transform.pos = this->transform.position;
     s.transform.rot = glm::vec2{transform.rotation};
+    s.jumpSpeed = jumpSpeed;
+    s.isGrounded = isGrounded;
     
     for(auto i = 0; i < 2; i++)
         s.weaponState[i] = weapons[i];
@@ -229,6 +242,8 @@ void Player::ApplyState(Entity::PlayerState s)
 {
     this->transform.position = s.transform.pos;
     this->transform.rotation = glm::vec3{s.transform.rot, 0.0f};
+    this->jumpSpeed = s.jumpSpeed;
+    this->isGrounded = s.isGrounded;
 
     curWep = s.curWep;
     for(auto i = 0; i < 2; i++)
