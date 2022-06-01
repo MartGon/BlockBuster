@@ -99,7 +99,6 @@ namespace Audio
 
         // Listener
         void SetListenerParams(glm::vec3 pos, glm::vec3 at = glm::vec3{0.0f}, float gain = 1.0f, glm::vec3 velocity = glm::vec3{0.0f});
-        void SetListenerTransform(glm::vec3 pos, float orientation = 0.0f);
         void SetListenerTransform(glm::vec3 pos, glm::vec3 at);
         void SetListenerGain(float gain);
 

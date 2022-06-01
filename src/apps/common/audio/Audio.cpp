@@ -434,12 +434,6 @@ void AudioMgr::SetListenerParams(glm::vec3 pos, glm::vec3 at, float gain, glm::v
     alListener3f(AL_VELOCITY, vel.x, vel.y, vel.z);
 }
 
-void AudioMgr::SetListenerTransform(glm::vec3 pos, float orientation)
-{
-    glm::vec3 rot = {glm::cos(orientation), 0.0f, -glm::sin(orientation)};
-    SetListenerParams(pos, rot, this->gain);
-}
-
 void AudioMgr::SetListenerTransform(glm::vec3 pos, glm::vec3 at)
 {
     SetListenerParams(pos, at, this->gain);

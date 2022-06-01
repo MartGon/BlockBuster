@@ -1087,7 +1087,7 @@ void InGame::InitAudio()
 
 void InGame::UpdateAudio()
 {
-    audioMgr->SetListenerTransform(camera_.GetPos(), camera_.GetPos() + camera_.GetFront());
+    audioMgr->SetListenerTransform(camera_.GetPos(), camera_.GetFront());
     audioMgr->Update();
 }
 
