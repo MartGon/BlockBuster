@@ -167,7 +167,7 @@ void InGame::Start()
     GetLogger()->LogInfo("Connecting to server at " + serverAddress.GetHostIP() + ":" + std::to_string(serverAddress.GetPort()));
     // Connect to server
     auto attempts = 0;
-    while(!connected && attempts < 10)
+    while(!connected && attempts < 30)
     {
         Util::Time::Sleep(Util::Time::Millis{500});
         client_->logger->LogInfo("Connecting to server...");
@@ -177,7 +177,8 @@ void InGame::Start()
 
     if(!connected)
     {
-        GetLogger()->LogError("Could not connect to server. Quitting");
+        GetLogger()->LogError("Could not connect to server: " + serverDomain + ":" + std::to_string(serverPort));
+        GetLogger()->LogError("Quitting");
     }
 
     exit = !connected;
