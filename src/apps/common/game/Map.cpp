@@ -3,6 +3,7 @@
 #include <ServiceLocator.h>
 
 #include <iostream>
+#include <algorithm>
 
 using namespace App::Client;
 

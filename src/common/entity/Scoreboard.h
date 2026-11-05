@@ -3,6 +3,7 @@
 #include <entity/Player.h>
 #include <util/Buffer.h>
 
+#include <optional>
 #include <vector>
 
 namespace BlockBuster

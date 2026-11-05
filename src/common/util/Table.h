@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <vector>
 #include <optional>
+#include <stdint.h>
+#include <limits>
 
 namespace Util
 {
