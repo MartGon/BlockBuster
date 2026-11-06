@@ -19,7 +19,7 @@ void Match::Update(World world, Util::Time::Seconds deltaTime)
     case WAITING_FOR_PLAYERS:
         {
             timer.Update(deltaTime);
-            if(timer.IsDone() || world.players.size() == startingPlayers)
+            if(timer.IsDone() || world.players.size() >= startingPlayers)
             {
                 timer.SetDuration(startingTime);
                 timer.Restart();

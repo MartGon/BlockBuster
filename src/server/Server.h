@@ -53,6 +53,9 @@ namespace BlockBuster
         Util::Time::Seconds commandTime;
     };
 
+    // Player ids are used as Free for All team ids, which index the client's colors (InGame::ffaColors)
+    const uint8_t MAX_PLAYER_IDS = 16;
+
     const uint32_t MIN_INPUT_BUFFER_SIZE = 2;
     const uint32_t MAX_INPUT_BUFFER_SIZE = 5;
     
@@ -119,6 +122,7 @@ namespace BlockBuster
         void InitNetworking();
         void InitMatch();
         void InitBots();
+        uint8_t GetBotCount() const;
         void InitMap();
         void InitGameObjects();
 

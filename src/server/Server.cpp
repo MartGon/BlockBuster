@@ -102,6 +102,17 @@ void Server::InitMatch()
     InitMap();
     InitGameObjects();
     auto mode = GameMode::stringTypes.at(params.mode);
+
+    // The match waits until startingPlayers have joined. Requested bots count towards it,
+    // so the ones that won't be added are discounted, or the match would never fill up
+    auto droppedBots = params.bots - GetBotCount();
+    if(droppedBots > 0)
+    {
+        auto startingPlayers = std::max(1, params.startingPlayers - droppedBots);
+        logger.LogWarning("Starting players reduced from " + std::to_string(params.startingPlayers) + " to " + std::to_string(startingPlayers) + " because of dropped bots");
+        params.startingPlayers = startingPlayers;
+    }
+
     match.Start(GetWorld(), mode, params.startingPlayers);
     InitBots();
     #ifndef _DEBUG
@@ -117,9 +128,20 @@ void Server::InitMatch()
     #endif
 }
 
+uint8_t Server::GetBotCount() const
+{
+    // Player ids index the client's Free for All colors, so they must stay below MAX_PLAYER_IDS
+    auto maxBots = std::max(0, (int)MAX_PLAYER_IDS - params.maxPlayers);
+    return std::min((int)params.bots, maxBots);
+}
+
 void Server::InitBots()
 {
-    for(auto i = 0; i < params.bots; i++)
+    auto bots = GetBotCount();
+    if(bots < params.bots)
+        logger.LogError("Too many bots. Max players + bots can't exceed " + std::to_string(MAX_PLAYER_IDS) + ". Adding only " + std::to_string(bots));
+
+    for(auto i = 0; i < bots; i++)
         AddBot("Bot " + std::to_string(i + 1));
 }
 
@@ -1118,8 +1140,9 @@ bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player)
 
 void Server::AddBot(std::string name)
 {
-    // Ids are taken from the top of the range, so they don't collide with ENet peer ids
-    ENet::PeerId id = 254 - (ENet::PeerId)std::count_if(clients.begin(), clients.end(), [](auto& pair){ return pair.second.isAI; });
+    // ENet peer ids are always below maxPlayers, so bots take the ids right after
+    auto botCount = std::count_if(clients.begin(), clients.end(), [](auto& pair){ return pair.second.isAI; });
+    ENet::PeerId id = params.maxPlayers + botCount;
 
     auto& client = clients[id];
     client.id = id;
@@ -1129,7 +1152,7 @@ void Server::AddBot(std::string name)
     client.player.teamId = match.GetGameMode()->PlayerJoin(id, name);
 
     SpawnPlayer(id);
-    logger.LogInfo("Bot added: " + name);
+    logger.LogInfo("Bot added: " + name + " (id " + std::to_string(id) + ")");
 }
 
 unsigned int Server::GetHumanCount() const
