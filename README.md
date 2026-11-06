@@ -46,6 +46,10 @@ And the following tools:
 
 `cmake ..`
 
+If there's no audio, OpenAL was probably built without a working backend. Either install the PipeWire, PulseAudio or ALSA development packages and re-run CMake, or use SDL2 for audio instead:
+
+`cmake -DUSE_SDL2_AUDIO=ON ..`
+
 4. Run Make
 
 `make -j 4`

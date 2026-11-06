@@ -30,6 +30,7 @@ endif()
 
 set(BUILD_APPS 1 CACHE BOOL "Whether to build apps")
 set(BUILD_TESTS 1 CACHE BOOL "Whether to build tests")
+set(USE_SDL2_AUDIO 0 CACHE BOOL "Whether to use SDL2 as the audio backend instead of OSS. Useful when no PipeWire/PulseAudio/ALSA headers are available")
 
 find_package(Threads REQUIRED)
 
