@@ -3,6 +3,7 @@ SET(SOURCES
     Main.cpp
     Server.cpp
     ServerEvent.cpp
+    Bot.cpp
 )
 
 add_executable(Server ${SOURCES})

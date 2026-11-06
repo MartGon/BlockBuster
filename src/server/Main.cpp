@@ -15,6 +15,7 @@ int main(int argc, char** argv)
     ap.add_argument("-mp", "--max-players").default_value<uint8_t>(8).scan<'u', uint8_t>();
     ap.add_argument("-sp", "--starting-players").required().scan<'u', uint8_t>();
     ap.add_argument("-gm", "--gamemode").required();
+    ap.add_argument("-b", "--bots").default_value<uint8_t>(0).scan<'u', uint8_t>();
     
     ap.add_argument("-mma", "--match-making-address").default_value<std::string>("127.0.0.1");
     ap.add_argument("-mmp", "--match-making-port").default_value<uint16_t>(3030).scan<'u', uint16_t>();
@@ -39,6 +40,7 @@ int main(int argc, char** argv)
     auto maxPlayers = ap.get<uint8_t>("--max-players");
     auto startingPlayers = ap.get<uint8_t>("--starting-players");
     auto gameMode = ap.get<std::string>("--gamemode");
+    auto bots = ap.get<uint8_t>("--bots");
 
     auto verbosity = static_cast<Log::Verbosity>(ap.get<uint8_t>("--verbosity"));
     auto tickRate = Util::Time::Seconds{ap.get<float>("--tickrate")};
@@ -60,6 +62,7 @@ int main(int argc, char** argv)
     std::cout << "Max Players: " << std::to_string(maxPlayers) << '\n';
     std::cout << "Starting Players: " << std::to_string(startingPlayers) << '\n';
     std::cout << "Game mode: " << gameMode << '\n';
+    std::cout << "Bots: " << std::to_string(bots) << '\n';
 
     std::cout << "Match Making address: " << mmAddress << '\n';
     std::cout << "Match Making port: " << mmPort << '\n';
@@ -70,7 +73,7 @@ int main(int argc, char** argv)
 
     using namespace BlockBuster;
 
-    Server::Params params{address, port, maxPlayers, startingPlayers, map, gameMode, verbosity};
+    Server::Params params{address, port, maxPlayers, startingPlayers, map, gameMode, verbosity, bots};
     Server::MMServer mmServer{mmAddress, mmPort, mmGameId, mmKey};
 
     Server server{params, mmServer, tickRate};

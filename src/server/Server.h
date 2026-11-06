@@ -31,6 +31,7 @@
 #include <map>
 
 #include <ServerEvent.h>
+#include <Bot.h>
 
 #include <glm/gtx/string_cast.hpp>
 
@@ -74,9 +75,9 @@ namespace BlockBuster
         uint32_t lastAck = 0;
         BufferingState state = BufferingState::REFILLING;
 
-        // DEBUG: AI
+        // AI
         bool isAI = false;
-        glm::vec3 targetPos;
+        Bot bot;
     };
 
     class Server
@@ -94,6 +95,7 @@ namespace BlockBuster
             std::string mode;
 
             Log::Verbosity verbosity;
+            uint8_t bots = 0;
         };
 
         struct MMServer
@@ -116,7 +118,7 @@ namespace BlockBuster
         void InitLogger();
         void InitNetworking();
         void InitMatch();
-        void InitAI();
+        void InitBots();
         void InitMap();
         void InitGameObjects();
 
@@ -161,6 +163,8 @@ namespace BlockBuster
         bool IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player);
 
         // Players
+        void AddBot(std::string name);
+        unsigned int GetHumanCount() const;
         void SpawnPlayer(ENet::PeerId clientId);
         void OnPlayerTakeDmg(ENet::PeerId author, ENet::PeerId victim);
         std::vector<Entity::Player> GetPlayers() const;

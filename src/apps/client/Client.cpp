@@ -55,7 +55,20 @@ void Client::Start()
     state = menu.get();
     state->Start();
     
-    //LaunchGame("127.0.0.1", 8080, "Alpha3", "NULL PLAYER UUID", "Defu");
+    // DEBUG: Skip match-making and connect directly to a game server. BB_DIRECT_CONNECT=<address>:<port>:<map>
+    if(auto directConnect = std::getenv("BB_DIRECT_CONNECT"))
+    {
+        std::string dc = directConnect;
+        auto first = dc.find(':');
+        auto second = dc.find(':', first + 1);
+        if(first != std::string::npos && second != std::string::npos)
+        {
+            auto port = std::atoi(dc.substr(first + 1, second - first - 1).c_str());
+            LaunchGame(dc.substr(0, first), port, dc.substr(second + 1), "NULL PLAYER UUID", "Player");
+        }
+        else
+            logger->LogError("Invalid BB_DIRECT_CONNECT value: " + dc);
+    }
 }
 
 void Client::Shutdown()

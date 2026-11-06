@@ -5,6 +5,8 @@
 
 #include <util/Container.h>
 
+#include <algorithm>
+
 using namespace BlockBuster;
 using namespace Networking::Packets::Client;
 
@@ -97,16 +99,16 @@ void Server::InitNetworking()
 
 void Server::InitMatch()
 {
-    InitAI();
     InitMap();
     InitGameObjects();
     auto mode = GameMode::stringTypes.at(params.mode);
     match.Start(GetWorld(), mode, params.startingPlayers);
+    InitBots();
     #ifndef _DEBUG
         match.SetOnEnterState([this](BlockBuster::Match::StateType state)
         {
             auto isEarly = state == BlockBuster::Match::STARTING || state == BlockBuster::Match::ON_GOING;
-            if(isEarly && this->clients.empty())
+            if(isEarly && this->GetHumanCount() == 0)
             {
                 this->quit = true;
                 logger.LogInfo("No players left on game start. Leaving");
@@ -115,16 +117,10 @@ void Server::InitMatch()
     #endif
 }
 
-void Server::InitAI()
+void Server::InitBots()
 {
-    // Create AI players
-    Client ai;
-    ai.isAI = true;
-    Entity::Player player;
-    ai.player.id = 200;
-    //ai.player.transform = Math::Transform{GetRandomPos(), glm::vec3{0.0f}, glm::vec3{2.f, 4.0f, 2.f}};
-    //ai.targetPos = GetRandomPos();
-    //clients[200] = ai;
+    for(auto i = 0; i < params.bots; i++)
+        AddBot("Bot " + std::to_string(i + 1));
 }
 
 void Server::InitMap()
@@ -300,7 +296,7 @@ void Server::OnClientLeave(ENet::PeerId peerId)
     clients.erase(peerId);
 
     #ifndef _DEBUG
-        if(clients.size() == 0 && match.GetState() != Match::WAITING_FOR_PLAYERS)
+        if(GetHumanCount() == 0 && match.GetState() != Match::WAITING_FOR_PLAYERS)
         {
             quit = true;
             logger.LogInfo("No players left. Leaving");
@@ -415,25 +411,13 @@ void Server::HandleClientsInput()
                 }
             }
         }
-        /*
-        else if(client.isAi)
+        else if(!client.player.IsDead() && tickCount >= 2)
         {
-            auto origin = client.player.transform.position;
-            auto dest = client.targetPos;
-            auto move = dest - origin;
-            auto dist = glm::length(move);
-
-            auto stepDist = PLAYER_SPEED * (float)TICK_RATE.count();
-            if(dist > stepDist)
-            {
-                auto dir = glm::normalize(move);
-                //InputReq pm{0, dir};
-                //HandleMoveCommand(peerId, pm);
-            }
-            else
-                client.targetPos = GetRandomPos();
+            // Aim at the state between the last two snapshots, so shots can be resolved against history
+            auto renderTime = (tickCount - 1.5f) * TICK_RATE;
+            auto cmd = client.bot.Update(client.player, GetWorld(), renderTime, TICK_RATE);
+            HandleClientInput(peerId, cmd);
         }
-        */
     }
 }
 
@@ -779,6 +763,10 @@ void Server::SendPlayerGameObjectInteraction(ENet::PeerId peerId, glm::ivec3 pos
 
 void Server::SendPacket(ENet::PeerId peerId, Networking::Packet& packet)
 {
+    // Bots have no peer
+    if(Util::Map::Contains(clients, peerId) && clients[peerId].isAI)
+        return;
+
     packet.Write();
 
     auto packetBuf = packet.GetBuffer();
@@ -1128,9 +1116,31 @@ bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player)
 
 // Players
 
+void Server::AddBot(std::string name)
+{
+    // Ids are taken from the top of the range, so they don't collide with ENet peer ids
+    ENet::PeerId id = 254 - (ENet::PeerId)std::count_if(clients.begin(), clients.end(), [](auto& pair){ return pair.second.isAI; });
+
+    auto& client = clients[id];
+    client.id = id;
+    client.isAI = true;
+    client.playerName = name;
+    client.player.id = id;
+    client.player.teamId = match.GetGameMode()->PlayerJoin(id, name);
+
+    SpawnPlayer(id);
+    logger.LogInfo("Bot added: " + name);
+}
+
+unsigned int Server::GetHumanCount() const
+{
+    return std::count_if(clients.begin(), clients.end(), [](auto& pair){ return !pair.second.isAI; });
+}
+
 void Server::SpawnPlayer(ENet::PeerId clientId)
 {
     auto& player = clients[clientId].player;
+    clients[clientId].bot.Reset();
 
     // Set pos
     auto sIndex = FindSpawnPoint(player);

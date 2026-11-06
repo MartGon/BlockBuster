@@ -6,3 +6,6 @@ builds/
 resources/
 *.ini
 *.bbm
+logs/*
+maps/*
+ignore/*
