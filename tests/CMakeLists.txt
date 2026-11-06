@@ -5,6 +5,7 @@ SET(SOURCES
     Leak.cpp
     Map.cpp
     Collisions.cpp
+    MapGen.cpp
 )
 
 add_executable(BlockBusterTests ${SOURCES})

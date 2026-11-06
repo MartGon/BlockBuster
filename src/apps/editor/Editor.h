@@ -22,6 +22,7 @@
 #include <entity/Block.h>
 #include <entity/Map.h>
 #include <entity/GameObject.h>
+#include <entity/MapGen.h>
 
 #include <game/ChunkMeshMgr.h>
 #include <game/CameraController.h>
@@ -96,6 +97,7 @@ namespace BlockBuster::Editor
 
         // World
         void NewProject();
+        Util::Result<bool> GenerateProject(Game::MapGen::Params params);
         void SaveProject();
         Util::Result<bool> OpenProject();
         void TakePicture();

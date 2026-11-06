@@ -260,6 +260,45 @@ void Editor::NewProject()
     ClearActionHistory();
 }
 
+Util::Result<bool> Editor::GenerateProject(Game::MapGen::Params params)
+{
+    auto res = Game::MapGen::Generate(params);
+    if(!res)
+        return Util::CreateError<bool>("Could not generate a valid map. Try another seed or size");
+
+    NewProject();
+    project.map.RemoveBlock(glm::ivec3{0});
+
+    // Palette. Generated blocks' display ids are indices into the generator's palette
+    std::vector<unsigned int> colorIds;
+    for(auto color : res->colors)
+    {
+        auto member = project.map.cPalette.AddColor(color);
+        if(!member.IsSuccess())
+            return Util::CreateError<bool>("Color palette is full");
+        colorIds.push_back(member.data.id);
+    }
+
+    for(auto [pos, block] : res->blocks)
+    {
+        block.display.id = colorIds[block.display.id];
+        project.map.SetBlock(pos, block);
+    }
+
+    for(auto& go : res->objects)
+        project.map.GetMap()->AddGameObject(go);
+
+    // Look at the whole map from above one of its sides
+    auto size = glm::vec3{res->size} * project.map.GetBlockScale();
+    camera.SetPos(glm::vec3{0.0f, size.y + std::max(size.x, size.z) * 0.6f, size.z * 0.75f});
+    camera.SetTarget(glm::vec3{0.0f});
+
+    gui.fileName = "Generated" + std::to_string(params.seed);
+    SetUnsaved(true);
+
+    return Util::CreateSuccess(true);
+}
+
 void Editor::SaveProject()
 {
     std::filesystem::path mapFolder = mapsFolder / gui.fileName;

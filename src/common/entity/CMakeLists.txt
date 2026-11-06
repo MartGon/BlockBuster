@@ -10,6 +10,7 @@ SET(SOURCES
     Weapon.cpp
     GameObject.cpp
     Match.cpp
+    MapGen.cpp
     Scoreboard.cpp
 )
 

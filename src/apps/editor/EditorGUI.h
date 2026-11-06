@@ -5,6 +5,8 @@
 #include <VideoSettingsPopUp.h>
 #include <gui/PopUpMgr.h>
 
+#include <entity/MapGen.h>
+
 namespace BlockBuster::Editor
 {
     class Editor;
@@ -25,6 +27,7 @@ namespace BlockBuster::Editor
             VIDEO_SETTINGS,
             GO_TO_BLOCK,
             ARE_YOU_SURE,
+            GENERATE_MAP,
             MAX
         };
 
@@ -56,6 +59,7 @@ namespace BlockBuster::Editor
         // Menu - File
         void MenuBar();
         void MenuNewMap();
+        void MenuGenerateMap();
         void MenuOpenMap();
         void MenuSave();
         void MenuSaveAs();
@@ -102,6 +106,8 @@ namespace BlockBuster::Editor
         char textureFilename[32] = "texture.png";
         char textureFolderPath[128] = "";
         glm::ivec3 goToPos{0};
+        Game::MapGen::Params genParams;
+        std::string genErrorText;
         Game::Block placeBlock{Game::BlockType::BLOCK, Game::BlockRot{}, Game::Display{Game::DisplayType::COLOR, 0}};;
 
         // Find tool

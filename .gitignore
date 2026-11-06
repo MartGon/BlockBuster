@@ -1,6 +1,6 @@
 build/
 builds/
-*.sh
+./*.sh
 .vscode/
 *.log
 resources/
@@ -8,4 +8,4 @@ resources/
 *.bbm
 logs/*
 maps/*
-ignore/*
+ignore/

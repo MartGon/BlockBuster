@@ -9,6 +9,7 @@
 #include <array>
 #include <cstring>
 #include <regex>
+#include <random>
 
 // #### GUI - PopUps #### \\
 
@@ -153,6 +154,53 @@ void EditorGUI::InitPopUps()
     basicPopUp.SetCloseable(true);
 
     puMgr.Set(ARE_YOU_SURE, std::make_unique<GUI::BasicPopUp>(basicPopUp));
+
+    GUI::GenericPopUp generateMap;
+    generateMap.SetTitle("Generate Map");
+    generateMap.SetOnOpen([this](){
+        genErrorText.clear();
+    });
+    generateMap.SetOnDraw([this](){
+        using namespace Game::MapGen;
+
+        ImGui::InputScalar("Seed", ImGuiDataType_U32, &genParams.seed);
+        ImGui::SameLine();
+        if(ImGui::Button("Random"))
+            genParams.seed = std::random_device{}();
+
+        ImGui::InputInt2("Size (cells)", &genParams.cells.x);
+        genParams.cells = glm::clamp(genParams.cells, MIN_CELLS, MAX_CELLS);
+
+        // Sizes are rounded up to even numbers
+        if(ImGui::SliderInt("Cell size (blocks)", &genParams.cellSize, MIN_CELL_SIZE, MAX_CELL_SIZE))
+            genParams.cellSize += genParams.cellSize % 2;
+        ImGui::SliderInt("Floor levels", &genParams.maxLevels, 1, 4);
+
+        const char* symmetries[] = {"Mirror", "Rotate 180"};
+        int symmetry = static_cast<int>(genParams.symmetry);
+        if(ImGui::Combo("Symmetry", &symmetry, symmetries, IM_ARRAYSIZE(symmetries)))
+            genParams.symmetry = static_cast<Symmetry>(symmetry);
+        ImGui::SliderFloat("Cover", &genParams.coverDensity, 0.0f, 1.0f);
+
+        if(!genErrorText.empty())
+            ImGui::TextColored(ImVec4{1.0f, 0.0f, 0.0f, 1.0f}, "%s", genErrorText.c_str());
+
+        if(ImGui::Button("Generate"))
+        {
+            auto res = editor->GenerateProject(genParams);
+            if(res.IsSuccess())
+                puMgr.Close();
+            else
+                genErrorText = res.err.info;
+        }
+
+        ImGui::SameLine();
+        if(ImGui::Button("Cancel"))
+        {
+            puMgr.Close();
+        }
+    });
+    puMgr.Set(GENERATE_MAP, std::make_unique<GUI::GenericPopUp>(generateMap));
 }
 
 void EditorGUI::OpenPopUp(PopUpState state)
@@ -204,6 +252,11 @@ void EditorGUI::MenuBar()
             if(ImGui::MenuItem("New Map", "Ctrl + N"))
             {
                 MenuNewMap();
+            }
+
+            if(ImGui::MenuItem("Generate Map..."))
+            {
+                MenuGenerateMap();
             }
 
             ImGui::Separator();
@@ -287,6 +340,17 @@ void EditorGUI::MenuNewMap()
     }
     else
         editor->NewProject();
+}
+
+void EditorGUI::MenuGenerateMap()
+{
+    if(editor->unsaved)
+    {
+        auto onExit = [this](){OpenPopUp(PopUpState::GENERATE_MAP);};
+        OpenWarningPopUp(onExit);
+    }
+    else
+        OpenPopUp(PopUpState::GENERATE_MAP);
 }
 
 void EditorGUI::MenuOpenMap()
