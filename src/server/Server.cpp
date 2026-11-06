@@ -100,7 +100,6 @@ void Server::InitNetworking()
 void Server::InitMatch()
 {
     InitMap();
-    InitGameObjects();
     auto mode = GameMode::stringTypes.at(params.mode);
 
     // The match waits until startingPlayers have joined. Requested bots count towards it,
@@ -114,6 +113,7 @@ void Server::InitMatch()
     }
 
     match.Start(GetWorld(), mode, params.startingPlayers);
+    InitGameObjects(); // Depends on the game mode
     InitBots();
     #ifndef _DEBUG
         match.SetOnEnterState([this](BlockBuster::Match::StateType state)
@@ -192,6 +192,9 @@ void Server::InitGameObjects()
     for(auto goIndex : goIndices)
     {
         auto go = map.GetGameObject(goIndex);
+        if(!match.GetGameMode()->IsGameObjectEnabled(go->type))
+            continue;
+
         auto respawnTime = std::get<int>(go->properties["Respawn Time (s)"].value);
 
         GOState goState;
@@ -244,6 +247,14 @@ void Server::OnClientLogin(ENet::PeerId peerId, std::string playerUuid, std::str
     welcome->startingPlayers = params.startingPlayers;
     logger.LogDebug("Game mode sent is " + std::to_string(welcome->mode));
     batch.PushPacket(std::move(welcome));
+
+    // Send weapon progression
+    if(auto gunGame = dynamic_cast<GunGame*>(match.GetGameMode()))
+    {
+        auto wp = std::make_unique<Networking::Packets::Server::WeaponProgression>();
+        wp->progression = gunGame->GetProgression();
+        batch.PushPacket(std::move(wp));
+    }
 
     // Send match state packet
     auto ms = std::make_unique<Networking::Packets::Server::MatchState>();
@@ -1026,6 +1037,28 @@ void Server::OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId)
     clients[victimId].respawnTime = gameMode->GetRespawnTime();
     BroadcastPlayerDied(authorId, victimId, clients[victimId].respawnTime);
     gameMode->PlayerDeath(authorId, victimId, clients[authorId].player.teamId);
+
+    // Gun Game: Killer moves to its new level's weapon. Dead players get it on respawn
+    if(auto gunGame = dynamic_cast<GunGame*>(gameMode))
+    {
+        auto& killer = clients[authorId].player;
+        auto wepId = gunGame->GetPlayerWeapon(killer.id);
+        auto score = gunGame->GetScoreboard().GetPlayerScore(killer.id);
+        auto level = score ? score->score : 0;
+        logger.LogInfo("[Gun Game] Player " + std::to_string(killer.id) + " is now level " + std::to_string(level) + 
+            " (weapon " + std::to_string(wepId) + ")");
+        if(!killer.IsDead() && killer.GetCurrentWeapon().weaponTypeId != wepId)
+        {
+            auto weapon = Entity::WeaponMgr::weaponTypes.at(wepId).CreateInstance();
+            Entity::StartPickingWeapon(weapon);
+            killer.GetCurrentWeapon() = weapon;
+
+            Networking::Packets::Server::PlayerWeaponChange pwc;
+            pwc.slot = killer.curWep;
+            pwc.weapon = weapon;
+            SendPacket(authorId, pwc);
+        }
+    }
 }
 
 void Server::SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime)
@@ -1116,7 +1149,7 @@ bool Server::IsSpawnValid(glm::ivec3 spawnPoint, Entity::Player player)
     auto spawn = map.GetRespawn(spawnPoint);
     auto spawnTeamId = player.teamId + 1;
     bool isValidTeam = spawn->teamId & spawnTeamId;
-    if(match.GetGameMode()->GetType() != GameMode::FREE_FOR_ALL && !isValidTeam)
+    if(!match.GetGameMode()->IsFFA() && !isValidTeam)
         return false;
 
     auto spawnPos = Game::Map::ToRealPos(spawnPoint, map.GetBlockScale());
@@ -1173,11 +1206,15 @@ void Server::SpawnPlayer(ENet::PeerId clientId)
     player.SetTransform(playerTransform);
 
     // Set weapon and health
+    auto gameMode = match.GetGameMode();
+    auto wepId = Entity::WeaponTypeID::ASSAULT_RIFLE;
+    if(auto gunGame = dynamic_cast<GunGame*>(gameMode))
+        wepId = gunGame->GetPlayerWeapon(player.id);
+
     player.ResetWeapons();
-    player.GetCurrentWeapon() = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::ASSAULT_RIFLE).CreateInstance();
-    //player.weapons[1] = Entity::WeaponMgr::weaponTypes.at(Entity::WeaponTypeID::SNIPER).CreateInstance();
+    player.GetCurrentWeapon() = Entity::WeaponMgr::weaponTypes.at(wepId).CreateInstance();
     player.ResetHealth();
-    player.grenades = 2;
+    player.grenades = gameMode->GetStartingGrenades();
 }
 
 void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)

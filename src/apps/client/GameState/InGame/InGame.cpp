@@ -318,7 +318,7 @@ void InGame::OnEnterMatchState(Match::StateType type)
 
             auto scoreBoard = mode->GetScoreboard();
             auto winner = scoreBoard.GetWinner().value();
-            if(mode->GetType() != GameMode::Type::FREE_FOR_ALL)
+            if(!mode->IsFFA())
             {
                 auto sound = winner.teamId == BLUE_TEAM_ID ? Game::Sound::ANNOUNCER_SOUND_BLUE_TEAM_WINS : Game::Sound::ANNOUNCER_SOUND_RED_TEAM_WINS;
                 PlayAnnouncerAudio(sound);
@@ -720,7 +720,7 @@ void InGame::Render()
 void InGame::DrawScene()
 {
     // GameMode
-    bool isFFA = match.GetGameMode()->GetType() == GameMode::FREE_FOR_ALL;
+    bool isFFA = match.GetGameMode()->IsFFA();
 
     // Bind textures
     map_.tPalette.GetTextureArray()->Bind(GL_TEXTURE0);

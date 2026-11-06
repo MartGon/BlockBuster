@@ -7,6 +7,7 @@ SET(SOURCES
     Collisions.cpp
     MapGen.cpp
     Raycast.cpp
+    GameMode.cpp
 )
 
 add_executable(BlockBusterTests ${SOURCES})

@@ -146,6 +146,18 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             prevPlayerTable[playerId] = player;
 
             this->match.Start(GetWorld(), welcome->mode, welcome->startingPlayers);
+
+            // Remove gameObjects this mode doesn't use
+            auto gameMode = match.GetGameMode();
+            auto map = map_.GetMap();
+            for(auto it = gameObjectStates.begin(); it != gameObjectStates.end();)
+            {
+                auto go = map->GetGameObject(it->first);
+                if(!gameMode->IsGameObjectEnabled(go->type))
+                    it = gameObjectStates.erase(it);
+                else
+                    ++it;
+            }
         }
         break;
 
@@ -308,7 +320,7 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             if(ptd->killerId == playerId)
                 inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::KILL);
 
-            match.GetGameMode()->PlayerDeath(ptd->killerId, ptd->killerId, killer.teamId);
+            match.GetGameMode()->PlayerDeath(ptd->killerId, ptd->victimId, killer.teamId);
             GetLogger()->LogDebug("Player died");
 
             if(killer.teamId == player.teamId && ptd->killerId != playerId)
@@ -335,8 +347,12 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
 
                 // Set server weapon
                 for(auto i = 0; i < Entity::Player::MAX_WEAPONS; i++)
+                {
                     if(respawn->weapons[i] != Entity::WeaponTypeID::NONE)
                         player.weapons[i] = Entity::WeaponMgr::weaponTypes.at(respawn->weapons[i]).CreateInstance();
+                    else
+                        player.weapons[i] = Entity::Weapon{Entity::WeaponTypeID::NONE};
+                }
 
                 // Set spawn camera rotation
                 auto camRot = camera_.GetRotationDeg();
@@ -456,6 +472,35 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                     }
                 }
             }
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_WEAPON_PROGRESSION:
+        {
+            auto wp = packet.To<WeaponProgression>();
+            if(auto gunGame = dynamic_cast<GunGame*>(match.GetGameMode()))
+                gunGame->SetProgression(wp->progression);
+        }
+        break;
+
+        case Networking::OpcodeServer::OPCODE_SERVER_PLAYER_WEAPON_CHANGE:
+        {
+            auto pwc = packet.To<PlayerWeaponChange>();
+            if(pwc->slot >= Entity::Player::MAX_WEAPONS)
+                break;
+
+            auto& player = GetLocalPlayer();
+            player.weapons[pwc->slot] = pwc->weapon;
+
+            // Future predictions start from the new weapon
+            if(auto pred = predictionHistory_.Back())
+            {
+                pred->origin.weaponState[pwc->slot] = pwc->weapon;
+                pred->dest.weaponState[pwc->slot] = pwc->weapon;
+                predictionHistory_.Set(-1, pred.value());
+            }
+
+            fpsAvatar.PlayReloadAnimation(pwc->weapon.cooldown);
         }
         break;
 

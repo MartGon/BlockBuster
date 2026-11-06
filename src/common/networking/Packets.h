@@ -38,6 +38,8 @@ namespace Networking
         OPCODE_SERVER_GAME_EVENT,
         OPCODE_SERVER_GAMEOBJECT_STATE,
         OPCODE_SERVER_PLAYER_GAMEOBJECT_INTERACT,
+        OPCODE_SERVER_WEAPON_PROGRESSION,
+        OPCODE_SERVER_PLAYER_WEAPON_CHANGE,
     };
 
     enum OpcodeClient : uint16_t
@@ -354,6 +356,37 @@ namespace Networking
                 void OnWrite() override;
 
                 glm::ivec3 goPos;
+            };
+
+            // Gun Game: The match's weapon progression
+            class WeaponProgression final : public Packet
+            {
+            public:
+                WeaponProgression() : Packet{OpcodeServer::OPCODE_SERVER_WEAPON_PROGRESSION, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader& reader) override;
+                void OnWrite() override;
+
+                std::vector<Entity::WeaponTypeID> progression;
+            };
+
+            // The server replaced the local player's weapon (Gun Game level change)
+            class PlayerWeaponChange final : public Packet
+            {
+            public:
+                PlayerWeaponChange() : Packet{OpcodeServer::OPCODE_SERVER_PLAYER_WEAPON_CHANGE, ENET_PACKET_FLAG_RELIABLE}
+                {
+                    
+                }
+
+                void OnRead(Util::Buffer::Reader& reader) override;
+                void OnWrite() override;
+
+                uint8_t slot;
+                Entity::Weapon weapon;
             };
         }
 

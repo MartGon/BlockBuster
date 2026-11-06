@@ -5,7 +5,7 @@
 # Usage: scripts/test_game.sh [-m map] [-b bots] [-g gamemode] [-p port] [-d build_dir]
 #   -m  Map name, a folder inside ./maps (default: Alpha3)
 #   -b  Number of bots (default: 1)
-#   -g  Game mode: "Free for All", "Team DeathMatch", "Domination", "Capture the Flag" (default: Free for All)
+#   -g  Game mode: "Free for All", "Team DeathMatch", "Domination", "Capture the Flag", "Gun Game" (default: Free for All)
 #   -p  Server port (default: 8080)
 #   -d  Build directory (default: ./build)
 
@@ -36,6 +36,13 @@ while getopts "m:b:g:p:d:h" opt; do
         *) usage 1 ;;
     esac
 done
+shift $((OPTIND - 1))
+
+# Catches typos like "-gm X", which getopts reads as "-g m" plus a stray "X"
+if [[ $# -gt 0 ]]; then
+    echo "Unexpected arguments: $*" >&2
+    usage 1
+fi
 
 SERVER_BIN="$BUILD_DIR/src/server/Server"
 CLIENT_BIN="$BUILD_DIR/src/apps/client/Client"

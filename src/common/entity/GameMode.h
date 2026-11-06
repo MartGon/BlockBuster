@@ -37,6 +37,7 @@ namespace BlockBuster
             TEAM_DEATHMATCH,
             DOMINATION,
             CAPTURE_THE_FLAG,
+            GUN_GAME,
 
             COUNT
         };
@@ -54,6 +55,16 @@ namespace BlockBuster
         {
             return type;
         }
+
+        // Every player is on its own team
+        inline bool IsFFA() const
+        {
+            return type == Type::FREE_FOR_ALL || type == Type::GUN_GAME;
+        }
+
+        // Interactable game objects can be disabled by some modes. Disabled ones are neither spawned nor drawn
+        virtual bool IsGameObjectEnabled(Entity::GameObject::Type goType) { return true; }
+        virtual uint8_t GetStartingGrenades() { return 2; }
 
         inline Scoreboard& GetScoreboard()
         {
@@ -113,9 +124,49 @@ namespace BlockBuster
         }
 
     protected:
+        FreeForAll(Type type, int32_t maxScore, Util::Time::Seconds duration) : GameMode(type, maxScore, duration)
+        {
+
+        }
+
+    protected:
         Entity::ID OnPlayerJoin(Entity::ID id, std::string name) override;  
         void OnPlayerLeave(Entity::ID id) override;
         void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
+    };
+
+    // Free for all where each kill moves the killer to the next weapon of the progression.
+    // A player's level is its score: with score N, it holds progression[N]
+    class GunGame : public FreeForAll
+    {
+    public:
+        static constexpr int32_t MAX_LEVEL = 30;
+
+        GunGame() : FreeForAll(Type::GUN_GAME, MAX_LEVEL, Util::Time::Seconds{60.0f * 10.0f}), progression{GenerateProgression()}
+        {
+
+        }
+
+        bool IsGameObjectEnabled(Entity::GameObject::Type goType) override;
+        uint8_t GetStartingGrenades() override { return 0; }
+
+        Entity::WeaponTypeID GetPlayerWeapon(Entity::ID playerId);
+        Entity::WeaponTypeID GetLevelWeapon(int32_t level);
+
+        inline const std::vector<Entity::WeaponTypeID>& GetProgression() const
+        {
+            return progression;
+        }
+        void SetProgression(std::vector<Entity::WeaponTypeID> progression);
+
+        // Random weapons, never the same one twice in a row
+        static std::vector<Entity::WeaponTypeID> GenerateProgression(int32_t length = MAX_LEVEL);
+
+    protected:
+        void OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId) override;
+
+    private:
+        std::vector<Entity::WeaponTypeID> progression;
     };
 
     class TeamGameMode : public GameMode

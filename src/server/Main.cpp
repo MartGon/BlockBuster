@@ -40,6 +40,14 @@ int main(int argc, char** argv)
     auto maxPlayers = ap.get<uint8_t>("--max-players");
     auto startingPlayers = ap.get<uint8_t>("--starting-players");
     auto gameMode = ap.get<std::string>("--gamemode");
+    if(BlockBuster::GameMode::stringTypes.find(gameMode) == BlockBuster::GameMode::stringTypes.end())
+    {
+        std::cerr << "Unknown game mode \"" << gameMode << "\". Valid modes are:";
+        for(auto i = 1; i < BlockBuster::GameMode::Type::COUNT; i++)
+            std::cerr << " \"" << BlockBuster::GameMode::typeStrings[i] << "\"";
+        std::cerr << '\n';
+        std::exit(1);
+    }
     auto bots = ap.get<uint8_t>("--bots");
 
     auto verbosity = static_cast<Log::Verbosity>(ap.get<uint8_t>("--verbosity"));

@@ -76,6 +76,7 @@ bool Entity::operator==(const Entity::PlayerState& a, const Entity::PlayerState&
     for(auto i = 0; i < 2; i++)
     {
         auto wsA = a.weaponState[i]; auto wsB = b.weaponState[i];
+        same = same && wsA.weaponTypeId == wsB.weaponTypeId;
         if(wsA.weaponTypeId != WeaponTypeID::NONE)
         {
             bool sameState = wsA.state == wsB.state;

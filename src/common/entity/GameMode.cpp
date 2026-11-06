@@ -3,17 +3,21 @@
 #include <util/Container.h>
 
 #include <collisions/Collisions.h>
+#include <util/Random.h>
+
+#include <algorithm>
 
 using namespace BlockBuster;
 
 const std::string BlockBuster::GameMode::typeStrings[GameMode::Type::COUNT] = {
-    "", "Free for All", "Team DeathMatch", "Domination", "Capture the Flag"
+    "", "Free for All", "Team DeathMatch", "Domination", "Capture the Flag", "Gun Game"
     };
 const std::unordered_map<std::string, GameMode::Type> GameMode::stringTypes = {
     {"Free for All", GameMode::Type::FREE_FOR_ALL}, 
     {"Team DeathMatch", GameMode::Type::TEAM_DEATHMATCH}, 
     {"Domination", GameMode::Type::DOMINATION},
-    {"Capture the Flag", GameMode::Type::CAPTURE_THE_FLAG}
+    {"Capture the Flag", GameMode::Type::CAPTURE_THE_FLAG},
+    {"Gun Game", GameMode::Type::GUN_GAME}
 };
 
 // Gamemode
@@ -125,6 +129,10 @@ std::unique_ptr<GameMode> BlockBuster::CreateGameMode(GameMode::Type type)
         //assertm(false, "This mode has not been implemented yet");
         gameMode = std::make_unique<CaptureFlag>();
         break;
+
+    case GameMode::Type::GUN_GAME:
+        gameMode = std::make_unique<GunGame>();
+        break;
     
     default:
         break;
@@ -140,6 +148,7 @@ std::unordered_map<GameMode::Type, bool> BlockBuster::GetSupportedGameModes(Game
     auto goIndices = map.GetGameObjectIndices();
     gameModes[GameMode::Type::FREE_FOR_ALL] = !map.FindGameObjectByType(Entity::GameObject::RESPAWN).empty();
     gameModes[GameMode::Type::TEAM_DEATHMATCH] = gameModes[GameMode::Type::FREE_FOR_ALL];
+    gameModes[GameMode::Type::GUN_GAME] = gameModes[GameMode::Type::FREE_FOR_ALL];
     gameModes[GameMode::Type::DOMINATION] = gameModes[GameMode::Type::FREE_FOR_ALL] && !map.FindGameObjectByType(Entity::GameObject::DOMINATION_POINT).empty();
     gameModes[GameMode::Type::CAPTURE_THE_FLAG] = gameModes[GameMode::Type::FREE_FOR_ALL] && (!map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_A).empty()
         || !map.FindGameObjectByType(Entity::GameObject::FLAG_SPAWN_B).empty() );
@@ -192,6 +201,74 @@ void FreeForAll::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID 
             teamScore->score--;
         scoreBoard.SetTeamScore(teamScore.value());
     }
+}
+
+// GameMode - GunGame
+
+bool GunGame::IsGameObjectEnabled(Entity::GameObject::Type goType)
+{
+    return goType != Entity::GameObject::WEAPON_CRATE && goType != Entity::GameObject::GRENADES;
+}
+
+Entity::WeaponTypeID GunGame::GetPlayerWeapon(Entity::ID playerId)
+{
+    int32_t level = 0;
+    if(auto score = scoreBoard.GetPlayerScore(playerId))
+        level = score->score;
+
+    return GetLevelWeapon(level);
+}
+
+Entity::WeaponTypeID GunGame::GetLevelWeapon(int32_t level)
+{
+    if(progression.empty())
+        return Entity::WeaponTypeID::ASSAULT_RIFLE;
+
+    level = std::clamp<int32_t>(level, 0, progression.size() - 1);
+    return progression[level];
+}
+
+void GunGame::SetProgression(std::vector<Entity::WeaponTypeID> progression)
+{
+    this->progression = std::move(progression);
+}
+
+std::vector<Entity::WeaponTypeID> GunGame::GenerateProgression(int32_t length)
+{
+    using namespace Entity;
+    const std::vector<WeaponTypeID> weapons = {
+        ASSAULT_RIFLE, BATTLE_RIFLE, SHOTGUN, SMG, SNIPER, GRENADE_LAUNCHER, ROCKET_LAUNCHER
+    };
+
+    std::vector<WeaponTypeID> progression;
+    progression.reserve(length);
+    for(int32_t i = 0; i < length; i++)
+    {
+        WeaponTypeID weapon;
+        do
+        {
+            weapon = weapons[Util::Random::Uniform<size_t>(0, weapons.size() - 1)];
+        } while(!progression.empty() && progression.back() == weapon);
+
+        progression.push_back(weapon);
+    }
+
+    return progression;
+}
+
+void GunGame::OnPlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)
+{
+    auto score = scoreBoard.GetPlayerScore(killer);
+    auto teamScore = scoreBoard.GetTeamScore(killer);
+    if(!score || !teamScore)
+        return;
+
+    // Kills move the killer one weapon up, suicides one weapon down
+    int32_t diff = killer != victim ? 1 : -1;
+    score->score = std::max(score->score + diff, 0);
+    teamScore->score = std::max(teamScore->score + diff, 0);
+    scoreBoard.SetPlayerScore(score.value());
+    scoreBoard.SetTeamScore(teamScore.value());
 }
 
 // GameMode - TeamGameMode

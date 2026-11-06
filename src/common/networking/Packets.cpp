@@ -75,6 +75,14 @@ std::unique_ptr<Packet> Networking::MakePacket<PacketType::Server>(uint16_t opCo
     case OpcodeServer::OPCODE_SERVER_PLAYER_GAMEOBJECT_INTERACT:
         packet = std::make_unique<PlayerGameObjectInteract>();
         break;
+
+    case OpcodeServer::OPCODE_SERVER_WEAPON_PROGRESSION:
+        packet = std::make_unique<WeaponProgression>();
+        break;
+
+    case OpcodeServer::OPCODE_SERVER_PLAYER_WEAPON_CHANGE:
+        packet = std::make_unique<PlayerWeaponChange>();
+        break;
     
     default:
         break;
@@ -306,6 +314,34 @@ void PlayerGameObjectInteract::OnRead(Util::Buffer::Reader& reader)
 void PlayerGameObjectInteract::OnWrite()
 {
     buffer.Write(goPos);
+}
+
+void WeaponProgression::OnRead(Util::Buffer::Reader& reader)
+{
+    auto count = reader.Read<uint8_t>();
+    progression.clear();
+    for(auto i = 0; i < count; i++)
+        progression.push_back(reader.Read<Entity::WeaponTypeID>());
+}
+
+void WeaponProgression::OnWrite()
+{
+    uint8_t count = std::min<size_t>(progression.size(), UINT8_MAX);
+    buffer.Write(count);
+    for(auto i = 0; i < count; i++)
+        buffer.Write(progression[i]);
+}
+
+void PlayerWeaponChange::OnRead(Util::Buffer::Reader& reader)
+{
+    slot = reader.Read<uint8_t>();
+    weapon = reader.Read<Entity::Weapon>();
+}
+
+void PlayerWeaponChange::OnWrite()
+{
+    buffer.Write(slot);
+    buffer.Write(weapon);
 }
 
 using namespace Networking::Packets::Client;

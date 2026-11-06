@@ -538,8 +538,17 @@ void InGameGUI::HUD()
     wepIcon.SetTexture(inGame->modelMgr.GetWepIconTex(wepTypeId));
     wepIcon.Draw(inGame->imgShader, winSize);
 
-        // Alt wep Icon
+        // Alt wep Icon. Gun Game: Next weapon in the progression
     auto nextWepTypeId = player.weapons[player.GetNextWeaponId()].weaponTypeId;
+    auto gunGame = dynamic_cast<GunGame*>(inGame->match.GetGameMode());
+    if(gunGame)
+    {
+        nextWepTypeId = Entity::WeaponTypeID::NONE;
+        auto score = gunGame->GetScoreboard().GetPlayerScore(inGame->playerId);
+        int32_t level = score ? score->score : 0;
+        if(level + 1 < GunGame::MAX_LEVEL)
+            nextWepTypeId = gunGame->GetLevelWeapon(level + 1);
+    }
     if(nextWepTypeId != Entity::WeaponTypeID::NONE)
     {
         altWepIcon.SetTexture(inGame->modelMgr.GetWepIconTex(nextWepTypeId));
@@ -550,9 +559,12 @@ void InGameGUI::HUD()
     altWepIcon.Draw(inGame->imgShader, winSize);
 
         // Grenade icon/text
-    grenadeNumText.SetText(std::to_string(player.grenades));
-    grenadeNumText.Draw(inGame->textShader, winSize);
-    grenadeIcon.Draw(inGame->imgShader, winSize);
+    if(!gunGame)
+    {
+        grenadeNumText.SetText(std::to_string(player.grenades));
+        grenadeNumText.Draw(inGame->textShader, winSize);
+        grenadeIcon.Draw(inGame->imgShader, winSize);
+    }
 
         // Action text
     actionImg.Draw(inGame->imgShader, winSize);
@@ -708,7 +720,7 @@ void InGameGUI::UpdateScore()
 {
     auto mode =inGame->match.GetGameMode();
     auto scoreBoard = mode->GetScoreboard();
-    if(mode->GetType() == GameMode::FREE_FOR_ALL)
+    if(mode->IsFFA())
     {
         auto playerScore = scoreBoard.GetPlayerScore(inGame->playerId);
         if(!playerScore)
@@ -890,7 +902,7 @@ void InGameGUI::EnableWinnerText(bool enabled)
         auto color = inGame->teamColors[winner.teamId];
         std::string text = winner.teamId == TeamID::BLUE_TEAM_ID ? "BLUE TEAM" : "RED TEAM";
 
-        auto isFFA = mode->GetType() == GameMode::FREE_FOR_ALL;
+        auto isFFA = mode->IsFFA();
         if(isFFA)
         {
             color = inGame->ffaColors[winner.teamId];
@@ -956,9 +968,9 @@ void InGameGUI::ScoreboardWindow()
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, headerColor);
 
         auto gameMode = inGame->match.GetGameMode();
-        if(gameMode->GetType() == GameMode::FREE_FOR_ALL)
+        if(gameMode->IsFFA())
         {
-            ScoreTable("Free For All");
+            ScoreTable(gameMode->GetType() == GameMode::GUN_GAME ? "Gun Game" : "Free For All");
         }
         else
         {   
@@ -996,7 +1008,7 @@ void InGameGUI::ScoreTable(const char* name, Entity::ID teamId)
     auto winSize = ImGui::GetWindowSize();
 
     auto gameMode = inGame->match.GetGameMode();
-    bool isFFA = gameMode->GetType() == GameMode::FREE_FOR_ALL;
+    bool isFFA = gameMode->IsFFA();
 
     auto scoreBoard = gameMode->GetScoreboard();
     auto playerScores = isFFA ? scoreBoard.GetPlayerScores() : scoreBoard.GetTeamPlayers(teamId);

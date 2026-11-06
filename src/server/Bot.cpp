@@ -44,7 +44,11 @@ Bot::InputReq Bot::Update(Entity::Player& self, World world, Util::Time::Seconds
         if(!Entity::HasAmmo(weapon.ammoState, wepType.ammoData, wepType.ammoType))
             input[Entity::RELOAD] = true;
         else if(reactionTime <= Util::Time::Seconds{0.0f} && glm::length(toTarget) <= Entity::GetMaxEffectiveRange(wepType))
-            input[Entity::SHOOT] = true;
+        {
+            // Semi-auto and burst weapons need the trigger released between shots
+            bool mustRelease = wepType.firingMode != Entity::WeaponType::FiringMode::AUTO && weapon.triggerPressed;
+            input[Entity::SHOOT] = !mustRelease;
+        }
 
         // Close in, then strafe
         strafeTime -= deltaTime;
