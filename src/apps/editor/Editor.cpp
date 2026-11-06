@@ -914,7 +914,7 @@ void Editor::UseTool(glm::vec<2, int> mousePos, ActionType actionType)
     if (gui.optimizeIntersection)
     {
 #endif
-        intersect = Game::CastRayFirst(project.map.GetMap(), ray, blockScale);
+        intersect = Game::CastRayFirstDDA(project.map.GetMap(), ray, blockScale);
 #ifdef _DEBUG
     }
     else

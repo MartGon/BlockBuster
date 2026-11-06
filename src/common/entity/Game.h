@@ -15,6 +15,9 @@ namespace Game
 
     std::vector<RayBlockIntersection> CastRay(Game::Map::Map* map, Collisions::Ray ray, float blockScale);
     RayBlockIntersection CastRayFirst(Game::Map::Map* map, Collisions::Ray ray, float blockScale);
+    // Same as CastRayFirst, but walks the grid cell by cell along the ray (Amanatides & Woo).
+    // Cost depends on the distance to the first hit, instead of the amount of blocks in the crossed chunks
+    RayBlockIntersection CastRayFirstDDA(Game::Map::Map* map, Collisions::Ray ray, float blockScale);
 
     struct RayPlayerCollision
     {

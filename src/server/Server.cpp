@@ -513,7 +513,7 @@ void Server::HandleShootCommand(ShotCommand sc)
     if(wepType.shotType == Entity::WeaponType::ShotType::HITSCAN)
     {
         // Check collision with block
-        auto bCol = Game::CastRayFirst(&map, ray, map.GetBlockScale());
+        auto bCol = Game::CastRayFirstDDA(&map, ray, map.GetBlockScale());
         auto bColDist = std::numeric_limits<float>::max();
         if(bCol.intersection.intersects)
             bColDist = bCol.intersection.GetRayLength(ray);

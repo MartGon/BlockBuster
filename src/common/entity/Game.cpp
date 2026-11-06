@@ -1,6 +1,7 @@
 #include <Game.h>
 
 #include <algorithm>
+#include <limits>
 
 std::vector<Game::RayBlockIntersection> Game::CastRay(Game::Map::Map* map, Collisions::Ray ray, float blockScale)
 {
@@ -110,6 +111,108 @@ Game::RayBlockIntersection Game::CastRayFirst(Game::Map::Map* map, Collisions::R
     }
 
     return intersect;
+}
+
+Game::RayBlockIntersection Game::CastRayFirstDDA(Game::Map::Map* map, Collisions::Ray ray, float blockScale)
+{
+    using Chunk = Game::Map::Map::Chunk;
+    const Game::RayBlockIntersection noHit = {glm::ivec3{0}, nullptr, Collisions::RayIntersection{false}};
+    constexpr float INF = std::numeric_limits<float>::infinity();
+
+    auto chunkIndices = map->GetChunkIndices();
+    if(chunkIndices.empty() || ray.origin == ray.dest)
+        return noHit;
+
+    // Map bounds, in blocks. In grid space, block (x, y, z) spans [x, x + 1]
+    glm::ivec3 minChunk = chunkIndices.front();
+    glm::ivec3 maxChunk = minChunk;
+    for(auto chunkIndex : chunkIndices)
+    {
+        minChunk = glm::min(minChunk, chunkIndex);
+        maxChunk = glm::max(maxChunk, chunkIndex);
+    }
+    glm::ivec3 minBlock = minChunk * Chunk::DIMENSIONS - Chunk::HALF_DIMENSIONS;
+    glm::ivec3 maxBlock = maxChunk * Chunk::DIMENSIONS + Chunk::HALF_DIMENSIONS - 1;
+
+    auto dir = ray.GetDir();
+    auto origin = ray.origin / blockScale;
+
+    // Clip the ray to the map bounds. Distances along the ray are in grid units
+    float tEnter = 0.0f;
+    float tExit = INF;
+    for(auto i = 0; i < 3; i++)
+    {
+        if(dir[i] == 0.0f)
+        {
+            if(origin[i] < minBlock[i] || origin[i] > maxBlock[i] + 1)
+                return noHit;
+            continue;
+        }
+
+        auto t1 = (minBlock[i] - origin[i]) / dir[i];
+        auto t2 = (maxBlock[i] + 1 - origin[i]) / dir[i];
+        tEnter = std::max(tEnter, std::min(t1, t2));
+        tExit = std::min(tExit, std::max(t1, t2));
+    }
+    if(tEnter > tExit)
+        return noHit;
+
+    auto start = origin + dir * tEnter;
+    glm::ivec3 cell = glm::clamp(glm::ivec3{glm::floor(start)}, minBlock, maxBlock);
+
+    // Distance along the ray to the next cell boundary on each axis, and between boundaries
+    glm::ivec3 step;
+    glm::vec3 tMax;
+    glm::vec3 tDelta;
+    for(auto i = 0; i < 3; i++)
+    {
+        if(dir[i] > 0.0f)
+        {
+            step[i] = 1;
+            tDelta[i] = 1.0f / dir[i];
+            tMax[i] = tEnter + (cell[i] + 1 - start[i]) / dir[i];
+        }
+        else if(dir[i] < 0.0f)
+        {
+            step[i] = -1;
+            tDelta[i] = -1.0f / dir[i];
+            tMax[i] = tEnter + (start[i] - cell[i]) / -dir[i];
+        }
+        else
+        {
+            step[i] = 0;
+            tDelta[i] = INF;
+            tMax[i] = INF;
+        }
+    }
+
+    while(true)
+    {
+        auto block = map->GetBlock(cell);
+        if(block && block->type != Game::BlockType::NONE)
+        {
+            // Exact test. The ray may cross the cell and still miss a slope
+            auto model = GetBlockTransform(cell, block->rot, blockScale).GetTransformMat();
+            Collisions::RayIntersection blockInt;
+            if(block->type == Game::SLOPE)
+                blockInt = Collisions::RaySlopeIntersection(ray, model);
+            else
+                blockInt = Collisions::RayAABBIntersection(ray, model);
+
+            if(blockInt.intersects)
+                return Game::RayBlockIntersection{cell, block, blockInt};
+        }
+
+        // Step into the next cell, through the closest boundary
+        int axis = tMax.x < tMax.y ? (tMax.x < tMax.z ? 0 : 2) : (tMax.y < tMax.z ? 1 : 2);
+        if(tMax[axis] > tExit)
+            break;
+
+        cell[axis] += step[axis];
+        tMax[axis] += tDelta[axis];
+    }
+
+    return noHit;
 }
 
 Game::RayPlayerCollision Game::RayCollidesWithPlayer(Collisions::Ray ray, glm::vec3 playerPos, float playerYaw, glm::vec3 lastMoveDir)

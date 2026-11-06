@@ -644,7 +644,7 @@ void InGame::OnLocalPlayerShot()
 
     auto projViewMat = camera_.GetProjViewMat();
     Collisions::Ray ray = Collisions::ScreenToWorldRay(projViewMat, glm::vec2{0.5f, 0.5f}, glm::vec2{1.0f});
-    auto collision = Game::CastRayFirst(map_.GetMap(), ray, map_.GetBlockScale());
+    auto collision = Game::CastRayFirstDDA(map_.GetMap(), ray, map_.GetBlockScale());
     if(collision.intersection.intersects && collision.block->type != Game::SLOPE)
     {
         auto colPoint = collision.intersection.colPoint;

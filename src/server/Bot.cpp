@@ -132,7 +132,7 @@ std::optional<Entity::ID> Bot::FindTarget(Entity::Player& self, World& world)
 bool Bot::IsVisible(Game::Map::Map* map, glm::vec3 origin, glm::vec3 target)
 {
     Collisions::Ray ray{origin, target};
-    auto bCol = Game::CastRayFirst(map, ray, map->GetBlockScale());
+    auto bCol = Game::CastRayFirstDDA(map, ray, map->GetBlockScale());
     if(!bCol.intersection.intersects)
         return true;
 
