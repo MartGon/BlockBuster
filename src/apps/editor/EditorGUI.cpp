@@ -201,6 +201,17 @@ void EditorGUI::InitPopUps()
         }
     });
     puMgr.Set(GENERATE_MAP, std::make_unique<GUI::GenericPopUp>(generateMap));
+
+    GUI::GenericPopUp playTest;
+    playTest.SetTitle("Play test");
+    playTest.SetOnOpen([this](){
+        playTestError.clear();
+        playTestValidation = BlockBuster::ValidateMap(*editor->project.map.GetMap());
+    });
+    playTest.SetOnDraw([this](){
+        PlayTestPopUp();
+    });
+    puMgr.Set(PLAY_TEST, std::make_unique<GUI::GenericPopUp>(playTest));
 }
 
 void EditorGUI::OpenPopUp(PopUpState state)
@@ -303,6 +314,18 @@ void EditorGUI::MenuBar()
             ImGui::EndMenu();
         }
 
+        if(ImGui::BeginMenu("Play", true))
+        {
+            if(ImGui::MenuItem("Play test...", "F5"))
+                MenuPlayTest();
+
+            bool running = editor->playTest.GetState() == PlayTest::State::RUNNING;
+            if(ImGui::MenuItem("Stop play test", nullptr, false, running))
+                editor->playTest.Stop();
+
+            ImGui::EndMenu();
+        }
+
         if(ImGui::BeginMenu("Settings", true))
         {
             if(ImGui::MenuItem("Video", "Ctrl + Shift + G"))
@@ -326,6 +349,13 @@ void EditorGUI::MenuBar()
 
             ImGui::EndMenu();
         }
+
+        // Play test status
+        auto playTestState = editor->playTest.GetState();
+        if(playTestState == PlayTest::State::RUNNING)
+            ImGui::TextColored(ImVec4{0.2f, 0.85f, 0.2f, 1.0f}, "Play test running");
+        else if(playTestState == PlayTest::State::FAILED)
+            ImGui::TextColored(ImVec4{0.95f, 0.25f, 0.25f, 1.0f}, "Play test failed: %s", editor->playTest.GetError().c_str());
 
         ImGui::EndMenuBar();
     }
@@ -375,6 +405,99 @@ void EditorGUI::MenuSave()
 void EditorGUI::MenuSaveAs()
 {
     OpenPopUp(PopUpState::SAVE_AS);
+}
+
+void EditorGUI::MenuPlayTest()
+{
+    OpenPopUp(PopUpState::PLAY_TEST);
+}
+
+void EditorGUI::PlayTestPopUp()
+{
+    const ImVec4 red{0.95f, 0.25f, 0.25f, 1.0f};
+    const ImVec4 yellow{0.95f, 0.8f, 0.2f, 1.0f};
+
+    auto close = [this](){
+        if(ImGui::Button("Cancel"))
+            puMgr.Close();
+    };
+
+    if(!PlayTest::IsSupported())
+    {
+        ImGui::Text("Play test needs bash, so it isn't supported on this platform yet");
+        close();
+        return;
+    }
+
+    if(editor->playTest.GetState() == PlayTest::State::RUNNING)
+    {
+        ImGui::Text("A play test is already running");
+        if(ImGui::Button("Stop it"))
+            editor->playTest.Stop();
+        ImGui::SameLine();
+        close();
+        return;
+    }
+
+    if(editor->newMap)
+    {
+        ImGui::Text("Save the map first (File > Save As)");
+        close();
+        return;
+    }
+
+    // Game modes the map supports
+    std::vector<std::string> modes;
+    for(auto& mode : playTestValidation.modes)
+        if(mode.supported)
+            modes.push_back(BlockBuster::GameMode::typeStrings[mode.mode]);
+
+    if(modes.empty())
+    {
+        auto& reason = playTestValidation.modes.front().reason;
+        ImGui::TextColored(red, "The map doesn't support any game mode: %s", reason.c_str());
+        close();
+        return;
+    }
+
+    playTestModeIndex = std::clamp(playTestModeIndex, 0, (int)modes.size() - 1);
+    if(ImGui::BeginCombo("Game mode", modes[playTestModeIndex].c_str()))
+    {
+        for(int i = 0; i < (int)modes.size(); i++)
+            if(ImGui::Selectable(modes[i].c_str(), i == playTestModeIndex))
+                playTestModeIndex = i;
+        ImGui::EndCombo();
+    }
+
+    ImGui::SliderInt("Bots", &playTestBots, 0, 15);
+    const char* difficulties[] = {"easy", "normal", "hard"};
+    ImGui::Combo("Bot difficulty", &playTestDifficulty, difficulties, IM_ARRAYSIZE(difficulties));
+
+    if(playTestValidation.HasErrors())
+        ImGui::TextColored(yellow, "The map has errors. See the Validate tab");
+    if(editor->unsaved)
+        ImGui::TextDisabled("The map will be saved before launching");
+    if(!playTestError.empty())
+        ImGui::TextColored(red, "%s", playTestError.c_str());
+
+    if(ImGui::Button("Start"))
+    {
+        if(editor->unsaved)
+            editor->SaveProject();
+
+        PlayTest::Params params;
+        params.map = fileName;
+        params.mode = modes[playTestModeIndex];
+        params.bots = playTestBots;
+        params.difficulty = difficulties[playTestDifficulty];
+        auto err = editor->playTest.Launch(params, editor->playTestScript, editor->mapsFolder);
+        if(err)
+            playTestError = *err;
+        else
+            puMgr.Close();
+    }
+    ImGui::SameLine();
+    close();
 }
 
 // #### GUI - Help #### \\
@@ -429,6 +552,9 @@ void EditorGUI::HelpShortCutWindow()
                     "FPS Camera: Movement according to camera angle. Can rotate camera with mouse");
             ImGui::BulletText("Middle mouse button (hold) - Set FPS camera");
             ImGui::BulletText("F - Toggle FPS/Editor camera");
+
+            ImGui::Text("Play test");
+            ImGui::BulletText("F5 - Launch a game on this map with bots");
 
             ImGui::TableNextColumn();
 

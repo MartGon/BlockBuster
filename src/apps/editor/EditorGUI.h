@@ -29,6 +29,7 @@ namespace BlockBuster::Editor
             GO_TO_BLOCK,
             ARE_YOU_SURE,
             GENERATE_MAP,
+            PLAY_TEST,
             MAX
         };
 
@@ -64,6 +65,8 @@ namespace BlockBuster::Editor
         void MenuOpenMap();
         void MenuSave();
         void MenuSaveAs();
+        void MenuPlayTest();
+        void PlayTestPopUp();
 
         // GUI - Help
         void HelpShortCutWindow();
@@ -122,6 +125,13 @@ namespace BlockBuster::Editor
         glm::ivec3 selectedObj{0};
 
         glm::vec4 colorPick;
+
+        // Play test
+        int playTestModeIndex = 0;
+        int playTestBots = 3;
+        int playTestDifficulty = 1; // normal
+        std::string playTestError;
+        BlockBuster::MapValidation playTestValidation;
 
         // Validate tab
         BlockBuster::MapValidation mapValidation;

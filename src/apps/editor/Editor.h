@@ -33,6 +33,7 @@
 #include <Project.h>
 #include <ToolAction.h>
 #include <EditorGUI.h>
+#include <PlayTest.h>
 
 #include <functional>
 
@@ -169,6 +170,10 @@ namespace BlockBuster::Editor
         // Project
         MapMgr mapMgr;
         Project project;
+
+        // Play test
+        PlayTest playTest;
+        std::filesystem::path playTestScript;
 
         // Rendering
         Rendering::RenderMgr renderMgr;

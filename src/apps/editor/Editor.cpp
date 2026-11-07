@@ -92,6 +92,7 @@ void Editor::Start()
     cameraController = ::App::Client::CameraController{&camera, {window_, io_}, ::App::Client::CameraMode::EDITOR};
     cameraController.moveSpeed = std::stof(GetConfigOption("camMoveSpeed", "0.25"));
     cameraController.rotSpeed = std::stof(GetConfigOption("camRotSpeed", "0.017"));
+    playTestScript = GetConfigOption("PlayTestScript", "./scripts/test_game.sh");
     
     // World
     mapsFolder = GetConfigOption("MapsFolder", "./maps/");
@@ -120,6 +121,7 @@ void Editor::Start()
 
 void Editor::Update()
 {
+    playTest.Poll();
     Render();
     
     if(playerMode)
@@ -137,8 +139,11 @@ bool Editor::Quit()
 
 void Editor::Shutdown()
 {
+    playTest.Stop();
+
     config.options["Map"] = gui.fileName;
     config.options["MapsFolder"] = mapsFolder.string();
+    config.options["PlayTestScript"] = playTestScript.string();
     config.options["showCursor"] = std::to_string(cursor.show);
     config.options["camMoveSpeed"] = std::to_string(cameraController.moveSpeed);
     config.options["camRotSpeed"] = std::to_string(cameraController.rotSpeed);
@@ -737,6 +742,9 @@ void Editor::HandleKeyShortCut(const SDL_KeyboardEvent& key)
 
         if(sym == SDLK_z && io.KeyCtrl && io.KeyShift)
             DoToolAction();
+
+        if(sym == SDLK_F5)
+            gui.MenuPlayTest();
 
         if(sym == SDLK_g && io.KeyCtrl)
         {

@@ -5,6 +5,7 @@ SET(SOURCES
     EditorGUI.cpp
     Project.cpp
     ToolAction.cpp
+    PlayTest.cpp
 )
 
 add_executable(Editor ${SOURCES})

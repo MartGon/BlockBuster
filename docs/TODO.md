@@ -103,7 +103,7 @@ Effort: S = an hour or two, M = about a day. ★ = top pick.
 
 ### Editor
 - ✅ ★ Map validation panel (S, done — editor "Validate" tab): which modes the map supports and why (GetSupportedGameModes), plus spawns inside blocks and teleports without a destination.
-- ★ Play-test button (S): save the map and launch the test_game.sh logic with N bots.
+- ✅ ★ Play-test button (S, done — Play menu / F5, see docs/editor/PlayTest.md): save the map and launch the test_game.sh logic with N bots.
 - Hide Selection (S): already in the editor TODO.
 - Spawn sightline heatmap (M): raycast from each respawn and tint the blocks it can see.
 - Object property copy/paste (S).
