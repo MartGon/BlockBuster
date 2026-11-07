@@ -82,7 +82,7 @@ namespace BlockBuster
 
         Entity::ID PlayerJoin(Entity::ID playerId, std::string name);
         void PlayerLeave(Entity::ID playerId);
-        void PlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId);
+        void PlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId, bool headshot = false);
 
         virtual bool IsGameOver();
         virtual Util::Time::Seconds GetDuration(){ return duration; };

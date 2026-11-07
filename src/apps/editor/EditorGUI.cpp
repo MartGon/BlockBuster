@@ -1240,6 +1240,77 @@ void EditorGUI::ToolOptionsGUI()
     }
 }
 
+void EditorGUI::ValidateTab()
+{
+    const ImVec4 green{0.2f, 0.85f, 0.2f, 1.0f};
+    const ImVec4 red{0.95f, 0.25f, 0.25f, 1.0f};
+    const ImVec4 yellow{0.95f, 0.8f, 0.2f, 1.0f};
+
+    if(ImGui::Button("Refresh"))
+        mapValidation = BlockBuster::ValidateMap(*editor->project.map.GetMap());
+
+    // Game modes
+    ImGui::Text("Game modes");
+    for(auto& mode : mapValidation.modes)
+    {
+        ImGui::TextColored(mode.supported ? green : red, "%s", mode.supported ? "  OK " : "  NO ");
+        ImGui::SameLine();
+        ImGui::Text("%s", BlockBuster::GameMode::typeStrings[mode.mode].c_str());
+        if(!mode.supported && !mode.reason.empty())
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled("(%s)", mode.reason.c_str());
+        }
+    }
+
+    // Issues
+    ImGui::Separator();
+    if(mapValidation.issues.empty())
+    {
+        ImGui::TextColored(green, "No problems found");
+        return;
+    }
+
+    ImGui::Text("Problems (%zu)", mapValidation.issues.size());
+    auto tableFlags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY;
+    auto rowHeight = ImGui::GetFrameHeightWithSpacing();
+    auto rows = std::min<size_t>(mapValidation.issues.size(), 8);
+    if(ImGui::BeginTable("##Map issues", 3, tableFlags, ImVec2{0, rowHeight * (rows + 0.5f)}))
+    {
+        ImGui::TableSetupColumn("Severity", ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Problem", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Go to", ImGuiTableColumnFlags_WidthFixed);
+
+        for(size_t i = 0; i < mapValidation.issues.size(); i++)
+        {
+            auto& issue = mapValidation.issues[i];
+            ImGui::PushID(i);
+            ImGui::TableNextRow();
+
+            ImGui::TableNextColumn();
+            bool isError = issue.severity == BlockBuster::MapIssue::ERROR;
+            ImGui::TextColored(isError ? red : yellow, "%s", isError ? "Error" : "Warning");
+
+            ImGui::TableNextColumn();
+            ImGui::TextWrapped("%s", issue.msg.c_str());
+
+            ImGui::TableNextColumn();
+            if(issue.pos && ImGui::Button("Go to"))
+            {
+                // Look at it from a few blocks away
+                auto blockScale = editor->project.map.GetBlockScale();
+                auto target = Game::Map::ToRealPos(*issue.pos, blockScale);
+                auto cameraPos = Game::Map::ToRealPos(*issue.pos + glm::ivec3{0, 3, 4}, blockScale);
+                editor->camera.SetPos(cameraPos);
+                editor->camera.SetTarget(target);
+            }
+
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+}
+
 void EditorGUI::GUI()
 {
     // Clear GUI buffer
@@ -1305,6 +1376,20 @@ void EditorGUI::GUI()
                 ImGui::EndTabItem();
             }
                
+            if(ImGui::BeginTabItem("Validate"))
+            {
+                // Refresh when the tab is opened
+                if(!validateTabOpen)
+                    mapValidation = BlockBuster::ValidateMap(*editor->project.map.GetMap());
+                validateTabOpen = true;
+
+                ValidateTab();
+
+                ImGui::EndTabItem();
+            }
+            else
+                validateTabOpen = false;
+
             flags = tabState == TabState::DEBUG_TAB ? ImGuiTabItemFlags_SetSelected : 0;
             if(ImGui::BeginTabItem("Debug", nullptr, flags))
             {

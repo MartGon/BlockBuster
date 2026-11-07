@@ -40,12 +40,16 @@ void GameMode::PlayerLeave(Entity::ID playerId)
     OnPlayerLeave(playerId);
 }
 
-void GameMode::PlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId)
+void GameMode::PlayerDeath(Entity::ID killer, Entity::ID victim, Entity::ID killerTeamId, bool headshot)
 {
     if(auto score = scoreBoard.GetPlayerScore(killer))
     {
         if(killer != victim)
+        {
             score->kills++;
+            if(headshot)
+                score->headshots++;
+        }
         else
             score->kills--;
         scoreBoard.SetPlayerScore(score.value());

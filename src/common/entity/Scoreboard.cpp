@@ -14,6 +14,7 @@ Util::Buffer PlayerScore::ToBuffer()
     buffer.Write(kills);
     buffer.Write(score);
     buffer.Write(deaths);
+    buffer.Write(headshots);
 
     return std::move(buffer);
 }
@@ -27,6 +28,7 @@ PlayerScore PlayerScore::FromBuffer(Util::Buffer::Reader& reader)
     ps.kills = reader.Read<decltype(ps.kills)>();
     ps.score = reader.Read<decltype(ps.score)>();
     ps.deaths = reader.Read<decltype(ps.deaths)>();
+    ps.headshots = reader.Read<decltype(ps.headshots)>();
 
     return ps;
 }

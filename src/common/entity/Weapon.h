@@ -27,6 +27,14 @@ namespace Entity
         CHEAT_SMG,
         COUNT
     };
+
+    // What killed a player. Falling out of the map has no weapon and isn't a grenade
+    struct DeathCause
+    {
+        WeaponTypeID weapon = WeaponTypeID::NONE;
+        bool headshot = false;
+        bool grenade = false; // Hand grenade
+    };
     class WeaponMgr
     {
     public:

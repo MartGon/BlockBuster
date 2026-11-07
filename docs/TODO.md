@@ -77,3 +77,38 @@
 - Create custom map, for testing. Should be quite big. - DONE
 - Launch game server from MatchMaking. Port, player num, map and gamemode as params
 - KillBoxes (Chore) or Set kill height (easier) (Map Options)        
+
+## Ideas backlog (brainstorm, 2026-11-06)
+
+Effort: S = an hour or two, M = about a day. ★ = top pick.
+
+### Game modes
+- ★ King of the Hill (S–M): Domination with a single active point that moves to another DOMINATION_POINT every N seconds. Reuses IsPlayerInPointArea and the capture timers.
+- Oddball / Juggernaut (M): builds on the CTF carrier logic. One carrier scores per second held and is highlighted for everyone.
+- Sniper-only, Shotguns-only, Rockets-only (S): same structure as Gun Game. A weapon override in SpawnPlayer, and crates disabled through IsGameObjectEnabled.
+- Team Gun Game (S): the team's combined kills drive a shared progression.
+
+### Gameplay
+- ✅ ★ Kill feed (S, done — see QUICK_WINS_PLAN.md): show "Killer [weapon] Victim" on PlayerDied. In Gun Game, announce when someone reaches the final weapon.
+- ✅ ★ Headshot feedback (S, done): HitBoxType::HEAD already exists. Add a headshot flag to PlayerHitConfirm, a distinct hitmarker, and a headshot count on the scoreboard.
+- Killstreak / multi-kill announcements (S): text only until there's announcer audio.
+- Power-ups (M): new GameObject types like HEALTHPACK (damage boost, no overheat, speed). Timed modifiers on Player.
+- Spawn protection (S): ~2 s of invulnerability after SpawnPlayer, with a shield shimmer on the client.
+- Assist tracking (S): last damagers per victim, plus an "Assists" scoreboard column.
+
+### UI/UX
+- End-of-match stats screen (S): most kills, best K/D, longest streak.
+- Damage direction indicator (S): PlayerTakeDmg already sends the origin.
+- Crosshair customization (S): color and size in client.ini.
+
+### Editor
+- ✅ ★ Map validation panel (S, done — editor "Validate" tab): which modes the map supports and why (GetSupportedGameModes), plus spawns inside blocks and teleports without a destination.
+- ★ Play-test button (S): save the map and launch the test_game.sh logic with N bots.
+- Hide Selection (S): already in the editor TODO.
+- Spawn sightline heatmap (M): raycast from each respawn and tint the blocks it can see.
+- Object property copy/paste (S).
+- Map generation presets (S): arena, towers, corridors.
+
+### Bots
+- ✅ ★ Difficulty levels (S, done — `-bd` server flag, `-D` in test_game.sh): AIM_ERROR / REACTION_TIME as a server flag (easy|normal|hard).
+- Weapon-aware engage range (S): snipers keep their distance, shotguns rush in.

@@ -454,6 +454,9 @@ void InGameGUI::InitTexts()
     logText.SetOffset(glm::ivec2{0, -logText.GetSize().y} + glm::ivec2{0, -10});
     logText.SetIsVisible(false);
 
+    killFeedText = pixelFont->CreateText();
+    killFeedText.SetScale(0.75f);
+    killFeedText.SetColor(white);
 }
 
 void InGameGUI::InitAnimations()
@@ -632,6 +635,9 @@ void InGameGUI::HUD()
     captCountdownText.SetOffset(glm::ivec2{-size.x / 2, 0} + glm::ivec2{0, -15});
     captCountdownText.Draw(inGame->textShader, winSize);
 
+    // Kill feed
+    DrawKillFeed();
+
     // Log
     logAnimPlayer.Update(inGame->deltaTime);
     const auto white = glm::vec4{1.0f, 1.0f, 1.0f, logAlpha};
@@ -790,16 +796,38 @@ void InGameGUI::UpdateGameTimeText()
 
 void InGameGUI::PlayHitMarkerAnim(HitMarkerType type)
 {
-    if(type == HitMarkerType::DMG)
-    {  
-        const auto white = glm::vec4{1.0f, 1.0f, 1.0f, 0.5f};
-        hitmarkerImg.SetColor(white);
-    }
-    else if(type == HitMarkerType::KILL)
+    // A weaker hit (e.g. a collateral) doesn't hide the marker of a stronger one that is still showing
+    if(showHitmarker && type < hitMarkerType)
+        type = hitMarkerType;
+    hitMarkerType = type;
+
+    const auto white = glm::vec4{1.0f, 1.0f, 1.0f, 0.5f};
+    const auto gold = glm::vec4{1.0f, 0.8f, 0.1f, 0.9f};
+    const auto red = glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
+
+    auto color = white;
+    float scale = 1.0f;
+    switch(type)
     {
-        const auto red = glm::vec4{1.0f, 0.0f, 0.0f, 1.0f};
-        hitmarkerImg.SetColor(red);
+        case HitMarkerType::DMG:
+            break;
+        case HitMarkerType::HEADSHOT:
+            color = gold;
+            scale = 1.25f;
+            break;
+        case HitMarkerType::KILL:
+            color = red;
+            break;
+        case HitMarkerType::HEADSHOT_KILL:
+            color = red;
+            scale = 1.4f;
+            break;
     }
+
+    glm::ivec2 size = glm::vec2{75.0f} * scale;
+    hitmarkerImg.SetColor(color);
+    hitmarkerImg.SetSize(size);
+    hitmarkerImg.SetOffset(-size / 2);
 
     hitMarkerPlayer.Restart();
 }
@@ -888,7 +916,10 @@ void InGameGUI::EnableHUD(bool enabled)
     countdownText.SetIsVisible(enabled);
 
     if(!enabled)
+    {
         DisableActionText();
+        killFeed.clear();
+    }
 }
 
 void InGameGUI::EnableWinnerText(bool enabled)
@@ -936,7 +967,116 @@ void InGameGUI::SetCapturePercent(float percent)
 void InGameGUI::ShowLogMsg(std::string msg)
 {
     logText.SetText(msg);
+    logText.SetIsVisible(true);
     logAnimPlayer.Restart();
+}
+
+void InGameGUI::AddKillFeedEntry(Entity::ID killerId, Entity::ID victimId, Entity::DeathCause cause)
+{
+    auto gameMode = inGame->match.GetGameMode();
+    auto& scoreboard = gameMode->GetScoreboard();
+    bool isFFA = gameMode->IsFFA();
+
+    auto getPlayerInfo = [&](Entity::ID id, std::string& name, glm::vec4& color)
+    {
+        name = "Player " + std::to_string(id);
+        color = glm::vec4{1.0f};
+        if(auto ps = scoreboard.GetPlayerScore(id))
+        {
+            name = ps->name;
+            color = isFFA ? inGame->ffaColors[ps->teamId % 16] : inGame->teamColors[ps->teamId % 3];
+        }
+    };
+
+    KillFeedEntry entry;
+    getPlayerInfo(killerId, entry.killer, entry.killerColor);
+    getPlayerInfo(victimId, entry.victim, entry.victimColor);
+    entry.cause = cause;
+    entry.suicide = killerId == victimId;
+
+    killFeed.push_front(entry);
+    if(killFeed.size() > KILL_FEED_SIZE)
+        killFeed.pop_back();
+}
+
+void InGameGUI::DrawKillFeed()
+{
+    auto dt = inGame->deltaTime.count();
+    for(auto& entry : killFeed)
+        entry.age += dt;
+    while(!killFeed.empty() && killFeed.back().age >= KILL_FEED_DURATION)
+        killFeed.pop_back();
+
+    if(killFeed.empty())
+        return;
+
+    auto winSize = inGame->client_->GetWindowSize();
+    auto& textureMgr = inGame->renderMgr.GetTextureMgr();
+
+    // Layout. Offsets are from the bottom left corner of the screen
+    constexpr int margin = 10;
+    constexpr int spacing = 6;
+    killFeedText.SetText("A");
+    const int textHeight = killFeedText.GetSize().y;
+    const int iconHeight = textHeight + 10;
+    const glm::ivec2 wepIconSize{iconHeight * 22 / 7, iconHeight}; // Weapon icons are 220x70
+    const glm::ivec2 grenadeIconSize{iconHeight};
+    const int rowHeight = iconHeight + 4;
+
+    // Starts right below the weapon icons
+    const int top = altWepIcon.GetPos(winSize).y + winSize.y / 2 - margin;
+    const auto gold = glm::vec4{1.0f, 0.8f, 0.1f, 1.0f};
+    const auto white = glm::vec4{1.0f};
+
+    for(size_t i = 0; i < killFeed.size(); i++)
+    {
+        auto& entry = killFeed[i];
+        float alpha = glm::clamp((KILL_FEED_DURATION - entry.age) / KILL_FEED_FADE, 0.0, 1.0);
+        int y = top - (i + 1) * rowHeight;
+        int x = winSize.x - margin;
+
+        // Drawn from right to left
+        auto drawText = [&](const std::string& str, glm::vec4 color)
+        {
+            killFeedText.SetText(str);
+            killFeedText.SetColor(glm::vec4{glm::vec3{color}, alpha});
+            auto size = killFeedText.GetSize();
+            x -= size.x;
+            killFeedText.SetOffset(glm::ivec2{x, y + (rowHeight - size.y) / 2});
+            killFeedText.Draw(inGame->textShader, winSize);
+            x -= spacing;
+        };
+        auto drawIcon = [&](GL::Texture* texture, glm::ivec2 size)
+        {
+            killFeedIcon.SetTexture(texture);
+            killFeedIcon.SetSize(size);
+            killFeedIcon.SetColor(glm::vec4{1.0f, 1.0f, 1.0f, alpha});
+            x -= size.x;
+            killFeedIcon.SetOffset(glm::ivec2{x, y + (rowHeight - size.y) / 2});
+            killFeedIcon.Draw(inGame->imgShader, winSize);
+            x -= spacing;
+        };
+
+        bool fell = entry.cause.weapon == Entity::WeaponTypeID::NONE && !entry.cause.grenade;
+        if(entry.suicide && fell)
+        {
+            drawText("fell", white);
+            drawText(entry.victim, entry.victimColor);
+            continue;
+        }
+
+        drawText(entry.victim, entry.victimColor);
+        if(entry.cause.headshot)
+            drawText("HS", gold);
+
+        if(entry.cause.grenade)
+            drawIcon(textureMgr.GetTexture(grenadeTexId), grenadeIconSize);
+        else if(entry.cause.weapon != Entity::WeaponTypeID::NONE)
+            drawIcon(inGame->modelMgr.GetWepIconTex(entry.cause.weapon), wepIconSize);
+
+        if(!entry.suicide)
+            drawText(entry.killer, entry.killerColor);
+    }
 }
 
 glm::vec4 InGameGUI::GetOppositeColor(Entity::ID playerTeam)
@@ -1018,7 +1158,7 @@ void InGameGUI::ScoreTable(const char* name, Entity::ID teamId)
     });
     
     auto tFlags = ImGuiTableFlags_None | ImGuiTableFlags_RowBg;
-    if(ImGui::BeginTable("#Score board", 7, tFlags))
+    if(ImGui::BeginTable("#Score board", 8, tFlags))
     {
         auto columnFlags = ImGuiTableColumnFlags_WidthFixed;
         auto nameSize = winSize.x * 0.65f;
@@ -1028,6 +1168,7 @@ void InGameGUI::ScoreTable(const char* name, Entity::ID teamId)
         ImGui::TableSetupColumn("Kills", columnFlags);
         ImGui::TableSetupColumn("K/D", columnFlags);
         ImGui::TableSetupColumn("Deaths", columnFlags);
+        ImGui::TableSetupColumn("HS", columnFlags);
         ImGui::TableHeadersRow();
 
         // Team Row
@@ -1099,6 +1240,13 @@ void InGameGUI::ScoreTable(const char* name, Entity::ID teamId)
             width = ImGui::CalcTextSize(deaths.c_str()).x;
             GUI::TableCenterEntry(width);
             ImGui::Text("%s", deaths.c_str());
+
+            // Headshot kills
+            ImGui::TableNextColumn();
+            std::string headshots = std::to_string(playerScore.headshots);
+            width = ImGui::CalcTextSize(headshots.c_str()).x;
+            GUI::TableCenterEntry(width);
+            ImGui::Text("%s", headshots.c_str());
 
             if(isFFA)
             {

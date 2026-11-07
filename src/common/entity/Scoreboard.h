@@ -16,6 +16,7 @@ namespace BlockBuster
         int kills;
         int score;
         uint32_t deaths;
+        uint32_t headshots = 0; // Headshot kills
 
         Util::Buffer ToBuffer();
         static PlayerScore FromBuffer(Util::Buffer::Reader& reader);

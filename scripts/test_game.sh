@@ -2,9 +2,10 @@
 # Launches a local test game: a server with bots plus one client connected to it directly,
 # without the match-making server. The server is stopped when the client exits.
 #
-# Usage: scripts/test_game.sh [-m map] [-b bots] [-g gamemode] [-p port] [-d build_dir]
+# Usage: scripts/test_game.sh [-m map] [-b bots] [-D difficulty] [-g gamemode] [-p port] [-d build_dir]
 #   -m  Map name, a folder inside ./maps (default: Alpha3)
 #   -b  Number of bots (default: 1)
+#   -D  Bot difficulty: easy, normal, hard (default: normal)
 #   -g  Game mode: "Free for All", "Team DeathMatch", "Domination", "Capture the Flag", "Gun Game" (default: Free for All)
 #   -p  Server port (default: 8080)
 #   -d  Build directory (default: ./build)
@@ -15,20 +16,22 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 MAP="Alpha3"
 BOTS=1
+BOT_DIFFICULTY="normal"
 MODE="Free for All"
 PORT=8080
 BUILD_DIR="$ROOT/build"
 
 usage()
 {
-    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
     exit "${1:-0}"
 }
 
-while getopts "m:b:g:p:d:h" opt; do
+while getopts "m:b:D:g:p:d:h" opt; do
     case "$opt" in
         m) MAP="$OPTARG" ;;
         b) BOTS="$OPTARG" ;;
+        D) BOT_DIFFICULTY="$OPTARG" ;;
         g) MODE="$OPTARG" ;;
         p) PORT="$OPTARG" ;;
         d) BUILD_DIR="$(realpath "$OPTARG")" ;;
@@ -73,8 +76,8 @@ mkdir -p logs
 # The match starts once every bot and the human player have joined
 STARTING_PLAYERS=$((BOTS + 1))
 
-echo "Starting server: map=$MAP mode=\"$MODE\" bots=$BOTS port=$PORT"
-"$SERVER_BIN" -m "$MAP_FILE" -p "$PORT" -sp "$STARTING_PLAYERS" -b "$BOTS" -gm "$MODE" -v 1 > logs/server.out 2>&1 &
+echo "Starting server: map=$MAP mode=\"$MODE\" bots=$BOTS difficulty=$BOT_DIFFICULTY port=$PORT"
+"$SERVER_BIN" -m "$MAP_FILE" -p "$PORT" -sp "$STARTING_PLAYERS" -b "$BOTS" -bd "$BOT_DIFFICULTY" -gm "$MODE" -v 1 > logs/server.out 2>&1 &
 SERVER_PID=$!
 
 CLIENT_PID=""

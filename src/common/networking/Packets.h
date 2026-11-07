@@ -252,6 +252,7 @@ namespace Networking
                 void OnWrite() override;
 
                 Entity::ID victimId;
+                bool headshot = false;
             };
 
             class PlayerDied final : public Packet
@@ -268,6 +269,7 @@ namespace Networking
                 Entity::ID killerId;
                 Entity::ID victimId;
                 Util::Time::Seconds respawnTime;
+                Entity::DeathCause cause;
             };
 
             class PlayerRespawn final : public Packet

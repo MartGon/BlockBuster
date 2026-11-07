@@ -16,6 +16,7 @@ int main(int argc, char** argv)
     ap.add_argument("-sp", "--starting-players").required().scan<'u', uint8_t>();
     ap.add_argument("-gm", "--gamemode").required();
     ap.add_argument("-b", "--bots").default_value<uint8_t>(0).scan<'u', uint8_t>();
+    ap.add_argument("-bd", "--bot-difficulty").default_value<std::string>("normal");
     
     ap.add_argument("-mma", "--match-making-address").default_value<std::string>("127.0.0.1");
     ap.add_argument("-mmp", "--match-making-port").default_value<uint16_t>(3030).scan<'u', uint16_t>();
@@ -49,6 +50,16 @@ int main(int argc, char** argv)
         std::exit(1);
     }
     auto bots = ap.get<uint8_t>("--bots");
+    auto botDifficultyName = ap.get<std::string>("--bot-difficulty");
+    auto botDifficulty = BlockBuster::BotDifficulty::FromString(botDifficultyName);
+    if(!botDifficulty)
+    {
+        std::cerr << "Unknown bot difficulty \"" << botDifficultyName << "\". Valid difficulties are:";
+        for(auto name : BlockBuster::BotDifficulty::names)
+            std::cerr << " \"" << name << "\"";
+        std::cerr << '\n';
+        std::exit(1);
+    }
 
     auto verbosity = static_cast<Log::Verbosity>(ap.get<uint8_t>("--verbosity"));
     auto tickRate = Util::Time::Seconds{ap.get<float>("--tickrate")};
@@ -71,6 +82,7 @@ int main(int argc, char** argv)
     std::cout << "Starting Players: " << std::to_string(startingPlayers) << '\n';
     std::cout << "Game mode: " << gameMode << '\n';
     std::cout << "Bots: " << std::to_string(bots) << '\n';
+    std::cout << "Bot difficulty: " << botDifficultyName << '\n';
 
     std::cout << "Match Making address: " << mmAddress << '\n';
     std::cout << "Match Making port: " << mmPort << '\n';
@@ -81,7 +93,7 @@ int main(int argc, char** argv)
 
     using namespace BlockBuster;
 
-    Server::Params params{address, port, maxPlayers, startingPlayers, map, gameMode, verbosity, bots};
+    Server::Params params{address, port, maxPlayers, startingPlayers, map, gameMode, verbosity, bots, *botDifficulty};
     Server::MMServer mmServer{mmAddress, mmPort, mmGameId, mmKey};
 
     Server server{params, mmServer, tickRate};

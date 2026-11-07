@@ -280,7 +280,8 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
                 audioMgr->PlaySource(ed.dmgSourceId);
             }
 
-            inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::DMG);
+            auto hitMarker = ptd->headshot ? InGameGUI::HitMarkerType::HEADSHOT : InGameGUI::HitMarkerType::DMG;
+            inGameGui.PlayHitMarkerAnim(hitMarker);
         }
         break;
 
@@ -318,10 +319,25 @@ void InGame::OnRecvPacket(Networking::Packet& packet)
             }
 
             if(ptd->killerId == playerId)
-                inGameGui.PlayHitMarkerAnim(InGameGUI::HitMarkerType::KILL);
+            {
+                auto hitMarker = ptd->cause.headshot ? InGameGUI::HitMarkerType::HEADSHOT_KILL : InGameGUI::HitMarkerType::KILL;
+                inGameGui.PlayHitMarkerAnim(hitMarker);
+            }
 
-            match.GetGameMode()->PlayerDeath(ptd->killerId, ptd->victimId, killer.teamId);
+            inGameGui.AddKillFeedEntry(ptd->killerId, ptd->victimId, ptd->cause);
+            match.GetGameMode()->PlayerDeath(ptd->killerId, ptd->victimId, killer.teamId, ptd->cause.headshot);
             GetLogger()->LogDebug("Player died");
+
+            // Gun Game: Announce players reaching the last weapon
+            if(auto gunGame = dynamic_cast<GunGame*>(match.GetGameMode()); gunGame && ptd->killerId != ptd->victimId)
+            {
+                auto score = gunGame->GetScoreboard().GetPlayerScore(ptd->killerId);
+                if(score && score->score == GunGame::MAX_LEVEL - 1)
+                {
+                    auto msg = ptd->killerId == playerId ? std::string{"You are on the final weapon!"} : score->name + " is on the final weapon!";
+                    inGameGui.ShowLogMsg(msg);
+                }
+            }
 
             if(killer.teamId == player.teamId && ptd->killerId != playerId)
             {

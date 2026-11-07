@@ -105,6 +105,17 @@ namespace Entity
             return playerId;
         }
 
+        // WeaponTypeID that launched it. NONE for hand grenades
+        inline uint8_t GetSourceWeapon() const
+        {
+            return sourceWeapon;
+        }
+
+        inline void SetSourceWeapon(uint8_t weaponTypeId)
+        {
+            this->sourceWeapon = weaponTypeId;
+        }
+
         inline bool HasDenotaded()
         {
             return detonated;
@@ -126,6 +137,7 @@ namespace Entity
         
         float travelDistance = 0.0f;
         Entity::ID playerId;
+        uint8_t sourceWeapon = 0;
         float radius = 8.0f;
         float dmg = 375.f;
 

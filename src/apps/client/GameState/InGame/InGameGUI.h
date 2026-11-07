@@ -15,6 +15,8 @@
 #include <entity/Player.h>
 #include <mglogger/Logger.h>
 
+#include <deque>
+
 namespace BlockBuster
 {
     class InGame;
@@ -36,7 +38,9 @@ namespace BlockBuster
         enum class HitMarkerType
         {
             DMG,
-            KILL
+            HEADSHOT,
+            KILL,
+            HEADSHOT_KILL
         };
 
         enum ScreenEffect
@@ -58,6 +62,7 @@ namespace BlockBuster
         void SetCapturePercent(float percent);
 
         void ShowLogMsg(std::string msg);
+        void AddKillFeedEntry(Entity::ID killerId, Entity::ID victimId, Entity::DeathCause cause);
 
         glm::vec4 GetOppositeColor(Entity::ID playerTeam);
 
@@ -89,6 +94,8 @@ namespace BlockBuster
         void UpdateRespawnText();
         void UpdateCountdownText();
         void UpdateGameTimeText();
+
+        void DrawKillFeed();
 
         void ScoreboardWindow();
         void ScoreTable(const char* name, Entity::ID teamId = 0);
@@ -140,6 +147,7 @@ namespace BlockBuster
         // Animations
         Animation::Clip hitmarkerAnim;
         bool showHitmarker = false;
+        HitMarkerType hitMarkerType = HitMarkerType::DMG;
         Animation::Player hitMarkerPlayer;
         float dmgAlpha = 0.0f;
         float dmgArrowAlpha = 0.0f;
@@ -167,6 +175,24 @@ namespace BlockBuster
         float logAlpha = 1.0f;
         Animation::Clip logAnim;
         Animation::Player logAnimPlayer;
+
+        // Kill feed
+        struct KillFeedEntry
+        {
+            std::string killer;
+            std::string victim;
+            glm::vec4 killerColor;
+            glm::vec4 victimColor;
+            Entity::DeathCause cause;
+            bool suicide = false;
+            double age = 0.0;
+        };
+        static constexpr size_t KILL_FEED_SIZE = 5;
+        static constexpr double KILL_FEED_DURATION = 5.0; // Seconds an entry stays
+        static constexpr double KILL_FEED_FADE = 1.0; // Seconds it takes an entry to fade out
+        std::deque<KillFeedEntry> killFeed;
+        GUI::Text killFeedText;
+        GUI::Image killFeedIcon;
 
         // ScoreBoard
         bool showScoreboard = false;

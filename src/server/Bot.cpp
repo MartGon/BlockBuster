@@ -26,7 +26,7 @@ Bot::InputReq Bot::Update(Entity::Player& self, World world, Util::Time::Seconds
     // Combat
     auto newTarget = FindTarget(self, world);
     if(newTarget != targetId)
-        reactionTime = REACTION_TIME;
+        reactionTime = difficulty.reactionTime;
     targetId = newTarget;
 
     glm::vec2 orientation;
@@ -35,7 +35,7 @@ Bot::InputReq Bot::Update(Entity::Player& self, World world, Util::Time::Seconds
         auto targetPos = world.players.at(*targetId)->GetTransform().position;
         auto toTarget = targetPos - eyePos;
         orientation = DirToOrientation(toTarget);
-        orientation += glm::vec2{Util::Random::Normal(0.0f, AIM_ERROR), Util::Random::Normal(0.0f, AIM_ERROR)};
+        orientation += glm::vec2{Util::Random::Normal(0.0f, difficulty.aimError), Util::Random::Normal(0.0f, difficulty.aimError)};
 
         // Shoot
         auto& weapon = self.GetCurrentWeapon();

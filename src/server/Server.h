@@ -99,6 +99,7 @@ namespace BlockBuster
 
             Log::Verbosity verbosity;
             uint8_t bots = 0;
+            BotDifficulty botDifficulty;
         };
 
         struct MMServer
@@ -141,8 +142,8 @@ namespace BlockBuster
         void SendWorldUpdate();
         void SendScoreboardReport();
         void SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState health, glm::vec3 dmgOrigin);
-        void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId);
-        void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime);
+        void SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId, bool headshot);
+        void BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime, Entity::DeathCause cause);
         void BroadcastRespawn(ENet::PeerId peerId);
         void BroadcastWarp(ENet::PeerId peerId);
         void BroadcastGameObjectState(glm::ivec3 goPos);
@@ -154,7 +155,7 @@ namespace BlockBuster
         void UpdateWorld();
         void UpdateProjectiles();
         bool IsPlayerOutOfBounds(ENet::PeerId peerId);
-        void OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId);
+        void OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId, Entity::DeathCause cause = {});
         void SleepUntilNextTick(Util::Time::SteadyPoint preSimulationTime);
 
         // MMServer
@@ -170,7 +171,7 @@ namespace BlockBuster
         void AddBot(std::string name);
         unsigned int GetHumanCount() const;
         void SpawnPlayer(ENet::PeerId clientId);
-        void OnPlayerTakeDmg(ENet::PeerId author, ENet::PeerId victim);
+        void OnPlayerTakeDmg(ENet::PeerId author, ENet::PeerId victim, Entity::DeathCause cause);
         std::vector<Entity::Player> GetPlayers() const;
 
         // World 

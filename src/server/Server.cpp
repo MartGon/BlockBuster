@@ -583,7 +583,10 @@ void Server::HandleShootCommand(ShotCommand sc)
                 if(colDist < bColDist && colDist <= Entity::GetMaxEffectiveRange(weapon.weaponTypeId))
                 {
                     victim.TakeWeaponDmg(weapon, rpc.hitboxType, colDist);
-                    OnPlayerTakeDmg(sc.clientId, peerId);
+                    Entity::DeathCause cause;
+                    cause.weapon = weapon.weaponTypeId;
+                    cause.headshot = rpc.hitboxType == Entity::Player::HitBoxType::HEAD;
+                    OnPlayerTakeDmg(sc.clientId, peerId, cause);
 
                     logger.LogDebug("Shot from player " + std::to_string(author.id) + " has hit player " + std::to_string(victim.id));
                     logger.LogDebug("Victim's shield " + std::to_string(victim.health.shield) + " Victim health " + std::to_string(victim.health.hp));
@@ -607,6 +610,7 @@ void Server::HandleShootCommand(ShotCommand sc)
         glm::vec3 acceleration{0.0f, -10.0f, 0.0f};
         auto scaler = p->GetType() == Entity::Projectile::ROCKET ? 3.0f : 1.2f;
         p->Launch(author.id, ray.origin, ray.GetDir() * SPEED, acceleration);
+        p->SetSourceWeapon(weapon.weaponTypeId);
         projectiles.MoveInto(std::move(p));
     }
 }
@@ -735,20 +739,22 @@ void Server::SendPlayerTakeDmg(ENet::PeerId peerId, Entity::Player::HealthState 
     SendPacket(peerId, ptd);
 }
 
-void Server::SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId)
+void Server::SendPlayerHitConfirm(ENet::PeerId peerId, Entity::ID victimId, bool headshot)
 {
     Networking::Packets::Server::PlayerHitConfirm phc;
     phc.victimId = victimId;
+    phc.headshot = headshot;
 
     SendPacket(peerId, phc);
 }
 
-void Server::BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime)
+void Server::BroadcastPlayerDied(Entity::ID killerId, Entity::ID victimId, Util::Time::Seconds respawnTime, Entity::DeathCause cause)
 {
     Networking::Packets::Server::PlayerDied pd;
     pd.killerId = killerId;
     pd.victimId = victimId;
     pd.respawnTime = respawnTime;
+    pd.cause = cause;
 
     Broadcast(pd);
 }
@@ -981,7 +987,11 @@ void Server::UpdateProjectiles()
                         bool doDmg = victim.teamId != author.teamId || author.id == victim.id; // Different team or player
                         auto dmg = Entity::GetDistanceDmgMod(projectile->GetRadius() * 0.5f, collision.distance) * projectile->GetDmg();
                         victim.TakeDmg(dmg);
-                        OnPlayerTakeDmg(author.id, victim.id);
+
+                        Entity::DeathCause cause;
+                        cause.weapon = static_cast<Entity::WeaponTypeID>(projectile->GetSourceWeapon());
+                        cause.grenade = cause.weapon == Entity::WeaponTypeID::NONE;
+                        OnPlayerTakeDmg(author.id, victim.id, cause);
                     }
                 }
             }
@@ -1028,15 +1038,18 @@ bool Server::IsPlayerOutOfBounds(ENet::PeerId peerId)
     return false;
 }
 
-void Server::OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId)
+void Server::OnPlayerDeath(ENet::PeerId authorId, ENet::PeerId victimId, Entity::DeathCause cause)
 {
     auto& victim = clients[victimId].player;
     victim.health.hp = 0.0f;
+
+    logger.LogInfo("[Kill] Player " + std::to_string(authorId) + " killed player " + std::to_string(victimId) + 
+        " (weapon " + std::to_string(cause.weapon) + ", headshot " + std::to_string(cause.headshot) + ", grenade " + std::to_string(cause.grenade) + ")");
     
     auto gameMode = match.GetGameMode();
     clients[victimId].respawnTime = gameMode->GetRespawnTime();
-    BroadcastPlayerDied(authorId, victimId, clients[victimId].respawnTime);
-    gameMode->PlayerDeath(authorId, victimId, clients[authorId].player.teamId);
+    BroadcastPlayerDied(authorId, victimId, clients[victimId].respawnTime, cause);
+    gameMode->PlayerDeath(authorId, victimId, clients[authorId].player.teamId, cause.headshot);
 
     // Gun Game: Killer moves to its new level's weapon. Dead players get it on respawn
     if(auto gunGame = dynamic_cast<GunGame*>(gameMode))
@@ -1183,6 +1196,7 @@ void Server::AddBot(std::string name)
     client.playerName = name;
     client.player.id = id;
     client.player.teamId = match.GetGameMode()->PlayerJoin(id, name);
+    client.bot.SetDifficulty(params.botDifficulty);
 
     SpawnPlayer(id);
     logger.LogInfo("Bot added: " + name + " (id " + std::to_string(id) + ")");
@@ -1217,7 +1231,7 @@ void Server::SpawnPlayer(ENet::PeerId clientId)
     player.grenades = gameMode->GetStartingGrenades();
 }
 
-void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
+void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId, Entity::DeathCause cause)
 {
     auto& author = clients[authorId].player;
     auto& victim = clients[victimId].player;
@@ -1225,10 +1239,10 @@ void Server::OnPlayerTakeDmg(ENet::PeerId authorId, ENet::PeerId victimId)
     auto dmgOrigin = author.GetTransform().position;
     SendPlayerTakeDmg(victimId, victim.health, dmgOrigin);
 
-    SendPlayerHitConfirm(authorId, victim.id);
+    SendPlayerHitConfirm(authorId, victim.id, cause.headshot);
     if(victim.IsDead())
     {   
-        OnPlayerDeath(authorId, victimId);
+        OnPlayerDeath(authorId, victimId, cause);
     }
 }
 

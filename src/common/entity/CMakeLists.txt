@@ -12,6 +12,7 @@ SET(SOURCES
     Match.cpp
     MapGen.cpp
     Scoreboard.cpp
+    MapValidation.cpp
 )
 
 

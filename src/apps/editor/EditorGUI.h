@@ -6,6 +6,7 @@
 #include <gui/PopUpMgr.h>
 
 #include <entity/MapGen.h>
+#include <entity/MapValidation.h>
 
 namespace BlockBuster::Editor
 {
@@ -80,6 +81,7 @@ namespace BlockBuster::Editor
         void PropertyInput(Entity::GameObject* go, const char* key, Entity::GameObject::Property::Type type);
 
         void ToolOptionsGUI();
+        void ValidateTab();
         void GUI();
 
     private:
@@ -120,6 +122,10 @@ namespace BlockBuster::Editor
         glm::ivec3 selectedObj{0};
 
         glm::vec4 colorPick;
+
+        // Validate tab
+        BlockBuster::MapValidation mapValidation;
+        bool validateTabOpen = false;
 
         bool showShortcutWindow = false;
         bool drawChunkBorders = false;

@@ -222,11 +222,13 @@ void PlayerTakeDmg::OnWrite()
 void PlayerHitConfirm::OnRead(Util::Buffer::Reader& reader)
 {
     victimId = reader.Read<Entity::ID>();
+    headshot = reader.Read<bool>();
 }
 
 void PlayerHitConfirm::OnWrite()
 {
     buffer.Write(victimId);
+    buffer.Write(headshot);
 }
 
 void PlayerDied::OnRead(Util::Buffer::Reader& reader)
@@ -234,6 +236,9 @@ void PlayerDied::OnRead(Util::Buffer::Reader& reader)
     killerId = reader.Read<Entity::ID>();
     victimId = reader.Read<Entity::ID>();
     respawnTime = reader.Read<Util::Time::Seconds>();
+    cause.weapon = reader.Read<Entity::WeaponTypeID>();
+    cause.headshot = reader.Read<bool>();
+    cause.grenade = reader.Read<bool>();
 }
 
 void PlayerDied::OnWrite()
@@ -241,6 +246,9 @@ void PlayerDied::OnWrite()
     buffer.Write(killerId);
     buffer.Write(victimId);
     buffer.Write(respawnTime);
+    buffer.Write(cause.weapon);
+    buffer.Write(cause.headshot);
+    buffer.Write(cause.grenade);
 }
 
 void PlayerRespawn::OnRead(Util::Buffer::Reader& reader)
